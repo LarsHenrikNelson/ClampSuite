@@ -1,0 +1,287 @@
+import numpy as np
+from scipy.fft import fft, ifft
+from scipy import signal, stats
+
+from .acquisition_base import AcquisitionBase
+from ..main_acq import postsynaptic_event
+
+
+class MiniAnalysisBase(AcquisitionBase):
+    def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=0):
+        template = np.zeros(len(t_psc) + spacer)
+        offset = len(template) - len(t_psc)
+        Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
+        y = (
+            amplitude
+            / Aprime
+            * ((1 - (np.exp(-t_psc / tau_1))) ** risepower * np.exp((-t_psc / tau_2)))
+        )
+        template[offset:] = y
+        return template
+
+    def create_template(self, template):
+        if template is None:
+            tau_1 = 3
+            tau_2 = 50
+            amplitude = -20
+            risepower = 0.5
+            t_psc = np.arange(0, 300)
+            spacer = 20
+            self.template = self.tm_psp(
+                amplitude, tau_1, tau_2, risepower, t_psc, spacer=spacer
+            )
+        else:
+            self.template = template
+
+    def create_mespc_array(self):
+        if self.rc_check is False:
+            self.final_array = np.copy(self.filtered_array)
+        elif self.rc_check is True:
+            if self.rc_check_end == len(self.filtered_array):
+                self.final_array = np.copy(self.filtered_array[: self.rc_check_start])
+                self.rc_check_array = np.copy(self.array[self.rc_check_start :])
+            else:
+                self.final_array = np.copy(self.filtered_array[self.rc_check_end :])
+                self.rc_check_array = np.copy(self.array[self.rc_check_end :])
+        self.x_array = np.arange(len(self.final_array)) / (self.s_r_c)
+        return self.final_array, self.x_array
+
+    def set_sign(self):
+        if not self.invert:
+            self.final_array = self.final_array * 1
+        else:
+            self.final_array = self.final_array * -1
+
+    def wiener_deconvolution(self, lambd=4):
+        """
+        The Wiener deconvolution equation can be found on GitHub from pbmanis
+        and danstowell. The basic idea behind this function is deconvolution
+        or divsion in the frequency domain. I have found that changing lambd
+        from 2-10 does not seem to affect the performance of the Wiener
+        equation. The fft deconvolution type is the most simple and default
+        choice.
+        
+        Parameters
+        ----------
+        array : Filtered signal in a numpy array form. There are edge effects if
+            an unfiltered signal is used.
+        kernel : A representative PSC or PSP. Can be an averaged or synthetic
+            template.
+        lambd : Signal to noise ratio. A SNR anywhere from 1 to 10 seems to work
+            without determining the exact noise level.
+            
+        Returns
+        -------
+        deconvolved_array: numpy array
+            Time domain deconvolved signal that is returned for filtering.
+            
+        """
+
+        kernel = np.hstack(
+            (self.template, np.zeros(len(self.final_array) - len(self.template)))
+        )
+        H = fft(kernel)
+        if self.decon_type == "fft":
+            self.deconvolved_array = np.real(ifft(fft(self.final_array) / H))
+        elif self.decon_type == "wiener":
+            self.deconvolved_array = np.real(
+                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd ** 2))
+            )
+        else:
+            self.deconvolved_array = signal.convolve(
+                self.final_array, self.template, mode="same"
+            )
+
+    def wiener_filt(self):
+        """
+        This function takes the deconvolved array, filters it and finds the
+        peaks of the which is where mini events are located.
+        
+        Parameters
+        ----------
+        array : Filtered signal in a numpy array form.There are edge effects if
+            an unfiltered signal is used.
+        template : A representative PSC or PSP. Can be an averaged or synthetic
+            template. The template works best when there is a small array of 
+            before the mini onset.
+    
+        Returns
+        -------
+        peaks : PSC or PSP peaks.
+        y1 : Wiener deconvolved signal.
+    
+        """
+        baselined_decon_array = self.deconvolved_array - np.mean(
+            self.deconvolved_array[0:800]
+        )
+        if self.decon_type == "fft" or self.decon_type == "wiener":
+            filt = signal.firwin2(
+                301,
+                freq=[0, 300, 300, self.sample_rate / 2],
+                gain=[1, 1, 0, 0],
+                window="hann",
+                fs=self.sample_rate,
+            )
+            y = signal.filtfilt(filt, 1.0, baselined_decon_array)
+            self.final_decon_array = signal.detrend(y, type="linear")
+        else:
+            self.final_decon_array = self.deconvolved_array
+        mu, std = stats.norm.fit(self.final_decon_array)
+        peaks, _ = signal.find_peaks(
+            self.final_decon_array, height=self.sensitivity * abs(std)
+        )
+        self.events = peaks.tolist()
+
+    def create_events(self):
+        """
+        This functions creates the events based on the list of peaks found
+        from the deconvolution. Events less than 20 ms before the end of
+        the acquisitions are not counted. Events get screened out based on the
+        amplitude, min_rise_time, and min_decay_time passed by the
+        experimenter. 
+
+        Returns
+        -------
+        None.
+
+        """
+        self.postsynaptic_events = []
+        self.final_events = []
+        event_number = 0
+        event_time = []
+        if len(self.events) == 0:
+            pass
+        elif len(self.events) > 1:
+            for count, peak in enumerate(self.events):
+                if len(self.final_array) - peak < 20 * self.s_r_c:
+                    pass
+                else:
+                    event = postsynaptic_event.PostSynapticEvent(
+                        self.acq_number,
+                        peak,
+                        self.final_array,
+                        self.sample_rate,
+                        self.curve_fit_decay,
+                        self.curve_fit_type,
+                    )
+                    if event.event_peak_x is np.nan or event.event_peak_x in event_time:
+                        pass
+                    else:
+                        if count > 0:
+                            if (
+                                self.events[count] - self.events[count - 1]
+                                < self.mini_spacing
+                            ):
+                                pass
+                            else:
+                                if (
+                                    event.amplitude > self.amp_threshold
+                                    and event.rise_time > self.min_rise_time
+                                    and event.final_tau_x > self.min_decay_time
+                                ):
+                                    self.postsynaptic_events += [event]
+                                    self.final_events += [peak]
+                                    event_time += [event.event_peak_x]
+                                    event_number += 1
+                                else:
+                                    pass
+                        else:
+                            if event.amplitude > self.amp_threshold:
+                                self.postsynaptic_events += [event]
+                                self.final_events += [peak]
+                                event_time += [event.event_peak_x]
+                                event_number += 1
+                            else:
+                                pass
+        else:
+            peak = self.events[0]
+            event = postsynaptic_event.PostSynapticEvent(
+                self.acq_number,
+                peak,
+                self.final_array,
+                self.sample_rate,
+                self.curve_fit_decay,
+                self.curve_fit_type,
+            )
+            event_time += [event.event_peak_x]
+            if event.event_peak_x is np.nan or event.event_peak_x in event_time:
+                pass
+            else:
+                if (
+                    event.amplitude > self.amp_threshold
+                    and event.rise_time > self.min_rise_time
+                    and event.final_tau_x > self.min_decay_time
+                ):
+                    self.postsynaptic_events += [event]
+                    self.final_events += [peak]
+                    event_time += [event.event_peak_x]
+                    event_number += 1
+                else:
+                    pass
+
+    def create_new_mini(self, x):
+        event = postsynaptic_event.PostSynapticEvent(
+            self.acq_number,
+            x,
+            self.final_array,
+            self.sample_rate,
+            self.curve_fit_decay,
+            self.curve_fit_type,
+        )
+        self.final_events += [x]
+        self.postsynaptic_events += [event]
+
+    def final_acq_data(self):
+        """
+        Creates the final data using list comprehension by looping over each
+        of the minis in contained in the postsynaptic event list.
+        """
+        # Sort postsynaptic events before calculating the final results. This
+        # is because of how the user interface works and facilates commandline
+        # usage of the program. Essentially it is easier to just add new minis
+        # to the end of the postsynaptic event list. This prevents a bunch of
+        # issues since you cannot modify the position of plot elements in the
+        # pyqtgraph data items list.
+        self.postsynaptic_events.sort(key=lambda x: x.event_peak_x)
+        self.final_events.sort()
+        self.acq_number_list = [i.acq_number for i in self.postsynaptic_events]
+        self.amplitudes = [i.amplitude for i in self.postsynaptic_events]
+        self.taus = [i.final_tau_x for i in self.postsynaptic_events]
+        self.event_times = [
+            i.event_peak_x / self.s_r_c for i in self.postsynaptic_events
+        ]
+        self.time_stamp_events = [self.time_stamp for i in self.postsynaptic_events]
+        self.rise_times = [i.rise_time for i in self.postsynaptic_events]
+        self.rise_rates = [i.rise_rate for i in self.postsynaptic_events]
+        self.event_arrays = [
+            i.event_array - i.event_start_y for i in self.postsynaptic_events
+        ]
+        self.peak_align_values = [
+            i.event_peak_x - i.array_start for i in self.postsynaptic_events
+        ]
+        self.iei = np.append(np.diff(self.event_times), np.nan)
+        self.freq = len(self.amplitudes) / (len(self.final_array) / self.sample_rate)
+
+    def save_postsynaptic_events(self):
+        """
+        This helper function is called when you want to save the file. This
+        makes the size of the file smaller so it is of more managable size.
+        All the data that is need to recreate the minis is saved.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.saved_events_dict = []
+        self.final_decon_array = "saved"
+        self.deconvolved_array = "saved"
+        self.filtered_array = "saved"
+        self.events = "saved"
+        self.x_array = "saved"
+        self.event_arrays = "saved"
+        for i in self.postsynaptic_events:
+            i.x_array = "saved"
+            i.event_array = "saved"
+            self.saved_events_dict += [i.__dict__]
+        self.postsynaptic_events = "saved"
