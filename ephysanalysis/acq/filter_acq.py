@@ -15,8 +15,10 @@ from ..functions.filtering_functions import (
     elliptic_zero,
 )
 
+from . import base_acq
 
-class AcquisitionBase:
+
+class FilterAcq(base_acq.BaseAcq, analysis="filter"):
 
     """
     This is the base class for acquisitions. It returns the array from a
@@ -26,6 +28,33 @@ class AcquisitionBase:
     chosen baseline of the array. A highpass filter is usually not needed to
     for offline analysis because the signal can baselined using the mean.
     """
+
+    def analyze(
+        self,
+        sample_rate=10000,
+        baseline_start=0,
+        baseline_end=800,
+        filter_type="None",
+        order=None,
+        high_pass=None,
+        high_width=None,
+        low_pass=None,
+        low_width=None,
+        window=None,
+        polyorder=None,
+    ):
+        self.sample_rate = (10000,)
+        self.baseline_start = (0,)
+        self.baseline_end = (800,)
+        self.filter_type = ("None",)
+        self.order = (None,)
+        self.high_pass = (None,)
+        self.high_width = (None,)
+        self.low_pass = (None,)
+        self.low_width = (None,)
+        self.window = (None,)
+        self.polyorder = (None,)
+        self.filter_array()
 
     def filter_array(self):
         """
@@ -109,22 +138,6 @@ class AcquisitionBase:
                 self.high_pass,
                 self.low_pass,
             )
-        elif self.filter_type == "elliptic":
-            self.filtered_array = elliptic(
-                self.baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
-            )
-        elif self.filter_type == "elliptic_zero":
-            self.filtered_array = elliptic_zero(
-                self.baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
-            )
         elif self.filter_type == "fir_zero_1":
             self.filtered_array = fir_zero_1(
                 self.baselined_array,
@@ -185,4 +198,3 @@ class AcquisitionBase:
                 self.window,
             )
             self.filtered_array = self.baselined_array - self.spike_array
-        return self.filtered_array

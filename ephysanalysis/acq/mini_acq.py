@@ -2,11 +2,79 @@ import numpy as np
 from scipy.fft import fft, ifft
 from scipy import signal, stats
 
-from .acquisition_base import AcquisitionBase
-from ..main_acq import postsynaptic_event
+from . import filter_acq
+from .postsynaptic_event import MiniEvent
 
 
-class MiniAnalysisBase(AcquisitionBase):
+class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
+    def analyze(
+        self,
+        sample_rate=10000,
+        baseline_start=0,
+        baseline_end=800,
+        filter_type="None",
+        order=None,
+        high_pass=None,
+        high_width=None,
+        low_pass=None,
+        low_width=None,
+        window=None,
+        polyorder=None,
+        template=None,
+        rc_check=False,
+        rc_check_start=None,
+        rc_check_end=None,
+        sensitivity=3,
+        amp_threshold=7,
+        mini_spacing=7.5,
+        min_rise_time=1,
+        min_decay_time=2,
+        invert=False,
+        decon_type="wiener",
+        curve_fit_decay=False,
+        curve_fit_type="db_exp",
+    ):
+
+        # Set the attributes for the acquisition
+        self.sample_rate = sample_rate
+        self.s_r_c = sample_rate / 1000
+        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
+        self.baseline_start = int(baseline_start * (sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
+        self.rc_check = rc_check
+        if rc_check:
+            self.rc_check_start = int(rc_check_start * self.s_r_c)
+            self.rc_check_end = int(rc_check_end * self.s_r_c)
+        self.sensitivity = sensitivity
+        self.amp_threshold = amp_threshold
+        self.mini_spacing = int(mini_spacing * self.s_r_c)
+        self.min_rise_time = min_rise_time
+        self.min_decay_time = min_decay_time
+        self.invert = invert
+        self.curve_fit_decay = curve_fit_decay
+        self.decon_type = decon_type
+        self.curve_fit_type = curve_fit_type
+
+        # Runs the functions to analyze the acquisition
+        self.create_template(template)
+        self.filter_array()
+        self.create_mespc_array()
+        self.set_sign()
+        self.wiener_deconvolution()
+        self.wiener_filt()
+        self.create_events()
+
     def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=0):
         template = np.zeros(len(t_psc) + spacer)
         offset = len(template) - len(t_psc)
@@ -60,7 +128,7 @@ class MiniAnalysisBase(AcquisitionBase):
         from 2-10 does not seem to affect the performance of the Wiener
         equation. The fft deconvolution type is the most simple and default
         choice.
-        
+
         Parameters
         ----------
         array : Filtered signal in a numpy array form. There are edge effects if
@@ -69,12 +137,12 @@ class MiniAnalysisBase(AcquisitionBase):
             template.
         lambd : Signal to noise ratio. A SNR anywhere from 1 to 10 seems to work
             without determining the exact noise level.
-            
+
         Returns
         -------
         deconvolved_array: numpy array
             Time domain deconvolved signal that is returned for filtering.
-            
+
         """
 
         kernel = np.hstack(
@@ -96,7 +164,7 @@ class MiniAnalysisBase(AcquisitionBase):
         """
         This function takes the deconvolved array, filters it and finds the
         peaks of the which is where mini events are located.
-        
+
         Parameters
         ----------
         array : Filtered signal in a numpy array form.There are edge effects if
@@ -104,12 +172,12 @@ class MiniAnalysisBase(AcquisitionBase):
         template : A representative PSC or PSP. Can be an averaged or synthetic
             template. The template works best when there is a small array of 
             before the mini onset.
-    
+
         Returns
         -------
         peaks : PSC or PSP peaks.
         y1 : Wiener deconvolved signal.
-    
+
         """
         baselined_decon_array = self.deconvolved_array - np.mean(
             self.deconvolved_array[0:800]
@@ -156,13 +224,14 @@ class MiniAnalysisBase(AcquisitionBase):
                 if len(self.final_array) - peak < 20 * self.s_r_c:
                     pass
                 else:
-                    event = postsynaptic_event.PostSynapticEvent(
-                        self.acq_number,
-                        peak,
-                        self.final_array,
-                        self.sample_rate,
-                        self.curve_fit_decay,
-                        self.curve_fit_type,
+                    event = MiniEvent(
+                        analysis="analyze",
+                        acq_number=self.acq_number,
+                        event_pos=peak,
+                        y_array=self.final_array,
+                        sample_rate=self.sample_rate,
+                        curve_fit_decay=self.curve_fit_decay,
+                        curve_fit_type=self.curve_fit_type,
                     )
                     if event.event_peak_x is np.nan or event.event_peak_x in event_time:
                         pass
@@ -195,13 +264,14 @@ class MiniAnalysisBase(AcquisitionBase):
                                 pass
         else:
             peak = self.events[0]
-            event = postsynaptic_event.PostSynapticEvent(
-                self.acq_number,
-                peak,
-                self.final_array,
-                self.sample_rate,
-                self.curve_fit_decay,
-                self.curve_fit_type,
+            event = MiniEvent(
+                analysis="analyze",
+                acq_number=self.acq_number,
+                event_pos=peak,
+                y_array=self.final_array,
+                sample_rate=self.sample_rate,
+                curve_fit_decay=self.curve_fit_decay,
+                curve_fit_type=self.curve_fit_type,
             )
             event_time += [event.event_peak_x]
             if event.event_peak_x is np.nan or event.event_peak_x in event_time:
@@ -220,13 +290,14 @@ class MiniAnalysisBase(AcquisitionBase):
                     pass
 
     def create_new_mini(self, x):
-        event = postsynaptic_event.PostSynapticEvent(
-            self.acq_number,
-            x,
-            self.final_array,
-            self.sample_rate,
-            self.curve_fit_decay,
-            self.curve_fit_type,
+        event = MiniEvent(
+            analysis="analyze",
+            acq_number=self.acq_number,
+            event_pos=peak,
+            y_array=self.final_array,
+            sample_rate=self.sample_rate,
+            curve_fit_decay=self.curve_fit_decay,
+            curve_fit_type=self.curve_fit_type,
         )
         self.final_events += [x]
         self.postsynaptic_events += [event]
@@ -285,3 +356,9 @@ class MiniAnalysisBase(AcquisitionBase):
             i.event_array = "saved"
             self.saved_events_dict += [i.__dict__]
         self.postsynaptic_events = "saved"
+
+    def create_postsynaptic_events(self):
+        self.postsynaptic_events = []
+        for i in self.saved_events_dict:
+            h = MiniEvent(analysis="load", event_dict=i, final_array=self.final_array)
+            self.postsynaptic_events += [h]

@@ -1,14 +1,73 @@
 import numpy as np
 from scipy.stats import linregress
 
-from .acquisition_base import AcquisitionBase
+from . import filter_acq
 
 
-class LFPBase(AcquisitionBase):
+class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     """
     This class creates a LFP acquisition. This class subclasses the
     Acquisition class and takes input specific for LFP analysis.
     """
+
+    def analyze_lfp(
+        self,
+        sample_rate=10000,
+        baseline_start=0,
+        baseline_end=800,
+        filter_type="None",
+        order=None,
+        high_pass=None,
+        high_width=None,
+        low_pass=None,
+        low_width=None,
+        window=None,
+        polyorder=None,
+        pulse_start=1000,
+    ):
+        """
+        This function runs all the other functions in one place. This makes
+        it easy to troubleshoot.
+        """
+        # Set all the attributes for analysis.
+        self.sample_rate = sample_rate
+        self.s_r_c = sample_rate / 1000
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
+        self.baseline_start = int(baseline_start * (sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
+        self.pulse_start = int(pulse_start * self.s_r_c)
+        self.fp_x = np.nan
+        self.fp_y = np.nan
+        self.fv_x = np.nan
+        self.fv_y = np.nan
+        self.max_x = np.nan
+        self.max_y = np.nan
+        self.slope_y = np.nan
+        self.slope_x = np.nan
+        self.b = np.nan
+        self.slope = np.nan
+        self.regression_line = np.nan
+
+        # Run the analysis
+        self.filter_array()
+        self.field_potential()
+        if self.fp_x is np.nan:
+            pass
+        else:
+            self.fiber_volley()
+            self.find_slope_array(self.fp_x)
+            self.regression()
 
     def field_potential(self):
         """
@@ -128,19 +187,6 @@ class LFPBase(AcquisitionBase):
             self.b = np.nan
             self.slope = np.nan
             self.reg_line = np.nan
-
-    def analyze_lfp(self):
-        """
-        This function runs all the other functions in one place. This makes
-        it easy to troubleshoot.
-        """
-        self.field_potential()
-        if self.fp_x is np.nan:
-            pass
-        else:
-            self.fiber_volley()
-            self.find_slope_array(self.fp_x)
-            self.regression()
 
     def change_fv(self, x, y):
         self.fv_x = x

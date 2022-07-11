@@ -132,7 +132,7 @@ class DistributionPlot(QWidget):
         self.canvas.axes.set_title("{} distribution".format(column))
         y = df[column].dropna().to_numpy()[:, np.newaxis]
         x = np.arange(y.shape[0])[:, np.newaxis]
-        kde = KernelDensity(kernel="gaussian")
+        kde = KernelDensity(kernel="gaussian", n_jobs=5)
         bandwidth = np.logspace(-1, 1, 20)
         grid = GridSearchCV(kde, {"bandwidth": bandwidth})
         grid.fit(y)

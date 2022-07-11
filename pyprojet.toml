@@ -16,7 +16,7 @@ dependencies = [
     "pyqtgraph",
     "pandas",
     "yaml",
-    "bottleneck"
+    "bottleneck",
 ]
 requires-pyton = ">=3.9"
 license = {text = "BSD 3-Clause License"}

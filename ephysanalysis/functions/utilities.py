@@ -1,13 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Apr  5 10:35:28 2021
-
-@author: LarsNelson
-
-Last edited on Tue Feb 16 10:47:30 2022
-
-Ephys analysis package version.
-"""
+import json
+from math import floor, log10
 from pathlib import PurePath
 import re
 from typing import Tuple
@@ -108,3 +100,38 @@ def load_scanimage_file(
         ramp = "0"
         pulse_amp = "0"
     return (name, acq_number, array, epoch, pulse_pattern, ramp, pulse_amp, time_stamp)
+
+
+def load_json_file(obj, path: PurePath or str):
+    """
+    This function loads a json file and sets each key: value pair
+    as an attribute of the an obj.
+    """
+    with open(path) as file:
+        data = json.load(file)
+        obj.sample_rate_correction = None
+        for key in data:
+            x = data[key]
+            if isinstance(x, list):
+                x = np.array(x)
+            setattr(obj, key, x)
+    if obj.sample_rate_correction is not None:
+        obj.s_r_c = obj.sample_rate_correction
+    if obj.analysis == "mini":
+        obj.create_postsynaptic_events()
+        obj.x_array = np.arange(len(obj.final_array)) / obj.s_r_c
+        obj.event_arrays = [
+            i.event_array - i.event_start_y for i in obj.postsynaptic_events
+        ]
+
+
+def round_sig(x, sig=2):
+    if np.isnan(x):
+        return np.nan
+    elif x == 0:
+        return 0
+    elif x != 0 or not np.isnan(x):
+        if np.isnan(floor(log10(abs(x)))):
+            return round(x, 0)
+        else:
+            return round(x, sig - int(floor(log10(abs(x)))) - 1)

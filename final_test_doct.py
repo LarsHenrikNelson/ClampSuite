@@ -1,15 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan  3 14:47:24 2022
-
-@author: LarsNelson
-"""
 # %%
-from ephysanalysis.main_acq.lfp import LFPAnalysis
-from ephysanalysis.main_acq.oepsc import oEPSCAnalysis
-
-from ephysanalysis.load_acq.load_acq import LoadLFP
-from ephysanalysis.functions.utilities import load_scanimage_file
+from ephysanalysis.acq.acq import Acq
 
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
@@ -24,14 +14,31 @@ import json
 from sklearn.linear_model import LinearRegression
 from patsy import cr
 import copy
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from scipy.fft import rfft, rfftfreq, irfft
 
 
 # %%
-acq_dict = {}
-path = PurePath("/Volumes/Backup/Lars Slice Ephys/2021_08_09/AD1_153.mat")
-acq_components = load_scanimage_file(path)
+path = "D:/Lars Slice Ephys/2021_12_09/Cell 1 Analysis/Cell_1_AD0_1.json"
+h = Acq(analysis="base", path=path)
+i = Acq(analysis="filter", path=path)
+f = Acq(analysis="mini", path=path)
+
+#%%
+path = "D:/Lars Slice Ephys/2021_12_09/Cell 1 Analysis/Cell_1_AD0_1.json"
+f = Acq(analysis="mini", path=path)
+f.load_acq()
+
+#%%
+path = "D:/Lars Slice Ephys/2021_12_09/AD0_1.mat"
+g = Acq(analysis="mini", path=path)
+g.load_acq()
+g.analyze()
+
+#%%
+h.load_acq()
+i.load_acq()
+f.load_acq()
 
 #%%
 xy = MiniAnalysis(

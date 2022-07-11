@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
+from ..acq.acq import Acq
 from ..final_analysis.final_current_clamp import FinalCurrentClampAnalysis
 from ..gui_widgets.qtwidgets import (
     LineEdit,
@@ -37,7 +38,6 @@ from ..gui_widgets.qtwidgets import (
     ListModel,
     DragDropScrollArea,
 )
-from ..load_acq.load_acq import LoadCurrentClamp
 from ..load_analysis.load_classes import LoadCurrentClampData
 from ..main_acq.current_clamp import CurrentClampAnalysis
 
@@ -164,6 +164,8 @@ class currentClampWidget(QWidget):
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
         self.acq_model = ListModel()
+        self.analysis_type = "current clamp"
+        self.acq_model.setAnalysisType(self.analysis_type)
         self.acq_view.setModel(self.acq_model)
         self.input_layout.addRow(self.acq_view)
 
@@ -305,9 +307,9 @@ class currentClampWidget(QWidget):
         else:
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            for count, acq_components in enumerate(self.acq_model.acq_list):
-                x = CurrentClampAnalysis(
-                    acq_components=acq_components,
+            self.acq_dict = self.acq_model.acq_dict
+            for count, acq in enumerate(self.acq_dict.items()):
+                acq.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
                     baseline_start=self.b_start_edit.toInt(),
                     baseline_end=self.b_end_edit.toInt(),
@@ -318,12 +320,10 @@ class currentClampWidget(QWidget):
                     ramp_end=self.ramp_end_edit.toInt(),
                     threshold=self.min_spike_threshold_edit.toInt(),
                 )
-                x.analyze()
-                self.acq_dict[x.acq_number] = x
                 self.pbar.setValue(
                     int(((count + 1) / len(self.acq_model.acq_list)) * 100)
                 )
-            self.analysis_list = [int(i) for i in self.acq_dict.keys()]
+            self.analysis_list = [int(i) for i in self.acq_dict]
             self.acquisition_number.setMaximum(self.analysis_list[-1])
             self.acquisition_number.setMinimum(self.analysis_list[0])
             self.acquisition_number.setValue(self.analysis_list[0])
@@ -379,6 +379,9 @@ class currentClampWidget(QWidget):
                 str(self.round_sig(acq_object.hertz_exact, sig=4))
             )
             self.ahp_edit.setText(str(self.round_sig(acq_object.ahp_y, sig=4)))
+            self.baseline_stability_edit.setText(
+                str(self.round_sig(acq_object.baseline_stability_ratio, sig=4))
+            )
             if acq_object.ramp == "0":
                 self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
                 self.plot_widget.plot(x=acq_object.plot_x, y=acq_object.plot_y, pen="r")

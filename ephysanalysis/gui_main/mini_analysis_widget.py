@@ -22,14 +22,16 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QListWidget,
     QDoubleSpinBox,
+    QSlider,
 )
 from PyQt5.QtGui import QIntValidator, QKeySequence, QShortcut, QFont
 from PyQt5.QtCore import QThreadPool, Qt
 import pyqtgraph as pg
 
-from ..main_acq.mini_analysis import MiniAnalysis
+from ..acq.acq import Acq
 from .acq_inspection import AcqInspectionWidget
 from ..final_analysis.final_mini_analysis import FinalMiniAnalysis
+from ..functions.utilities import round_sig
 from ..gui_widgets.matplotlib_widgets import MplWidget, DistributionPlot
 from ..gui_widgets.qtwidgets import (
     LineEdit,
@@ -39,7 +41,6 @@ from ..gui_widgets.qtwidgets import (
     ListModel,
     DragDropScrollArea,
 )
-from ..load_acq.load_acq import LoadMiniAnalysis
 from ..load_analysis.load_classes import LoadMiniSaveData
 
 
@@ -56,6 +57,7 @@ class MiniAnalysisWidget(QWidget):
 
         self.tab1_scroll = DragDropScrollArea()
         self.tab1_scroll.signals.dictionary.connect(self.set_preferences)
+        self.tab1_scroll.signals.object.connect(self.open_files)
         self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setWidgetResizable(True)
@@ -81,6 +83,7 @@ class MiniAnalysisWidget(QWidget):
         self.dlg = QMessageBox(self)
 
         self.inspection_widget = None
+
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
         self.extra_layout = QVBoxLayout()
@@ -129,13 +132,14 @@ class MiniAnalysisWidget(QWidget):
         self.final_data_layout.addWidget(self.final_table, 1)
         self.final_data_layout.addWidget(self.ave_mini_plot, 2)
         self.data_layout.addLayout(self.final_data_layout)
-        self.mw = MplWidget()
+        # self.mw = MplWidget()
+        self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
         self.amp_dist = DistributionPlot()
         self.plot_selector = QComboBox()
         self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
         self.matplotlib_layout_h = QHBoxLayout()
         self.matplotlib_layout_h.addWidget(self.plot_selector, 0)
-        self.matplotlib_layout_h.addWidget(self.mw, 2)
+        self.matplotlib_layout_h.addWidget(self.stem_plot, 2)
         self.matplotlib_layout_h.addWidget(self.amp_dist, 1)
         self.table_layout.addLayout(self.matplotlib_layout_h, 1)
 
@@ -152,6 +156,13 @@ class MiniAnalysisWidget(QWidget):
         self.baseline_mean_label = QLabel("Baseline mean")
         self.baseline_mean_edit = QLineEdit()
         self.acq_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
+
+        self.slider_sensitivity = QSlider()
+        self.slider_sensitivity.setObjectName("mini plot slider")
+        self.acq_buttons.addRow(self.slider_sensitivity)
+        self.slider_sensitivity.setOrientation(Qt.Horizontal)
+        self.slider_sensitivity.setValue(20)
+        self.slider_sensitivity.valueChanged.connect(self.slider_value)
 
         self.create_mini_button = QPushButton("Create new mini")
         self.create_mini_button.clicked.connect(self.create_mini)
@@ -203,15 +214,18 @@ class MiniAnalysisWidget(QWidget):
         self.mini_layout.addRow(self.mini_number_label, self.mini_number)
 
         self.mini_baseline_label = QLabel("Baseline (pA)")
+        self.mini_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
         self.mini_baseline = QLineEdit()
         self.mini_layout.addRow(self.mini_baseline_label, self.mini_baseline)
 
         self.mini_amplitude_label = QLabel("Amplitude (pA)")
+        self.mini_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
         self.mini_amplitude = QLineEdit()
         self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
 
         self.mini_tau_label = QLabel("Tau (ms)")
         self.mini_tau = QLineEdit()
+        self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
         self.mini_layout.addRow(self.mini_tau_label, self.mini_tau)
 
         self.mini_rise_time_label = QLabel("Rise time (ms)")
@@ -241,11 +255,12 @@ class MiniAnalysisWidget(QWidget):
         self.mini_view_layout.addWidget(self.mini_view_plot, 1)
 
         # Tab1 input
+        self.analysis_type = "mini"
         self.load_acq_label = QLabel("Acquisition(s)")
         self.load_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
         self.acq_model = ListModel()
-        # delegate = ItemDelegate()
+        self.acq_model.setAnalysisType(self.analysis_type)
         self.load_widget.setModel(self.acq_model)
         # self.load_widget.setItemDelegate(delegate)
         self.load_layout.addWidget(self.load_widget)
@@ -549,6 +564,7 @@ class MiniAnalysisWidget(QWidget):
         self.final_obj = None
         self.need_to_save = False
         self.releaseKeyboard()
+        self.modify = 20
 
         # Shortcuts
         self.del_mini_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
@@ -585,10 +601,11 @@ class MiniAnalysisWidget(QWidget):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-            for index in sorted(indexes, reverse=True):
-                del self.acq_model.acq_list[index.row()]
-                del self.acq_model.fname_list[index.row()]
-            self.acq_model.layoutChanged.emit()
+            self.acq_model.del_selection(indexes)
+            # for index in sorted(indexes, reverse=True):
+            #     del self.acq_model.acq_list[index.row()]
+            #     del self.acq_model.fname_list[index.row()]
+            # self.acq_model.layoutChanged.emit()
             self.load_widget.clearSelection()
 
     def tm_psp(self):
@@ -661,9 +678,9 @@ class MiniAnalysisWidget(QWidget):
                 window = (self.window_edit.currentText(), self.beta_sigma.value())
             else:
                 window = self.window_edit.currentText()
-            for count, acq_components in enumerate(self.acq_model.acq_list):
-                x = MiniAnalysis(
-                    acq_components=acq_components,
+            self.acq_dict = self.acq_model.acq_list
+            for count, values in enumerate(self.acq_dict):
+                values.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
                     baseline_start=self.b_start_edit.toInt(),
                     baseline_end=self.b_end_edit.toInt(),
@@ -689,8 +706,6 @@ class MiniAnalysisWidget(QWidget):
                     curve_fit_decay=self.curve_fit_decay.isChecked(),
                     curve_fit_type=self.curve_fit_edit.currentText(),
                 )
-                x.analyze()
-                self.acq_dict[x.acq_number] = x
                 self.pbar.setValue(
                     int(((count + 1) / len(self.acq_model.fname_list)) * 100)
                 )
@@ -807,7 +822,7 @@ class MiniAnalysisWidget(QWidget):
             self.sort_index = list(np.argsort(self.acq_object.final_events))
 
             # Plot the postsynaptic events.
-            if len(self.acq_object.postsynaptic_events) > 0:
+            if self.acq_object.postsynaptic_events:
 
                 # Plot each mini. Since the postsynaptic events are stored in
                 # a list you can iterate through the list even if there is just
@@ -878,7 +893,8 @@ class MiniAnalysisWidget(QWidget):
         self.raw_df = {}
         self.save_values = []
         self.raw_data_table.clear()
-        self.mw.clear()
+        # self.mw.clear()
+        self.stem_plot.clear()
         self.amp_dist.clear()
         self.minis_deleted = 0
         self.acqs_deleted = 0
@@ -911,15 +927,18 @@ class MiniAnalysisWidget(QWidget):
         self.rgn = viewRange[0]
         self.region.setRegion(self.rgn)
 
+    def slider_value(self, value):
+        self.modify = value
+        print(value)
+
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Left:
-            modify = -20
-        elif event.key() == Qt.Key_Right:
-            modify = 20
-        else:
-            modify = 0
         minX, maxX = self.region.getRegion()
-        self.region.setRegion([minX + modify, maxX + modify])
+        if event.key() == Qt.Key_Right:
+            self.region.setRegion([minX + self.modify, maxX + self.modify])
+        elif event.key() == Qt.Key_Left:
+            self.region.setRegion([minX - self.modify, maxX - self.modify])
+        else:
+            pass
 
     def acq_plot_clicked(self, item, points):
         """
@@ -1031,11 +1050,11 @@ class MiniAnalysisWidget(QWidget):
         self.last_mini_clicked_1 = self.p1.listDataItems()[mini_index + 1]
 
         # Set the attributes of the mini on the GUI.
-        self.mini_amplitude.setText(str(self.round_sig(mini.amplitude, sig=4)))
-        self.mini_tau.setText(str(self.round_sig(mini.final_tau_x, sig=4)))
-        self.mini_rise_time.setText(str(self.round_sig(mini.rise_time, sig=4)))
-        self.mini_rise_rate.setText(str(self.round_sig(mini.rise_rate, sig=4)))
-        self.mini_baseline.setText(str(self.round_sig(mini.event_start_y, sig=4)))
+        self.mini_amplitude.setText(str(round_sig(mini.amplitude, sig=4)))
+        self.mini_tau.setText(str(round_sig(mini.final_tau_x, sig=4)))
+        self.mini_rise_time.setText(str(round_sig(mini.rise_time, sig=4)))
+        self.mini_rise_rate.setText(str(round_sig(mini.rise_rate, sig=4)))
+        self.mini_baseline.setText(str(round_sig(mini.event_start_y, sig=4)))
 
     def mini_plot_clicked(self, item, points):
         """
@@ -1329,9 +1348,7 @@ class MiniAnalysisWidget(QWidget):
         self.acquisition_number.setValue(int(list(self.recent_reject_acq.keys())[0]))
 
     def final_analysis(self):
-
         self.need_to_save = True
-
         if self.final_obj is not None:
             del self.final_obj
         self.calculate_parameters.setEnabled(False)
@@ -1359,32 +1376,36 @@ class MiniAnalysisWidget(QWidget):
         ]
         self.plot_selector.addItems(plots)
         if self.plot_selector.currentText() != "IEI (ms)":
-            self.mw.plot(
-                x="Real time",
-                y=self.plot_selector.currentText(),
-                df=self.final_obj.raw_df,
-            )
-        self.amp_dist.plot(self.final_obj.raw_df, self.plot_selector.currentText())
+            self.plot_raw_data(self.plot_selector.currentText())
         self.pbar.setFormat("Finished analysis")
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(2)
 
-    def plot_raw_data(self, column):
-        if column != "IEI (ms)":
-            self.mw.plot(x="Real time", y=column, df=self.final_obj.raw_df)
-        self.amp_dist.plot(self.final_obj.raw_df, column)
+    # def plot_raw_data(self, column):
+    #     if column != "IEI (ms)":
+    #         self.mw.plot(x="Real time", y=column, df=self.final_obj.raw_df)
+    #     self.amp_dist.plot(self.final_obj.raw_df, column)
 
-    def round_sig(self, x, sig=2):
-        if np.isnan(x):
-            return np.nan
-        elif x == 0:
-            return 0
-        elif x != 0 or not np.isnan(x):
-            if np.isnan(floor(log10(abs(x)))):
-                return round(x, 0)
-            else:
-                return round(x, sig - int(floor(log10(abs(x)))) - 1)
+    def plot_raw_data(self, y):
+        if y != "IEI (ms)":
+            self.plot_stem_data(y)
+        self.plot_dist_data(y)
+
+    def plot_stem_data(self, y):
+        self.stem_plot.clear()
+        x_values = self.final_obj.raw_df["Real time"].to_numpy()
+        y_values = self.final_obj.raw_df[y].to_numpy()
+        y_stems = np.insert(y_values, np.arange(y_values.size), 0)
+        x_stems = np.repeat(x_values, 2)
+        stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
+        head_item = pg.PlotDataItem(x=x_values, y=y_values, pen=None, symbol="o",)
+        self.stem_plot.addItem(stem_item)
+        self.stem_plot.addItem(head_item)
+        self.stem_plot.setLabel(axis="left", text=f"{y}")
+
+    def plot_dist_data(self, y):
+        self.amp_dist.plot(self.final_obj.raw_df, column)
 
     def file_does_not_exist(self):
         self.dlg.setWindowTitle("Error")
@@ -1405,13 +1426,6 @@ class MiniAnalysisWidget(QWidget):
         load_dict = YamlWorker.load_yaml(directory)
         self.set_preferences(load_dict)
         self.reset_button.setEnabled(True)
-        self.calculate_parameters.setEnabled(
-            load_dict["buttons"]["calculate_parameters"]
-        )
-        self.calculate_parameters_2.setEnabled(
-            load_dict["buttons"]["calculate_parameters"]
-        )
-        self.analyze_acq_button.setEnabled(load_dict["buttons"]["analyze_acq_button"])
         file_list = glob(directory + "/*.json")
         if not file_list:
             self.file_list = None
@@ -1419,15 +1433,14 @@ class MiniAnalysisWidget(QWidget):
         else:
             for i in range(len(file_list)):
                 with open(file_list[i]) as file:
-                    data = json.load(file)
-                    x = LoadMiniAnalysis(data)
+                    x = Acq(self.analysis_type, file)
+                    x.load_acq()
                     self.acq_dict[str(x.acq_number)] = x
                     self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
             if load_dict.get("Deleted Acqs"):
                 for i in load_dict["Deleted Acqs"]:
                     self.deleted_acqs[i] = self.acq_dict[i]
                     del self.acq_dict[i]
-            print(self.acq_dict.keys())
             self.analysis_list = [int(i) for i in self.acq_dict.keys()]
             self.acquisition_number.setMaximum(max(self.analysis_list))
             self.acquisition_number.setMinimum(min(self.analysis_list))
@@ -1520,6 +1533,13 @@ class MiniAnalysisWidget(QWidget):
                 dspinbox_dict[i.objectName()] = i.text()
         self.pref_dict["double_spinboxes"] = dspinbox_dict
 
+        slider_dict = {}
+        sliders = self.findChildren(QSlider)
+        for i in sliders:
+            if i.objectName() != "":
+                slider_dict[i.objectName()] = i.value()
+        self.pref_dict["sliders"] = slider_dict
+
     def set_preferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
@@ -1554,7 +1574,15 @@ class MiniAnalysisWidget(QWidget):
         for i in spinboxes:
             if i.objectName() != "":
                 try:
-                    i.setvalue(pref_dict["double_spinboxes"][i.objectName()])
+                    i.setValue(pref_dict["double_spinboxes"][i.objectName()])
+                except:
+                    pass
+
+        sliders = self.findChildren(QSlider)
+        for i in sliders:
+            if i.objectName() != "":
+                try:
+                    i.setValue(pref_dict["sliders"][i.objectName()])
                 except:
                     pass
 

@@ -5,18 +5,51 @@ from scipy.stats import linregress
 from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay
 
 
-class PostSynapticEventBase:
+class MiniEvent:
     """
-    This class creates the mini event.
+    This class creates the specific a Mini that is either
+    analyzed or loaded from previous data.
     """
 
-    def create_event_array(self, y_array):
+    _class_type = {}
+
+    def __init_subclass__(cls, analysis, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._class_type[analysis] = cls
+
+    def __new__(cls, analysis: str, **kwargs):
+        subclass = cls._class_type[analysis]
+        obj = object.__new__(subclass)
+        obj.analysis = analysis
+        return obj
+
+
+class Mini(MiniEvent, analysis="base"):
+    """
+    This class is a base Mini class that contains all the functions
+    needed to analyze a mini event.
+    """
+
+    def analyze(self, y_array):
+        self.create_event(y_array)
+        self.find_peak()
+        self.find_event_parameters(y_array)
+        self.peak_align_value = self.event_peak_x - self.array_start
+
+    def create_event(self, y_array):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
         end = int(self.event_pos + (30 * self.s_r_c))
         if end > len(y_array) - 1:
             self.array_end = len(y_array) - 1
         else:
             self.array_end = end
+        self.create_event_array(y_array)
+
+    def create_event_array(self, y_array):
+        self.event_array = y_array[self.array_start : self.array_end]
+        self.x_array = np.arange(self.array_start, self.array_end)
+
+    def create_event_array(self, y_array):
         self.event_array = y_array[self.array_start : self.array_end]
         self.x_array = np.arange(self.array_start, self.array_end)
 
@@ -280,3 +313,41 @@ class PostSynapticEventBase:
             self.event_peak_x / self.s_r_c,
         ]
         self.mini_plot_y = [self.event_start_y, self.event_peak_y]
+
+
+class LoadMini(Mini, analysis="load"):
+    """
+    This class create a new mini event from a dictionary.
+    """
+
+    def __init__(self, analysis, event_dict, final_array):
+        self.sample_rate_correction = None
+
+        for key in event_dict:
+            setattr(self, key, event_dict[key])
+
+        if self.sample_rate_correction is not None:
+            self.s_r_c = self.sample_rate_correction
+
+        self.create_event_array(final_array)
+
+
+class AnalyzeMini(Mini, analysis="analyze"):
+    def __init__(
+        self,
+        analysis,
+        acq_number,
+        event_pos,
+        y_array,
+        sample_rate,
+        curve_fit_decay=False,
+        curve_fit_type="db_exp",
+    ):
+        self.acq_number = acq_number
+        self.event_pos = int(event_pos)
+        self.sample_rate = sample_rate
+        self.s_r_c = sample_rate / 1000
+        self.curve_fit_decay = curve_fit_decay
+        self.curve_fit_type = curve_fit_type
+        self.fit_tau = np.nan
+        self.analyze(y_array)

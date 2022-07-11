@@ -1,6 +1,6 @@
 import os
 from os.path import expanduser
-from pathlib import Path
+from pathlib import Path, PurePath
 import sys
 
 from PyQt5.QtWidgets import (
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
     def open_files(self):
         self.directory = str(QFileDialog.getExistingDirectory())
         if self.directory:
-            self.central_widget.currentWidget().open_files(self.directory)
+            self.central_widget.currentWidget().open_files(PurePath(self.directory))
         else:
             pass
 

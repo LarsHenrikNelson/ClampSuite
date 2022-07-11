@@ -1,7 +1,7 @@
 from copy import deepcopy
 from glob import glob
 import json
-from pathlib import PurePath
+from pathlib import PurePath, Path
 
 from PyQt5.QtWidgets import (
     QLineEdit,
@@ -29,7 +29,7 @@ from PyQt5.QtCore import (
 )
 
 from .utility_classes import NumpyEncoder, YamlWorker
-from ..functions.utilities import load_scanimage_file
+from ..acq import Acq
 
 
 class LineEdit(QLineEdit):
@@ -127,6 +127,7 @@ class WorkerSignals(QObject):
     dictionary = pyqtSignal(dict)
     progress = pyqtSignal(int)
     finished = pyqtSignal(str)
+    path = pyqtSignal(object)
 
 
 class ListView(QListView):
@@ -172,19 +173,44 @@ class ListView(QListView):
                 fname = PurePath(str(url.toLocalFile()))
                 if fname.suffix == ".mat":
                     if fname.stem not in self.model().fname_list:
-                        self.model().acq_list += [load_scanimage_file(fname)]
-                        self.model().fname_list += [fname.stem]
-            self.model().acq_list.sort(key=lambda x: int(x[0].split("_")[-1]))
-            self.model().fname_list.sort(key=lambda x: int(x.split("_")[-1]))
+                        # Create the new acq object. The object type is
+                        # specified by analysis which is provided by the
+                        # the gui widget when the listview is created.
+                        # Note that the path provided to the object is a
+                        # PurePath obj. This just makes it easier to use
+                        # the stem to make sure objects do not get loaded
+                        # twice.
+                        obj = Acq(analysis=self.analysis_type, path=fname)
+
+                        # Load the acquisition.
+                        obj.load_acq()
+
+                        # Add the acquisition to the model dictionary. This
+                        # dictionary will be be added to the gui widget when
+                        # the analysis is run.
+                        self.model().acq_dict[obj.acquisition_number] = [obj]
+                        self.model().fname_list += [obj.filename.stem]
+
+            # The acquisitions need to be sorted to make sure they show up in
+            # chronological order.
+            self.model().acq_list.sort(key=lambda x: int(x.acq_number))
+            self.model().fname_list.sort(key=lambda x: int(x.acq_number))
             self.model().layoutChanged.emit()
         else:
             e.ignore()
+
+    def setAnalysisType(self, analysis):
+        """
+        This function sets the analysis type for the model which is used to set the
+        acquisition type that is created in dropEvent().
+        """
+        self.analysis_type = analysis
 
 
 class ListModel(QAbstractListModel):
     def __init__(self, acq_list=None, fname_list=None, header_name="Acquisition(s)"):
         super().__init__()
-        self.acq_list = acq_list or []
+        self.acq_dict = acq_dict or {}
         self.fname_list = fname_list or []
         self.header_name = header_name
 
@@ -205,6 +231,13 @@ class ListModel(QAbstractListModel):
 
     def rowCount(self, index):
         return len(self.acq_list)
+
+    def del_selection(self, indexes):
+        for index in sorted(indexes, reverse=True):
+            x = list(self.acq_dict)[index.row()]
+            del self.acq_dict[x]
+            del self.fname_list[index.row()]
+        self.layoutChanged.emit()
 
 
 class StringBox(QSpinBox):
@@ -265,6 +298,8 @@ class DragDropScrollArea(QScrollArea):
             if fname.suffix == ".yaml":
                 pref_dict = YamlWorker.load_yaml(fname)
                 self.signals.dictionary.emit(pref_dict)
+            elif Path(fname).is_dir():
+                self.signals.object.emit(fname)
             else:
                 e.ignore()
         else:

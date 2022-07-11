@@ -3,10 +3,65 @@ import numpy as np
 from scipy import signal
 from scipy import stats
 
-from .acquisition_base import AcquisitionBase
+from . import filter_acq
 
 
-class CurrentClampBase(AcquisitionBase):
+class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
+    def analyze(
+        self,
+        sample_rate=10000,
+        baseline_start=0,
+        baseline_end=100,
+        filter_type="None",
+        order=None,
+        high_pass=None,
+        high_width=None,
+        low_pass=None,
+        low_width=None,
+        window=None,
+        polyorder=None,
+        pulse_start=300,
+        pulse_end=1000,
+        ramp_start=300,
+        ramp_end=4000,
+        threshold=-15,
+    ):
+        self.sample_rate = sample_rate
+        self.s_r_c = sample_rate / 1000
+        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
+        self.baseline_start = int(baseline_start * (sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
+        self.pulse_start = int(pulse_start * self.s_r_c)
+        self.pulse_end = int(pulse_end * self.s_r_c)
+        self.ramp_start = int(ramp_start * self.s_r_c)
+        self.ramp_end = int(ramp_end * self.s_r_c)
+        self.x_array = np.arange(len(self.array)) / (self.s_r_c)
+        self.threshold = threshold
+
+        # Analysis functions
+        self.get_delta_v()
+        self.baseline_stability()
+        self.find_spike_parameters()
+        self.first_spike_parameters()
+        self.plot_delta_v()
+        self.get_ramp_rheo()
+        self.find_spike_width()
+        self.find_AHP_peak()
+        self.spike_adaptation()
+        self.calculate_sfa_local_var()
+        self.calculate_sfa_divisor()
+
     def get_delta_v(self):
         """
         This function finds the delta-v for a pulse. It simply takes the mean
@@ -263,45 +318,10 @@ class CurrentClampBase(AcquisitionBase):
         else:
             self.width_comp = np.nan
 
-    def spike_width(self):
-        if self.width_comp is not np.nan:
-            return self.width_comp[0][0] / self.s_r_c
-        else:
-            return self.width_comp
-
-    def spike_width_y(self):
-        if self.width_comp is not np.nan:
-            return [self.width_comp[1][0], self.width_comp[1][0]]
-
-    def spike_width_x(self):
-        if self.width_comp is not np.nan:
-            return [
-                self.width_comp[2][0] / self.s_r_c,
-                self.width_comp[3][0] / self.s_r_c,
-            ]
-
-    def spike_threshold_time(self):
-        if self.rheo_x is not np.nan:
-            return self.rheo_x / self.s_r_c
-        else:
-            return self.rheo_x
-
     def baseline_stability(self):
         self.baseline_stability_ratio = np.mean(
             self.array[: self.pulse_start]
-        ) / np.mean(self.array[self.pulse_end :])
-
-    def spike_x_array(self):
-        return self.x_array[self.ap_index[0] : self.ap_index[1]]
-
-    def spike_peaks_x(self):
-        return np.array(self.peaks) / self.s_r_c
-
-    def spike_peaks_y(self):
-        return self.array[self.peaks]
-
-    def plot_rheo_x(self):
-        return [self.rheo_x / self.s_r_c]
+        ) - np.mean(self.array[self.pulse_end :])
 
     def spike_adaptation(self):
         """
@@ -322,25 +342,6 @@ class CurrentClampBase(AcquisitionBase):
             norm_diffs = (self.iei[1:] - self.iei[:-1]) / (self.iei[1:] + self.iei[:-1])
             norm_diffs[(self.iei[1:] == 0) & (self.iei[:-1] == 0)] = 0.0
             self.spike_adapt = np.nanmean(norm_diffs)
-            return self.spike_adapt
-
-    def plot_delta_v(self):
-        """
-        This function creates the elements to plot the delta-v as a vertical
-        line in the middle of the pulse. The elements are corrected so that
-        they will plot in milliseconds.
-        """
-        if self.ramp == "0":
-            x = (
-                int(((self.pulse_end - self.pulse_start) / 2) + self.pulse_start)
-                / self.s_r_c
-            )
-            voltage_response = self.delta_v + self.baseline_mean
-            self.plot_x = [x, x]
-            self.plot_y = [self.baseline_mean, voltage_response]
-        elif self.ramp == "1":
-            self.plot_x = np.nan
-            self.plot_y = np.nan
 
     def get_ramp_rheo(self):
         """
@@ -372,7 +373,6 @@ class CurrentClampBase(AcquisitionBase):
                 self.ramp_rheo = ramp_array[self.rheo_x]
         else:
             self.ramp_rheo = np.nan
-        return self.ramp_rheo
 
     def calculate_sfa_local_var(self):
         """
@@ -427,24 +427,66 @@ class CurrentClampBase(AcquisitionBase):
             self.ahp_x = np.nan
             self.ahp_y = np.nan
 
+    # Helper functions that correct x-values for plotting
+    def spike_width(self):
+        if self.width_comp is not np.nan:
+            return self.width_comp[0][0] / self.s_r_c
+        else:
+            return self.width_comp
+
+    def spike_width_y(self):
+        if self.width_comp is not np.nan:
+            return [self.width_comp[1][0], self.width_comp[1][0]]
+
+    def spike_width_x(self):
+        if self.width_comp is not np.nan:
+            return [
+                self.width_comp[2][0] / self.s_r_c,
+                self.width_comp[3][0] / self.s_r_c,
+            ]
+
+    def spike_threshold_time(self):
+        if self.rheo_x is not np.nan:
+            return self.rheo_x / self.s_r_c
+        else:
+            return self.rheo_x
+
+    def spike_x_array(self):
+        return self.x_array[self.ap_index[0] : self.ap_index[1]]
+
+    def spike_peaks_x(self):
+        return np.array(self.peaks) / self.s_r_c
+
+    def spike_peaks_y(self):
+        return self.array[self.peaks]
+
+    def plot_rheo_x(self):
+        return [self.rheo_x / self.s_r_c]
+
+    def plot_delta_v(self):
+        """
+        This function creates the elements to plot the delta-v as a vertical
+        line in the middle of the pulse. The elements are corrected so that
+        they will plot in milliseconds.
+        """
+        if self.ramp == "0":
+            x = (
+                int(((self.pulse_end - self.pulse_start) / 2) + self.pulse_start)
+                / self.s_r_c
+            )
+            voltage_response = self.delta_v + self.baseline_mean
+            plot_x = [x, x]
+            plot_y = [self.baseline_mean, voltage_response]
+        elif self.ramp == "1":
+            plot_x = np.nan
+            plot_y = np.nan
+        return plot_x, plot_y
+
     def plot_ahp_x(self):
         return [self.ahp_x]
 
     def first_peak_time(self):
         return self.peaks[0] / self.s_r_c
-
-    def analyze(self):
-        self.get_delta_v()
-        self.baseline_stability()
-        self.find_spike_parameters()
-        self.first_spike_parameters()
-        self.plot_delta_v()
-        self.get_ramp_rheo()
-        self.find_spike_width()
-        self.find_AHP_peak()
-        self.spike_adaptation()
-        self.calculate_sfa_local_var()
-        self.calculate_sfa_divisor()
 
     def create_dict(self):
         """

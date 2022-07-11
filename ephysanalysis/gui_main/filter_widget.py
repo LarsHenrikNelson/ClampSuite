@@ -21,8 +21,7 @@ from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
 
-from ..main_acq.acquisition import Acquisition
-from ..functions.utilities import load_scanimage_file
+from ..acq.acq import Acq
 from ..gui_widgets.qtwidgets import LineEdit, ListView, ListModel
 
 
@@ -34,6 +33,8 @@ class filterWidget(QWidget):
     def __init__(self):
 
         super().__init__()
+
+        self.analysis_type = "filter"
 
         # self.path_layout = QHBoxLayout()
         self.plot_layout = QHBoxLayout()
@@ -64,6 +65,7 @@ class filterWidget(QWidget):
         self.filt_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
         self.acq_model = ListModel()
+        self.acq_model.setAnalysisType(self.analysis_type)
         # self.acq_model.layoutChanged.emit(self.set_acq_spinbox)
         self.load_widget.setModel(self.acq_model)
         self.filt_layout.addWidget(self.load_widget)
@@ -108,10 +110,8 @@ class filterWidget(QWidget):
             "median",
             "bessel",
             "butterworth",
-            "elliptic",
             "bessel_zero",
             "butterworth_zero",
-            "elliptic_zero",
         ]
 
         self.filter_selection = QComboBox(self)
@@ -195,17 +195,19 @@ class filterWidget(QWidget):
         self.need_to_save = False
 
     def set_acq_spinbox(self):
-        x = len(self.acq_model.acq_list)
+        x = len(self.acq_model.acq_dict)
         self.acq_number.setMaximum(x)
         self.acq_number.setMinimum(0)
 
     def del_selection(self):
+        # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-            for index in sorted(indexes, reverse=True):
-                del self.acq_model.acq_list[index.row()]
-                del self.acq_model.fname_list[index.row()]
-            self.acq_model.layoutChanged.emit()
+            self.acq_model.del_selection(indexes)
+            # for index in sorted(indexes, reverse=True):
+            #     del self.acq_model.acq_list[index.row()]
+            #     del self.acq_model.fname_list[index.row()]
+            # self.acq_model.layoutChanged.emit()
             self.load_widget.clearSelection()
         self.set_acq_spinbox
 
@@ -219,8 +221,7 @@ class filterWidget(QWidget):
         else:
             window = (self.window_edit.currentText(), self.window_extra.value())
         acq_components = self.acq_model.acq_list[self.acq_number.value()]
-        h = Acquisition(
-            acq_components=acq_components,
+        h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
@@ -233,7 +234,6 @@ class filterWidget(QWidget):
             window=window,
             polyorder=self.polyorder_edit.toInt(),
         )
-        h.filter_array()
         filter_dict = {
             "sample_rate": self.sample_rate_edit.toInt(),
             "baseline_start": self.b_start_edit.toInt(),
@@ -271,43 +271,22 @@ class filterWidget(QWidget):
             for i, j in zip(self.filter_list, self.pencil_list):
                 print(i["sample_rate"])
                 acq_components = self.acq_model.acq_list[number]
-                h = Acquisition(
-                    acq_components=acq_components,
-                    sample_rate=i["sample_rate"],
-                    baseline_start=i["baseline_start"],
-                    baseline_end=i["baseline_end"],
-                    filter_type=i["filter_type"],
-                    order=i["order"],
-                    high_pass=i["high_pass"],
-                    high_width=i["high_width"],
-                    low_pass=i["low_pass"],
-                    low_width=i["low_width"],
-                    window=i["window"],
-                    polyorder=i["polyorder"],
+                h.analyze(
+                    sample_rate=self.sample_rate_edit.toInt(),
+                    baseline_start=self.b_start_edit.toInt(),
+                    baseline_end=self.b_end_edit.toInt(),
+                    filter_type=self.filter_selection.currentText(),
+                    order=self.order_edit.toInt(),
+                    high_pass=self.high_pass_edit.toInt(),
+                    high_width=self.high_width_edit.toInt(),
+                    low_pass=self.low_pass_edit.toInt(),
+                    low_width=self.low_width_edit.toInt(),
+                    window=window,
+                    polyorder=self.polyorder_edit.toInt(),
                 )
-                h.filter_array()
                 self.p1.plot(x=h.x_array, y=h.filtered_array, pen=j)
         else:
             pass
-        # elif len(self.plot_list.keys()) == 1:
-        #     self.p1.clear()
-        #     acq_components = load_scanimage_file(self.acq_model.fname_list[number])
-        #     h = Acquisition(
-        #         acq_components,
-        #         self.plot_list[0].sample_rate,
-        #         self.plot_list[0].baseline_start,
-        #         self.plot_list[0].baseline_end,
-        #         self.plot_list[0].filter_type,
-        #         self.plot_list[0].order,
-        #         self.plot_list[0].high_pass,
-        #         self.plot_list[0].high_width,
-        #         self.plot_list[0].low_pass,
-        #         self.plot_list[0].low_width,
-        #         self.plot_list[0].window,
-        #         self.plot_list[0].polyorder,
-        #     )
-        #     h.filter_array()
-        #     self.p1.plot(x=h.x_array, y=h.filtered_array, pen=self.pencil_list[0])
 
     def clear_plot_button(self):
         self.p1.clear()

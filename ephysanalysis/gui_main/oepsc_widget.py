@@ -44,8 +44,7 @@ from ..gui_widgets.qtwidgets import (
     ListModel,
     ListView,
 )
-from ..main_acq import lfp, oepsc
-from ..load_acq.load_acq import LoadLFP, LoadoEPSC
+from ..acq.acq import Acq
 from ..load_analysis.load_classes import LoadEvokedCurrentData
 
 
@@ -91,6 +90,8 @@ class oEPSCWidget(QWidget):
         self.oepsc_view = ListView()
         self.oepsc_model = ListModel()
         self.oepsc_view.setModel(self.oepsc_model)
+        self.oepsc_analysis = "oepsc"
+        self.oepsc_model.setAnalysisType(self.oepsc_analysis)
         self.view_layout_1.addWidget(self.oepsc_view)
         self.inspect_oepsc_acqs = QPushButton("Inspect acquistions")
         self.inspect_oepsc_acqs.clicked.connect(
@@ -107,6 +108,8 @@ class oEPSCWidget(QWidget):
         self.lfp_view = ListView()
         self.lfp_model = ListModel()
         self.lfp_view.setModel(self.lfp_model)
+        self.lfp_analysis = "lfp"
+        self.lfp_model.setAnalysisType(self.lfp_analysis)
         self.view_layout_2.addWidget(self.lfp_view)
         self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
         self.inspect_lfp_acqs.clicked.connect(
@@ -189,12 +192,15 @@ class oEPSCWidget(QWidget):
         self.o_filter_type_label = QLabel("Filter Type")
         filters = [
             "remez_2",
+            "remez_1",
             "fir_zero_2",
-            "bessel",
             "fir_zero_1",
             "savgol",
             "median",
-            "remez_1",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
             "None",
         ]
         self.o_filter_selection = QComboBox(self)
@@ -344,12 +350,15 @@ class oEPSCWidget(QWidget):
         self.lfp_filter_type_label = QLabel("Filter Type")
         filters = [
             "remez_2",
+            "remez_1",
             "fir_zero_2",
-            "bessel",
             "fir_zero_1",
             "savgol",
             "median",
-            "remez_1",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
             "None",
         ]
         self.lfp_filter_selection = QComboBox(self)
@@ -573,9 +582,9 @@ class oEPSCWidget(QWidget):
         if len(self.oepsc_model.acq_list) != 0:
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
-
-            for count, acq_components in enumerate(self.oepsc_model.acq_list):
-                o = oepsc.oEPSCAnalysis(
+            self.oepsc_acq_dict = self.oepsc_model.acq_dict
+            for count, acq in enumerate(self.oepsc_acq_dict.items()):
+                acq.analyze(
                     acq_components=acq_components,
                     sample_rate=self.o_sample_rate_edit.toInt(),
                     baseline_start=self.o_b_start_edit.toInt(),
@@ -594,13 +603,13 @@ class oEPSCWidget(QWidget):
                     p_window_start=self.o_pos_start_edit.toFloat(),
                     p_window_end=self.o_pos_end_edit.toFloat(),
                 )
-                self.oepsc_acq_dict[o.acq_number] = o
         if len(self.lfp_model.acq_list) != 0:
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
-            for count, acq_components in enumerate(self.lfp_model.acq_list):
-                l = lfp.LFPAnalysis(
+            self.lfp_acq_dict = self.lfp_model.acq_dict
+            for count, acq_components in enumerate(self.lfp_acq_dict):
+                acq.analyze(
                     acq_components=acq_components,
                     sample_rate=self.lfp_sample_rate_edit.toInt(),
                     baseline_start=self.lfp_b_start_edit.toInt(),
@@ -615,7 +624,6 @@ class oEPSCWidget(QWidget):
                     polyorder=self.lfp_polyorder_edit.toInt(),
                     pulse_start=self.lfp_pulse_start_edit.toInt(),
                 )
-                self.lfp_acq_dict[l.acq_number] = l
         # self.pbar.setValue(int(((count+1)/len(self.analysis_list))*100))
         if len(self.oepsc_model.acq_list) != 0:
             acq_number = list(self.oepsc_acq_dict.keys())

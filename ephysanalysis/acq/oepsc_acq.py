@@ -2,11 +2,61 @@ import numpy as np
 from scipy import integrate
 from scipy import signal
 
-from .acquisition_base import AcquisitionBase
+from . import filter_acq
 from ..functions.curve_fit import s_exp_decay, db_exp_decay
 
 
-class oEPSCBase(AcquisitionBase):
+class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
+    def analyze_oepsc(
+        self,
+        sample_rate,
+        baseline_start,
+        baseline_end,
+        filter_type="None",
+        order=None,
+        high_pass=None,
+        high_width=None,
+        low_pass=None,
+        low_width=None,
+        window=None,
+        polyorder=None,
+        pulse_start=1000,
+        n_window_start=1001,
+        n_window_end=1050,
+        p_window_start=1045,
+        p_window_end=1055,
+    ):
+        self.s_r_c = sample_rate / 1000
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
+        self.baseline_start = int(baseline_start * (sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
+        self.pulse_start = int(pulse_start * self.s_r_c)
+        self.pulse_start = int(pulse_start * self.s_r_c)
+        self.n_window_start = int(n_window_start * self.s_r_c)
+        self.n_window_end = int(n_window_end * self.s_r_c)
+        self.p_window_start = int(p_window_start * self.s_r_c)
+        self.p_window_end = int(p_window_end * self.s_r_c)
+        self.baseline_mean = np.mean(
+            self.filtered_array[self.baseline_start : self.baseline_end]
+        )
+
+        # Analysis functions
+        self.filter_array()
+        self.peak_direction()
+        self.find_amplitude()
+        self.find_charge_transfer()
+
     def peak_direction(self):
         if abs(max(self.filtered_array)) > abs(min(self.filtered_array)):
             self.peak_direction = "positive"
@@ -48,11 +98,6 @@ class oEPSCBase(AcquisitionBase):
             )
         except:
             self.charge_transfer = np.nan
-
-    def analyze_oepsc(self):
-        self.peak_direction()
-        self.find_amplitude()
-        self.find_charge_transfer()
 
     def change_peak(self, x, y):
         self.peak_x = x / self.s_r_c
@@ -133,6 +178,7 @@ class oEPSCBase(AcquisitionBase):
             self.fit_decay_y = np.nan
             self.fit_tau = np.nan
 
+    # Helper functions for plottings x in the correct units
     def plot_y(self):
         return self.filtered_array[self.baseline_start :]
 
