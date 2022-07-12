@@ -173,31 +173,47 @@ class ListView(QListView):
                 fname = PurePath(str(url.toLocalFile()))
                 if fname.suffix == ".mat":
                     if fname.stem not in self.model().fname_list:
-                        # Create the new acq object. The object type is
-                        # specified by analysis which is provided by the
-                        # the gui widget when the listview is created.
-                        # Note that the path provided to the object is a
-                        # PurePath obj. This just makes it easier to use
-                        # the stem to make sure objects do not get loaded
-                        # twice.
-                        obj = Acq(analysis=self.analysis_type, path=fname)
-
-                        # Load the acquisition.
-                        obj.load_acq()
-
-                        # Add the acquisition to the model dictionary. This
-                        # dictionary will be be added to the gui widget when
-                        # the analysis is run.
-                        self.model().acq_dict[obj.acquisition_number] = [obj]
-                        self.model().fname_list += [obj.filename.stem]
+                        self.model().addAcq(fname)
 
             # The acquisitions need to be sorted to make sure they show up in
             # chronological order.
-            self.model().acq_list.sort(key=lambda x: int(x.acq_number))
-            self.model().fname_list.sort(key=lambda x: int(x.acq_number))
+            self.model().sortDict()
+            # self.model().fname_list.sort(key=lambda x: int(acq_number))
             self.model().layoutChanged.emit()
         else:
             e.ignore()
+
+
+class ListModel(QAbstractListModel):
+    """
+    The model contains all the load data for the list view. Qt works using a 
+    model-view-controller framework so the view should not contain any data
+    analysis or loading, it just facilities the transfer of the data to the model.
+    The model is used to add, remove, and modify the data through the use of a
+    controller which in Qt is often built into the models.
+    """
+
+    def __init__(
+        self, acq_dict=None, fname_list=None, header_name="Acquisition(s)",
+    ):
+        super().__init__()
+        self.acq_dict = acq_dict or {}
+        self.fname_list = fname_list or []
+        self.acq_names = []
+        self.header_name = header_name
+
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            x = self.acq_names[index.row()]
+            return x
+
+    def headerData(self, name, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            name = self.header_name
+            return name
+
+    def rowCount(self, index):
+        return len(self.acq_dict)
 
     def setAnalysisType(self, analysis):
         """
@@ -206,38 +222,29 @@ class ListView(QListView):
         """
         self.analysis_type = analysis
 
-
-class ListModel(QAbstractListModel):
-    def __init__(self, acq_list=None, fname_list=None, header_name="Acquisition(s)"):
-        super().__init__()
-        self.acq_dict = acq_dict or {}
-        self.fname_list = fname_list or []
-        self.header_name = header_name
-
-    def data(self, index, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            acq_component = self.acq_list[index.row()]
-            return acq_component[0]
-
-    def headerData(self, name, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            name = self.header_name
-            return name
-
-    def add_acq(self, fname):
-        acq_components = load_scanimage_file(fname)
-        self.fname_list += [fname]
-        self.acq_list += [acq_components]
-
-    def rowCount(self, index):
-        return len(self.acq_list)
-
-    def del_selection(self, indexes):
+    def deleteSelection(self, indexes):
         for index in sorted(indexes, reverse=True):
             x = list(self.acq_dict)[index.row()]
             del self.acq_dict[x]
             del self.fname_list[index.row()]
         self.layoutChanged.emit()
+
+    def addAcq(self, fname):
+        obj = Acq(self.analysis_type, fname)
+        obj.load_acq()
+
+        # Add the acquisition to the model dictionary. This
+        # dictionary will be be added to the gui widget when
+        # the analysis is run.
+        self.acq_dict[obj.acq_number] = obj
+        self.fname_list += [fname.stem]
+        self.acq_names += [obj.name]
+
+    def sortDict(self):
+        acq_list = list(self.acq_dict.keys())
+        acq_list.sort(key=lambda x: int(x))
+        self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
+        self.acq_names = [i.name for i in self.acq_dict.values()]
 
 
 class StringBox(QSpinBox):

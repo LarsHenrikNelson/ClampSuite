@@ -19,8 +19,6 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
-
-from ..main_acq.acquisition import Acquisition
 from ..functions.utilities import load_scanimage_file
 from ..gui_widgets.qtwidgets import LineEdit, ListView, ListModel
 

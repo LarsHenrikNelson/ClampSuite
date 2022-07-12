@@ -549,10 +549,7 @@ class oEPSCWidget(QWidget):
         self.need_to_save = True
         indexes = list_view.selectedIndexes()
         if len(indexes) > 0:
-            for index in sorted(indexes, reverse=True):
-                del list_model.acq_list[index.row()]
-                del list_model.fname_list[index.row()]
-            list_model.layoutChanged.emit()
+            self.acq_model.deleteSelection(indexes)
             list_view.clearSelection()
 
     def analyze(self):
@@ -577,15 +574,14 @@ class oEPSCWidget(QWidget):
             )
         else:
             lfp_window = self.lfp_window_edit.currentText()
-        if len(self.oepsc_model.acq_list) == 0 and len(self.lfp_model.acq_list) == 0:
+        if not self.oepsc_model.acq_dict and not self.lfp_model.acq_dict:
             self.file_does_not_exist()
-        if len(self.oepsc_model.acq_list) != 0:
+        if self.oepsc_model.acq_dict:
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
             self.oepsc_acq_dict = self.oepsc_model.acq_dict
             for count, acq in enumerate(self.oepsc_acq_dict.items()):
                 acq.analyze(
-                    acq_components=acq_components,
                     sample_rate=self.o_sample_rate_edit.toInt(),
                     baseline_start=self.o_b_start_edit.toInt(),
                     baseline_end=self.o_b_end_edit.toInt(),
@@ -603,14 +599,13 @@ class oEPSCWidget(QWidget):
                     p_window_start=self.o_pos_start_edit.toFloat(),
                     p_window_end=self.o_pos_end_edit.toFloat(),
                 )
-        if len(self.lfp_model.acq_list) != 0:
+        if self.lfp_model.acq_dict:
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
             self.lfp_acq_dict = self.lfp_model.acq_dict
             for count, acq_components in enumerate(self.lfp_acq_dict):
                 acq.analyze(
-                    acq_components=acq_components,
                     sample_rate=self.lfp_sample_rate_edit.toInt(),
                     baseline_start=self.lfp_b_start_edit.toInt(),
                     baseline_end=self.lfp_b_end_edit.toInt(),
@@ -625,7 +620,7 @@ class oEPSCWidget(QWidget):
                     pulse_start=self.lfp_pulse_start_edit.toInt(),
                 )
         # self.pbar.setValue(int(((count+1)/len(self.analysis_list))*100))
-        if len(self.oepsc_model.acq_list) != 0:
+        if self.oepsc_acq_dict:
             acq_number = list(self.oepsc_acq_dict.keys())
         else:
             acq_number = list(self.lfp_acq_dict.keys())
@@ -927,12 +922,12 @@ class oEPSCWidget(QWidget):
         YamlWorker.save_yaml(self.pref_dict, save_filename)
         if self.pref_dict["Final Analysis"]:
             self.final_data.save_data(save_filename)
-        if len(self.oepsc_model.fname_list) != 0:
+        if self.oepsc_acq_dict:
             self.pbar.setFormat("Saving oEPSC files...")
             worker1 = SaveWorker(save_filename, self.oepsc_acq_dict)
             worker1.signals.progress.connect(self.update_save_progress)
             self.threadpool.start(worker1)
-        if len(self.lfp_model.fname_list) != 0:
+        if self.lfp_acq_dict:
             self.pbar.setFormat("Saving LFP files...")
             worker2 = SaveWorker(save_filename, self.lfp_acq_dict)
             worker2.signals.progress.connect(self.update_save_progress)
@@ -950,14 +945,11 @@ class oEPSCWidget(QWidget):
         else:
             for i in file_list:
                 with open(i) as file:
-                    data = json.load(file)
-                    print(data["name"].split("_")[0], load_dict["oEPSC name"])
-                    if data["name"].split("_")[0] == load_dict["oEPSC name"]:
-                        x = LoadoEPSC(data)
+                    x = Acq(file)
+                    x.load_acq()
+                    if x.name.split("_")[0] == load_dict["oEPSC name"]:
                         self.oepsc_acq_dict[x.acq_number] = x
                     else:
-                        data["slope_x"]
-                        x = LoadLFP(data)
                         self.lfp_acq_dict[x.acq_number] = x
         if self.oepsc_acq_dict:
             self.acquisition_number.setMaximum(

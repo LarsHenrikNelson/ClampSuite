@@ -203,13 +203,15 @@ class filterWidget(QWidget):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-            self.acq_model.del_selection(indexes)
-            # for index in sorted(indexes, reverse=True):
-            #     del self.acq_model.acq_list[index.row()]
-            #     del self.acq_model.fname_list[index.row()]
-            # self.acq_model.layoutChanged.emit()
+
+            # Delete selections from model
+            self.acq_model.deleteSelection(indexes)
+
+            # Clear them from the view. Not sure if this is
+            # actually needed sinced the view seems to change
+            # without it.
             self.load_widget.clearSelection()
-        self.set_acq_spinbox
+        self.set_acq_spinbox()
 
     def plot_filt_button(self):
         self.set_acq_spinbox()

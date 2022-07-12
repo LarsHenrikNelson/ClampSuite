@@ -39,7 +39,6 @@ from ..gui_widgets.qtwidgets import (
     DragDropScrollArea,
 )
 from ..load_analysis.load_classes import LoadCurrentClampData
-from ..main_acq.current_clamp import CurrentClampAnalysis
 
 
 class currentClampWidget(QWidget):
@@ -288,15 +287,29 @@ class currentClampWidget(QWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
+    # def del_selection(self):
+    #     self.need_to_save = True
+    #     indexes = self.acq_view.selectedIndexes()
+    #     if len(indexes) > 0:
+    #         for index in sorted(indexes, reverse=True):
+    #             del self.acq_model.acq_list[index.row()]
+    #             del self.acq_model.fname_list[index.row()]
+    #         self.acq_model.layoutChanged.emit()
+    #         self.acq_view.clearSelection()
+
     def del_selection(self):
         self.need_to_save = True
+
+        # Deletes the selected acquisitions from the list
         indexes = self.acq_view.selectedIndexes()
+
         if len(indexes) > 0:
-            for index in sorted(indexes, reverse=True):
-                del self.acq_model.acq_list[index.row()]
-                del self.acq_model.fname_list[index.row()]
-            self.acq_model.layoutChanged.emit()
-            self.acq_view.clearSelection()
+            self.acq_model.deleteSelection(indexes)
+            # for index in sorted(indexes, reverse=True):
+            #     del self.acq_model.acq_list[index.row()]
+            #     del self.acq_model.fname_list[index.row()]
+            # self.acq_model.layoutChanged.emit()
+            self.load_widget.clearSelection()
 
     def analyze(self):
         self.need_to_save = True
@@ -624,8 +637,8 @@ class currentClampWidget(QWidget):
         else:
             for i in range(len(file_list)):
                 with open(file_list[i]) as file:
-                    data = json.load(file)
-                    x = LoadCurrentClamp(data)
+                    x = Acq(file)
+                    x.load_acq()
                     self.acq_dict[str(x.acq_number)] = x
                     self.pbar.setValue(int(((i) / len(file_list)) * 100))
             excel_file = glob(f"{directory}/*.xlsx")[0]

@@ -57,7 +57,7 @@ class MiniAnalysisWidget(QWidget):
 
         self.tab1_scroll = DragDropScrollArea()
         self.tab1_scroll.signals.dictionary.connect(self.set_preferences)
-        self.tab1_scroll.signals.object.connect(self.open_files)
+        self.tab1_scroll.signals.path.connect(self.open_files)
         self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setWidgetResizable(True)
@@ -601,11 +601,7 @@ class MiniAnalysisWidget(QWidget):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-            self.acq_model.del_selection(indexes)
-            # for index in sorted(indexes, reverse=True):
-            #     del self.acq_model.acq_list[index.row()]
-            #     del self.acq_model.fname_list[index.row()]
-            # self.acq_model.layoutChanged.emit()
+            self.acq_model.deleteSelection(indexes)
             self.load_widget.clearSelection()
 
     def tm_psp(self):
@@ -652,18 +648,20 @@ class MiniAnalysisWidget(QWidget):
         chosen because it made the initial debugging easier.
         """
 
-        self.need_to_save = True
-
-        if self.acq_dict:
-            self.acq_dict = {}
-
-        self.analyze_acq_button.setEnabled(False)
-        if len(self.template) == 0:
-            self.create_template()
-        if len(self.acq_model.acq_list) == 0:
+        if not self.acq_model.acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
+
         else:
+            self.need_to_save = True
+
+            if self.acq_dict:
+                self.acq_dict = {}
+
+            self.analyze_acq_button.setEnabled(False)
+            if len(self.template) == 0:
+                self.create_template()
+
             # Sets the progress bar to 0
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
@@ -678,9 +676,9 @@ class MiniAnalysisWidget(QWidget):
                 window = (self.window_edit.currentText(), self.beta_sigma.value())
             else:
                 window = self.window_edit.currentText()
-            self.acq_dict = self.acq_model.acq_list
-            for count, values in enumerate(self.acq_dict):
-                values.analyze(
+            self.acq_dict = self.acq_model.acq_dict
+            for count, acq in enumerate(self.acq_dict.values()):
+                acq.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
                     baseline_start=self.b_start_edit.toInt(),
                     baseline_end=self.b_end_edit.toInt(),
