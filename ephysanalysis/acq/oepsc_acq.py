@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import integrate
+from scipy import integrate, optimize
 from scipy import signal
 
 from . import filter_acq
@@ -7,11 +7,11 @@ from ..functions.curve_fit import s_exp_decay, db_exp_decay
 
 
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
-    def analyze_oepsc(
+    def analyze(
         self,
-        sample_rate,
-        baseline_start,
-        baseline_end,
+        sample_rate=10000,
+        baseline_start=800,
+        baseline_end=1000,
         filter_type="None",
         order=None,
         high_pass=None,
@@ -25,7 +25,13 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         n_window_end=1050,
         p_window_start=1045,
         p_window_end=1055,
+        find_ct=False,
+        find_est_decay=False,
+        curve_fit_decay=False,
+        curve_fit_type="exp",
     ):
+        # Set all the attributes
+        self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
         self.filter_type = filter_type
         self.order = order
@@ -47,17 +53,25 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.n_window_end = int(n_window_end * self.s_r_c)
         self.p_window_start = int(p_window_start * self.s_r_c)
         self.p_window_end = int(p_window_end * self.s_r_c)
-        self.baseline_mean = np.mean(
-            self.filtered_array[self.baseline_start : self.baseline_end]
-        )
+        self.find_ct = find_ct
+        self.find_est_decay = find_est_decay
+        self.curve_fit_decay = curve_fit_decay
+        self.curve_fit_type = curve_fit_type
 
         # Analysis functions
         self.filter_array()
-        self.peak_direction()
+        self.baseline_mean = np.mean(
+            self.filtered_array[self.baseline_start : self.baseline_end]
+        )
+        self.find_peak_dir()
         self.find_amplitude()
+        self.zero_crossing()
         self.find_charge_transfer()
+        self.find_est_decay()
+        if self.curve_fit_decay:
+            self.fit_decay()
 
-    def peak_direction(self):
+    def find_peak_dir(self):
         if abs(max(self.filtered_array)) > abs(min(self.filtered_array)):
             self.peak_direction = "positive"
             self.peak_direction = "positive"
@@ -82,22 +96,83 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
                 + self.n_window_start
             ) / self.s_r_c
 
+    def zero_crossing(self):
+        if self.peak_direction == "negative":
+            index = np.where(
+                self.filtered_array[int(self.peak_x * self.s_r_c) :]
+                > self.baseline_mean
+            )[0]
+        else:
+            index = np.where(
+                self.filtered_array[int(self.peak_x * self.s_r_c) :]
+                < self.baseline_mean
+            )[0]
+        if index.shape[0] > 0:
+            self.index = index[0] + int(self.peak_x * self.s_r_c)
+        else:
+            self.index = len(self.filtered_array)
+
     def find_charge_transfer(self):
-        self.rms = np.sqrt(
-            np.mean(
-                np.square(self.filtered_array[self.baseline_start : self.baseline_end])
-            )
+        self.charge_transfer = integrate.trapz(
+            self.filtered_array[self.pulse_start : self.index],
+            self.x_array[self.pulse_start : self.index],
         )
-        try:
-            index = np.argmax(
-                abs(self.filtered_array[int(self.peak_x * self.s_r_c) :]) < 2 * self.rms
-            ) + int(self.peak_x * self.s_r_c)
-            self.charge_transfer = integrate.trapz(
-                self.filtered_array[self.pulse_start : index],
-                self.x_array[self.pulse_start : index],
+
+    def find_est_decay(self):
+        self.decay_y = self.filtered_array[int(self.peak_x * self.s_r_c) : self.index]
+        if self.decay_y.size > 0:
+            self.est_tau_y = self.peak_y * (1 / np.exp(1))
+
+        if self.peak_direction == "positive":
+            y = -self.est_tau_y
+            decay_y = -self.decay_y
+        else:
+            y = self.est_tau_y
+            decay_y = self.decay_y
+
+        if self.decay_y.size > 0:
+            self.decay_x = self.x_array[int(self.peak_x * self.s_r_c) : self.index]
+            self.est_tau_x = np.interp(y, decay_y, self.decay_x)
+
+        else:
+            self.est_tau_x = np.nan
+            self.est_tau_y = np.nan
+
+    def est_decay(self):
+        return self.est_tau_x / self.s_r_c
+
+    def find_fit_decay(self):
+        if self.peak_direction == "positive":
+            upper_bounds = [np.inf, np.inf, np.inf, np.inf]
+            lower_bounds = [0, 0, 0, 0]
+        else:
+            upper_bounds = [0, np.inf, 0, np.inf]
+            lower_bounds = [-np.inf, 0, -np.inf, 0]
+        if self.curve_fit_type == "db_exp":
+            init_param = np.array([self.peak_y, self.final_tau_x, 0, 0])
+            popt, pcov = optimize.curve_fit(
+                db_exp_decay,
+                self.decay_x,
+                self.decay_y,
+                p0=init_param,
+                bounds=[lower_bounds, upper_bounds],
             )
-        except:
-            self.charge_transfer = np.nan
+            amp_1, self.fit_tau, amp_2, tau_2 = popt
+            self.fit_decay_y = (
+                db_exp_decay(decay_x, amp_1, self.fit_tau, amp_2, tau_2)
+                + self.z_start_y
+            )
+        else:
+            init_param = np.array([self.peak_y, self.final_tau_x])
+            popt, pcov = optimize.curve_fit(
+                f=s_exp_decay,
+                xdata=self.decay_x,
+                ydata=self.decay_y,
+                p0=init_param,
+                bounds=[lower_bounds[:2], upper_bounds[:2]],
+            )
+            amp_1, self.fit_tau = popt
+            self.fit_decay_y = s_exp_decay(self.decay_x, amp_1, self.fit_tau)
 
     def change_peak(self, x, y):
         self.peak_x = x / self.s_r_c
@@ -106,77 +181,11 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             self.peak_direction = "negative"
         else:
             self.peak_direction = "positive"
-
-    def est_decay(self):
-        baselined_event = self.event_array - self.event_start_y
-        return_to_baseline = int(
-            (
-                np.argmax(
-                    baselined_event[self.event_peak_x - self.array_start :]
-                    >= (self.event_peak_y - self.event_start_y) * 0.25
-                )
-            )
-            + (self.event_peak_x - self.array_start)
-        )
-        decay_y = self.event_array[
-            self.event_peak_x - self.array_start : return_to_baseline
-        ]
-        if decay_y.size > 0:
-            self.est_tau_y = (
-                (self.event_peak_y - self.event_start_y) * (1 / np.exp(1))
-            ) + self.event_start_y
-            decay_x = self.x_array[
-                self.event_peak_x - self.array_start : return_to_baseline
-            ]
-            self.est_tau_x = np.interp(self.est_tau_y, decay_y, decay_x)
-            self.final_tau_x = (self.est_tau_x - self.event_peak_x) / self.s_r_c
-        else:
-            self.est_tau_x = np.nan
-            self.final_tau_x = np.nan
-            self.est_tau_y = np.nan
-
-    def fit_decay(self, fit_type):
-        try:
-            baselined_event = self.event_array - self.event_start_y
-            amp = self.event_peak_x - self.array_start
-            decay_y = baselined_event[amp:]
-            decay_x = np.arange(len(decay_y))
-            if fit_type == "db_exp":
-                upper_bounds = [0, np.inf, 0, np.inf]
-                lower_bounds = [-np.inf, 0, -np.inf, 0]
-                init_param = np.array([self.event_peak_y, self.final_tau_x, 0, 0])
-                popt, pcov = signal.curve_fit(
-                    db_exp_decay,
-                    decay_x,
-                    decay_y,
-                    p0=init_param,
-                    bounds=[lower_bounds, upper_bounds],
-                )
-                amp_1, self.fit_tau, amp_2, tau_2 = popt
-                self.fit_decay_y = (
-                    db_exp_decay(decay_x, amp_1, self.fit_tau, amp_2, tau_2)
-                    + self.z_start_y
-                )
-            else:
-                upper_bounds = [0, np.inf]
-                lower_bounds = [-np.inf, 0]
-                init_param = np.array([self.event_peak_y, self.final_tau_x])
-                popt, pcov = signal.curve_fit(
-                    s_exp_decay,
-                    decay_x,
-                    decay_y,
-                    p0=init_param,
-                    bounds=[lower_bounds, upper_bounds],
-                )
-                amp_1, self.fit_tau = popt
-                self.fit_decay_y = (
-                    s_exp_decay(decay_x, amp_1, self.fit_tau) + self.event_start_y
-                )
-            self.fit_decay_x = (decay_x + self.event_peak_x) / self.s_r_c
-        except:
-            self.fit_decay_x = np.nan
-            self.fit_decay_y = np.nan
-            self.fit_tau = np.nan
+        self.zero_crossing()
+        self.charge_transfer()
+        self.est_decay()
+        if self.curve_fit_decay:
+            self.find_fit_decay()
 
     # Helper functions for plottings x in the correct units
     def plot_y(self):
@@ -195,8 +204,11 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         oepsc_dict = {
             "Amplitude": abs(self.peak_y),
             "Charge_transfer": self.charge_transfer,
+            "Est_tau": self.final_tau_x,
             "Epoch": self.epoch,
             "Acq number": self.acq_number,
             "Peak direction": self.peak_direction,
         }
+        if self.curve_fit_decay:
+            oepsc_dict["Curve_fit_tau"] = self.fit_tau
         return oepsc_dict

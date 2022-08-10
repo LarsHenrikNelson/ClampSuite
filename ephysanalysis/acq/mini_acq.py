@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.fft import fft, ifft
 from scipy import signal, stats
 
@@ -28,6 +29,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         amp_threshold=7,
         mini_spacing=7.5,
         min_rise_time=1,
+        max_rise_time=4,
         min_decay_time=2,
         invert=False,
         decon_type="wiener",
@@ -60,6 +62,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.amp_threshold = amp_threshold
         self.mini_spacing = int(mini_spacing * self.s_r_c)
         self.min_rise_time = min_rise_time
+        self.max_rise_time = max_rise_time
         self.min_decay_time = min_decay_time
         self.invert = invert
         self.curve_fit_decay = curve_fit_decay
@@ -224,8 +227,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 if len(self.final_array) - peak < 20 * self.s_r_c:
                     pass
                 else:
-                    event = MiniEvent(
-                        analysis="analyze",
+                    event = MiniEvent()
+                    event.analyze(
                         acq_number=self.acq_number,
                         event_pos=peak,
                         y_array=self.final_array,
@@ -246,7 +249,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                                 if (
                                     event.amplitude > self.amp_threshold
                                     and event.rise_time > self.min_rise_time
+                                    and event.rise_time < self.max_rise_time
                                     and event.final_tau_x > self.min_decay_time
+                                    and event.final_tau_x > event.rise_time
                                 ):
                                     self.postsynaptic_events += [event]
                                     self.final_events += [peak]
@@ -264,8 +269,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                                 pass
         else:
             peak = self.events[0]
-            event = MiniEvent(
-                analysis="analyze",
+            event = MiniEvent()
+            event.analyze(
                 acq_number=self.acq_number,
                 event_pos=peak,
                 y_array=self.final_array,
@@ -281,6 +286,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     event.amplitude > self.amp_threshold
                     and event.rise_time > self.min_rise_time
                     and event.final_tau_x > self.min_decay_time
+                    and event.rise_time < self.max_rise_time
+                    and event.final_tau_x > event.rise_time
                 ):
                     self.postsynaptic_events += [event]
                     self.final_events += [peak]
@@ -290,10 +297,14 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     pass
 
     def create_new_mini(self, x):
-        event = MiniEvent(
-            analysis="analyze",
+        """
+        Creates a new mini event based on the x position.
+        The x position needs to be in samples not time.
+        """
+        event = MiniEvent()
+        event.analyze(
             acq_number=self.acq_number,
-            event_pos=peak,
+            event_pos=x,
             y_array=self.final_array,
             sample_rate=self.sample_rate,
             curve_fit_decay=self.curve_fit_decay,
@@ -307,6 +318,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         Creates the final data using list comprehension by looping over each
         of the minis in contained in the postsynaptic event list.
         """
+        final_dict = {}
+
         # Sort postsynaptic events before calculating the final results. This
         # is because of how the user interface works and facilates commandline
         # usage of the program. Essentially it is easier to just add new minis
@@ -315,23 +328,45 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         # pyqtgraph data items list.
         self.postsynaptic_events.sort(key=lambda x: x.event_peak_x)
         self.final_events.sort()
-        self.acq_number_list = [i.acq_number for i in self.postsynaptic_events]
-        self.amplitudes = [i.amplitude for i in self.postsynaptic_events]
-        self.taus = [i.final_tau_x for i in self.postsynaptic_events]
-        self.event_times = [
+
+        final_dict["Acquisition"] = [i.acq_number for i in self.postsynaptic_events]
+        final_dict["Amplitude (pA)"] = [i.amplitude for i in self.postsynaptic_events]
+        final_dict["Est tau (ms)"] = [i.final_tau_x for i in self.postsynaptic_events]
+        final_dict["Event time (ms)"] = [
             i.event_peak_x / self.s_r_c for i in self.postsynaptic_events
         ]
-        self.time_stamp_events = [self.time_stamp for i in self.postsynaptic_events]
-        self.rise_times = [i.rise_time for i in self.postsynaptic_events]
-        self.rise_rates = [i.rise_rate for i in self.postsynaptic_events]
-        self.event_arrays = [
-            i.event_array - i.event_start_y for i in self.postsynaptic_events
+        final_dict["Acq time stamp"] = [
+            self.time_stamp for i in self.postsynaptic_events
         ]
-        self.peak_align_values = [
+        final_dict["Rise time (ms)"] = [i.rise_time for i in self.postsynaptic_events]
+        final_dict["Rise rate (pA/ms)"] = [
+            i.rise_rate for i in self.postsynaptic_events
+        ]
+        if self.curve_fit_decay:
+            final_dict["Curve fit tau (ms)"] = [
+                i.fit_tau for i in self.postsynaptic_events
+            ]
+
+        final_dict["IEI (ms)"] = np.append(
+            np.diff(final_dict["Event time (ms)"]), np.nan
+        )
+        self.freq = len(final_dict["Amplitude (pA)"]) / (
+            len(self.final_array) / self.sample_rate
+        )
+        return pd.DataFrame(final_dict)
+
+    def event_arrays(self):
+        events = [i.event_array - i.event_start_y for i in self.postsynaptic_events]
+        return events
+
+    def peak_values(self):
+        peak_align_values = [
             i.event_peak_x - i.array_start for i in self.postsynaptic_events
         ]
-        self.iei = np.append(np.diff(self.event_times), np.nan)
-        self.freq = len(self.amplitudes) / (len(self.final_array) / self.sample_rate)
+        return peak_align_values
+    
+    def total_events(self):
+        return len([i.amplitude for i in self.postsynaptic_events])
 
     def save_postsynaptic_events(self):
         """
@@ -360,5 +395,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def create_postsynaptic_events(self):
         self.postsynaptic_events = []
         for i in self.saved_events_dict:
-            h = MiniEvent(analysis="load", event_dict=i, final_array=self.final_array)
+            h = MiniEvent()
+            h.load_mini(event_dict=i, final_array=self.final_array)
             self.postsynaptic_events += [h]

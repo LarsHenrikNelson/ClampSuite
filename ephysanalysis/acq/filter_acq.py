@@ -43,18 +43,22 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
         window=None,
         polyorder=None,
     ):
-        self.sample_rate = (10000,)
-        self.baseline_start = (0,)
-        self.baseline_end = (800,)
-        self.filter_type = ("None",)
-        self.order = (None,)
-        self.high_pass = (None,)
-        self.high_width = (None,)
-        self.low_pass = (None,)
-        self.low_width = (None,)
-        self.window = (None,)
-        self.polyorder = (None,)
+        self.sample_rate = sample_rate
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
         self.filter_array()
+        self.s_r_c = sample_rate / 1000
 
     def filter_array(self):
         """
@@ -198,3 +202,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
                 self.window,
             )
             self.filtered_array = self.baselined_array - self.spike_array
+
+    def x_array(self):
+        return np.arange(len(self.filtered_array)) / self.s_r_c
+

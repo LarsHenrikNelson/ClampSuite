@@ -10,7 +10,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     Acquisition class and takes input specific for LFP analysis.
     """
 
-    def analyze_lfp(
+    def analyze(
         self,
         sample_rate=10000,
         baseline_start=0,

@@ -49,18 +49,15 @@ class AcqInspectionWidget(QWidget):
         self.filt_layout.addRow(self.acq_number_label, self.acq_number)
 
         self.acq_dict = {}
-        self.file_list = []
 
     def setFileList(self, file_list):
-        self.file_list = file_list
-        for i in self.file_list:
-            self.acq_dict[i.acq_number] = i
+        self.acq_dict = file_list
         self.acq_number.setMinimum(int(list(self.acq_dict.keys())[0]))
         self.acq_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
 
     def spinbox(self, number):
         self.plot_widget.clear()
-        if self.acq_dict.get(number):
+        if self.acq_dict.get(f"{number}"):
             self.plot_widget.plot(
                 x=np.arange(len(self.acq_dict[str(number)].array)),
                 y=self.acq_dict[str(number)].array,

@@ -1,4 +1,4 @@
-from numpy import np
+import numpy as np
 from sklearn.neighbors import KernelDensity
 from sklearn.model_selection import GridSearchCV
 
@@ -13,4 +13,4 @@ def create_kde(df, column):
     kde_final = grid.best_estimator_
     logprob = kde_final.score_samples(x)
     log_y = np.exp(logprob)
-    return log_y, x
+    return log_y, np.arange(y.shape[0])

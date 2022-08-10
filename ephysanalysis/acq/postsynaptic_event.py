@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import signal
+from scipy import signal, optimize
 from scipy.stats import linregress
 
 from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay
@@ -7,34 +7,15 @@ from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay
 
 class MiniEvent:
     """
-    This class creates the specific a Mini that is either
-    analyzed or loaded from previous data.
-    """
-
-    _class_type = {}
-
-    def __init_subclass__(cls, analysis, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls._class_type[analysis] = cls
-
-    def __new__(cls, analysis: str, **kwargs):
-        subclass = cls._class_type[analysis]
-        obj = object.__new__(subclass)
-        obj.analysis = analysis
-        return obj
-
-
-class Mini(MiniEvent, analysis="base"):
-    """
     This class is a base Mini class that contains all the functions
     needed to analyze a mini event.
     """
 
-    def analyze(self, y_array):
-        self.create_event(y_array)
-        self.find_peak()
-        self.find_event_parameters(y_array)
-        self.peak_align_value = self.event_peak_x - self.array_start
+    def __repr__(self):
+        return f"{self.mini_class}"
+
+    def __init__(self):
+        self.mini_class = "Mini"
 
     def create_event(self, y_array):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
@@ -216,7 +197,7 @@ class Mini(MiniEvent, analysis="base"):
                 upper_bounds = [0, np.inf, 0, np.inf]
                 lower_bounds = [-np.inf, 0, -np.inf, 0]
                 init_param = np.array([self.event_peak_y, self.final_tau_x, 0, 0])
-                popt, pcov = signal.curve_fit(
+                popt, pcov = optimize.curve_fit(
                     db_exp_decay,
                     decay_x,
                     decay_y,
@@ -232,7 +213,7 @@ class Mini(MiniEvent, analysis="base"):
                 upper_bounds = [0, np.inf]
                 lower_bounds = [-np.inf, 0]
                 init_param = np.array([self.event_peak_y, self.final_tau_x])
-                popt, pcov = signal.curve_fit(
+                popt, pcov = optimize.curve_fit(
                     s_exp_decay,
                     decay_x,
                     decay_y,
@@ -255,11 +236,6 @@ class Mini(MiniEvent, analysis="base"):
         else:
             self.find_baseline()
             self.calc_event_amplitude(y_array)
-            self.mini_plot_x = [
-                self.event_start_x / self.s_r_c,
-                self.event_peak_x / self.s_r_c,
-            ]
-            self.mini_plot_y = [self.event_start_y, self.event_peak_y]
             self.est_decay()
             self.calc_event_rise_time()
             self.peak_align_value = self.event_peak_x - self.array_start
@@ -278,6 +254,15 @@ class Mini(MiniEvent, analysis="base"):
         y = [self.event_start_y, self.event_peak_y, self.est_tau_y]
         return y
 
+    def mini_plot_x(self):
+        return [
+            self.event_start_x / self.s_r_c,
+            self.event_peak_x / self.s_r_c,
+        ]
+
+    def mini_plot_y(self):
+        return [self.event_start_y, self.event_peak_y]
+
     def mini_x_array(self):
         return self.x_array / self.s_r_c
 
@@ -291,11 +276,6 @@ class Mini(MiniEvent, analysis="base"):
         if self.curve_fit_decay:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self.event_peak_x - self.array_start
-        self.mini_plot_x = [
-            self.event_start_x / self.s_r_c,
-            self.event_peak_x / self.s_r_c,
-        ]
-        self.mini_plot_y = [self.event_start_y, self.event_peak_y]
 
     def change_baseline(self, x, y):
         self.event_start_x = int(x)
@@ -308,34 +288,25 @@ class Mini(MiniEvent, analysis="base"):
         if self.curve_fit_decay:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self.event_peak_x - self.array_start
-        self.mini_plot_x = [
-            self.event_start_x / self.s_r_c,
-            self.event_peak_x / self.s_r_c,
-        ]
-        self.mini_plot_y = [self.event_start_y, self.event_peak_y]
 
-
-class LoadMini(Mini, analysis="load"):
-    """
-    This class create a new mini event from a dictionary.
-    """
-
-    def __init__(self, analysis, event_dict, final_array):
+    def load_mini(self, event_dict, final_array):
         self.sample_rate_correction = None
 
-        for key in event_dict:
-            setattr(self, key, event_dict[key])
+        for key, item in event_dict.items():
+            if isinstance(item, list):
+                value = np.array(item)
+            else:
+                value = item
+            if key not in ("mini_plot_x", "mini_plot_y", "mini_comp_y", "mini_comp_x"):
+                setattr(self, key, value)
 
         if self.sample_rate_correction is not None:
             self.s_r_c = self.sample_rate_correction
 
         self.create_event_array(final_array)
 
-
-class AnalyzeMini(Mini, analysis="analyze"):
-    def __init__(
+    def analyze(
         self,
-        analysis,
         acq_number,
         event_pos,
         y_array,
@@ -350,4 +321,8 @@ class AnalyzeMini(Mini, analysis="analyze"):
         self.curve_fit_decay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
         self.fit_tau = np.nan
-        self.analyze(y_array)
+        self.create_event(y_array)
+        self.find_peak()
+        self.find_event_parameters(y_array)
+        self.peak_align_value = self.event_peak_x - self.array_start
+

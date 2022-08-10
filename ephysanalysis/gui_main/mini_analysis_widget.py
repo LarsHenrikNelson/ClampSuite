@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QDoubleSpinBox,
     QSlider,
+    QToolButton,
 )
 from PyQt5.QtGui import QIntValidator, QKeySequence, QShortcut, QFont
 from PyQt5.QtCore import QThreadPool, Qt
@@ -39,25 +40,26 @@ from ..gui_widgets.qtwidgets import (
     YamlWorker,
     ListView,
     ListModel,
-    DragDropScrollArea,
+    DragDropWidget,
 )
+from ..functions.kde import create_kde
 from ..load_analysis.load_classes import LoadMiniSaveData
 
 
-class MiniAnalysisWidget(QWidget):
+class MiniAnalysisWidget(DragDropWidget):
     def __init__(self):
 
         super().__init__()
 
         # Create tabs for part of the analysis program
+        self.signals.dictionary.connect(self.set_preferences)
+        self.signals.path.connect(self.open_files)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.tab_widget = QTabWidget()
         self.main_layout.addWidget(self.tab_widget)
 
-        self.tab1_scroll = DragDropScrollArea()
-        self.tab1_scroll.signals.dictionary.connect(self.set_preferences)
-        self.tab1_scroll.signals.path.connect(self.open_files)
+        self.tab1_scroll = QScrollArea()
         self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setWidgetResizable(True)
@@ -134,7 +136,7 @@ class MiniAnalysisWidget(QWidget):
         self.data_layout.addLayout(self.final_data_layout)
         # self.mw = MplWidget()
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
-        self.amp_dist = DistributionPlot()
+        self.amp_dist = pg.PlotWidget()
         self.plot_selector = QComboBox()
         self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
         self.matplotlib_layout_h = QHBoxLayout()
@@ -156,6 +158,16 @@ class MiniAnalysisWidget(QWidget):
         self.baseline_mean_label = QLabel("Baseline mean")
         self.baseline_mean_edit = QLineEdit()
         self.acq_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
+
+        self.left_button = QToolButton()
+        self.left_button.pressed.connect(self.leftbutton)
+        self.left_button.setArrowType(Qt.LeftArrow)
+        self.left_button.setAutoRepeat(True)
+        self.right_button = QToolButton()
+        self.right_button.pressed.connect(self.rightbutton)
+        self.right_button.setArrowType(Qt.RightArrow)
+        self.right_button.setAutoRepeat(True)
+        self.acq_buttons.addRow(self.left_button, self.right_button)
 
         self.slider_sensitivity = QSlider()
         self.slider_sensitivity.setObjectName("mini plot slider")
@@ -429,7 +441,7 @@ class MiniAnalysisWidget(QWidget):
         self.mini_spacing_edit = LineEdit()
         self.mini_spacing_edit.setObjectName("mini_spacing_edit")
         self.mini_spacing_edit.setEnabled(True)
-        self.mini_spacing_edit.setText("7.5")
+        self.mini_spacing_edit.setText("2")
         self.settings_layout.addRow(self.mini_spacing_label, self.mini_spacing_edit)
 
         self.min_rise_time_label = QLabel("Min rise time (ms)")
@@ -438,6 +450,13 @@ class MiniAnalysisWidget(QWidget):
         self.min_rise_time.setEnabled(True)
         self.min_rise_time.setText("0.5")
         self.settings_layout.addRow(self.min_rise_time_label, self.min_rise_time)
+
+        self.max_rise_time_label = QLabel("Max rise time (ms)")
+        self.max_rise_time = LineEdit()
+        self.max_rise_time.setObjectName("max_rise_time")
+        self.max_rise_time.setEnabled(True)
+        self.max_rise_time.setText("4")
+        self.settings_layout.addRow(self.max_rise_time_label, self.max_rise_time)
 
         self.min_decay_label = QLabel("Min decay time (ms)")
         self.min_decay = LineEdit()
@@ -563,7 +582,7 @@ class MiniAnalysisWidget(QWidget):
         self.pref_dict = {}
         self.final_obj = None
         self.need_to_save = False
-        self.releaseKeyboard()
+        # self.releaseKeyboard()
         self.modify = 20
 
         # Shortcuts
@@ -591,7 +610,7 @@ class MiniAnalysisWidget(QWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.acq_model.acq_list)
+            self.inspection_widget.setFileList(self.acq_model.acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
@@ -698,6 +717,7 @@ class MiniAnalysisWidget(QWidget):
                     amp_threshold=self.amp_thresh_edit.toFloat(),
                     mini_spacing=self.mini_spacing_edit.toFloat(),
                     min_rise_time=self.min_rise_time.toFloat(),
+                    max_rise_time=self.max_rise_time.toFloat(),
                     min_decay_time=self.min_decay.toFloat(),
                     invert=self.invert_checkbox.isChecked(),
                     decon_type=self.decon_type_edit.currentText(),
@@ -707,7 +727,6 @@ class MiniAnalysisWidget(QWidget):
                 self.pbar.setValue(
                     int(((count + 1) / len(self.acq_model.fname_list)) * 100)
                 )
-            self.grabKeyboard()
 
             # This part initializes acquisition_number spinbox, sets the min and max.
             acq_number = list(self.acq_dict.keys())
@@ -828,8 +847,8 @@ class MiniAnalysisWidget(QWidget):
                 for i in self.mini_spinbox_list:
                     # Create the mini plot item that is added to the p1 plot.
                     mini_plot = pg.PlotCurveItem(
-                        x=self.acq_object.postsynaptic_events[i].mini_plot_x,
-                        y=self.acq_object.postsynaptic_events[i].mini_plot_y,
+                        x=self.acq_object.postsynaptic_events[i].mini_plot_x(),
+                        y=self.acq_object.postsynaptic_events[i].mini_plot_y(),
                         pen="g",
                         name=i,
                         clickable=True,
@@ -842,8 +861,8 @@ class MiniAnalysisWidget(QWidget):
                     # create new mini plot items for each plot because one graphic
                     # item cannot be used in multiple parts of a GUI in Qt.
                     self.p2.plot(
-                        x=self.acq_object.postsynaptic_events[i].mini_plot_x,
-                        y=self.acq_object.postsynaptic_events[i].mini_plot_y,
+                        x=self.acq_object.postsynaptic_events[i].mini_plot_x(),
+                        y=self.acq_object.postsynaptic_events[i].mini_plot_y(),
                         pen="g",
                         skipFiniteCheck=True,
                     )
@@ -929,14 +948,15 @@ class MiniAnalysisWidget(QWidget):
         self.modify = value
         print(value)
 
-    def keyPressEvent(self, event):
-        minX, maxX = self.region.getRegion()
-        if event.key() == Qt.Key_Right:
-            self.region.setRegion([minX + self.modify, maxX + self.modify])
-        elif event.key() == Qt.Key_Left:
+    def leftbutton(self):
+        if self.left_button.isDown():
+            minX, maxX = self.region.getRegion()
             self.region.setRegion([minX - self.modify, maxX - self.modify])
-        else:
-            pass
+
+    def rightbutton(self):
+        if self.right_button.isDown():
+            minX, maxX = self.region.getRegion()
+            self.region.setRegion([minX + self.modify, maxX + self.modify])
 
     def acq_plot_clicked(self, item, points):
         """
@@ -1107,14 +1127,14 @@ class MiniAnalysisWidget(QWidget):
             # object on p1 and p2 so that it does not have to be
             # referenced again.
             self.last_mini_clicked_1.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x,
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y,
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
                 color="m",
                 width=2,
             )
             self.last_mini_clicked_2.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x,
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y,
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
                 color="m",
                 width=2,
             )
@@ -1161,14 +1181,14 @@ class MiniAnalysisWidget(QWidget):
             # object on p1 and p2 so that it does not have to be
             # referenced again.
             self.last_mini_clicked_1.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x,
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y,
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
                 color="m",
                 width=2,
             )
             self.last_mini_clicked_2.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x,
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y,
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
                 color="m",
                 width=2,
             )
@@ -1270,8 +1290,8 @@ class MiniAnalysisWidget(QWidget):
 
                 # Add the mini item to the plot and make it clickable for p1.
                 mini_plot = pg.PlotCurveItem(
-                    x=self.acq_object.postsynaptic_events[id_value].mini_plot_x,
-                    y=self.acq_object.postsynaptic_events[id_value].mini_plot_y,
+                    x=self.acq_object.postsynaptic_events[id_value].mini_plot_x(),
+                    y=self.acq_object.postsynaptic_events[id_value].mini_plot_y(),
                     pen="g",
                     name=id_value,
                     clickable=True,
@@ -1279,8 +1299,8 @@ class MiniAnalysisWidget(QWidget):
                 mini_plot.sigClicked.connect(self.mini_clicked)
                 self.p1.addItem(mini_plot)
                 self.p2.plot(
-                    x=self.acq_object.postsynaptic_events[id_value].mini_plot_x,
-                    y=self.acq_object.postsynaptic_events[id_value].mini_plot_y,
+                    x=self.acq_object.postsynaptic_events[id_value].mini_plot_x(),
+                    y=self.acq_object.postsynaptic_events[id_value].mini_plot_y(),
                     pen="g",
                     name=id_value,
                 )
@@ -1388,7 +1408,7 @@ class MiniAnalysisWidget(QWidget):
     def plot_raw_data(self, y):
         if y != "IEI (ms)":
             self.plot_stem_data(y)
-        self.plot_dist_data(y)
+        self.plot_amp_dist(y)
 
     def plot_stem_data(self, y):
         self.stem_plot.clear()
@@ -1397,13 +1417,35 @@ class MiniAnalysisWidget(QWidget):
         y_stems = np.insert(y_values, np.arange(y_values.size), 0)
         x_stems = np.repeat(x_values, 2)
         stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
-        head_item = pg.PlotDataItem(x=x_values, y=y_values, pen=None, symbol="o",)
+        head_item = pg.PlotDataItem(
+            x=x_values,
+            y=y_values,
+            pen=None,
+            symbol="o",
+            symbolSize=2,
+            symbolPen=None,
+            symbolBrush="w",
+        )
         self.stem_plot.addItem(stem_item)
         self.stem_plot.addItem(head_item)
         self.stem_plot.setLabel(axis="left", text=f"{y}")
 
-    def plot_dist_data(self, y):
-        self.amp_dist.plot(self.final_obj.raw_df, column)
+    def plot_amp_dist(self, column):
+        self.amp_dist.clear()
+        log_y, x = create_kde(self.final_obj.raw_df, column)
+        y = self.final_obj.raw_df[column].dropna().to_numpy()
+        dist_item = pg.PlotDataItem(
+            x=x, y=log_y, fillLevel=0, fillOutline=True, fillBrush="m"
+        )
+        self.amp_dist.addItem(dist_item)
+        self.amp_dist.setXRange(
+            self.final_obj.raw_df[column].min(), self.final_obj.raw_df[column].max()
+        )
+        y_values = np.full(y.shape, max(log_y) * 0.05)
+        y_stems = np.insert(y_values, np.arange(y_values.size), 0)
+        x_stems = np.repeat(y, 2)
+        stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
+        self.amp_dist.addItem(stem_item)
 
     def file_does_not_exist(self):
         self.dlg.setWindowTitle("Error")
@@ -1419,22 +1461,20 @@ class MiniAnalysisWidget(QWidget):
 
     def open_files(self, directory):
         self.reset()
-        self.grabKeyboard()
         self.pbar.setFormat("Loading...")
         load_dict = YamlWorker.load_yaml(directory)
         self.set_preferences(load_dict)
         self.reset_button.setEnabled(True)
-        file_list = glob(directory + "/*.json")
+        file_list = list(directory.glob("*.json"))
         if not file_list:
             self.file_list = None
             pass
         else:
             for i in range(len(file_list)):
-                with open(file_list[i]) as file:
-                    x = Acq(self.analysis_type, file)
-                    x.load_acq()
-                    self.acq_dict[str(x.acq_number)] = x
-                    self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
+                x = Acq(self.analysis_type, file_list[i])
+                x.load_acq()
+                self.acq_dict[str(x.acq_number)] = x
+                self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
             if load_dict.get("Deleted Acqs"):
                 for i in load_dict["Deleted Acqs"]:
                     self.deleted_acqs[i] = self.acq_dict[i]
@@ -1444,7 +1484,7 @@ class MiniAnalysisWidget(QWidget):
             self.acquisition_number.setMinimum(min(self.analysis_list))
             self.acquisition_number.setValue(int(load_dict["Acq_number"]))
             if load_dict["Final Analysis"]:
-                excel_file = glob(directory + "/*.xlsx")[0]
+                excel_file = list(directory.glob("*.xlsx"))[0]
                 save_values = pd.read_excel(excel_file, sheet_name=None)
                 self.final_obj = LoadMiniSaveData(save_values)
                 self.ave_mini_plot.clear()

@@ -31,19 +31,6 @@ class FinalMiniAnalysis:
         self.sample_rate = sample_rate
         self.compute_data()
 
-    def compute_minis(self):
-        """
-        This function loops through and finalizes the mini data for each
-        acquisition using the MiniAnalysis.final_acq_data() function.
-
-        Returns
-        -------
-        None.
-
-        """
-        for item in self.acq_dict.values():
-            item.final_acq_data()
-
     def extract_raw_data(self):
         """
         This function compiles the data from each acquisitions and puts it
@@ -61,51 +48,55 @@ class FinalMiniAnalysis:
 
         """
 
-        acq_list = pd.Series(
-            sum([item.acq_number_list for item in self.acq_dict.values()], []),
-            name="Acquisition",
-        )
-        amplitude_list = pd.Series(
-            sum([item.amplitudes for item in self.acq_dict.values()], []),
-            name="Amplitude (pA)",
-        )
-        taus_list = pd.Series(
-            sum([item.taus for item in self.acq_dict.values()], []), name="Est tau (ms)"
-        )
-        event_times_list = pd.Series(
-            sum([item.event_times for item in self.acq_dict.values()], []),
-            name="Event time (ms)",
-        )
-        time_stamp_events = pd.Series(
-            sum([item.time_stamp_events for item in self.acq_dict.values()], []),
-            name="Acq time stamp",
-        )
-        rise_times_list = pd.Series(
-            sum([item.rise_times for item in self.acq_dict.values()], []),
-            name="Rise time (ms)",
-        )
-        rise_rates_list = pd.Series(
-            sum([item.rise_rates for item in self.acq_dict.values()], []),
-            name="Rise rate (pA/ms)",
-        )
-        iei_list = pd.Series(
-            np.concatenate([item.iei for item in self.acq_dict.values()]),
-            name="IEI (ms)",
-        )
+        # acq_list = pd.Series(
+        #     sum([item.acq_number_list for item in self.acq_dict.values()], []),
+        #     name="Acquisition",
+        # )
+        # amplitude_list = pd.Series(
+        #     sum([item.amplitudes for item in self.acq_dict.values()], []),
+        #     name="Amplitude (pA)",
+        # )
+        # taus_list = pd.Series(
+        #     sum([item.taus for item in self.acq_dict.values()], []), name="Est tau (ms)"
+        # )
+        # event_times_list = pd.Series(
+        #     sum([item.event_times for item in self.acq_dict.values()], []),
+        #     name="Event time (ms)",
+        # )
+        # time_stamp_events = pd.Series(
+        #     sum([item.time_stamp_events for item in self.acq_dict.values()], []),
+        #     name="Acq time stamp",
+        # )
+        # rise_times_list = pd.Series(
+        #     sum([item.rise_times for item in self.acq_dict.values()], []),
+        #     name="Rise time (ms)",
+        # )
+        # rise_rates_list = pd.Series(
+        #     sum([item.rise_rates for item in self.acq_dict.values()], []),
+        #     name="Rise rate (pA/ms)",
+        # )
+        # iei_list = pd.Series(
+        #     np.concatenate([item.iei for item in self.acq_dict.values()]),
+        #     name="IEI (ms)",
+        # )
 
-        self.raw_df = pd.concat(
-            [
-                acq_list,
-                amplitude_list,
-                taus_list,
-                event_times_list,
-                time_stamp_events,
-                rise_times_list,
-                rise_rates_list,
-                iei_list,
-            ],
-            axis=1,
-        )
+        # self.raw_df = pd.concat(
+        #     [
+        #         acq_list,
+        #         amplitude_list,
+        #         taus_list,
+        #         event_times_list,
+        #         time_stamp_events,
+        #         rise_times_list,
+        #         rise_rates_list,
+        #         iei_list,
+        #     ],
+        #     axis=1,
+        # )
+        df_list = [i.final_acq_data() for i in self.acq_dict.values()]
+
+        self.raw_df = pd.concat(df_list, axis=0, ignore_index=True)
+
         self.raw_df["Acq time stamp"] = (
             self.raw_df["Acq time stamp"] - self.raw_df["Acq time stamp"].unique()[0]
         ) * 1000
@@ -121,6 +112,10 @@ class FinalMiniAnalysis:
             "Rise rate (pA/ms)",
             "Rise time (ms)",
         ]
+
+        if "Curve fit tau (ms)" in list(self.raw_df.columns):
+            columns_for_analysis.append("Curve fit _tau (ms)")
+
         means = self.raw_df[columns_for_analysis].mean().to_frame().T
         std = self.raw_df[columns_for_analysis].std().to_frame().T
         sem = self.raw_df[columns_for_analysis].sem().to_frame().T
@@ -132,7 +127,7 @@ class FinalMiniAnalysis:
             0, "Statistic", ["mean", "std", "sem", "median", "skew", "cv"]
         )
 
-        events = len(sum([item.amplitudes for item in self.acq_dict.values()], []))
+        total_events = sum([item.total_events() for item in self.acq_dict.values()])
         self.final_df["Ave event tau"] = [
             self.fit_tau_x,
             np.nan,
@@ -141,7 +136,7 @@ class FinalMiniAnalysis:
             np.nan,
             np.nan,
         ]
-        self.final_df["Events"] = [events, np.nan, np.nan, np.nan, np.nan, np.nan]
+        self.final_df["Events"] = [total_events, np.nan, np.nan, np.nan, np.nan, np.nan]
         self.final_df["Events deleted"] = [
             self.events_deleted,
             np.nan,
@@ -172,9 +167,9 @@ class FinalMiniAnalysis:
 
     def create_average_mini(self):
         peak_align_values = sum(
-            [item.peak_align_values for item in self.acq_dict.values()], []
+            [item.peak_values() for item in self.acq_dict.values()], []
         )
-        events_list = sum([item.event_arrays for item in self.acq_dict.values()], [])
+        events_list = sum([item.event_arrays() for item in self.acq_dict.values()], [])
         max_min = max(peak_align_values)
         start_values = [max_min - i for i in peak_align_values]
         arrays = [np.append(i * [j[0]], j) for i, j in zip(start_values, events_list)]
@@ -206,7 +201,6 @@ class FinalMiniAnalysis:
         self.decay_x = self.decay_x + event_peak_x / 10
 
     def compute_data(self):
-        self.compute_minis()
         self.create_average_mini()
         self.analyze_average_mini()
         self.extract_raw_data()

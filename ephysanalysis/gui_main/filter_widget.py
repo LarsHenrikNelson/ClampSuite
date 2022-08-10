@@ -5,6 +5,8 @@ Created on Sun Apr  3 12:20:28 2022
 
 @author: Lars
 """
+from copy import deepcopy
+
 from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
@@ -193,11 +195,11 @@ class filterWidget(QWidget):
         self.counter = 0
         self.filter_list = []
         self.need_to_save = False
+        self.acq_number.setMinimum(1)
 
     def set_acq_spinbox(self):
         x = len(self.acq_model.acq_dict)
         self.acq_number.setMaximum(x)
-        self.acq_number.setMinimum(0)
 
     def del_selection(self):
         # Deletes the selected acquisitions from the list
@@ -219,10 +221,11 @@ class filterWidget(QWidget):
             self.window_edit.currentText() == "gaussian"
             or self.window_edit.currentText() == "kaiser"
         ):
-            window = self.window_edit.currentText()
-        else:
             window = (self.window_edit.currentText(), self.window_extra.value())
-        acq_components = self.acq_model.acq_list[self.acq_number.value()]
+        else:
+            window = self.window_edit.currentText()
+        key = list(self.acq_model.acq_dict.keys())[self.acq_number.value() - 1]
+        h = self.acq_model.acq_dict[key].deep_copy()
         h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
@@ -255,7 +258,7 @@ class filterWidget(QWidget):
         else:
             pencil = pg.mkPen(color=pg.intColor(self.counter))
         plot_item = self.p1.plot(
-            x=h.x_array,
+            x=h.x_array(),
             y=h.filtered_array,
             pen=pencil,
             name=(self.filter_selection.currentText() + "_" + str(self.counter)),
@@ -271,22 +274,22 @@ class filterWidget(QWidget):
         if len(self.plot_list.keys()) > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                print(i["sample_rate"])
-                acq_components = self.acq_model.acq_list[number]
+                key = list(self.acq_model.acq_dict.keys())[number - 1]
+                h = self.acq_model.acq_dict[key]
                 h.analyze(
-                    sample_rate=self.sample_rate_edit.toInt(),
-                    baseline_start=self.b_start_edit.toInt(),
-                    baseline_end=self.b_end_edit.toInt(),
-                    filter_type=self.filter_selection.currentText(),
-                    order=self.order_edit.toInt(),
-                    high_pass=self.high_pass_edit.toInt(),
-                    high_width=self.high_width_edit.toInt(),
-                    low_pass=self.low_pass_edit.toInt(),
-                    low_width=self.low_width_edit.toInt(),
-                    window=window,
-                    polyorder=self.polyorder_edit.toInt(),
+                    sample_rate=i["sample_rate"],
+                    baseline_start=i["baseline_start"],
+                    baseline_end=i["baseline_end"],
+                    filter_type=i["filter_type"],
+                    order=i["order"],
+                    high_pass=i["high_pass"],
+                    high_width=i["high_width"],
+                    low_pass=i["low_pass"],
+                    low_width=i["low_width"],
+                    window=i["window"],
+                    polyorder=i["polyorder"],
                 )
-                self.p1.plot(x=h.x_array, y=h.filtered_array, pen=j)
+                self.p1.plot(x=h.x_array(), y=h.filtered_array, pen=j)
         else:
             pass
 

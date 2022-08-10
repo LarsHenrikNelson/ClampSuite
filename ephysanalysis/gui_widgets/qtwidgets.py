@@ -169,17 +169,7 @@ class ListView(QListView):
         if e.mimeData().hasUrls:
             e.setDropAction(Qt.CopyAction)
             e.accept()
-            for url in e.mimeData().urls():
-                fname = PurePath(str(url.toLocalFile()))
-                if fname.suffix == ".mat":
-                    if fname.stem not in self.model().fname_list:
-                        self.model().addAcq(fname)
-
-            # The acquisitions need to be sorted to make sure they show up in
-            # chronological order.
-            self.model().sortDict()
-            # self.model().fname_list.sort(key=lambda x: int(acq_number))
-            self.model().layoutChanged.emit()
+            self.model().addAcq(e.mimeData().urls())
         else:
             e.ignore()
 
@@ -224,27 +214,32 @@ class ListModel(QAbstractListModel):
 
     def deleteSelection(self, indexes):
         for index in sorted(indexes, reverse=True):
-            x = list(self.acq_dict)[index.row()]
+            x = list(self.acq_dict.keys())[index.row()]
             del self.acq_dict[x]
             del self.fname_list[index.row()]
         self.layoutChanged.emit()
 
-    def addAcq(self, fname):
-        obj = Acq(self.analysis_type, fname)
-        obj.load_acq()
-
-        # Add the acquisition to the model dictionary. This
-        # dictionary will be be added to the gui widget when
-        # the analysis is run.
-        self.acq_dict[obj.acq_number] = obj
-        self.fname_list += [fname.stem]
-        self.acq_names += [obj.name]
+    def addAcq(self, urls):
+        for url in urls:
+            fname = PurePath(str(url.toLocalFile()))
+            if fname not in self.fname_list:
+                obj = Acq(self.analysis_type, fname)
+                obj.load_acq()
+                # Add the acquisition to the model dictionary. This
+                # dictionary will be be added to the gui widget when
+                # the analysis is run.
+                self.acq_dict[obj.acq_number] = obj
+                self.fname_list += [fname]
+                self.acq_names += [obj.name]
+        self.sortDict()
+        self.layoutChanged.emit()
 
     def sortDict(self):
         acq_list = list(self.acq_dict.keys())
         acq_list.sort(key=lambda x: int(x))
         self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
         self.acq_names = [i.name for i in self.acq_dict.values()]
+        self.fname_list.sort(key=lambda x: int(x.stem.split("_")[1]))
 
 
 class StringBox(QSpinBox):
@@ -265,8 +260,27 @@ class StringBox(QSpinBox):
         # _string = tuple
         return self._strings[value]
 
+        """
+		This function will enable the drop file directly on to the 
+		main window. The file location will be stored in the self.filename
+		"""
+        if e.mimeData().hasUrls:
+            e.setDropAction(Qt.CopyAction)
+            e.accept()
+            url = e.mimeData().urls()[0]
+            fname = PurePath(str(url.toLocalFile()))
+            if fname.suffix == ".yaml":
+                pref_dict = YamlWorker.load_yaml(fname)
+                self.signals.dictionary.emit(pref_dict)
+            elif Path(fname).is_dir():
+                self.signals.path.emit(Path(fname))
+            else:
+                e.ignore()
+        else:
+            e.ignore()
 
-class DragDropScrollArea(QScrollArea):
+
+class DragDropWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setAcceptDrops(True)
@@ -306,7 +320,7 @@ class DragDropScrollArea(QScrollArea):
                 pref_dict = YamlWorker.load_yaml(fname)
                 self.signals.dictionary.emit(pref_dict)
             elif Path(fname).is_dir():
-                self.signals.object.emit(fname)
+                self.signals.path.emit(Path(fname))
             else:
                 e.ignore()
         else:

@@ -43,16 +43,19 @@ from ..gui_widgets.qtwidgets import (
     YamlWorker,
     ListModel,
     ListView,
+    DragDropWidget,
 )
 from ..acq.acq import Acq
 from ..load_analysis.load_classes import LoadEvokedCurrentData
 
 
-class oEPSCWidget(QWidget):
+class oEPSCWidget(DragDropWidget):
     def __init__(self):
 
         super().__init__()
 
+        self.signals.dictionary.connect(self.set_preferences)
+        self.signals.path.connect(self.open_files)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
         self.parent_layout.addLayout(self.main_layout)
@@ -64,6 +67,8 @@ class oEPSCWidget(QWidget):
         self.pbar.setFormat("")
         self.parent_layout.addWidget(self.pbar)
         self.tab1 = QWidget()
+        self.tab1_scroll = QScrollArea()
+        self.tab1_scroll.setWidget(self.tab1)
         self.tab2_scroll = QScrollArea()
         self.tab2_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab2_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -86,6 +91,7 @@ class oEPSCWidget(QWidget):
         self.view_layout_1 = QVBoxLayout()
         self.view_layout_2 = QVBoxLayout()
         self.input_layout_1 = QFormLayout()
+        self.input_layout_3 = QFormLayout()
         self.input_layout_2 = QFormLayout()
         self.oepsc_view = ListView()
         self.oepsc_model = ListModel()
@@ -105,6 +111,7 @@ class oEPSCWidget(QWidget):
         self.view_layout_1.addWidget(self.del_oepsc_sel)
         self.form_layouts.addLayout(self.view_layout_1)
         self.form_layouts.addLayout(self.input_layout_1)
+        self.form_layouts.addLayout(self.input_layout_3)
         self.lfp_view = ListView()
         self.lfp_model = ListModel()
         self.lfp_view.setModel(self.lfp_model)
@@ -207,11 +214,6 @@ class oEPSCWidget(QWidget):
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setObjectName("o_filter_selection")
         self.o_filter_selection.setCurrentText("savgol")
-        self.o_beta_sigma_edit = QLabel("Beta/Sigma")
-        self.o_beta_sigma = QDoubleSpinBox()
-        self.o_beta_sigma.setObjectName("o_beta_sigma")
-        self.input_layout_1.addRow(self.o_beta_sigma_edit, self.o_beta_sigma)
-        self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
 
         self.o_order_label = QLabel("Order")
         self.o_order_edit = LineEdit()
@@ -288,13 +290,15 @@ class oEPSCWidget(QWidget):
         self.o_pulse_start_edit.setText("1000")
         self.input_layout_1.addRow(self.o_pulse_start, self.o_pulse_start_edit)
 
+        self.input_layout_3.addRow(QLabel(""), QLabel(""))
+
         self.o_neg_window_start = QLabel("Negative window start")
         self.o_neg_start_edit = LineEdit()
         self.o_neg_start_edit.setValidator(QDoubleValidator())
         self.o_neg_start_edit.setEnabled(True)
         self.o_neg_start_edit.setObjectName("o_pulse_start_edit")
         self.o_neg_start_edit.setText("1001")
-        self.input_layout_1.addRow(self.o_neg_window_start, self.o_neg_start_edit)
+        self.input_layout_3.addRow(self.o_neg_window_start, self.o_neg_start_edit)
 
         self.o_neg_window_end = QLabel("Negative window end")
         self.o_neg_end_edit = LineEdit()
@@ -302,7 +306,7 @@ class oEPSCWidget(QWidget):
         self.o_neg_end_edit.setObjectName("o_neg_end_edit")
         self.o_neg_end_edit.setEnabled(True)
         self.o_neg_end_edit.setText("1050")
-        self.input_layout_1.addRow(self.o_neg_window_end, self.o_neg_end_edit)
+        self.input_layout_3.addRow(self.o_neg_window_end, self.o_neg_end_edit)
 
         self.o_pos_window_start = QLabel("Positive window start")
         self.o_pos_start_edit = LineEdit()
@@ -310,7 +314,7 @@ class oEPSCWidget(QWidget):
         self.o_pos_start_edit.setEnabled(True)
         self.o_pos_start_edit.setObjectName("o_pos_start_edit")
         self.o_pos_start_edit.setText("1045")
-        self.input_layout_1.addRow(self.o_pos_window_start, self.o_pos_start_edit)
+        self.input_layout_3.addRow(self.o_pos_window_start, self.o_pos_start_edit)
 
         self.o_pos_window_end = QLabel("Positive window end")
         self.o_pos_end_edit = LineEdit()
@@ -318,7 +322,37 @@ class oEPSCWidget(QWidget):
         self.o_pos_end_edit.setEnabled(True)
         self.o_pos_end_edit.setObjectName("o_pos_end_edit")
         self.o_pos_end_edit.setText("1055")
-        self.input_layout_1.addRow(self.o_pos_window_end, self.o_pos_end_edit)
+        self.input_layout_3.addRow(self.o_pos_window_end, self.o_pos_end_edit)
+
+        self.charge_transfer_label = QLabel("Charge transfer")
+        self.charge_transfer_edit = QCheckBox(self)
+        self.charge_transfer_edit.setObjectName("charge_transfer")
+        self.charge_transfer_edit.setChecked(False)
+        self.charge_transfer_edit.setTristate(False)
+        self.input_layout_3.addRow(
+            self.charge_transfer_label, self.charge_transfer_edit
+        )
+
+        self.est_decay_label = QLabel("Est decay")
+        self.est_decay_edit = QCheckBox(self)
+        self.est_decay_edit.setObjectName("est_decay")
+        self.est_decay_edit.setChecked(False)
+        self.est_decay_edit.setTristate(False)
+        self.input_layout_3.addRow(self.est_decay_label, self.est_decay_edit)
+
+        self.curve_fit_decay_label = QLabel("Curve fit decay")
+        self.curve_fit_decay = QCheckBox(self)
+        self.curve_fit_decay.setObjectName("curve_fit_decay")
+        self.curve_fit_decay.setChecked(False)
+        self.curve_fit_decay.setTristate(False)
+        self.input_layout_3.addRow(self.curve_fit_decay_label, self.curve_fit_decay)
+
+        self.curve_fit_type_label = QLabel("Curve fit type")
+        fit_types = ["exp", "db_exp"]
+        self.curve_fit_type_edit = QComboBox(self)
+        self.curve_fit_type_edit.addItems(fit_types)
+        self.curve_fit_type_edit.setObjectName("curve_fit_type")
+        self.input_layout_3.addRow(self.curve_fit_type_label, self.curve_fit_type_edit)
 
         # LFP input
         self.lfp_input = QLabel("LFP")
@@ -470,13 +504,21 @@ class oEPSCWidget(QWidget):
         self.final_analysis_button.clicked.connect(self.final_analysis)
         self.final_analysis_button.setEnabled(False)
 
-        self.oepsc_amp_label = QLabel("oEPSC amp")
+        self.oepsc_amp_label = QLabel("Amplitude")
         self.oepsc_amp_edit = QLineEdit()
         self.o_info_layout.addRow(self.oepsc_amp_label, self.oepsc_amp_edit)
 
-        self.oepsc_decay_label = QLabel("oEPSC decay")
-        self.oepsc_decay_edit = QLineEdit()
-        self.o_info_layout.addRow(self.oepsc_decay_label, self.oepsc_decay_edit)
+        self.oepsc_charge_label = QLabel("Charge transfer")
+        self.oepsc_charge_edit = QLineEdit()
+        self.o_info_layout.addRow(self.oepsc_charge_label, self.oepsc_charge_edit)
+
+        self.oepsc_edecay_label = QLabel("Est decay")
+        self.oepsc_edecay_edit = QLineEdit()
+        self.o_info_layout.addRow(self.oepsc_edecay_label, self.oepsc_edecay_edit)
+
+        self.oepsc_fdecay_label = QLabel("Fit decay")
+        self.oepsc_fdecay_edit = QLineEdit()
+        self.o_info_layout.addRow(self.oepsc_fdecay_label, self.oepsc_fdecay_edit)
 
         self.set_peak_button = QPushButton("Set point as peak")
         self.set_peak_button.clicked.connect(self.set_oepsc_peak)
@@ -591,13 +633,17 @@ class oEPSCWidget(QWidget):
                     high_width=self.o_high_width_edit.toInt(),
                     low_pass=self.o_low_pass_edit.toInt(),
                     low_width=self.o_low_width_edit.toInt(),
-                    window=o_window,
+                    window=o_window_edit.currentText(),
                     polyorder=self.o_polyorder_edit.toInt(),
                     pulse_start=self.o_pulse_start_edit.toInt(),
                     n_window_start=self.o_neg_start_edit.toFloat(),
                     n_window_end=self.o_neg_end_edit.toFloat(),
                     p_window_start=self.o_pos_start_edit.toFloat(),
                     p_window_end=self.o_pos_end_edit.toFloat(),
+                    find_ct=self.charge_transfer_edit.isChecked(),
+                    find_est_decay=self.est_decay_edit.isChecked(),
+                    curve_fit_decay=self.curve_fit_decay.isChecked(),
+                    curve_fit_type=self.curve_fit_type_edit.currentText(),
                 )
         if self.lfp_model.acq_dict:
             self.delete_lfp_button.setEnabled(True)
@@ -668,6 +714,12 @@ class oEPSCWidget(QWidget):
                 self.o_pulse_start_edit.toInt() + 450,
             )
             self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
+            if self.oepsc_object.find_ct:
+                self.oepsc_charge_edit.setText(self.oepsc_object.charge_transfer)
+            if self.oepsc_object.find_est_decay:
+                self.oepsc_edecay_edit.setText(self.oepsc_object.est_tau())
+            if self.oepsc_object.curve_fit_decay:
+                self.oepsc_fdecay_edit.setText(self.oepsc_object.fit_tau)
         else:
             pass
         if self.lfp_acq_dict.get(str(h)):
@@ -938,19 +990,19 @@ class oEPSCWidget(QWidget):
         self.reset()
         self.pbar.setFormat("Loading...")
         load_dict = YamlWorker.load_yaml(directory)
-        p = Path(directory)
-        file_list = p.glob("*.json")
+        file_list = list(directory.glob("*.json"))
         if not file_list:
             self.file_list = None
         else:
             for i in file_list:
-                with open(i) as file:
-                    x = Acq(file)
+                if x.name.split("_")[0] == load_dict["oEPSC name"]:
+                    x = Acq("oepsc", file)
                     x.load_acq()
-                    if x.name.split("_")[0] == load_dict["oEPSC name"]:
-                        self.oepsc_acq_dict[x.acq_number] = x
-                    else:
-                        self.lfp_acq_dict[x.acq_number] = x
+                    self.oepsc_acq_dict[x.acq_number] = x
+                else:
+                    self.lfp_acq_dict[x.acq_number] = x
+                    x = Acq("lfp", file)
+                    x.load_acq()
         if self.oepsc_acq_dict:
             self.acquisition_number.setMaximum(
                 int(list(self.oepsc_acq_dict.keys())[-1])
@@ -963,7 +1015,7 @@ class oEPSCWidget(QWidget):
         self.acquisition_number.setValue(load_dict["Acq_number"])
         self.acquisition_number.setEnabled(True)
         if load_dict["Final Analysis"]:
-            excel_file = glob(f"{directory}/*.xlsx")[0]
+            excel_file = directory(glob("*.xlsx"))[0]
             save_values = pd.read_excel(excel_file, sheet_name=None)
             self.final_data = LoadEvokedCurrentData(save_values)
             self.raw_datatable.setData(self.final_data.raw_df.T.to_dict("dict"))

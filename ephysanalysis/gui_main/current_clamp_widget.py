@@ -36,12 +36,12 @@ from ..gui_widgets.qtwidgets import (
     YamlWorker,
     ListView,
     ListModel,
-    DragDropScrollArea,
+    DragDropWidget,
 )
 from ..load_analysis.load_classes import LoadCurrentClampData
 
 
-class currentClampWidget(QWidget):
+class currentClampWidget(DragDropWidget):
     """
     This the currentClampAnalysis widget. The primary functions are carried
     out by the CurrentClamp class. The final analysis and output is done by
@@ -51,6 +51,8 @@ class currentClampWidget(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.signals.dictionary.connect(self.set_preferences)
+        self.signals.path.connect(self.open_files)
         self.main_widget = QScrollArea()
         self.main_layout = QHBoxLayout()
         self.input_layout = QFormLayout()
@@ -631,17 +633,16 @@ class currentClampWidget(QWidget):
         self.calculate_parameters.setEnabled(False)
         load_dict = YamlWorker.load_yaml(directory)
         self.pbar.setFormat("Loading...")
-        file_list = glob(f"{directory}/*.json")
+        file_list = list(directory.glob("*.json"))
         if not file_list:
             self.file_list = None
         else:
             for i in range(len(file_list)):
-                with open(file_list[i]) as file:
-                    x = Acq(file)
-                    x.load_acq()
-                    self.acq_dict[str(x.acq_number)] = x
-                    self.pbar.setValue(int(((i) / len(file_list)) * 100))
-            excel_file = glob(f"{directory}/*.xlsx")[0]
+                x = Acq(self.analysis_type, file_list[i])
+                x.load_acq()
+                self.acq_dict[str(x.acq_number)] = x
+                self.pbar.setValue(int(((i) / len(file_list)) * 100))
+            excel_file = list(directory.glob("*.xlsx"))[0]
             self.final_obj = LoadCurrentClampData(excel_file)
             self.plot_spike_frequency(self.final_obj.final_df)
             self.plot_iv_curve(self.final_obj.iv_df)

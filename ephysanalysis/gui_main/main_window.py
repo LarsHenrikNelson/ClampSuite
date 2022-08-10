@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
-        self.central_widget.currentWidget().releaseKeyboard()
+        # self.central_widget.currentWidget().releaseKeyboard()
 
     def set_path(self, click):
         self.directory = str(QFileDialog.getExistingDirectory())
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
     def open_files(self):
         self.directory = str(QFileDialog.getExistingDirectory())
         if self.directory:
-            self.central_widget.currentWidget().open_files(PurePath(self.directory))
+            self.central_widget.currentWidget().open_files(Path(self.directory))
         else:
             pass
 
