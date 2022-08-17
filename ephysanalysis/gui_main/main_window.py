@@ -152,7 +152,6 @@ class MainWindow(QMainWindow):
         save_filename, _extension = QFileDialog.getSaveFileName(
             self, "Save preference as...", ""
         )
-        # print(save_filename)
         if save_filename:
             self.central_widget.currentWidget().save_preferences(save_filename)
 

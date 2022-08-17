@@ -119,7 +119,7 @@ class MiniSaveWorker(QRunnable):
 
 class WorkerSignals(QObject):
     """
-    This is general 'worker' that provides feedback from events to the window. 
+    This is general 'worker' that provides feedback from events to the window.
     The 'worker' also provides a 'runner' to the main GUI thread to prevent it
     from freezing when there are long running events.
     """
@@ -154,8 +154,8 @@ class ListView(QListView):
 
     def dragMoveEvent(self, e):
         """
-		This function will detect the drag move event on the main window
-		"""
+        This function will detect the drag move event on the main window
+        """
         if e.mimeData().hasUrls:
             e.accept()
         else:
@@ -163,9 +163,9 @@ class ListView(QListView):
 
     def dropEvent(self, e):
         """
-		This function will enable the drop file directly on to the 
-		main window. The file location will be stored in the self.filename
-		"""
+        This function will enable the drop file directly on to the
+        main window. The file location will be stored in the self.filename
+        """
         if e.mimeData().hasUrls:
             e.setDropAction(Qt.CopyAction)
             e.accept()
@@ -176,7 +176,7 @@ class ListView(QListView):
 
 class ListModel(QAbstractListModel):
     """
-    The model contains all the load data for the list view. Qt works using a 
+    The model contains all the load data for the list view. Qt works using a
     model-view-controller framework so the view should not contain any data
     analysis or loading, it just facilities the transfer of the data to the model.
     The model is used to add, remove, and modify the data through the use of a
@@ -184,7 +184,10 @@ class ListModel(QAbstractListModel):
     """
 
     def __init__(
-        self, acq_dict=None, fname_list=None, header_name="Acquisition(s)",
+        self,
+        acq_dict=None,
+        fname_list=None,
+        header_name="Acquisition(s)",
     ):
         super().__init__()
         self.acq_dict = acq_dict or {}
@@ -219,6 +222,12 @@ class ListModel(QAbstractListModel):
             del self.fname_list[index.row()]
         self.layoutChanged.emit()
 
+    def clearData(self):
+        self.acq_dict = {}
+        self.fname_list = []
+        self.acq_names = []
+        self.layoutChanged.emit()
+
     def addAcq(self, urls):
         for url in urls:
             fname = PurePath(str(url.toLocalFile()))
@@ -229,7 +238,7 @@ class ListModel(QAbstractListModel):
                 # dictionary will be be added to the gui widget when
                 # the analysis is run.
                 self.acq_dict[obj.acq_number] = obj
-                self.fname_list += [fname]
+                self.fname_list += [obj.path]
                 self.acq_names += [obj.name]
         self.sortDict()
         self.layoutChanged.emit()
@@ -240,6 +249,11 @@ class ListModel(QAbstractListModel):
         self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
         self.acq_names = [i.name for i in self.acq_dict.values()]
         self.fname_list.sort(key=lambda x: int(x.stem.split("_")[1]))
+
+    def setLoadData(self, acq_dict):
+        self.acq_dict = acq_dict
+        self.acq_names = [i.name for i in acq_dict.values()]
+        self.layoutChanged.emit()
 
 
 class StringBox(QSpinBox):
@@ -298,8 +312,8 @@ class DragDropWidget(QWidget):
 
     def dragMoveEvent(self, e):
         """
-		This function will detect the drag move event on the main window
-		"""
+        This function will detect the drag move event on the main window
+        """
         if e.mimeData().hasUrls:
             e.accept()
         else:
@@ -308,14 +322,16 @@ class DragDropWidget(QWidget):
     @pyqtSlot()
     def dropEvent(self, e):
         """
-		This function will enable the drop file directly on to the 
-		main window. The file location will be stored in the self.filename
-		"""
+        This function will enable the drop file directly on to the
+        main window. The file location will be stored in the self.filename
+        """
         if e.mimeData().hasUrls:
             e.setDropAction(Qt.CopyAction)
             e.accept()
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
+            print(Path(fname).is_dir())
+            print(fname.suffix)
             if fname.suffix == ".yaml":
                 pref_dict = YamlWorker.load_yaml(fname)
                 self.signals.dictionary.emit(pref_dict)

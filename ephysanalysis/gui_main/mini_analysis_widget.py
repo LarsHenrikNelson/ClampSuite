@@ -122,28 +122,34 @@ class MiniAnalysisWidget(DragDropWidget):
         self.table_layout = QVBoxLayout()
         self.tab3.setLayout(self.table_layout)
         self.data_layout = QHBoxLayout()
-        self.table_layout.addLayout(self.data_layout, 1)
+        self.table_layout.addLayout(self.data_layout)
         self.raw_data_table = pg.TableWidget(sortable=False)
+        self.raw_data_table.setMinimumHeight(300)
         self.final_table = pg.TableWidget(sortable=False)
+        self.final_table.setMinimumHeight(100)
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
+        self.ave_mini_plot.setMaximumSize(400, 300)
         self.ave_mini_plot.setObjectName("Ave mini plot")
-        self.data_layout.addWidget(self.raw_data_table, 1)
+        self.data_layout.addWidget(self.raw_data_table)
         self.final_data_layout = QVBoxLayout()
-        self.final_data_layout.addWidget(self.final_table, 1)
-        self.final_data_layout.addWidget(self.ave_mini_plot, 2)
-        self.data_layout.addLayout(self.final_data_layout)
+        self.final_data_layout.addWidget(self.final_table)
+        self.final_data_layout.addWidget(self.ave_mini_plot, 0)
+        self.data_layout.addLayout(self.final_data_layout, 0)
         # self.mw = MplWidget()
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
+        self.stem_plot.setMinimumSize(300, 300)
         self.amp_dist = pg.PlotWidget()
+        self.amp_dist.setMinimumSize(300, 300)
         self.plot_selector = QComboBox()
         self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
+
         self.matplotlib_layout_h = QHBoxLayout()
         self.matplotlib_layout_h.addWidget(self.plot_selector, 0)
         self.matplotlib_layout_h.addWidget(self.stem_plot, 2)
-        self.matplotlib_layout_h.addWidget(self.amp_dist, 1)
-        self.table_layout.addLayout(self.matplotlib_layout_h, 1)
+        self.matplotlib_layout_h.addWidget(self.amp_dist, 2)
+        self.table_layout.addLayout(self.matplotlib_layout_h, 2)
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
@@ -559,7 +565,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.threadpool = QThreadPool()
 
         self.acq_dict = {}
-        self.analysis_list = []
         self.acq_object = None
         self.file_list = []
         self.last_mini_deleted = {}
@@ -661,9 +666,9 @@ class MiniAnalysisWidget(DragDropWidget):
     def analyze(self):
         """
         This function creates each MiniAnalysis object and puts
-        it into a dictionary. The minis are create within the 
+        it into a dictionary. The minis are create within the
         MiniAnalysis objection. Note that the created
-        MiniAnalysis object needs to have analyze run. This was 
+        MiniAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
 
@@ -730,7 +735,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # This part initializes acquisition_number spinbox, sets the min and max.
             acq_number = list(self.acq_dict.keys())
-            self.analysis_list = [int(i) for i in self.acq_dict.keys()]
             self.acquisition_number.setMaximum(int(acq_number[-1]))
             self.acquisition_number.setMinimum(int(acq_number[0]))
             self.acquisition_number.setValue(int(acq_number[0]))
@@ -750,8 +754,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setFormat("Analysis finished")
 
     def acq_spinbox(self, h):
-        """This function plots each acquisition and each of its minis.
-        """
+        """This function plots each acquisition and each of its minis."""
 
         # Plots are cleared first otherwise new data is just appended to
         # the plot.
@@ -779,7 +782,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setDisabled(True)
 
         # I choose to just show
-        if int(self.acquisition_number.value()) in self.analysis_list:
+        if self.acq_dict.get(str(self.acquisition_number.value())):
 
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
@@ -885,19 +888,16 @@ class MiniAnalysisWidget(DragDropWidget):
     def reset(self):
         """
         This function resets all the variables and clears all the plots.
-        It takes a while to run. 
+        It takes a while to run.
         """
         self.p1.clear()
         self.p2.clear()
         self.template_plot.clear()
-        self.acq_model.acq_list = []
-        self.acq_model.fname_list = []
-        self.acq_model.layoutChanged.emit()
+        self.acq_model.clearData()
         self.calc_param_clicked = False
         self.mini_view_plot.clear()
         self.acq_dict = {}
         self.acq_object = None
-        self.analysis_list = []
         self.file_list = []
         self.last_mini_point_clicked = []
         self.last_acq_point_clicked = []
@@ -910,7 +910,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.raw_df = {}
         self.save_values = []
         self.raw_data_table.clear()
-        # self.mw.clear()
         self.stem_plot.clear()
         self.amp_dist.clear()
         self.minis_deleted = 0
@@ -924,6 +923,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.need_to_save = False
         self.analyze_acq_button.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
+        self.plot_selector.clear()
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
 
@@ -946,7 +946,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def slider_value(self, value):
         self.modify = value
-        print(value)
 
     def leftbutton(self):
         if self.left_button.isDown():
@@ -1347,25 +1346,23 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p2.clear()
         self.mini_view_plot.clear()
 
-        # Reset the analysis list and change the acquisitio to the next
+        # Reset the analysis list and change the acquisition to the next
         # acquisition.
-        self.analysis_list = [int(i) for i in self.acq_dict.keys()]
         self.acquisition_number.setValue(int(self.acquisition_number.text()) + 1)
 
     def reset_rejected_acqs(self):
         self.acq_dict.update(self.deleted_acqs)
-        self.analysis_list = [int(i) for i in self.acq_dict.keys()]
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
         self.acqs_deleted = 0
 
     def reset_recent_reject_acq(self):
         self.acq_dict.update(self.recent_reject_acq)
-        self.analysis_list = [int(i) for i in self.acq_dict.keys()]
         self.acqs_deleted -= 1
         self.acquisition_number.setValue(int(list(self.recent_reject_acq.keys())[0]))
 
     def final_analysis(self):
+        self.plot_selector.clear()
         self.need_to_save = True
         if self.final_obj is not None:
             del self.final_obj
@@ -1385,6 +1382,8 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict("dict"))
         self.final_table.setData(self.final_obj.final_df.T.to_dict("dict"))
+        if self.plot_selector.currentText() != "IEI (ms)":
+            self.plot_raw_data(self.plot_selector.currentText())
         plots = [
             "Amplitude (pA)",
             "Est tau (ms)",
@@ -1393,17 +1392,10 @@ class MiniAnalysisWidget(DragDropWidget):
             "IEI (ms)",
         ]
         self.plot_selector.addItems(plots)
-        if self.plot_selector.currentText() != "IEI (ms)":
-            self.plot_raw_data(self.plot_selector.currentText())
         self.pbar.setFormat("Finished analysis")
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(2)
-
-    # def plot_raw_data(self, column):
-    #     if column != "IEI (ms)":
-    #         self.mw.plot(x="Real time", y=column, df=self.final_obj.raw_df)
-    #     self.amp_dist.plot(self.final_obj.raw_df, column)
 
     def plot_raw_data(self, y):
         if y != "IEI (ms)":
@@ -1479,10 +1471,11 @@ class MiniAnalysisWidget(DragDropWidget):
                 for i in load_dict["Deleted Acqs"]:
                     self.deleted_acqs[i] = self.acq_dict[i]
                     del self.acq_dict[i]
-            self.analysis_list = [int(i) for i in self.acq_dict.keys()]
-            self.acquisition_number.setMaximum(max(self.analysis_list))
-            self.acquisition_number.setMinimum(min(self.analysis_list))
+            analysis_list = [int(i) for i in self.acq_dict.keys()]
+            self.acquisition_number.setMaximum(max(analysis_list))
+            self.acquisition_number.setMinimum(min(analysis_list))
             self.acquisition_number.setValue(int(load_dict["Acq_number"]))
+            self.acq_model.setLoadData(self.acq_dict)
             if load_dict["Final Analysis"]:
                 excel_file = list(directory.glob("*.xlsx"))[0]
                 save_values = pd.read_excel(excel_file, sheet_name=None)
@@ -1496,14 +1489,14 @@ class MiniAnalysisWidget(DragDropWidget):
                 )
                 self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict("dict"))
                 self.final_table.setData(self.final_obj.final_df.T.to_dict("dict"))
-                plots = [
-                    "Amplitude (pA)",
-                    "Est tau (ms)",
-                    "Rise time (ms)",
-                    "Rise rate (pA/ms)",
-                    "IEI (ms)",
-                ]
-                self.plot_selector.addItems(plots)
+            plots = [
+                "Amplitude (pA)",
+                "Est tau (ms)",
+                "Rise time (ms)",
+                "Rise rate (pA/ms)",
+                "IEI (ms)",
+            ]
+            self.plot_selector.addItems(plots)
             self.pbar.setFormat("Loaded")
 
     def save_as(self, save_filename):
@@ -1516,6 +1509,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pref_dict["Acq_number"] = self.acquisition_number.value()
         self.pref_dict["Deleted Acqs"] = list(self.deleted_acqs.keys())
         YamlWorker.save_yaml(self.pref_dict, save_filename)
+        print(save_filename)
         if self.pref_dict["Final Analysis"]:
             self.final_obj.save_data(save_filename)
         if self.deleted_acqs:

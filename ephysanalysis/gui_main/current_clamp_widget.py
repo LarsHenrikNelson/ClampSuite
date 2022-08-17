@@ -300,7 +300,6 @@ class currentClampWidget(DragDropWidget):
     #         self.acq_view.clearSelection()
 
     def del_selection(self):
-        self.need_to_save = True
 
         # Deletes the selected acquisitions from the list
         indexes = self.acq_view.selectedIndexes()

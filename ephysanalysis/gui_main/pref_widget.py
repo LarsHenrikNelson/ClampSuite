@@ -20,12 +20,38 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 import qdarkstyle
+import qtvscodestyle as qtvsc
 
 
 class PreferencesWidget(QWidget):
     def __init__(self):
         super().__init__()
+        self.create_style_dict()
         self.initUI()
+
+    def create_style_dict(self):
+        self.style_dict = {
+            "Dark style": qdarkstyle.load_stylesheet(
+                qdarkstyle.dark.palette.DarkPalette
+            ),
+            "Light style": qdarkstyle.load_stylesheet(
+                qdarkstyle.light.palette.LightPalette
+            ),
+            "Dark VSC": qtvsc.load_stylesheet(qtvsc.Theme.DARK_VS),
+            "Light VSC": qtvsc.load_stylesheet(qtvsc.Theme.LIGHT_VS),
+            "Quiet light": qtvsc.load_stylesheet(qtvsc.Theme.QUIET_LIGHT),
+            "Solarized light": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_LIGHT),
+            "Solarized dark": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_DARK),
+            "Abyss": qtvsc.load_stylesheet(qtvsc.Theme.ABYSS),
+            "Kimbie dark": qtvsc.load_stylesheet(qtvsc.Theme.KIMBIE_DARK),
+            "Monokai": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI),
+            "Monokai dim": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI_DIMMED),
+            "Red": qtvsc.load_stylesheet(qtvsc.Theme.RED),
+            "Tomorrow night blue": qtvsc.load_stylesheet(
+                qtvsc.Theme.TOMORROW_NIGHT_BLUE
+            ),
+            "Dark high contrast": qtvsc.load_stylesheet(qtvsc.Theme.DARK_HIGH_CONTRAST),
+        }
 
     def initUI(self):
         self.layout = QHBoxLayout()
@@ -57,7 +83,7 @@ class PreferencesWidget(QWidget):
 
         self.theme_label = QLabel("Theme")
         self.theme_box = QComboBox()
-        self.theme_box.addItems(["Dark style", "Light style"])
+        self.theme_box.addItems(list(self.style_dict.keys()))
         self.theme_box.currentTextChanged.connect(self.style_choice)
         self.tab1_layout.addRow(self.theme_label, self.theme_box)
         self.stackedlayout.addWidget(self.app_appearance)
@@ -79,12 +105,7 @@ class PreferencesWidget(QWidget):
             pass
 
     def style_choice(self, text):
-        if text == "Dark style":
-            stylesheet = qdarkstyle.load_stylesheet(qdarkstyle.dark.palette.DarkPalette)
-        else:
-            stylesheet = qdarkstyle.load_stylesheet(
-                qdarkstyle.light.palette.LightPalette
-            )
+        stylesheet = self.style_dict.get(text)
         app = QApplication.instance()
         app.setStyleSheet(stylesheet)
 

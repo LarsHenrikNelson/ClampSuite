@@ -35,7 +35,14 @@ final_data = FinalMiniAnalysis(mini_dict)
 
 #%%
 # oepsc analysis test
-path = "/Volumes/Backup/Lars Slice Ephys/2022_07_21/AD1_1.mat"
+path = "D:/Lars Slice Ephys/2022_07_21/AD1_1.mat"
+f = Acq(analysis="oepsc", path=path)
+f.load_acq()
+f.analyze(find_ct=True, find_est_decay=True)
+
+#%%
+# oepsc analysis test
+path = "D:/Lars Slice Ephys/2022_07_21/AD0_1.mat"
 f = Acq(analysis="oepsc", path=path)
 f.load_acq()
 f.analyze()

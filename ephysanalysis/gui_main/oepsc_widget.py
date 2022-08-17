@@ -210,10 +210,11 @@ class oEPSCWidget(DragDropWidget):
             "butterworth_zero",
             "None",
         ]
-        self.o_filter_selection = QComboBox(self)
+        self.o_filter_selection = QComboBox()
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setObjectName("o_filter_selection")
         self.o_filter_selection.setCurrentText("savgol")
+        self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
 
         self.o_order_label = QLabel("Order")
         self.o_order_edit = LineEdit()
@@ -348,7 +349,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_3.addRow(self.curve_fit_decay_label, self.curve_fit_decay)
 
         self.curve_fit_type_label = QLabel("Curve fit type")
-        fit_types = ["exp", "db_exp"]
+        fit_types = ["s_exp", "db_exp"]
         self.curve_fit_type_edit = QComboBox(self)
         self.curve_fit_type_edit.addItems(fit_types)
         self.curve_fit_type_edit.setObjectName("curve_fit_type")
@@ -580,7 +581,7 @@ class oEPSCWidget(DragDropWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(list_model.acq_list)
+            self.inspection_widget.setFileList(list_model.acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
@@ -588,10 +589,9 @@ class oEPSCWidget(DragDropWidget):
 
     def del_selection(self, list_model, list_view):
         # Deletes the selected acquisitions from the list
-        self.need_to_save = True
         indexes = list_view.selectedIndexes()
         if len(indexes) > 0:
-            self.acq_model.deleteSelection(indexes)
+            list_model.deleteSelection(indexes)
             list_view.clearSelection()
 
     def analyze(self):
@@ -622,25 +622,25 @@ class oEPSCWidget(DragDropWidget):
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
             self.oepsc_acq_dict = self.oepsc_model.acq_dict
-            for count, acq in enumerate(self.oepsc_acq_dict.items()):
-                acq.analyze(
+            for count, o_acq in enumerate(self.oepsc_acq_dict.values()):
+                o_acq.analyze(
                     sample_rate=self.o_sample_rate_edit.toInt(),
-                    baseline_start=self.o_b_start_edit.toInt(),
-                    baseline_end=self.o_b_end_edit.toInt(),
+                    baseline_start=self.o_b_start_edit.toFloat(),
+                    baseline_end=self.o_b_end_edit.toFloat(),
                     filter_type=self.o_filter_selection.currentText(),
                     order=self.o_order_edit.toInt(),
                     high_pass=self.o_high_pass_edit.toInt(),
                     high_width=self.o_high_width_edit.toInt(),
                     low_pass=self.o_low_pass_edit.toInt(),
                     low_width=self.o_low_width_edit.toInt(),
-                    window=o_window_edit.currentText(),
+                    window=o_window,
                     polyorder=self.o_polyorder_edit.toInt(),
                     pulse_start=self.o_pulse_start_edit.toInt(),
                     n_window_start=self.o_neg_start_edit.toFloat(),
                     n_window_end=self.o_neg_end_edit.toFloat(),
                     p_window_start=self.o_pos_start_edit.toFloat(),
                     p_window_end=self.o_pos_end_edit.toFloat(),
-                    find_ct=self.charge_transfer_edit.isChecked(),
+                    find_charge_transfer=self.charge_transfer_edit.isChecked(),
                     find_est_decay=self.est_decay_edit.isChecked(),
                     curve_fit_decay=self.curve_fit_decay.isChecked(),
                     curve_fit_type=self.curve_fit_type_edit.currentText(),
@@ -650,11 +650,11 @@ class oEPSCWidget(DragDropWidget):
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
             self.lfp_acq_dict = self.lfp_model.acq_dict
-            for count, acq_components in enumerate(self.lfp_acq_dict):
-                acq.analyze(
+            for count, lfp_acq in enumerate(self.lfp_acq_dict.values()):
+                lfp_acq.analyze(
                     sample_rate=self.lfp_sample_rate_edit.toInt(),
-                    baseline_start=self.lfp_b_start_edit.toInt(),
-                    baseline_end=self.lfp_b_end_edit.toInt(),
+                    baseline_start=self.lfp_b_start_edit.toFloat(),
+                    baseline_end=self.lfp_b_end_edit.toFloat(),
                     filter_type=self.lfp_filter_selection.currentText(),
                     order=self.lfp_order_edit.toInt(),
                     high_pass=self.lfp_high_pass_edit.toInt(),
@@ -663,7 +663,7 @@ class oEPSCWidget(DragDropWidget):
                     low_width=self.lfp_low_width_edit.toInt(),
                     window=lfp_window,
                     polyorder=self.lfp_polyorder_edit.toInt(),
-                    pulse_start=self.lfp_pulse_start_edit.toInt(),
+                    pulse_start=self.lfp_pulse_start_edit.toFloat(),
                 )
         # self.pbar.setValue(int(((count+1)/len(self.analysis_list))*100))
         if self.oepsc_acq_dict:
@@ -715,11 +715,17 @@ class oEPSCWidget(DragDropWidget):
             )
             self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
             if self.oepsc_object.find_ct:
-                self.oepsc_charge_edit.setText(self.oepsc_object.charge_transfer)
-            if self.oepsc_object.find_est_decay:
-                self.oepsc_edecay_edit.setText(self.oepsc_object.est_tau())
-            if self.oepsc_object.curve_fit_decay:
-                self.oepsc_fdecay_edit.setText(self.oepsc_object.fit_tau)
+                self.oepsc_charge_edit.setText(
+                    str(self.round_sig((self.oepsc_object.charge_transfer)))
+                )
+            if self.oepsc_object.find_edecay:
+                self.oepsc_edecay_edit.setText(
+                    str(self.round_sig(self.oepsc_object.est_decay()))
+                )
+            if self.oepsc_object.find_fdecay:
+                self.oepsc_fdecay_edit.setText(
+                    str(self.round_sig(self.oepsc_object.fit_tau))
+                )
         else:
             pass
         if self.lfp_acq_dict.get(str(h)):
@@ -785,10 +791,8 @@ class oEPSCWidget(DragDropWidget):
         self.set_fv_button.setEnabled(False)
         self.set_fp_button.setEnabled(False)
         self.final_data = None
-        self.oepsc_model.acq_list = []
-        self.oepsc_model.fname_list = []
-        self.lfp_model.acq_list = []
-        self.lfp_model.acq_list = []
+        self.oepsc_model.clearData()
+        self.lfp_model.clearData()
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)

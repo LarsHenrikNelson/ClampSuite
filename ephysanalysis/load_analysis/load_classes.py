@@ -15,10 +15,10 @@ class LoadMiniSaveData:
         extra_data = excel_file["Extra data"]
         self.raw_df = excel_file["Raw data"]
         self.final_df = excel_file["Final data"]
-        self.average_mini = extra_data["ave_mini"].to_numpy()
-        self.average_mini_x = extra_data["ave_mini_x"].to_numpy()
-        self.fit_decay_y = extra_data["fit_decay_y"].to_numpy()
-        self.decay_x = extra_data["decay_x"].to_numpy()
+        self.average_mini = extra_data["ave_mini"].dropna().to_numpy()
+        self.average_mini_x = extra_data["ave_mini_x"].dropna().to_numpy()
+        self.fit_decay_y = extra_data["fit_decay_y"].dropna().to_numpy()
+        self.decay_x = extra_data["decay_x"].dropna().to_numpy()
 
 
 class LoadEvokedCurrentData:
@@ -56,4 +56,3 @@ class LoadCurrentClampData:
             self.pulse_df = save_values["Pulse APs"].to_numpy()
         if "Ramp APs" in save_values:
             self.ramp_df = save_values["Ramp APs"].to_numpy()
-

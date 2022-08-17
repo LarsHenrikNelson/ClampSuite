@@ -1,5 +1,6 @@
 from glob import glob
 import json
+from pathlib import PurePath, Path
 
 import numpy as np
 import yaml
@@ -33,8 +34,9 @@ class NumpyEncoder(json.JSONEncoder):
             return float(obj)
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
+        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(obj)
         return json.JSONEncoder.default(self, obj)
-
 
 
 class YamlWorker:
@@ -42,8 +44,11 @@ class YamlWorker:
     def load_yaml(path=None):
         if path is None:
             file_name = glob("*.yaml")[0]
+        elif PurePath(path).suffix == ".yaml":
+            file_name = PurePath(path)
         else:
-            file_name = glob(f"{path}/*.yaml")[0]
+            directory = Path(path)
+            file_name = list(directory.glob(f"{path}*.yaml"))[0]
         with open(file_name, "r") as file:
             yaml_file = yaml.safe_load(file)
         return yaml_file
@@ -52,4 +57,3 @@ class YamlWorker:
     def save_yaml(dictionary, save_filename):
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(dictionary, file)
-

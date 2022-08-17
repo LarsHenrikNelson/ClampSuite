@@ -110,7 +110,7 @@ def load_json_file(obj, path: PurePath or str):
     with open(path) as file:
         data = json.load(file)
         obj.sample_rate_correction = None
-        if data["analyis"] == "oepsc":
+        if data["analysis"] == "oepsc":
             obj.find_ct = False
             obj.find_est_decay = False
             obj.curve_fit_decay = False
