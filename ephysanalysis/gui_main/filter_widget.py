@@ -7,7 +7,7 @@ Created on Sun Apr  3 12:20:28 2022
 """
 from copy import deepcopy
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -18,8 +18,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QDoubleSpinBox,
 )
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QSize
+from PySide6.QtGui import QIntValidator
+from PySide6.QtCore import QSize
 import pyqtgraph as pg
 
 

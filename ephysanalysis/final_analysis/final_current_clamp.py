@@ -15,6 +15,7 @@ class FinalCurrentClampAnalysis:
         self.final_data()
         self.iv_curve_dataframe()
         self.deltav_dataframe()
+        self.create_first_ap_dfs()
 
     def create_raw_data(self):
         self.raw_df = pd.DataFrame(
@@ -156,18 +157,18 @@ class FinalCurrentClampAnalysis:
             ramp_ap = {}
 
         if pulse_ap:
-            self.pulse_df = pd.DataFrame(
+            self.pulse_ap_df = pd.DataFrame(
                 dict([(k, pd.Series(v)) for k, v in pulse_ap.items()])
             )
         else:
-            self.pulse_df = pd.DataFrame()
+            self.pulse_ap_df = pd.DataFrame()
 
         if ramp_ap:
-            self.ramp_df = pd.DataFrame(
+            self.ramp_ap_df = pd.DataFrame(
                 dict([(k, pd.Series(v)) for k, v in ramp_ap.items()])
             )
         else:
-            self.ramp_df = pd.DataFrame()
+            self.ramp_ap_df = pd.DataFrame()
 
     def create_first_aps(self):
         pulse_dict = defaultdict(lambda: defaultdict(list))
@@ -201,8 +202,8 @@ class FinalCurrentClampAnalysis:
     def average_aps(self, dict_entry):
         """
         This function takes a list of a lists/arrays, finds the max values
-        and then aligns all the lists/arrays to the max value by adding an 
-        array of values to the beginning of each list/array (the value is the 
+        and then aligns all the lists/arrays to the max value by adding an
+        array of values to the beginning of each list/array (the value is the
         first value in each list/array)
 
         Parameters
@@ -294,10 +295,9 @@ class FinalCurrentClampAnalysis:
         ) as writer:
             self.raw_df.to_excel(writer, index=False, sheet_name="Raw data")
             self.final_df.to_excel(writer, sheet_name="Final data")
-            self.iv_df.to_excel(writer, sheet_name="IV_df")
-            self.deltav_df.to_excel(writer, sheet_name="Deltav_df")
-            if not self.pulse_df.empty:
-                self.pulse_df.to_excel(writer, index=False, sheet_name="Pulse APs")
-            if not self.ramp_df.empty:
-                self.ramp_df.to_excel(writer, index=False, sheet_name="Ramp APs")
-        return None
+            self.iv_df.to_excel(writer, index=False, sheet_name="IV_df")
+            self.deltav_df.to_excel(writer, index=False, sheet_name="Deltav_df")
+            if not self.pulse_ap_df.empty:
+                self.pulse_ap_df.to_excel(writer, index=False, sheet_name="Pulse APs")
+            if not self.ramp_ap_df.empty:
+                self.ramp_ap_df.to_excel(writer, index=False, sheet_name="Ramp APs")

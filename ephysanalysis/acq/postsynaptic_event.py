@@ -19,6 +19,7 @@ class MiniEvent:
 
     def create_event(self, y_array):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
+        self.adjust_pos = int(self.event_pos - self.array_start)
         end = int(self.event_pos + (30 * self.s_r_c))
         if end > len(y_array) - 1:
             self.array_end = len(y_array) - 1
@@ -30,15 +31,21 @@ class MiniEvent:
         self.event_array = y_array[self.array_start : self.array_end]
         self.x_array = np.arange(self.array_start, self.array_end)
 
-    def create_event_array(self, y_array):
-        self.event_array = y_array[self.array_start : self.array_end]
-        self.x_array = np.arange(self.array_start, self.array_end)
-
+    # Fix the find peak to scipy find peaks
     def find_peak(self):
-        peaks_1 = signal.argrelextrema(
-            self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
-        )[0]
-        peaks_1 = peaks_1[peaks_1 > 1 * self.s_r_c]
+        # np.where(self.x_array == self.prior_peak)
+        peaks_1, _ = signal.find_peaks(
+            -1 * self.event_array[self.adjust_pos :],
+            prominence=2,
+            # width=0.4 * self.s_r_c,
+            distance=int(2 * self.s_r_c),
+            rel_height=1,
+        )
+        # peaks_1 = signal.argrelextrema(
+        #     self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
+        # )[0]
+        # peaks_1 = peaks_1[peaks_1 > 1 * self.s_r_c]
+        peaks_1 = peaks_1 + self.adjust_pos
         if len(peaks_1) == 0:
             self.event_peak_x = np.nan
             self.event_peak_y = np.nan
@@ -157,7 +164,6 @@ class MiniEvent:
             self.rise_rate = abs(linregress(rise_x, rise_y)[0])
         else:
             self.rise_rate = np.nan
-        return self.rise_time, self.rise_rate
 
     def est_decay(self):
         baselined_event = self.event_array - self.event_start_y
@@ -313,9 +319,11 @@ class MiniEvent:
         sample_rate,
         curve_fit_decay=False,
         curve_fit_type="db_exp",
+        prior_peak=0,
     ):
         self.acq_number = acq_number
         self.event_pos = int(event_pos)
+        self.prior_peak = prior_peak
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
         self.curve_fit_decay = curve_fit_decay
@@ -325,4 +333,3 @@ class MiniEvent:
         self.find_peak()
         self.find_event_parameters(y_array)
         self.peak_align_value = self.event_peak_x - self.array_start
-

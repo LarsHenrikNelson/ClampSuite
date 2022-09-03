@@ -1,5 +1,5 @@
 import json
-from math import floor, log10
+from math import floor, log10, nan
 from pathlib import PurePath
 import re
 from typing import Tuple
@@ -102,13 +102,33 @@ def load_scanimage_file(
     return (name, acq_number, array, epoch, pulse_pattern, ramp, pulse_amp, time_stamp)
 
 
+class NumpyDecoder(json.JSONDecoder):
+    """
+    Special json encoder for numpy types. Numpy types are not accepted by the
+    json encoder and need to be converted to python types.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, int):
+            return np.int64(obj)
+        elif obj is nan:
+            return np.nan
+        elif isinstance(obj, float):
+            return np.float64(obj)
+        elif isinstance(obj, list):
+            return np.array(obj)
+        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(obj)
+        return json.JSONDecoder.default(self, obj)
+
+
 def load_json_file(obj, path: PurePath or str):
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj.
     """
     with open(path) as file:
-        data = json.load(file)
+        data = json.load(file, cls=NumpyDecoder)
         obj.sample_rate_correction = None
         if data["analysis"] == "oepsc":
             obj.find_ct = False

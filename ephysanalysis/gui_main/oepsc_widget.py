@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QHBoxLayout,
@@ -29,10 +29,10 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QDoubleSpinBox,
 )
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
-from PyQt5.QtCore import QThreadPool
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QSize
+from PySide6.QtGui import QIntValidator, QDoubleValidator
+from PySide6.QtCore import QThreadPool
+from PySide6 import QtCore
+from PySide6.QtCore import Qt, QSize
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
@@ -819,13 +819,13 @@ class oEPSCWidget(DragDropWidget):
 
     def set_point_as_fv(self):
         """
-        This will set the LFP fiber volley as the point selected on the 
+        This will set the LFP fiber volley as the point selected on the
         lfp plot and update the other two acquisition plots.
-    
+
         Returns
         -------
         None.
-    
+
         """
         self.need_to_save = True
         x = (
@@ -849,13 +849,13 @@ class oEPSCWidget(DragDropWidget):
 
     def set_point_as_fp(self):
         """
-        This will set the LFP field potential as the point selected on the 
+        This will set the LFP field potential as the point selected on the
         lfp plot and update the other two acquisition plots.
-    
+
         Returns
         -------
         None.
-    
+
         """
         self.need_to_save = True
         x = (
@@ -999,14 +999,14 @@ class oEPSCWidget(DragDropWidget):
             self.file_list = None
         else:
             for i in file_list:
-                if x.name.split("_")[0] == load_dict["oEPSC name"]:
-                    x = Acq("oepsc", file)
+                if i.name.split("_")[-2] == load_dict["oEPSC name"]:
+                    x = Acq("oepsc", i)
                     x.load_acq()
                     self.oepsc_acq_dict[x.acq_number] = x
                 else:
-                    self.lfp_acq_dict[x.acq_number] = x
-                    x = Acq("lfp", file)
+                    x = Acq("lfp", i)
                     x.load_acq()
+                    self.lfp_acq_dict[x.acq_number] = x
         if self.oepsc_acq_dict:
             self.acquisition_number.setMaximum(
                 int(list(self.oepsc_acq_dict.keys())[-1])
@@ -1019,7 +1019,7 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setValue(load_dict["Acq_number"])
         self.acquisition_number.setEnabled(True)
         if load_dict["Final Analysis"]:
-            excel_file = directory(glob("*.xlsx"))[0]
+            excel_file = list(directory.glob("*.xlsx"))[0]
             save_values = pd.read_excel(excel_file, sheet_name=None)
             self.final_data = LoadEvokedCurrentData(save_values)
             self.raw_datatable.setData(self.final_data.raw_df.T.to_dict("dict"))
@@ -1122,4 +1122,3 @@ class oEPSCWidget(DragDropWidget):
 
 if __name__ == "__main__":
     oEPSCWidget()
-

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -16,11 +16,10 @@ from PyQt5.QtWidgets import (
     QGridLayout,
 )
 
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui
+from PySide6.QtCore import Qt
 import pyqtgraph as pg
 import qdarkstyle
-import qtvscodestyle as qtvsc
 
 
 class PreferencesWidget(QWidget):
@@ -31,26 +30,23 @@ class PreferencesWidget(QWidget):
 
     def create_style_dict(self):
         self.style_dict = {
-            "Dark style": qdarkstyle.load_stylesheet(
-                qdarkstyle.dark.palette.DarkPalette
-            ),
-            "Light style": qdarkstyle.load_stylesheet(
-                qdarkstyle.light.palette.LightPalette
-            ),
-            "Dark VSC": qtvsc.load_stylesheet(qtvsc.Theme.DARK_VS),
-            "Light VSC": qtvsc.load_stylesheet(qtvsc.Theme.LIGHT_VS),
-            "Quiet light": qtvsc.load_stylesheet(qtvsc.Theme.QUIET_LIGHT),
-            "Solarized light": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_LIGHT),
-            "Solarized dark": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_DARK),
-            "Abyss": qtvsc.load_stylesheet(qtvsc.Theme.ABYSS),
-            "Kimbie dark": qtvsc.load_stylesheet(qtvsc.Theme.KIMBIE_DARK),
-            "Monokai": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI),
-            "Monokai dim": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI_DIMMED),
-            "Red": qtvsc.load_stylesheet(qtvsc.Theme.RED),
-            "Tomorrow night blue": qtvsc.load_stylesheet(
-                qtvsc.Theme.TOMORROW_NIGHT_BLUE
-            ),
-            "Dark high contrast": qtvsc.load_stylesheet(qtvsc.Theme.DARK_HIGH_CONTRAST),
+            "Dark style": qdarkstyle.dark.palette.DarkPalette,
+            "Light style": qdarkstyle.light.palette.LightPalette,
+            # "Darker style": qdarkstyle.darker.palette.DarkerPalette,
+            # "Dark VSC": qtvsc.load_stylesheet(qtvsc.Theme.DARK_VS),z
+            # "Light VSC": qtvsc.load_stylesheet(qtvsc.Theme.LIGHT_VS),
+            # "Quiet light": qtvsc.load_stylesheet(qtvsc.Theme.QUIET_LIGHT),
+            # "Solarized light": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_LIGHT),
+            # "Solarized dark": qtvsc.load_stylesheet(qtvsc.Theme.SOLARIZED_DARK),
+            # "Abyss": qtvsc.load_stylesheet(qtvsc.Theme.ABYSS),
+            # "Kimbie dark": qtvsc.load_stylesheet(qtvsc.Theme.KIMBIE_DARK),
+            # "Monokai": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI),
+            # "Monokai dim": qtvsc.load_stylesheet(qtvsc.Theme.MONOKAI_DIMMED),
+            # "Red": qtvsc.load_stylesheet(qtvsc.Theme.RED),
+            # "Tomorrow night blue": qtvsc.load_stylesheet(
+            #     qtvsc.Theme.TOMORROW_NIGHT_BLUE
+            # ),
+            # "Dark high contrast": qtvsc.load_stylesheet(qtvsc.Theme.DARK_HIGH_CONTRAST),
         }
 
     def initUI(self):
@@ -105,9 +101,10 @@ class PreferencesWidget(QWidget):
             pass
 
     def style_choice(self, text):
-        stylesheet = self.style_dict.get(text)
+        palette = self.style_dict.get(text)
+        print(palette.ID)
         app = QApplication.instance()
-        app.setStyleSheet(stylesheet)
+        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api="pyside6", palette=palette))
 
 
 class MiniAnalysisSettings(QWidget):

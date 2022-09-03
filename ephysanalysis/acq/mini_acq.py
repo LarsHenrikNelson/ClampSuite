@@ -13,12 +13,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         sample_rate=10000,
         baseline_start=0,
         baseline_end=800,
-        filter_type="None",
-        order=None,
+        filter_type="remez_1",
+        order=201,
         high_pass=None,
         high_width=None,
-        low_pass=None,
-        low_width=None,
+        low_pass=600,
+        low_width=300,
         window=None,
         polyorder=None,
         template=None,
@@ -26,8 +26,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         rc_check_start=None,
         rc_check_end=None,
         sensitivity=3,
-        amp_threshold=7,
-        mini_spacing=7.5,
+        amp_threshold=4,
+        mini_spacing=2,
         min_rise_time=1,
         max_rise_time=4,
         min_decay_time=2,
@@ -156,7 +156,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.deconvolved_array = np.real(ifft(fft(self.final_array) / H))
         elif self.decon_type == "wiener":
             self.deconvolved_array = np.real(
-                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd ** 2))
+                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
             )
         else:
             self.deconvolved_array = signal.convolve(
@@ -173,7 +173,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         array : Filtered signal in a numpy array form.There are edge effects if
             an unfiltered signal is used.
         template : A representative PSC or PSP. Can be an averaged or synthetic
-            template. The template works best when there is a small array of 
+            template. The template works best when there is a small array of
             before the mini onset.
 
         Returns
@@ -209,7 +209,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         from the deconvolution. Events less than 20 ms before the end of
         the acquisitions are not counted. Events get screened out based on the
         amplitude, min_rise_time, and min_decay_time passed by the
-        experimenter. 
+        experimenter.
 
         Returns
         -------
@@ -222,79 +222,83 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         event_time = []
         if len(self.events) == 0:
             pass
-        elif len(self.events) > 1:
-            for count, peak in enumerate(self.events):
-                if len(self.final_array) - peak < 20 * self.s_r_c:
+        for count, peak in enumerate(self.events):
+            if len(self.final_array) - peak < 20 * self.s_r_c:
+                pass
+            else:
+                if event_number > 0:
+                    prior_peak = self.postsynaptic_events[event_number - 1].event_peak_x
+                else:
+                    prior_peak = 0
+                event = MiniEvent()
+                event.analyze(
+                    acq_number=self.acq_number,
+                    event_pos=peak,
+                    y_array=self.final_array,
+                    sample_rate=self.sample_rate,
+                    curve_fit_decay=self.curve_fit_decay,
+                    curve_fit_type=self.curve_fit_type,
+                    prior_peak=prior_peak,
+                )
+                if event.event_peak_x is np.nan or event.event_peak_x in event_time:
                     pass
                 else:
-                    event = MiniEvent()
-                    event.analyze(
-                        acq_number=self.acq_number,
-                        event_pos=peak,
-                        y_array=self.final_array,
-                        sample_rate=self.sample_rate,
-                        curve_fit_decay=self.curve_fit_decay,
-                        curve_fit_type=self.curve_fit_type,
-                    )
-                    if event.event_peak_x is np.nan or event.event_peak_x in event_time:
-                        pass
-                    else:
-                        if count > 0:
-                            if (
-                                self.events[count] - self.events[count - 1]
-                                < self.mini_spacing
-                            ):
-                                pass
-                            else:
-                                if (
-                                    event.amplitude > self.amp_threshold
-                                    and event.rise_time > self.min_rise_time
-                                    and event.rise_time < self.max_rise_time
-                                    and event.final_tau_x > self.min_decay_time
-                                    and event.final_tau_x > event.rise_time
-                                ):
-                                    self.postsynaptic_events += [event]
-                                    self.final_events += [peak]
-                                    event_time += [event.event_peak_x]
-                                    event_number += 1
-                                else:
-                                    pass
+                    if count > 0:
+                        if (
+                            self.events[count] - self.events[count - 1]
+                            < self.mini_spacing
+                        ):
+                            pass
                         else:
-                            if event.amplitude > self.amp_threshold:
+                            if (
+                                event.amplitude > self.amp_threshold
+                                and event.rise_time > self.min_rise_time
+                                and event.rise_time < self.max_rise_time
+                                and event.final_tau_x > self.min_decay_time
+                                and event.final_tau_x > event.rise_time
+                            ):
                                 self.postsynaptic_events += [event]
                                 self.final_events += [peak]
                                 event_time += [event.event_peak_x]
                                 event_number += 1
                             else:
                                 pass
-        else:
-            peak = self.events[0]
-            event = MiniEvent()
-            event.analyze(
-                acq_number=self.acq_number,
-                event_pos=peak,
-                y_array=self.final_array,
-                sample_rate=self.sample_rate,
-                curve_fit_decay=self.curve_fit_decay,
-                curve_fit_type=self.curve_fit_type,
-            )
-            event_time += [event.event_peak_x]
-            if event.event_peak_x is np.nan or event.event_peak_x in event_time:
-                pass
-            else:
-                if (
-                    event.amplitude > self.amp_threshold
-                    and event.rise_time > self.min_rise_time
-                    and event.final_tau_x > self.min_decay_time
-                    and event.rise_time < self.max_rise_time
-                    and event.final_tau_x > event.rise_time
-                ):
-                    self.postsynaptic_events += [event]
-                    self.final_events += [peak]
-                    event_time += [event.event_peak_x]
-                    event_number += 1
-                else:
-                    pass
+                    else:
+                        if event.amplitude > self.amp_threshold:
+                            self.postsynaptic_events += [event]
+                            self.final_events += [peak]
+                            event_time += [event.event_peak_x]
+                            event_number += 1
+                        else:
+                            pass
+        # else:
+        #     peak = self.events[0]
+        #     event = MiniEvent()
+        #     event.analyze(
+        #         acq_number=self.acq_number,
+        #         event_pos=peak,
+        #         y_array=self.final_array,
+        #         sample_rate=self.sample_rate,
+        #         curve_fit_decay=self.curve_fit_decay,
+        #         curve_fit_type=self.curve_fit_type,
+        #     )
+        #     event_time += [event.event_peak_x]
+        #     if event.event_peak_x is np.nan or event.event_peak_x in event_time:
+        #         pass
+        #     else:
+        #         if (
+        #             event.amplitude > self.amp_threshold
+        #             and event.rise_time > self.min_rise_time
+        #             and event.final_tau_x > self.min_decay_time
+        #             and event.rise_time < self.max_rise_time
+        #             and event.final_tau_x > event.rise_time
+        #         ):
+        #             self.postsynaptic_events += [event]
+        #             self.final_events += [peak]
+        #             event_time += [event.event_peak_x]
+        #             event_number += 1
+        #         else:
+        #             pass
 
     def create_new_mini(self, x):
         """
@@ -364,7 +368,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             i.event_peak_x - i.array_start for i in self.postsynaptic_events
         ]
         return peak_align_values
-    
+
     def total_events(self):
         return len([i.amplitude for i in self.postsynaptic_events])
 

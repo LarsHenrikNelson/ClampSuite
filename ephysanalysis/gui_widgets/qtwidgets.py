@@ -1,9 +1,9 @@
 from copy import deepcopy
 from glob import glob
 import json
-from pathlib import PurePath, Path
+from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QLineEdit,
     QSizePolicy,
     QWidget,
@@ -16,11 +16,11 @@ from PyQt5.QtWidgets import (
     QLabel,
     QAbstractItemDelegate,
 )
-from PyQt5.QtCore import (
+from PySide6.QtCore import (
     QRunnable,
-    pyqtSlot,
+    Slot,
     QObject,
-    pyqtSignal,
+    Signal,
     Qt,
     QAbstractListModel,
     QPointF,
@@ -76,7 +76,7 @@ class SaveWorker(QRunnable):
         self.dictionary = dictionary
         self.signals = WorkerSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         for i, key in enumerate(self.dictionary.keys()):
             x = self.dictionary[key]
@@ -104,7 +104,7 @@ class MiniSaveWorker(QRunnable):
         self.dictionary = dictionary
         self.signals = WorkerSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         for i, key in enumerate(self.dictionary.keys()):
             x = deepcopy(self.dictionary[key])
@@ -124,10 +124,10 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    dictionary = pyqtSignal(dict)
-    progress = pyqtSignal(int)
-    finished = pyqtSignal(str)
-    path = pyqtSignal(object)
+    dictionary = Signal(dict)
+    progress = Signal(int)
+    finished = Signal(str)
+    path = Signal(object)
 
 
 class ListView(QListView):
@@ -161,6 +161,7 @@ class ListView(QListView):
         else:
             e.ignore()
 
+    @Slot()
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the
@@ -220,6 +221,7 @@ class ListModel(QAbstractListModel):
             x = list(self.acq_dict.keys())[index.row()]
             del self.acq_dict[x]
             del self.fname_list[index.row()]
+            self.acq_names = [i.name for i in self.acq_dict.values()]
         self.layoutChanged.emit()
 
     def clearData(self):
@@ -319,7 +321,7 @@ class DragDropWidget(QWidget):
         else:
             e.ignore()
 
-    @pyqtSlot()
+    @Slot()
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the
@@ -330,8 +332,6 @@ class DragDropWidget(QWidget):
             e.accept()
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
-            print(Path(fname).is_dir())
-            print(fname.suffix)
             if fname.suffix == ".yaml":
                 pref_dict = YamlWorker.load_yaml(fname)
                 self.signals.dictionary.emit(pref_dict)

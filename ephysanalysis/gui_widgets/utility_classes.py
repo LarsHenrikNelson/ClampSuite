@@ -1,6 +1,6 @@
 from glob import glob
 import json
-from pathlib import PurePath, Path
+from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
 
 import numpy as np
 import yaml
@@ -48,7 +48,7 @@ class YamlWorker:
             file_name = PurePath(path)
         else:
             directory = Path(path)
-            file_name = list(directory.glob(f"{path}*.yaml"))[0]
+            file_name = list(directory.glob("*.yaml"))[0]
         with open(file_name, "r") as file:
             yaml_file = yaml.safe_load(file)
         return yaml_file

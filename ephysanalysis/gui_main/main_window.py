@@ -1,9 +1,8 @@
-import os
-from os.path import expanduser
 from pathlib import Path, PurePath
-import sys
 
-from PyQt5.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -15,10 +14,8 @@ from PyQt5.QtWidgets import (
     QApplication,
     QSpinBox,
     QToolBar,
-    QAction,
     QStackedWidget,
 )
-from PyQt5.QtCore import Qt
 import qdarkstyle
 
 from .current_clamp_widget import currentClampWidget
@@ -80,17 +77,17 @@ class MainWindow(QMainWindow):
         )
         self.widget_chooser.currentTextChanged.connect(self.set_widget)
 
-        self.path_edit = LineEdit(expanduser("~"))
-        self.path_edit.setEnabled(False)
-        self.tool_bar.addWidget(self.path_edit)
+        # self.path_edit = LineEdit(expanduser("~"))
+        # self.path_edit.setEnabled(False)
+        # self.tool_bar.addWidget(self.path_edit)
 
-        self.button = QPushButton("Set Path")
-        self.button.clicked.connect(self.set_path)
-        self.tool_bar.addWidget(self.button)
+        # self.button = QPushButton("Set Path")
+        # self.button.clicked.connect(self.set_path)
+        # self.tool_bar.addWidget(self.button)
 
         self.preferences_widget = PreferencesWidget()
 
-        self.directory = str(os.chdir(expanduser("~")))
+        # self.directory = str(os.chdir(expanduser("~")))
 
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
@@ -104,6 +101,13 @@ class MainWindow(QMainWindow):
         self.filter_widget = filterWidget()
         self.central_widget.addWidget(self.filter_widget)
 
+        self.setComboBoxSpacing()
+
+    def setComboBoxSpacing(self):
+        combo_boxes = self.findChildren(QComboBox)
+        for i in combo_boxes:
+            i.view().setSpacing(1)
+
     def set_widget(self, text):
         if text == "Mini Analysis":
             self.central_widget.setCurrentWidget(self.mini_widget)
@@ -115,31 +119,31 @@ class MainWindow(QMainWindow):
             self.central_widget.setCurrentWidget(self.filter_widget)
         # self.central_widget.currentWidget().releaseKeyboard()
 
-    def set_path(self, click):
-        self.directory = str(QFileDialog.getExistingDirectory())
-        if len(self.directory) == 0:
-            os.chdir(expanduser("~"))
-        else:
-            self.path_edit.setText("{}".format(self.directory))
-            os.chdir(self.directory)
+    # def set_path(self, click):
+    #     self.directory = str(QFileDialog.getExistingDirectory())
+    #     if len(self.directory) == 0:
+    #         os.chdir(expanduser("~"))
+    #     else:
+    #         self.path_edit.setText("{}".format(self.directory))
+    #         os.chdir(self.directory)
 
     def save_as(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
-            self, "Save data as...", f"{self.directory}/save_filename"
+            self, "Save data as...", "save_filename"
         )
         if save_filename:
             self.central_widget.currentWidget().save_as(save_filename)
 
     def open_files(self):
-        self.directory = str(QFileDialog.getExistingDirectory())
-        if self.directory:
-            self.central_widget.currentWidget().open_files(Path(self.directory))
+        directory = str(QFileDialog.getExistingDirectory())
+        if directory:
+            self.central_widget.currentWidget().open_files(Path(directory))
         else:
             pass
 
     def load_preferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
-            self, self.directory, "Open file", "YAML Files (*.yaml)"
+            self, "Open file", "YAML Files (*.yaml)"
         )
         if len(file_name) == 0:
             # This prevents an error from showing up when the path is not
@@ -170,7 +174,7 @@ class MainWindow(QMainWindow):
             else:
                 pass
         else:
-            os.mkdir(p / h)
+            Path(p / h).mkdir()
 
     def closeEvent(self, event):
         if self.central_widget.currentWidget().need_to_save:

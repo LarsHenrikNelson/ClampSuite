@@ -7,11 +7,12 @@ Last updated on Wed Feb 16 12:33:00 2021
 @author: LarsNelson
 """
 from glob import glob
+import json
 from math import log10, floor, isnan, nan
 
-import json
 import numpy as np
-from PyQt5.QtWidgets import (
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QHBoxLayout,
@@ -25,7 +26,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QScrollArea,
 )
-from PyQt5.QtCore import QThreadPool
+from PySide6.QtCore import QThreadPool
 import pyqtgraph as pg
 
 from ..acq.acq import Acq
@@ -165,12 +166,13 @@ class currentClampWidget(DragDropWidget):
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
         self.acq_model = ListModel()
-        self.analysis_type = "current clamp"
+        self.analysis_type = "current_clamp"
         self.acq_model.setAnalysisType(self.analysis_type)
         self.acq_view.setModel(self.acq_model)
         self.input_layout.addRow(self.acq_view)
 
         self.del_selection_button = QPushButton("Delete selection")
+        self.del_selection_button.clicked.connect(self.del_selection)
         self.input_layout.addRow(self.del_selection_button)
 
         self.b_start_label = QLabel("Baseline start (ms)")
@@ -231,6 +233,13 @@ class currentClampWidget(DragDropWidget):
             self.min_spike_threshold_label, self.min_spike_threshold_edit
         )
 
+        self.min_spikes_label = QLabel("Min spikes")
+        self.min_spikes_edit = LineEdit()
+        self.min_spikes_edit.setObjectName("min_spikes")
+        self.min_spikes_edit.setText("2")
+        self.min_spikes_edit.setValidator(QIntValidator())
+        self.input_layout.addRow(self.min_spikes_label, self.min_spikes_edit)
+
         self.iv_start_label = QLabel("IV curve start")
         self.iv_start_edit = LineEdit()
         self.iv_start_edit.setObjectName("iv_start_edit")
@@ -267,12 +276,7 @@ class currentClampWidget(DragDropWidget):
         self.set_width()
 
         self.acq_dict = {}
-        self.analysis_list = []
-        self.file_list = []
-        self.raw_list = []
-        self.iv_line = []
-        self.iv_plot_x = []
-        self.hertz_x = []
+        hertz_x = []
         self.hertz_y = []
         self.deleted_acqs = {}
         self.pref_dict = {}
@@ -289,40 +293,25 @@ class currentClampWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    # def del_selection(self):
-    #     self.need_to_save = True
-    #     indexes = self.acq_view.selectedIndexes()
-    #     if len(indexes) > 0:
-    #         for index in sorted(indexes, reverse=True):
-    #             del self.acq_model.acq_list[index.row()]
-    #             del self.acq_model.fname_list[index.row()]
-    #         self.acq_model.layoutChanged.emit()
-    #         self.acq_view.clearSelection()
-
     def del_selection(self):
 
         # Deletes the selected acquisitions from the list
-        indexes = self.acq_view.selectedIndexes()
+        indices = self.acq_view.selectedIndexes()
 
-        if len(indexes) > 0:
-            self.acq_model.deleteSelection(indexes)
-            # for index in sorted(indexes, reverse=True):
-            #     del self.acq_model.acq_list[index.row()]
-            #     del self.acq_model.fname_list[index.row()]
-            # self.acq_model.layoutChanged.emit()
-            self.load_widget.clearSelection()
+        if len(indices) > 0:
+            self.acq_model.deleteSelection(indices)
 
     def analyze(self):
         self.need_to_save = True
         self.analyze_acq_button.setEnabled(False)
-        if len(self.acq_model.acq_list) == 0:
+        if not self.acq_model.acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
         else:
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
             self.acq_dict = self.acq_model.acq_dict
-            for count, acq in enumerate(self.acq_dict.items()):
+            for count, acq in enumerate(self.acq_dict.values()):
                 acq.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
                     baseline_start=self.b_start_edit.toInt(),
@@ -333,28 +322,35 @@ class currentClampWidget(DragDropWidget):
                     ramp_start=self.ramp_start_edit.toInt(),
                     ramp_end=self.ramp_end_edit.toInt(),
                     threshold=self.min_spike_threshold_edit.toInt(),
+                    min_spikes=self.min_spikes_edit.toInt(),
                 )
-                self.pbar.setValue(
-                    int(((count + 1) / len(self.acq_model.acq_list)) * 100)
-                )
-            self.analysis_list = [int(i) for i in self.acq_dict]
-            self.acquisition_number.setMaximum(self.analysis_list[-1])
-            self.acquisition_number.setMinimum(self.analysis_list[0])
-            self.acquisition_number.setValue(self.analysis_list[0])
-            self.spinbox(int(self.analysis_list[0]))
+                self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
+            analysis_list = [int(i) for i in self.acq_dict]
+            self.acquisition_number.setMaximum(analysis_list[-1])
+            self.acquisition_number.setMinimum(analysis_list[0])
+            self.acquisition_number.setValue(analysis_list[0])
+            self.spinbox(int(analysis_list[0]))
             self.analyze_acq_button.setEnabled(False)
             self.pbar.setFormat("Analysis finished")
 
     def reset(self):
         self.need_to_save = False
-        self.plot_widget.clear()
-        self.spike_plot.clear()
+        self.clearPlotsAndData()
         self.acq_dict = {}
-        self.analysis_list = []
-        self.acq_model.acq_list = []
-        self.acq_model.fname_list = []
+        self.acq_model.clearData()
         self.analyze_acq_button.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
+        self.deleted_acqs = {}
+        self.recent_reject_acq = {}
+        self.pref_dict = {}
+        self.calc_param_clicked = False
+        self.need_to_save = False
+        self.pbar.setValue(0)
+        self.pbar.setFormat("Ready to analyze")
+
+    def clearPlotsAndData(self):
+        self.plot_widget.clear()
+        self.spike_plot.clear()
         self.raw_data_table.clear()
         self.final_data_table.clear()
         self.iv_curve_plot.clear()
@@ -363,17 +359,6 @@ class currentClampWidget(DragDropWidget):
         self.ramp_aps.clear()
         self.pulse_ap_plot.clear()
         self.ramp_ap_plot.clear()
-        self.iv_line = []
-        self.iv_plot_x = []
-        self.hertz_x = []
-        self.hertz_y = []
-        self.deleted_acqs = {}
-        self.recent_reject_acq = {}
-        self.pref_dict = {}
-        self.calc_param_clicked = False
-        self.need_to_save = False
-        self.pbar.setValue(0)
-        self.pbar.setFormat("")
 
     def spinbox(self, h):
         self.need_to_save = True
@@ -398,8 +383,12 @@ class currentClampWidget(DragDropWidget):
             )
             if acq_object.ramp == "0":
                 self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
-                self.plot_widget.plot(x=acq_object.plot_x, y=acq_object.plot_y, pen="r")
-                if acq_object.peaks[0] is not np.nan:
+                self.plot_widget.plot(
+                    x=acq_object.plot_delta_v()[0],
+                    y=acq_object.plot_delta_v()[1],
+                    pen="r",
+                )
+                if not np.isnan(acq_object.peaks[0]):
                     self.plot_widget.plot(
                         x=acq_object.spike_peaks_x(),
                         y=acq_object.spike_peaks_y(),
@@ -416,7 +405,8 @@ class currentClampWidget(DragDropWidget):
                     )
 
                     self.spike_plot.plot(
-                        x=acq_object.spike_x_array(), y=acq_object.first_ap,
+                        x=acq_object.spike_x_array(),
+                        y=acq_object.first_ap,
                     )
                     self.spike_plot.plot(
                         x=acq_object.spike_width_x(),
@@ -439,7 +429,7 @@ class currentClampWidget(DragDropWidget):
                     )
             elif acq_object.ramp == "1":
                 self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
-                if len(acq_object.peaks) > 0:
+                if not np.isnan(acq_object.peaks[0]):
                     self.plot_widget.plot(
                         x=acq_object.spike_peaks_x(),
                         y=acq_object.spike_peaks_y(),
@@ -455,7 +445,8 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="b",
                     )
                     self.spike_plot.plot(
-                        x=acq_object.spike_x_array(), y=acq_object.first_ap,
+                        x=acq_object.spike_x_array(),
+                        y=acq_object.first_ap,
                     )
                     self.spike_plot.plot(
                         x=acq_object.spike_width_x(),
@@ -498,19 +489,16 @@ class currentClampWidget(DragDropWidget):
         ]
         del self.acq_dict[str(self.acquisition_number.text())]
         self.plot_widget.clear()
-        self.analysis_list.remove(int(self.acquisition_number.text()))
 
     def reset_rejected_acqs(self):
         self.need_to_save = False
         self.acq_dict.update(self.deleted_acqs)
-        self.analysis_list += [int(i) for i in self.deleted_acqs.keys()]
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
 
     def reset_recent_reject_acq(self):
         self.need_to_save = False
         self.acq_dict.update(self.recent_reject_acq)
-        self.analysis_list += [int(i) for i in self.recent_reject_acq.keys()]
 
     def final_analysis_button(self):
         self.need_to_save = True
@@ -519,15 +507,15 @@ class currentClampWidget(DragDropWidget):
         self.final_obj = FinalCurrentClampAnalysis(self.acq_dict)
         self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict())
         self.final_data_table.setData(self.final_obj.final_df.T.to_dict())
-        self.pulse_aps.setData(self.final_obj.pulse_df.T.to_dict())
-        self.ramp_aps.setData(self.final_obj.ramp_df.T.to_dict())
         self.deltav.setData(self.final_obj.deltav_df.T.to_dict())
         self.plot_iv_curve()
         self.plot_spike_frequency(self.final_obj.final_df)
-        if not self.final_obj.pulse_df.empty:
-            self.plot_pulse_ap(self.final_obj.pulse_df)
-        if not self.final_obj.ramp_df.empty:
-            self.plot_ramp_ap(self.final_obj.ramp_df)
+        if not self.final_obj.pulse_ap_df.empty:
+            self.plot_pulse_ap(self.final_obj.pulse_ap_df)
+            self.pulse_aps.setData(self.final_obj.pulse_ap_df.T.to_dict())
+        if not self.final_obj.ramp_ap_df.empty:
+            self.plot_ramp_ap(self.final_obj.ramp_ap_df)
+            self.ramp_aps.setData(self.final_obj.ramp_ap_df.T.to_dict())
 
     def plot_iv_curve(self):
         deltav_df = self.final_obj.deltav_df
@@ -549,8 +537,8 @@ class currentClampWidget(DragDropWidget):
                 if iv_df[i].isna().all():
                     pass
                 else:
-                    pencil = pg.mkPen(color=pg.intColor(i))
-                    brush = pg.mkBrush(color=pg.intColor(i))
+                    pencil = pg.mkPen(color=pg.intColor(int(i)))
+                    brush = pg.mkBrush(color=pg.intColor(int(i)))
                     self.iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[i], pen=pencil)
                     self.iv_curve_plot.plot(
                         deltav_df["deltav_x"],
@@ -570,26 +558,26 @@ class currentClampWidget(DragDropWidget):
             plot_epochs = df1["Epoch"].to_list()
             df2 = df1["Hertz"].copy()
             df2.dropna(axis=0, how="all", inplace=True)
-            self.hertz_x = np.array(df2.T.index.map(int))
-            self.hertz_y = df2.to_numpy()
-            if len(self.hertz_y) == 1:
+            hertz_x = np.array(df2.T.index.map(int))
+            hertz_y = df2.to_numpy()
+            if len(hertz_y) == 1:
                 self.spike_curve_plot.plot(
-                    self.hertz_x,
-                    self.hertz_y[0],
+                    hertz_x,
+                    hertz_y[0],
                     symbol="o",
                     name=f"Epoch {plot_epochs[0]}",
                 )
             else:
                 self.spike_curve_plot.addLegend()
-                for i in range(len(self.hertz_y)):
-                    if np.isnan(self.hertz_y).all():
+                for i in range(len(hertz_y)):
+                    if np.isnan(hertz_y).all():
                         pass
                     else:
                         pencil = pg.mkPen(color=pg.intColor(i))
                         brush = pg.mkBrush(color=pg.intColor(i))
                         self.spike_curve_plot.plot(
-                            self.hertz_x,
-                            self.hertz_y[i],
+                            hertz_x,
+                            hertz_y[i],
                             symbol="o",
                             pen=pencil,
                             name=f"Epoch {plot_epochs[i]}",
@@ -634,29 +622,27 @@ class currentClampWidget(DragDropWidget):
         self.pbar.setFormat("Loading...")
         file_list = list(directory.glob("*.json"))
         if not file_list:
-            self.file_list = None
+            pass
         else:
             for i in range(len(file_list)):
                 x = Acq(self.analysis_type, file_list[i])
                 x.load_acq()
                 self.acq_dict[str(x.acq_number)] = x
                 self.pbar.setValue(int(((i) / len(file_list)) * 100))
+            self.acq_model.setLoadData(self.acq_dict)
             excel_file = list(directory.glob("*.xlsx"))[0]
             self.final_obj = LoadCurrentClampData(excel_file)
             self.plot_spike_frequency(self.final_obj.final_df)
-            self.plot_iv_curve(self.final_obj.iv_df)
+            self.plot_iv_curve()
             self.pbar.setFormat("Loaded")
             self.acquisition_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.acq_dict.keys())[0]))
-            self.analysis_list = np.arange(
+            analysis_list = np.arange(
                 int(list(self.acq_dict.keys())[0]),
                 int(list(self.acq_dict.keys())[-1]) + 1,
             ).tolist()
             self.acquisition_number.setValue(int(list(self.acq_dict.keys())[0]))
-            self.raw_list = [
-                self.acq_dict[i].current_clamp_dict for i in self.acq_dict.keys()
-            ]
-            self.spinbox(self.analysis_list[0])
+            self.spinbox(analysis_list[0])
 
     def set_preferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)

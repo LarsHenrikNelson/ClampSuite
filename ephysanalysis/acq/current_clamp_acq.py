@@ -25,6 +25,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ramp_start=300,
         ramp_end=4000,
         threshold=-15,
+        min_spikes=2,
     ):
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
@@ -48,13 +49,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.ramp_end = int(ramp_end * self.s_r_c)
         self.x_array = np.arange(len(self.array)) / (self.s_r_c)
         self.threshold = threshold
+        self.min_spikes = min_spikes
 
         # Analysis functions
         self.get_delta_v()
         self.baseline_stability()
         self.find_spike_parameters()
         self.first_spike_parameters()
-        self.plot_delta_v()
         self.get_ramp_rheo()
         self.find_spike_width()
         self.find_AHP_peak()
@@ -67,7 +68,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         This function finds the delta-v for a pulse. It simply takes the mean
         value from the pulse start to end for pulses without spikes. For
         pulses with spikes it takes the mode of the moving mean.
-        
+
         Returns
         -------
         TYPE
@@ -93,7 +94,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                         self.array[self.start : self.pulse_end],
                         window=1000,
                         min_count=1,
-                    )
+                    ),
+                    keepdims=True,
                 )
                 self.delta_v = m[0][0] - self.baseline_mean
         elif self.ramp == "1":
@@ -105,14 +107,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
     def find_spike_parameters(self):
         """
-        This function returns the spike parameters of a pulse or ramp that 
+        This function returns the spike parameters of a pulse or ramp that
         spikes. A separate function characterizes the first spike in a train
         of spikes. This function is to determine whether spikes exist.
 
         Returns
         -------
         self.rheo_x
-            The x position in an array of the spike threshold. Also used to 
+            The x position in an array of the spike threshold. Also used to
             calculate the rheobase for a ramp.
         self.spike_threshold
             The threshold at which the first spike occurs.
@@ -132,18 +134,22 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.peaks, _ = signal.find_peaks(
                 self.array[: self.ramp_end], height=self.threshold, prominence=10
             )
-        if len(self.peaks) == 0:
+        if len(self.peaks) < self.min_spikes:
             # If there are no peaks fill in values with np.nan. This helps with
             # analysis further down the line as nan values are fairly easy to
             # work with.
-            self.peaks = [np.nan]
+            self.peaks = np.array([np.nan])
             self.spike_threshold = np.nan
             self.rheo_x = np.nan
             self.hertz_exact = np.nan
-            self.iei = [np.nan]
+            self.iei = np.array([np.nan])
             self.iei_mean = np.nan
             self.ap_v = np.nan
+            self.peak_volt = np.nan
         else:
+            # Get the peak voltage
+            self.peak_volt = self.array[self.peaks[0]]
+
             # Differentiate the array to find the peak dv/dt.
             dv = np.gradient(self.array)
             dt = np.gradient(np.arange(len(self.x_array)) / 10)
@@ -170,16 +176,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # threshold based on where the maximum velocity occurs of the first
             # spike occurs.
             if self.ramp == "0":
-                # if (
-                #     peak_dv[0] < self.pulse_start + 200
-                #     and peak_dv[0] > self.pulse_start + 30
-                # ):
-                #     multiplier = 20
-                # elif peak_dv[0] <= self.pulse_start + 30:
-                #     multiplier = 22
-                # elif peak_dv[0] >= self.pulse_start + 200:
-                #     multiplier = 6
-
                 # This takes the last value of an array of values that are
                 # less than the threshold of the second derivative. It was
                 # the most robust way to find the spike threshold time.
@@ -229,14 +225,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         None.
 
         """
-        if self.peaks[0] is np.nan:
+        if np.isnan(self.peaks[0]):
             # If there are no peaks fill in values with np.nan. This helps with
             # analysis further down the line as nan values are fairly easy to
             # work with.
             self.width_comp = np.nan
-            self.first_ap = [np.nan]
+            self.first_ap = np.array([np.nan])
             self.indices = np.nan
-            self.peak_volt = np.nan
         else:
             if self.ramp == "0":
                 # To extract the first action potential and to find the
@@ -304,7 +299,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def find_spike_width(self):
         # Create the masked array using the mask found earlier to find
         # The pulse half-width.
-        if self.peaks[0] is not np.nan:
+        if not np.isnan(self.peaks[0]):
             if self.ramp == "0":
                 end = self.pulse_end
             else:
@@ -378,7 +373,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         The idea for the function was initially inspired by a program called
         Easy Electropysiology (https://github.com/easy-electrophysiology).
-        
+
         This function calculates the local variance in spike frequency
         accomadation that was drawn from the paper:
         Shinomoto, Shima and Tanji. (2003). Differences in Spiking Patterns
@@ -412,9 +407,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         Rather than divide the afterhyperpolarization potential into different
         segments it seems best to pull out the peak of the AHP and its timing
         compared to the the first spike or spike threshold. It seems to me to
-        be less arbitrary. The AHP 
+        be less arbitrary. The AHP
         """
-        if self.peaks[0] is not np.nan:
+        if not np.isnan(self.peaks[0]):
             peak = np.argmax(self.first_ap)
             dvv = np.gradient(np.gradient(self.first_ap[: int(peak + 5 * self.s_r_c)]))
             corr_factor = len(self.first_ap) - len(
@@ -455,10 +450,16 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         return self.x_array[self.ap_index[0] : self.ap_index[1]]
 
     def spike_peaks_x(self):
-        return np.array(self.peaks) / self.s_r_c
+        if not np.isnan(self.peaks[0]):
+            return np.array(self.peaks) / self.s_r_c
+        else:
+            return []
 
     def spike_peaks_y(self):
-        return self.array[self.peaks]
+        if not np.isnan(self.peaks[0]):
+            return self.array[self.peaks]
+        else:
+            return []
 
     def plot_rheo_x(self):
         return [self.rheo_x / self.s_r_c]

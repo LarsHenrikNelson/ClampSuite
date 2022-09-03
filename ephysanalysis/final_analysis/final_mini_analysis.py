@@ -47,52 +47,11 @@ class FinalMiniAnalysis:
         None.
 
         """
-
-        # acq_list = pd.Series(
-        #     sum([item.acq_number_list for item in self.acq_dict.values()], []),
-        #     name="Acquisition",
-        # )
-        # amplitude_list = pd.Series(
-        #     sum([item.amplitudes for item in self.acq_dict.values()], []),
-        #     name="Amplitude (pA)",
-        # )
-        # taus_list = pd.Series(
-        #     sum([item.taus for item in self.acq_dict.values()], []), name="Est tau (ms)"
-        # )
-        # event_times_list = pd.Series(
-        #     sum([item.event_times for item in self.acq_dict.values()], []),
-        #     name="Event time (ms)",
-        # )
-        # time_stamp_events = pd.Series(
-        #     sum([item.time_stamp_events for item in self.acq_dict.values()], []),
-        #     name="Acq time stamp",
-        # )
-        # rise_times_list = pd.Series(
-        #     sum([item.rise_times for item in self.acq_dict.values()], []),
-        #     name="Rise time (ms)",
-        # )
-        # rise_rates_list = pd.Series(
-        #     sum([item.rise_rates for item in self.acq_dict.values()], []),
-        #     name="Rise rate (pA/ms)",
-        # )
-        # iei_list = pd.Series(
-        #     np.concatenate([item.iei for item in self.acq_dict.values()]),
-        #     name="IEI (ms)",
-        # )
-
-        # self.raw_df = pd.concat(
-        #     [
-        #         acq_list,
-        #         amplitude_list,
-        #         taus_list,
-        #         event_times_list,
-        #         time_stamp_events,
-        #         rise_times_list,
-        #         rise_rates_list,
-        #         iei_list,
-        #     ],
-        #     axis=1,
-        # )
+        self.acq_dict = {
+            i[0]: i[1]
+            for i in self.acq_dict.items()
+            if len(i[1].postsynaptic_events) > 0
+        }
         df_list = [i.final_acq_data() for i in self.acq_dict.values()]
 
         self.raw_df = pd.concat(df_list, axis=0, ignore_index=True)
