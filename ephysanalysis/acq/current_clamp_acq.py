@@ -95,7 +95,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                         window=1000,
                         min_count=1,
                     ),
-                    keepdims=True,
                 )
                 self.delta_v = m[0][0] - self.baseline_mean
         elif self.ramp == "1":

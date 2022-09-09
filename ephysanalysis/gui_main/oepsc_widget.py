@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
     QHBoxLayout,
@@ -29,10 +29,10 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QDoubleSpinBox,
 )
-from PySide6.QtGui import QIntValidator, QDoubleValidator
-from PySide6.QtCore import QThreadPool
-from PySide6 import QtCore
-from PySide6.QtCore import Qt, QSize
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
+from PyQt5.QtCore import QThreadPool
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt, QSize
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget

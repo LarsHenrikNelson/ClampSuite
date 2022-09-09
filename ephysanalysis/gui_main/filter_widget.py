@@ -7,7 +7,7 @@ Created on Sun Apr  3 12:20:28 2022
 """
 from copy import deepcopy
 
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QDoubleSpinBox,
 )
-from PySide6.QtGui import QIntValidator
-from PySide6.QtCore import QSize
+from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
 
@@ -128,25 +128,25 @@ class filterWidget(QWidget):
 
         self.high_pass_label = QLabel("High-pass")
         self.high_pass_edit = LineEdit()
-        self.high_pass_edit.setValidator(QIntValidator())
+        self.high_pass_edit.setValidator(QDoubleValidator())
         self.high_pass_edit.setEnabled(True)
         self.filt_layout.addRow(self.high_pass_label, self.high_pass_edit)
 
         self.high_width_label = QLabel("High-width")
         self.high_width_edit = LineEdit()
-        self.high_width_edit.setValidator(QIntValidator())
+        self.high_width_edit.setValidator(QDoubleValidator())
         self.high_width_edit.setEnabled(True)
         self.filt_layout.addRow(self.high_width_label, self.high_width_edit)
 
         self.low_pass_label = QLabel("Low-pass")
         self.low_pass_edit = LineEdit()
-        self.low_pass_edit.setValidator(QIntValidator())
+        self.low_pass_edit.setValidator(QDoubleValidator())
         self.low_pass_edit.setEnabled(True)
         self.filt_layout.addRow(self.low_pass_label, self.low_pass_edit)
 
         self.low_width_label = QLabel("Low-width")
         self.low_width_edit = LineEdit()
-        self.low_width_edit.setValidator(QIntValidator())
+        self.low_width_edit.setValidator(QDoubleValidator())
         self.low_width_edit.setEnabled(True)
         self.filt_layout.addRow(self.low_width_label, self.low_width_edit)
 
@@ -232,10 +232,10 @@ class filterWidget(QWidget):
             baseline_end=self.b_end_edit.toInt(),
             filter_type=self.filter_selection.currentText(),
             order=self.order_edit.toInt(),
-            high_pass=self.high_pass_edit.toInt(),
-            high_width=self.high_width_edit.toInt(),
-            low_pass=self.low_pass_edit.toInt(),
-            low_width=self.low_width_edit.toInt(),
+            high_pass=self.high_pass_edit.toFloat(),
+            high_width=self.high_width_edit.toFloat(),
+            low_pass=self.low_pass_edit.toFloat(),
+            low_width=self.low_width_edit.toFloat(),
             window=window,
             polyorder=self.polyorder_edit.toInt(),
         )
@@ -245,10 +245,10 @@ class filterWidget(QWidget):
             "baseline_end": self.b_end_edit.toInt(),
             "filter_type": self.filter_selection.currentText(),
             "order": self.order_edit.toInt(),
-            "high_pass": self.high_pass_edit.toInt(),
-            "high_width": self.high_width_edit.toInt(),
-            "low_pass": self.low_pass_edit.toInt(),
-            "low_width": self.low_width_edit.toInt(),
+            "high_pass": self.high_pass_edit.toFloat(),
+            "high_width": self.high_width_edit.toFloat(),
+            "low_pass": self.low_pass_edit.toFloat(),
+            "low_width": self.low_width_edit.toFloat(),
             "window": self.window_edit.currentText(),
             "polyorder": self.polyorder_edit.toInt(),
         }

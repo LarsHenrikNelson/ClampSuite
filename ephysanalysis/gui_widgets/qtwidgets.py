@@ -3,7 +3,7 @@ from glob import glob
 import json
 from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
 
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QLineEdit,
     QSizePolicy,
     QWidget,
@@ -16,11 +16,11 @@ from PySide6.QtWidgets import (
     QLabel,
     QAbstractItemDelegate,
 )
-from PySide6.QtCore import (
+from PyQt5.QtCore import (
     QRunnable,
-    Slot,
+    pyqtSlot,
     QObject,
-    Signal,
+    pyqtSignal,
     Qt,
     QAbstractListModel,
     QPointF,
@@ -76,7 +76,7 @@ class SaveWorker(QRunnable):
         self.dictionary = dictionary
         self.signals = WorkerSignals()
 
-    @Slot()
+    @pyqtSlot()
     def run(self):
         for i, key in enumerate(self.dictionary.keys()):
             x = self.dictionary[key]
@@ -104,7 +104,7 @@ class MiniSaveWorker(QRunnable):
         self.dictionary = dictionary
         self.signals = WorkerSignals()
 
-    @Slot()
+    @pyqtSlot()
     def run(self):
         for i, key in enumerate(self.dictionary.keys()):
             x = deepcopy(self.dictionary[key])
@@ -124,10 +124,10 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    dictionary = Signal(dict)
-    progress = Signal(int)
-    finished = Signal(str)
-    path = Signal(object)
+    dictionary = pyqtSignal(dict)
+    progress = pyqtSignal(int)
+    finished = pyqtSignal(str)
+    path = pyqtSignal(object)
 
 
 class ListView(QListView):
@@ -161,7 +161,7 @@ class ListView(QListView):
         else:
             e.ignore()
 
-    @Slot()
+    @pyqtSlot()
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the
@@ -321,7 +321,7 @@ class DragDropWidget(QWidget):
         else:
             e.ignore()
 
-    @Slot()
+    @pyqtSlot()
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the

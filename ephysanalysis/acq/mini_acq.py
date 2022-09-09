@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.fft import fft, ifft
-from scipy import signal, stats
+from scipy import signal, stats, interpolate
 
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
@@ -12,8 +12,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self,
         sample_rate=10000,
         baseline_start=0,
-        baseline_end=800,
-        filter_type="remez_1",
+        baseline_end=80,
+        filter_type="remez_2",
         order=201,
         high_pass=None,
         high_width=None,
@@ -22,21 +22,20 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         window=None,
         polyorder=None,
         template=None,
-        rc_check=False,
-        rc_check_start=None,
-        rc_check_end=None,
+        rc_check=True,
+        rc_check_start=10000,
+        rc_check_end=10300,
         sensitivity=3,
         amp_threshold=4,
         mini_spacing=2,
-        min_rise_time=1,
+        min_rise_time=0.5,
         max_rise_time=4,
-        min_decay_time=2,
+        min_decay_time=0.5,
         invert=False,
         decon_type="wiener",
         curve_fit_decay=False,
         curve_fit_type="db_exp",
     ):
-
         # Set the attributes for the acquisition
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
@@ -55,9 +54,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.array[self.baseline_start : self.baseline_end]
         )
         self.rc_check = rc_check
-        if rc_check:
-            self.rc_check_start = int(rc_check_start * self.s_r_c)
-            self.rc_check_end = int(rc_check_end * self.s_r_c)
+        self.rc_check_start = int(rc_check_start * self.s_r_c)
+        self.rc_check_end = int(rc_check_end * self.s_r_c)
         self.sensitivity = sensitivity
         self.amp_threshold = amp_threshold
         self.mini_spacing = int(mini_spacing * self.s_r_c)
@@ -74,8 +72,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.filter_array()
         self.create_mespc_array()
         self.set_sign()
-        self.wiener_deconvolution()
-        self.wiener_filt()
+        self.decon_filt()
         self.create_events()
 
     def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=0):
@@ -123,7 +120,17 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             self.final_array = self.final_array * -1
 
-    def wiener_deconvolution(self, lambd=4):
+    def baseline_correction(self):
+        a, b, c = 0.93259504, -249.26795569, -1.17790283
+        end = len(self.final_array)
+        smooth = a * np.log(end + b) + c
+        spl = interpolate.UnivariateSpline(
+            self.x_array, self.final_array, s=end * smooth
+        )
+        baseline = spl(self.x_array)
+        return baseline
+
+    def deconvolution(self, lambd=4):
         """
         The Wiener deconvolution equation can be found on GitHub from pbmanis
         and danstowell. The basic idea behind this function is deconvolution
@@ -152,18 +159,19 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             (self.template, np.zeros(len(self.final_array) - len(self.template)))
         )
         H = fft(kernel)
+        baseline = self.baseline_correction()
+        b_corrected = self.final_array - baseline
         if self.decon_type == "fft":
-            self.deconvolved_array = np.real(ifft(fft(self.final_array) / H))
+            deconvolved_array = np.real(ifft(fft(b_corrected) / H))
         elif self.decon_type == "wiener":
-            self.deconvolved_array = np.real(
-                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
+            deconvolved_array = np.real(
+                ifft(fft(b_corrected) * np.conj(H) / (H * np.conj(H) + lambd**2))
             )
         else:
-            self.deconvolved_array = signal.convolve(
-                self.final_array, self.template, mode="same"
-            )
+            deconvolved_array = signal.convolve(b_corrected, self.template, mode="same")
+        return deconvolved_array
 
-    def wiener_filt(self):
+    def decon_filt(self):
         """
         This function takes the deconvolved array, filters it and finds the
         peaks of the which is where mini events are located.
@@ -178,13 +186,11 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         Returns
         -------
-        peaks : PSC or PSP peaks.
-        y1 : Wiener deconvolved signal.
+        None.
 
         """
-        baselined_decon_array = self.deconvolved_array - np.mean(
-            self.deconvolved_array[0:800]
-        )
+        deconvolved_array = self.deconvolution()
+        baselined_decon_array = deconvolved_array - np.mean(deconvolved_array[0:800])
         if self.decon_type == "fft" or self.decon_type == "wiener":
             filt = signal.firwin2(
                 301,
@@ -194,12 +200,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 fs=self.sample_rate,
             )
             y = signal.filtfilt(filt, 1.0, baselined_decon_array)
-            self.final_decon_array = signal.detrend(y, type="linear")
+            self.final_decon_array = y
         else:
-            self.final_decon_array = self.deconvolved_array
+            self.final_decon_array = deconvolved_array
         mu, std = stats.norm.fit(self.final_decon_array)
         peaks, _ = signal.find_peaks(
-            self.final_decon_array, height=self.sensitivity * abs(std)
+            self.final_decon_array - mu, height=self.sensitivity * abs(std)
         )
         self.events = peaks.tolist()
 
@@ -222,7 +228,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         event_time = []
         if len(self.events) == 0:
             pass
-        for count, peak in enumerate(self.events):
+        for peak in self.events:
             if len(self.final_array) - peak < 20 * self.s_r_c:
                 pass
             else:
@@ -243,29 +249,26 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 if event.event_peak_x is np.nan or event.event_peak_x in event_time:
                     pass
                 else:
-                    if count > 0:
+                    if event_number > 0:
                         if (
-                            self.events[count] - self.events[count - 1]
-                            < self.mini_spacing
+                            event.event_peak_x
+                            - self.postsynaptic_events[-1].event_peak_x
+                            > self.mini_spacing
+                            and event.amplitude > self.amp_threshold
+                            and event.rise_time > self.min_rise_time
+                            and event.rise_time < self.max_rise_time
+                            and event.final_tau_x > self.min_decay_time
+                            and event.final_tau_x > event.rise_time
                         ):
-                            pass
+                            self.postsynaptic_events += [event]
+                            self.final_events += [peak]
+                            event_time += [event.event_peak_x]
+                            event_number += 1
                         else:
-                            if (
-                                event.amplitude > self.amp_threshold
-                                and event.rise_time > self.min_rise_time
-                                and event.rise_time < self.max_rise_time
-                                and event.final_tau_x > self.min_decay_time
-                                and event.final_tau_x > event.rise_time
-                            ):
-                                self.postsynaptic_events += [event]
-                                self.final_events += [peak]
-                                event_time += [event.event_peak_x]
-                                event_number += 1
-                            else:
-                                pass
+                            pass
                     else:
                         if event.amplitude > self.amp_threshold:
-                            self.postsynaptic_events += [event]
+                            self.postsynaptic_events.append(event)
                             self.final_events += [peak]
                             event_time += [event.event_peak_x]
                             event_number += 1
@@ -330,33 +333,53 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         # to the end of the postsynaptic event list. This prevents a bunch of
         # issues since you cannot modify the position of plot elements in the
         # pyqtgraph data items list.
-        self.postsynaptic_events.sort(key=lambda x: x.event_peak_x)
-        self.final_events.sort()
 
-        final_dict["Acquisition"] = [i.acq_number for i in self.postsynaptic_events]
-        final_dict["Amplitude (pA)"] = [i.amplitude for i in self.postsynaptic_events]
-        final_dict["Est tau (ms)"] = [i.final_tau_x for i in self.postsynaptic_events]
-        final_dict["Event time (ms)"] = [
-            i.event_peak_x / self.s_r_c for i in self.postsynaptic_events
-        ]
-        final_dict["Acq time stamp"] = [
-            self.time_stamp for i in self.postsynaptic_events
-        ]
-        final_dict["Rise time (ms)"] = [i.rise_time for i in self.postsynaptic_events]
-        final_dict["Rise rate (pA/ms)"] = [
-            i.rise_rate for i in self.postsynaptic_events
-        ]
-        if self.curve_fit_decay:
-            final_dict["Curve fit tau (ms)"] = [
-                i.fit_tau for i in self.postsynaptic_events
+        if self.postsynaptic_events:
+            self.postsynaptic_events.sort(key=lambda x: x.event_peak_x)
+            self.final_events.sort()
+            final_dict["Acquisition"] = [i.acq_number for i in self.postsynaptic_events]
+            final_dict["Amplitude (pA)"] = [
+                i.amplitude for i in self.postsynaptic_events
             ]
+            final_dict["Est tau (ms)"] = [
+                i.final_tau_x for i in self.postsynaptic_events
+            ]
+            final_dict["Event time (ms)"] = [
+                i.event_peak_x / self.s_r_c for i in self.postsynaptic_events
+            ]
+            final_dict["Acq time stamp"] = [
+                self.time_stamp for i in self.postsynaptic_events
+            ]
+            final_dict["Rise time (ms)"] = [
+                i.rise_time for i in self.postsynaptic_events
+            ]
+            final_dict["Rise rate (pA/ms)"] = [
+                i.rise_rate for i in self.postsynaptic_events
+            ]
+            if self.curve_fit_decay:
+                final_dict["Curve fit tau (ms)"] = [
+                    i.fit_tau for i in self.postsynaptic_events
+                ]
 
-        final_dict["IEI (ms)"] = np.append(
-            np.diff(final_dict["Event time (ms)"]), np.nan
-        )
-        self.freq = len(final_dict["Amplitude (pA)"]) / (
-            len(self.final_array) / self.sample_rate
-        )
+            final_dict["IEI (ms)"] = np.append(
+                np.diff(final_dict["Event time (ms)"]), np.nan
+            )
+            self.freq = len(final_dict["Amplitude (pA)"]) / (
+                len(self.final_array) / self.sample_rate
+            )
+        else:
+            final_dict["Acquisition"] = [np.nan]
+            final_dict["Amplitude (pA)"] = [np.nan]
+            final_dict["Est tau (ms)"] = [np.nan]
+            final_dict["Event time (ms)"] = [np.nan]
+            final_dict["Acq time stamp"] = [np.nan]
+            final_dict["Rise time (ms)"] = [np.nan]
+            final_dict["Rise rate (pA/ms)"] = [np.nan]
+            if self.curve_fit_decay:
+                final_dict["Curve fit tau (ms)"] = [np.nan]
+
+            final_dict["IEI (ms)"] = [np.nan]
+            self.freq = np.nan
         return pd.DataFrame(final_dict)
 
     def event_arrays(self):
@@ -385,7 +408,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         """
         self.saved_events_dict = []
         self.final_decon_array = "saved"
-        self.deconvolved_array = "saved"
         self.filtered_array = "saved"
         self.events = "saved"
         self.x_array = "saved"

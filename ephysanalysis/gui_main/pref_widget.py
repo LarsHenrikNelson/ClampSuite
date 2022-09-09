@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
 )
 
-from PySide6 import QtGui
-from PySide6.QtCore import Qt
+from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 import qdarkstyle
 
@@ -104,7 +104,7 @@ class PreferencesWidget(QWidget):
         palette = self.style_dict.get(text)
         print(palette.ID)
         app = QApplication.instance()
-        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api="pyside6", palette=palette))
+        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=palette))
 
 
 class MiniAnalysisSettings(QWidget):

@@ -1,8 +1,8 @@
 from pathlib import Path, PurePath
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (
+from PyQt5.QtCore import Qt
+# from PyQt5.QtGui import QAction
+from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QComboBox,
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QToolBar,
     QStackedWidget,
+    QAction,
 )
 import qdarkstyle
 

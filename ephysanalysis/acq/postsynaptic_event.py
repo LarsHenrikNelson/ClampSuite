@@ -17,6 +17,29 @@ class MiniEvent:
     def __init__(self):
         self.mini_class = "Mini"
 
+    def analyze(
+        self,
+        acq_number,
+        event_pos,
+        y_array,
+        sample_rate,
+        curve_fit_decay=False,
+        curve_fit_type="db_exp",
+        prior_peak=0,
+    ):
+        self.acq_number = acq_number
+        self.event_pos = int(event_pos)
+        self.prior_peak = prior_peak
+        self.sample_rate = sample_rate
+        self.s_r_c = sample_rate / 1000
+        self.curve_fit_decay = curve_fit_decay
+        self.curve_fit_type = curve_fit_type
+        self.fit_tau = np.nan
+        self.create_event(y_array)
+        self.find_peak()
+        self.find_event_parameters(y_array)
+        self.peak_align_value = self.event_peak_x - self.array_start
+
     def create_event(self, y_array):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
         self.adjust_pos = int(self.event_pos - self.array_start)
@@ -36,10 +59,10 @@ class MiniEvent:
         # np.where(self.x_array == self.prior_peak)
         peaks_1, _ = signal.find_peaks(
             -1 * self.event_array[self.adjust_pos :],
-            prominence=2,
-            # width=0.4 * self.s_r_c,
-            distance=int(2 * self.s_r_c),
-            rel_height=1,
+            prominence=4,
+            width=0.4 * self.s_r_c,
+            distance=int(3 * self.s_r_c),
+            # rel_height=1,
         )
         # peaks_1 = signal.argrelextrema(
         #     self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
@@ -310,26 +333,3 @@ class MiniEvent:
             self.s_r_c = self.sample_rate_correction
 
         self.create_event_array(final_array)
-
-    def analyze(
-        self,
-        acq_number,
-        event_pos,
-        y_array,
-        sample_rate,
-        curve_fit_decay=False,
-        curve_fit_type="db_exp",
-        prior_peak=0,
-    ):
-        self.acq_number = acq_number
-        self.event_pos = int(event_pos)
-        self.prior_peak = prior_peak
-        self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
-        self.curve_fit_decay = curve_fit_decay
-        self.curve_fit_type = curve_fit_type
-        self.fit_tau = np.nan
-        self.create_event(y_array)
-        self.find_peak()
-        self.find_event_parameters(y_array)
-        self.peak_align_value = self.event_peak_x - self.array_start

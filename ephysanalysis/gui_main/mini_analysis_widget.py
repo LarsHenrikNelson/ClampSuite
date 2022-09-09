@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 import pandas as pd
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
     QHBoxLayout,
@@ -24,9 +24,10 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QSlider,
     QToolButton,
+    QShortcut,
 )
-from PySide6.QtGui import QIntValidator, QKeySequence, QFont, QShortcut
-from PySide6.QtCore import QThreadPool, Qt
+from PyQt5.QtGui import QIntValidator, QKeySequence, QFont
+from PyQt5.QtCore import QThreadPool, Qt
 import pyqtgraph as pg
 
 from ..acq.acq import Acq
@@ -627,7 +628,6 @@ class MiniAnalysisWidget(DragDropWidget):
     def del_selection(self):
         # Deletes the selected acquisitions from the list
         indices = self.load_widget.selectedIndexes()
-        print(indices)
         if len(indices) > 0:
             self.acq_model.deleteSelection(indices)
 
@@ -719,8 +719,8 @@ class MiniAnalysisWidget(DragDropWidget):
                     polyorder=self.polyorder_edit.toInt(),
                     template=self.template,
                     rc_check=self.rc_checkbox.isChecked(),
-                    rc_check_start=self.rc_check_start_edit.toInt(),
-                    rc_check_end=self.rc_check_end_edit.toInt(),
+                    rc_check_start=self.rc_check_start_edit.toFloat(),
+                    rc_check_end=self.rc_check_end_edit.toFloat(),
                     sensitivity=self.sensitivity_edit.toFloat(),
                     amp_threshold=self.amp_thresh_edit.toFloat(),
                     mini_spacing=self.mini_spacing_edit.toFloat(),
@@ -735,6 +735,16 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.pbar.setValue(
                     int(((count + 1) / len(self.acq_model.fname_list)) * 100)
                 )
+                # if not acq.postsynaptic_events:
+                #     self.deleted_acqs[
+                #         str(self.acquisition_number.text())
+                #     ] = self.acq_dict[str(self.acquisition_number.text())]
+                #     self.recent_reject_acq[
+                #         str(self.acquisition_number.text())
+                #     ] = self.acq_dict[str(self.acquisition_number.text())]
+
+                #     # Remove deleted acquisition from the acquisition dictionary.
+                #     del self.acq_dict[str(self.acquisition_number.text())]
 
             # This part initializes acquisition_number spinbox, sets the min and max.
             acq_number = list(self.acq_dict.keys())
@@ -790,7 +800,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
             # acquisition dictionary. Makes it more readable.
-            self.acq_object = self.acq_dict[str(self.acquisition_number.value())]
+            self.acq_object = self.acq_dict.get(str(self.acquisition_number.value()))
 
             # Set the epoch
             self.epoch_edit.setText(self.acq_object.epoch)
@@ -804,7 +814,6 @@ class MiniAnalysisWidget(DragDropWidget):
                 symbolSize=8,
                 symbolBrush=(0, 0, 0, 0),
                 symbolPen=(0, 0, 0, 0),
-                skipFiniteCheck=True,
             )
 
             # Creates the ability to click on specific points in the main
@@ -834,18 +843,17 @@ class MiniAnalysisWidget(DragDropWidget):
             # Enabled the acquisition number since it was disabled earlier.
             self.acquisition_number.setEnabled(True)
 
-            # Create the mini list and the true index of each mini.
-            # Since the plot items on a pyqtgraph plot cannot be sorted
-            # I had to create a way to correctly reference the position
-            # of minis when adding new minis because I ended up just
-            # adding the new minis to postsynaptic events list.
-            self.mini_spinbox_list = list(
-                range(len(self.acq_object.postsynaptic_events))
-            )
-            self.sort_index = list(np.argsort(self.acq_object.final_events))
-
             # Plot the postsynaptic events.
             if self.acq_object.postsynaptic_events:
+                # Create the mini list and the true index of each mini.
+                # Since the plot items on a pyqtgraph plot cannot be sorted
+                # I had to create a way to correctly reference the position
+                # of minis when adding new minis because I ended up just
+                # adding the new minis to postsynaptic events list.
+                self.mini_spinbox_list = list(
+                    range(len(self.acq_object.postsynaptic_events))
+                )
+                self.sort_index = list(np.argsort(self.acq_object.final_events.copy()))
 
                 # Plot each mini. Since the postsynaptic events are stored in
                 # a list you can iterate through the list even if there is just
@@ -870,7 +878,6 @@ class MiniAnalysisWidget(DragDropWidget):
                         x=self.acq_object.postsynaptic_events[i].mini_plot_x(),
                         y=self.acq_object.postsynaptic_events[i].mini_plot_y(),
                         pen="g",
-                        skipFiniteCheck=True,
                     )
 
                 # Set the mini spinbox to the first mini and sets the min

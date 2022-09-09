@@ -11,8 +11,8 @@ import json
 from math import log10, floor, isnan, nan
 
 import numpy as np
-from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
     QHBoxLayout,
@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QScrollArea,
 )
-from PySide6.QtCore import QThreadPool
+from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
 from ..acq.acq import Acq

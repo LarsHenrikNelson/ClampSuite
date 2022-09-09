@@ -274,7 +274,7 @@ def remez_1(
     if high_pass is not None and low_pass is not None:
         filt = signal.remez(
             order,
-            freq=[
+            [
                 0,
                 high_pass - high_width,
                 high_pass,
@@ -282,7 +282,7 @@ def remez_1(
                 low_pass + low_width,
                 sample_rate / 2,
             ],
-            gain=[0, 1, 1, 0],
+            [0, 1, 0],
             fs=sample_rate,
         )
         filt_acq = signal.filtfilt(filt, 1.0, array)
@@ -316,9 +316,10 @@ def remez_2(
 ):
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
+        print("used")
         filt = signal.remez(
-            order,
-            freq=[
+            numtaps=order,
+            bands=[
                 0,
                 high_pass - high_width,
                 high_pass,
@@ -326,7 +327,7 @@ def remez_2(
                 low_pass + low_width,
                 sample_rate / 2,
             ],
-            gain=[0, 1, 1, 0],
+            desired=[0, 1, 0],
             fs=sample_rate,
         )
         acq1 = np.hstack((array, np.zeros(grp_delay)))

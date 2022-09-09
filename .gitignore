@@ -4,4 +4,5 @@ ephysanalysis/acq/._acq.py
 ephysanalysis/acq/._base_acq.py
 ephysanalysis/functions/._utilities.py
 final_test_doct.py
-final_test_doct.py
+env.yml
+._env.yml
