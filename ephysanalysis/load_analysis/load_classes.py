@@ -35,7 +35,7 @@ class LoadCurrentClampData:
         self.ramp_ap = False
 
         with pd.ExcelFile(file_path) as dfs:
-            for i in dfs.sheet_name:
+            for i in dfs.sheet_names:
                 if i == "Final data":
                     self.df_dict[i] = pd.read_excel(
                         file_path, sheet_name=i, header=[0, 1]
@@ -71,7 +71,7 @@ class LoadCurrentClampData:
             inplace=True,
         )
         df.rename(columns={"Unnamed: 0_level_0": ""}, level=0, inplace=True)
-        df["Epoch"] = self.final_df["Epoch"].astype("int64")
+        df["Epoch"] = df["Epoch"].astype("int64")
         df["Ramp"] = df["Ramp"].astype("int64")
         df[""] = df[""].astype("int64")
         df.set_index(df[""]["Pulse_amp"], inplace=True)

@@ -228,7 +228,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # If there are no peaks fill in values with np.nan. This helps with
             # analysis further down the line as nan values are fairly easy to
             # work with.
-            self.width_comp = np.nan
             self.first_ap = np.array([np.nan])
             self.indices = np.nan
         else:
@@ -310,7 +309,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 masked_array[:end], self.peaks, rel_height=0.5
             )
         else:
-            self.width_comp = np.nan
+            self.width_comp = None
 
     def find_baseline_stability(self):
         if self.ramp == "0":
@@ -432,24 +431,23 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
     # Helper functions that correct x-values for plotting
     def spike_width(self):
-        if self.width_comp is not np.nan:
+        if self.width_comp is not None:
             return self.width_comp[0][0] / self.s_r_c
         else:
-            return self.width_comp
+            return np.nan
 
     def spike_width_y(self):
-        if self.width_comp is not np.nan:
+        if self.width_comp is not None:
             return [self.width_comp[1][0], self.width_comp[1][0]]
 
     def spike_width_x(self):
-        if self.width_comp is not np.nan:
-            return [
-                self.width_comp[2][0] / self.s_r_c,
-                self.width_comp[3][0] / self.s_r_c,
-            ]
+        return [
+            self.width_comp[2][0] / self.s_r_c,
+            self.width_comp[3][0] / self.s_r_c,
+        ]
 
     def spike_threshold_time(self):
-        if self.rheo_x is not np.nan:
+        if not np.isnan(self.rheo_x):
             return self.rheo_x / self.s_r_c
         else:
             return self.rheo_x

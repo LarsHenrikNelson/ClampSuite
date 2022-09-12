@@ -52,6 +52,17 @@ class currentClampWidget(DragDropWidget):
     def __init__(self):
         super().__init__()
 
+        self.acq_dict = {}
+        self.hertz_y = []
+        self.deleted_acqs = {}
+        self.pref_dict = {}
+        self.recent_reject_acq = {}
+        self.calc_param_clicked = False
+        self.need_to_save = False
+        self.final_obj = None
+        self.plot_dict = {}
+        self.table_dict = {}
+
         self.signals.dictionary.connect(self.set_preferences)
         self.signals.path.connect(self.open_files)
         self.main_widget = QScrollArea()
@@ -136,30 +147,6 @@ class currentClampWidget(DragDropWidget):
         self.analysis_layout.addWidget(self.tabs, 1)
 
         self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
-
-        # Final data widgets
-        # self.raw_data_table = pg.TableWidget(sortable=False)
-        # self.final_data_table = pg.TableWidget(sortable=False)
-        # self.pulse_aps = pg.TableWidget(sortable=False)
-        # self.ramp_aps = pg.TableWidget(sortable=False)
-        # self.deltav = pg.TableWidget(sortable=False)
-        # self.tabs.addTab(self.raw_data_table, "Raw data")
-        # self.tabs.addTab(self.final_data_table, "Final data")
-        # self.tabs.addTab(self.pulse_aps, "First APs-Pulse")
-        # self.tabs.addTab(self.ramp_aps, "First APs-Ramp")
-        # self.tabs.addTab(self.deltav, "Delta V")
-
-        self.iv_curve_plot = pg.PlotWidget()
-        self.tabs.addTab(self.iv_curve_plot, "IV curve")
-
-        self.spike_curve_plot = pg.PlotWidget()
-        self.tabs.addTab(self.spike_curve_plot, "Spike curve")
-
-        self.pulse_ap_plot = pg.PlotWidget()
-        self.tabs.addTab(self.pulse_ap_plot, "Pulse AP")
-
-        self.ramp_ap_plot = pg.PlotWidget()
-        self.tabs.addTab(self.ramp_ap_plot, "Ramp AP")
 
         # Input widgets and labels
         self.load_acq_label = QLabel("Acquisition(s)")
@@ -275,15 +262,6 @@ class currentClampWidget(DragDropWidget):
 
         self.set_width()
 
-        self.acq_dict = {}
-        self.hertz_y = []
-        self.deleted_acqs = {}
-        self.pref_dict = {}
-        self.recent_reject_acq = {}
-        self.calc_param_clicked = False
-        self.need_to_save = False
-        self.final_obj = None
-
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
@@ -338,7 +316,6 @@ class currentClampWidget(DragDropWidget):
 
     def reset(self):
         self.need_to_save = False
-        self.clearPlotsAndData()
         self.acq_dict = {}
         self.acq_model.clearData()
         self.analyze_acq_button.setEnabled(True)
@@ -349,20 +326,27 @@ class currentClampWidget(DragDropWidget):
         self.calc_param_clicked = False
         self.need_to_save = False
         self.final_obj = None
+        self.tabs.clear()
+        self.clearPlots()
+        self.clearTables()
+        self.plot_dict = {}
+        self.table_dict = {}
+        self.plot_widget.clear()
+        self.spike_plot.clear()
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
 
-    def clearPlotsAndData(self):
-        self.plot_widget.clear()
-        self.spike_plot.clear()
-        # self.raw_data_table.clear()
-        # self.final_data_table.clear()
-        self.iv_curve_plot.clear()
-        self.spike_curve_plot.clear()
-        # self.pulse_aps.clear()
-        # self.ramp_aps.clear()
-        self.pulse_ap_plot.clear()
-        self.ramp_ap_plot.clear()
+    def clearPlots(self):
+        for i in self.plot_dict.values():
+            i.clear()
+            i.hide()
+            i.deleteLater()
+
+    def clearTables(self):
+        for i in self.table_dict.values():
+            i.clear()
+            i.hide()
+            i.deleteLater()
 
     def spinbox(self, h):
         self.need_to_save = True
@@ -509,50 +493,55 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(False)
         if self.final_obj is not None:
             self.final_obj = None
+            self.tabs.clear()
+            self.clearPlots()
+            self.clearTables()
+            self.plot_dict = {}
+            self.table_dict = {}
         self.calc_param_clicked = True
         self.final_obj = FinalCurrentClampAnalysis(self.acq_dict)
-        # self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict())
-        # self.final_data_table.setData(self.final_obj.final_df.T.to_dict())
-        # self.deltav.setData(self.final_obj.deltav_df.T.to_dict())
         for key, value in self.final_obj.df_dict.items():
             table = pg.TableWidget(sortable=False)
             table.setData(value.T.to_dict())
+            self.table_dict["key"] = table
             self.tabs.addTab(table, key)
         self.plot_iv_curve()
         if self.final_obj.hertz:
-            self.plot_spike_frequency(self.final_obj["Hertz"])
+            self.plot_spike_frequency(self.final_obj.df_dict["Hertz"])
         if self.final_obj.pulse_ap:
-            self.plot_pulse_ap(self.final_obj["Pulse APs"])
+            self.plot_pulse_ap(self.final_obj.df_dict["Pulse APs"])
             # self.pulse_aps.setData(self.final_obj["Pulse APs"].T.to_dict())
         if self.final_obj.ramp_ap:
-            self.plot_ramp_ap(self.final_obj["Ramp APs"])
+            self.plot_ramp_ap(self.final_obj.df_dict["Ramp APs"])
             # self.ramp_aps.setData(self.final_obj["Ramp APs"].T.to_dict())
         self.calculate_parameters.setEnabled(True)
 
     def plot_iv_curve(self):
+        iv_curve_plot = pg.PlotWidget()
+        self.plot_dict["iv_curve_plot"] = iv_curve_plot
+        self.tabs.addTab(iv_curve_plot, "IV curve")
         deltav_df = self.final_obj.df_dict["Delta V"]
         iv_df = self.final_obj.df_dict["IV"]
         if len(self.final_obj.plot_epochs) == 1:
-            self.iv_curve_plot.plot(
-                iv_df["iv_plot_x"], iv_df[self.final_obj.plot_epochs[0]]
-            )
-            self.iv_curve_plot.plot(
+            iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[self.final_obj.plot_epochs[0]])
+            iv_curve_plot.plot(
                 deltav_df["deltav_x"],
                 deltav_df[self.final_obj.plot_epochs[0]],
                 pen=None,
                 symbol="o",
                 symbolBrush="y",
+                name=f"Epoch {self.final_obj.plot_epochs[0]}",
             )
         else:
-            self.iv_curve_plot.addLegend()
+            iv_curve_plot.addLegend()
             for i in self.final_obj.plot_epochs:
                 if iv_df[i].isna().all():
                     pass
                 else:
                     pencil = pg.mkPen(color=pg.Color(int(i)))
                     brush = pg.mkBrush(color=pg.intColor(int(i)))
-                    self.iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[i], pen=pencil)
-                    self.iv_curve_plot.plot(
+                    iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[i], pen=pencil)
+                    iv_curve_plot.plot(
                         deltav_df["deltav_x"],
                         deltav_df[i],
                         pen=None,
@@ -563,31 +552,34 @@ class currentClampWidget(DragDropWidget):
                     )
 
     def plot_spike_frequency(self, df):
+        spike_curve_plot = pg.PlotWidget()
+        self.plot_dict["spike_curve_plot"] = spike_curve_plot
+        self.tabs.addTab(spike_curve_plot, "Spike curve")
         df1 = df[df["Ramp"] == 0].copy()
+        spike_curve_plot.addLegend()
         if df1.empty == True:
             pass
         else:
             plot_epochs = df1["Epoch"].to_list()
-            df2 = df1.drop(["Pulse_amp", "Ramp", "Epoch"])
+            df2 = df1.drop(columns=["Ramp", "Epoch"])
             df2.dropna(axis=0, how="all", inplace=True)
-            hertz_x = np.array(df2.T.index.map(int))
+            hertz_x = list(df2.columns.values)
             hertz_y = df2.to_numpy()
             if len(hertz_y) == 1:
-                self.spike_curve_plot.plot(
+                spike_curve_plot.plot(
                     hertz_x,
                     hertz_y[0],
                     symbol="o",
                     name=f"Epoch {plot_epochs[0]}",
                 )
             else:
-                self.spike_curve_plot.addLegend()
                 for i in range(len(hertz_y)):
                     if np.isnan(hertz_y).all():
                         pass
                     else:
                         pencil = pg.mkPen(color=pg.intColor(i))
                         brush = pg.mkBrush(color=pg.intColor(i))
-                        self.spike_curve_plot.plot(
+                        spike_curve_plot.plot(
                             hertz_x,
                             hertz_y[i],
                             symbol="o",
@@ -598,54 +590,74 @@ class currentClampWidget(DragDropWidget):
                         )
 
     def plot_pulse_ap(self, df):
+        pulse_ap_plot = pg.PlotWidget()
+        self.plot_dict["pulse_ap_plot"] = pulse_ap_plot
+        self.tabs.addTab(pulse_ap_plot, "Pulse AP")
+        pulse_ap_plot.addLegend()
         if len(df.columns) > 1:
             for i in df.columns:
-                self.pulse_ap_plot.addLegend()
                 array = df[i].to_numpy()
                 pencil = pg.mkPen(color=pg.intColor(i))
-                self.pulse_ap_plot.plot(
+                pulse_ap_plot.plot(
                     np.arange(len(array)) / 10, array, pen=pencil, name=f"Epoch {i}"
                 )
         else:
             i = df.columns[0]
             array = df[i]
-            self.pulse_ap_plot.plot(
-                np.arange(len(array)) / 10, array, name=f"Epoch {i}"
-            )
+            pulse_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def plot_ramp_ap(self, df):
+        ramp_ap_plot = pg.PlotWidget()
+        self.plot_dict["ramp_ap_plot"] = ramp_ap_plot
+        self.tabs.addTab(ramp_ap_plot, "Ramp AP")
+        ramp_ap_plot.addLegend()
         if len(df.columns) > 1:
             for i in df.columns:
-                self.ramp_ap_plot.addLegend()
                 array = df[i].to_numpy()
                 pencil = pg.mkPen(color=pg.intColor(i))
-                self.ramp_ap_plot.plot(
+                ramp_ap_plot.plot(
                     np.arange(len(array)) / 10, array, pen=pencil, name=f"Epoch {i}"
                 )
         else:
             i = df.columns[0]
             array = df[i]
-            self.ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
+            ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def open_files(self, directory):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         load_dict = YamlWorker.load_yaml(directory)
+        self.set_preferences(load_dict)
         self.pbar.setFormat("Loading...")
         file_list = list(directory.glob("*.json"))
-        if not file_list:
+        if len(file_list) == 0:
             pass
         else:
-            for i in range(len(file_list)):
-                x = Acq(self.analysis_type, file_list[i])
+            for i, filepath in enumerate(file_list):
+                x = Acq(self.analysis_type, filepath)
                 x.load_acq()
                 self.acq_dict[str(x.acq_number)] = x
                 self.pbar.setValue(int(((i) / len(file_list)) * 100))
+            if load_dict.get("Deleted Acqs"):
+                for i in load_dict["Deleted Acqs"]:
+                    self.deleted_acqs[i] = self.acq_dict[i]
+                    del self.acq_dict[i]
             self.acq_model.setLoadData(self.acq_dict)
-            excel_file = list(directory.glob("*.xlsx"))[0]
-            self.final_obj = LoadCurrentClampData(excel_file)
-            self.plot_spike_frequency(self.final_obj.final_df)
-            self.plot_iv_curve()
+            if load_dict["Final Analysis"]:
+                excel_file = list(directory.glob("*.xlsx"))[0]
+                self.final_obj = LoadCurrentClampData(excel_file)
+                for key, value in self.final_obj.df_dict.items():
+                    table = pg.TableWidget(sortable=False)
+                    table.setData(value.T.to_dict())
+                    self.table_dict["key"] = table
+                    self.tabs.addTab(table, key)
+                self.plot_iv_curve()
+                if self.final_obj.hertz:
+                    self.plot_spike_frequency(self.final_obj.df_dict["Hertz"])
+                if self.final_obj.pulse_ap:
+                    self.plot_pulse_ap(self.final_obj.df_dict["Pulse APs"])
+                if self.final_obj.ramp_ap:
+                    self.plot_ramp_ap(self.final_obj.df_dict["Ramp APs"])
             self.pbar.setFormat("Loaded")
             self.acquisition_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.acq_dict.keys())[0]))
@@ -655,6 +667,8 @@ class currentClampWidget(DragDropWidget):
             ).tolist()
             self.acquisition_number.setValue(int(list(self.acq_dict.keys())[0]))
             self.spinbox(analysis_list[0])
+            self.calculate_parameters.setEnabled(True)
+            self.analyze_acq_button.setEnabled(True)
 
     def set_preferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
@@ -662,10 +676,10 @@ class currentClampWidget(DragDropWidget):
             if i.objectName() != "":
                 i.setText(pref_dict["line_edits"][i.objectName()])
 
-        buttons = self.findChildren(QPushButton)
-        for i in buttons:
-            if i.objectName() != "":
-                i.setEnabled(pref_dict["buttons"][i.objectName()])
+        # buttons = self.findChildren(QPushButton)
+        # for i in buttons:
+        #     if i.objectName() != "":
+        #         i.setEnabled(pref_dict["buttons"][i.objectName()])
 
     def create_pref_dict(self):
         line_edits = self.findChildren(QLineEdit)
@@ -675,12 +689,12 @@ class currentClampWidget(DragDropWidget):
                 line_edit_dict[i.objectName()] = i.text()
         self.pref_dict["line_edits"] = line_edit_dict
 
-        buttons_dict = {}
-        buttons = self.findChildren(QPushButton)
-        for i in buttons:
-            if i.objectName() != "":
-                buttons_dict[i.objectName()] = i.isEnabled()
-        self.pref_dict["buttons"] = buttons_dict
+        # buttons_dict = {}
+        # buttons = self.findChildren(QPushButton)
+        # for i in buttons:
+        #     if i.objectName() != "":
+        #         buttons_dict[i.objectName()] = i.isEnabled()
+        # self.pref_dict["buttons"] = buttons_dict
 
     def file_does_not_exist(self):
         self.dlg = QMessageBox(self)
@@ -689,6 +703,7 @@ class currentClampWidget(DragDropWidget):
         self.dlg.exec()
 
     def save_as(self, save_filename):
+        self.reset_button.setEnabled(False)
         self.need_to_save = False
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
@@ -703,6 +718,7 @@ class currentClampWidget(DragDropWidget):
         self.worker.signals.progress.connect(self.update_save_progress)
         self.worker.signals.finished.connect(self.progress_finished)
         self.threadpool.start(self.worker)
+        self.reset_button.setEnabled(True)
 
     def load_preferences(self, file_name):
         self.need_to_save = True

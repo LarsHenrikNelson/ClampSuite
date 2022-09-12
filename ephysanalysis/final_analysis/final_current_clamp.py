@@ -88,18 +88,31 @@ class FinalCurrentClampAnalysis:
             )
             del final_df["Spike_threshold_time (ms)"]
 
+        epoch = final_df.loc[:, ("Epoch", "")].copy()
+        ramp = final_df.loc[:, ("Ramp", "")].copy()
+
         if "Hertz" in columns_list:
             final_df[("Pulse", "Rheo")] = (final_df["Hertz"] > 0).idxmax(
                 axis=1, skipna=True
             )
             hertz_df = final_df.pop("Hertz")
-            epoch = final_df.loc[:, ("Epoch", "")].copy()
             hertz_df.insert(0, "Epoch", epoch)
-            ramp = final_df.loc[:, ("Ramp", "")].copy()
             hertz_df.insert(0, "Ramp", ramp)
             hertz_df.T.reset_index(inplace=True)
             self.df_dict["Hertz"] = hertz_df
             self.hertz = True
+
+        if "Spike_iei" in columns_list:
+            iei_df = final_df.pop("Spike_iei").reset_index()
+            iei_df.insert(0, "Epoch", epoch)
+            iei_df.insert(0, "Ramp", ramp)
+            self.df_dict["IEI"] = iei_df
+
+        if "Spike_time (ms)" in columns_list:
+            spike_time_df = final_df.pop("Spike_time (ms)").reset_index()
+            spike_time_df.insert(0, "Epoch", epoch)
+            spike_time_df.insert(0, "Ramp", ramp)
+            self.df_dict["Spike time (ms)"] = spike_time_df
 
         if "Spike_width" in columns_list:
             final_df[("Spike", "width")] = (
@@ -148,14 +161,6 @@ class FinalCurrentClampAnalysis:
                 final_df["Spike_peak_volt"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
             del final_df["Spike_peak_volt"]
-
-        if "Spike_iei" in columns_list:
-            iei_df = final_df.pop("Spike_iei").T.reset_index()
-            self.df_dict["IEI"] = iei_df
-
-        if "Spike_time (ms)" in columns_list:
-            spike_time_df = final_df.pop("Spike_time (ms)").T.reset_index()
-            self.df_dict["Spike time (ms)"] = spike_time_df
 
         final_df.pop("Delta_v")
         self.df_dict["Final data"] = final_df
@@ -314,8 +319,8 @@ class FinalCurrentClampAnalysis:
         with pd.ExcelWriter(
             f"{save_filename}.xlsx", mode="w", engine="xlsxwriter"
         ) as writer:
-            for key, value in df_dict.items():
-                if i == "Final data":
+            for key, value in self.df_dict.items():
+                if key == "Final data":
                     value.to_excel(writer, sheet_name=key)
                 else:
                     value.to_excel(writer, index=False, sheet_name=key)
