@@ -382,7 +382,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.freq = np.nan
         return pd.DataFrame(final_dict)
 
-    def event_arrays(self):
+    def get_event_arrays(self):
         events = [i.event_array - i.event_start_y for i in self.postsynaptic_events]
         return events
 
@@ -411,7 +411,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.filtered_array = "saved"
         self.events = "saved"
         self.x_array = "saved"
-        self.event_arrays = "saved"
         for i in self.postsynaptic_events:
             i.x_array = "saved"
             i.event_array = "saved"

@@ -138,16 +138,16 @@ class currentClampWidget(DragDropWidget):
         self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
 
         # Final data widgets
-        self.raw_data_table = pg.TableWidget(sortable=False)
-        self.final_data_table = pg.TableWidget(sortable=False)
-        self.pulse_aps = pg.TableWidget(sortable=False)
-        self.ramp_aps = pg.TableWidget(sortable=False)
-        self.deltav = pg.TableWidget(sortable=False)
-        self.tabs.addTab(self.raw_data_table, "Raw data")
-        self.tabs.addTab(self.final_data_table, "Final data")
-        self.tabs.addTab(self.pulse_aps, "First APs-Pulse")
-        self.tabs.addTab(self.ramp_aps, "First APs-Ramp")
-        self.tabs.addTab(self.deltav, "Delta V")
+        # self.raw_data_table = pg.TableWidget(sortable=False)
+        # self.final_data_table = pg.TableWidget(sortable=False)
+        # self.pulse_aps = pg.TableWidget(sortable=False)
+        # self.ramp_aps = pg.TableWidget(sortable=False)
+        # self.deltav = pg.TableWidget(sortable=False)
+        # self.tabs.addTab(self.raw_data_table, "Raw data")
+        # self.tabs.addTab(self.final_data_table, "Final data")
+        # self.tabs.addTab(self.pulse_aps, "First APs-Pulse")
+        # self.tabs.addTab(self.ramp_aps, "First APs-Ramp")
+        # self.tabs.addTab(self.deltav, "Delta V")
 
         self.iv_curve_plot = pg.PlotWidget()
         self.tabs.addTab(self.iv_curve_plot, "IV curve")
@@ -276,13 +276,13 @@ class currentClampWidget(DragDropWidget):
         self.set_width()
 
         self.acq_dict = {}
-        hertz_x = []
         self.hertz_y = []
         self.deleted_acqs = {}
         self.pref_dict = {}
         self.recent_reject_acq = {}
         self.calc_param_clicked = False
         self.need_to_save = False
+        self.final_obj = None
 
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
@@ -304,13 +304,16 @@ class currentClampWidget(DragDropWidget):
     def analyze(self):
         self.need_to_save = True
         self.analyze_acq_button.setEnabled(False)
+        if self.acq_dict:
+            self.acq_dict = {}
+        self.acq_dict = self.acq_model.acq_dict
         if not self.acq_model.acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
         else:
+
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            self.acq_dict = self.acq_model.acq_dict
             for count, acq in enumerate(self.acq_dict.values()):
                 acq.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
@@ -330,7 +333,7 @@ class currentClampWidget(DragDropWidget):
             self.acquisition_number.setMinimum(analysis_list[0])
             self.acquisition_number.setValue(analysis_list[0])
             self.spinbox(int(analysis_list[0]))
-            self.analyze_acq_button.setEnabled(False)
+            self.analyze_acq_button.setEnabled(True)
             self.pbar.setFormat("Analysis finished")
 
     def reset(self):
@@ -345,18 +348,19 @@ class currentClampWidget(DragDropWidget):
         self.pref_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
+        self.final_obj = None
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
 
     def clearPlotsAndData(self):
         self.plot_widget.clear()
         self.spike_plot.clear()
-        self.raw_data_table.clear()
-        self.final_data_table.clear()
+        # self.raw_data_table.clear()
+        # self.final_data_table.clear()
         self.iv_curve_plot.clear()
         self.spike_curve_plot.clear()
-        self.pulse_aps.clear()
-        self.ramp_aps.clear()
+        # self.pulse_aps.clear()
+        # self.ramp_aps.clear()
         self.pulse_ap_plot.clear()
         self.ramp_ap_plot.clear()
 
@@ -379,7 +383,7 @@ class currentClampWidget(DragDropWidget):
             )
             self.ahp_edit.setText(str(self.round_sig(acq_object.ahp_y, sig=4)))
             self.baseline_stability_edit.setText(
-                str(self.round_sig(acq_object.baseline_stability_ratio, sig=4))
+                str(self.round_sig(acq_object.baseline_stability, sig=4))
             )
             if acq_object.ramp == "0":
                 self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
@@ -503,23 +507,31 @@ class currentClampWidget(DragDropWidget):
     def final_analysis_button(self):
         self.need_to_save = True
         self.calculate_parameters.setEnabled(False)
+        if self.final_obj is not None:
+            self.final_obj = None
         self.calc_param_clicked = True
         self.final_obj = FinalCurrentClampAnalysis(self.acq_dict)
-        self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict())
-        self.final_data_table.setData(self.final_obj.final_df.T.to_dict())
-        self.deltav.setData(self.final_obj.deltav_df.T.to_dict())
+        # self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict())
+        # self.final_data_table.setData(self.final_obj.final_df.T.to_dict())
+        # self.deltav.setData(self.final_obj.deltav_df.T.to_dict())
+        for key, value in self.final_obj.df_dict.items():
+            table = pg.TableWidget(sortable=False)
+            table.setData(value.T.to_dict())
+            self.tabs.addTab(table, key)
         self.plot_iv_curve()
-        self.plot_spike_frequency(self.final_obj.final_df)
-        if not self.final_obj.pulse_ap_df.empty:
-            self.plot_pulse_ap(self.final_obj.pulse_ap_df)
-            self.pulse_aps.setData(self.final_obj.pulse_ap_df.T.to_dict())
-        if not self.final_obj.ramp_ap_df.empty:
-            self.plot_ramp_ap(self.final_obj.ramp_ap_df)
-            self.ramp_aps.setData(self.final_obj.ramp_ap_df.T.to_dict())
+        if self.final_obj.hertz:
+            self.plot_spike_frequency(self.final_obj["Hertz"])
+        if self.final_obj.pulse_ap:
+            self.plot_pulse_ap(self.final_obj["Pulse APs"])
+            # self.pulse_aps.setData(self.final_obj["Pulse APs"].T.to_dict())
+        if self.final_obj.ramp_ap:
+            self.plot_ramp_ap(self.final_obj["Ramp APs"])
+            # self.ramp_aps.setData(self.final_obj["Ramp APs"].T.to_dict())
+        self.calculate_parameters.setEnabled(True)
 
     def plot_iv_curve(self):
-        deltav_df = self.final_obj.deltav_df
-        iv_df = self.final_obj.iv_df
+        deltav_df = self.final_obj.df_dict["Delta V"]
+        iv_df = self.final_obj.df_dict["IV"]
         if len(self.final_obj.plot_epochs) == 1:
             self.iv_curve_plot.plot(
                 iv_df["iv_plot_x"], iv_df[self.final_obj.plot_epochs[0]]
@@ -537,7 +549,7 @@ class currentClampWidget(DragDropWidget):
                 if iv_df[i].isna().all():
                     pass
                 else:
-                    pencil = pg.mkPen(color=pg.intColor(int(i)))
+                    pencil = pg.mkPen(color=pg.Color(int(i)))
                     brush = pg.mkBrush(color=pg.intColor(int(i)))
                     self.iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[i], pen=pencil)
                     self.iv_curve_plot.plot(
@@ -551,12 +563,12 @@ class currentClampWidget(DragDropWidget):
                     )
 
     def plot_spike_frequency(self, df):
-        df1 = df[df["Ramp", ""] == 0].copy()
-        if df1.empty == True or "Hertz" not in df1.columns.levels[0].tolist():
+        df1 = df[df["Ramp"] == 0].copy()
+        if df1.empty == True:
             pass
         else:
             plot_epochs = df1["Epoch"].to_list()
-            df2 = df1["Hertz"].copy()
+            df2 = df1.drop(["Pulse_amp", "Ramp", "Epoch"])
             df2.dropna(axis=0, how="all", inplace=True)
             hertz_x = np.array(df2.T.index.map(int))
             hertz_y = df2.to_numpy()

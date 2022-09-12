@@ -233,9 +233,10 @@ class ListModel(QAbstractListModel):
     def addAcq(self, urls):
         for url in urls:
             fname = PurePath(str(url.toLocalFile()))
-            if fname not in self.fname_list:
+            if fname not in self.fname_list and not Path(fname).is_dir():
                 obj = Acq(self.analysis_type, fname)
                 obj.load_acq()
+
                 # Add the acquisition to the model dictionary. This
                 # dictionary will be be added to the gui widget when
                 # the analysis is run.
@@ -275,25 +276,6 @@ class StringBox(QSpinBox):
         # returning string from index
         # _string = tuple
         return self._strings[value]
-
-        """
-		This function will enable the drop file directly on to the 
-		main window. The file location will be stored in the self.filename
-		"""
-        if e.mimeData().hasUrls:
-            e.setDropAction(Qt.CopyAction)
-            e.accept()
-            url = e.mimeData().urls()[0]
-            fname = PurePath(str(url.toLocalFile()))
-            if fname.suffix == ".yaml":
-                pref_dict = YamlWorker.load_yaml(fname)
-                self.signals.dictionary.emit(pref_dict)
-            elif Path(fname).is_dir():
-                self.signals.path.emit(Path(fname))
-            else:
-                e.ignore()
-        else:
-            e.ignore()
 
 
 class DragDropWidget(QWidget):

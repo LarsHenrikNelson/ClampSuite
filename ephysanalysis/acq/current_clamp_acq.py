@@ -53,7 +53,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
         # Analysis functions
         self.get_delta_v()
-        self.baseline_stability()
+        self.find_baseline_stability()
         self.find_spike_parameters()
         self.first_spike_parameters()
         self.get_ramp_rheo()
@@ -312,10 +312,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             self.width_comp = np.nan
 
-    def baseline_stability(self):
-        self.baseline_stability_ratio = np.mean(
-            self.array[: self.pulse_start]
-        ) - np.mean(self.array[self.pulse_end :])
+    def find_baseline_stability(self):
+        if self.ramp == "0":
+            self.baseline_stability = np.abs(
+                np.mean(self.array[: self.pulse_start])
+                - np.mean(self.array[self.pulse_end :])
+            )
+        elif self.ramp == "1":
+            self.baseline_stability = np.abs(
+                np.mean(self.array[: self.ramp_start])
+                - np.mean(self.array[self.ramp_end :])
+            )
+        else:
+            self.baseline_stability = np.nan
 
     def spike_adaptation(self):
         """
@@ -522,6 +531,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Peak_AHP (mV)": self.ahp_y,
             "Peak_AHP (ms)": self.ahp_x,
             "Ramp_rheobase": self.ramp_rheo,
-            "Baseline_stability": self.baseline_stability_ratio,
+            "Baseline_stability": self.baseline_stability,
         }
         return current_clamp_dict

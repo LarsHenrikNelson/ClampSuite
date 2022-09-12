@@ -10,6 +10,13 @@ class FinalCurrentClampAnalysis:
         self.acq_dict = acq_dict
         self.iv_start = iv_start
         self.iv_end = iv_end
+        self.df_dict = {}
+        self.hertz = False
+        self.pulse_ap = False
+        self.ramp_ap = False
+        self.analyze()
+
+    def analyze(self):
         self.create_raw_data()
         self.average_data()
         self.final_data()
@@ -18,28 +25,32 @@ class FinalCurrentClampAnalysis:
         self.create_first_ap_dfs()
 
     def create_raw_data(self):
-        self.raw_df = pd.DataFrame(
+        raw_df = pd.DataFrame(
             [self.acq_dict[i].create_dict() for i in self.acq_dict.keys()]
         )
-        self.raw_df["Epoch"] = pd.to_numeric(self.raw_df["Epoch"])
-        self.raw_df["Pulse_pattern"] = pd.to_numeric(self.raw_df["Pulse_pattern"])
-        self.raw_df["Pulse_amp"] = pd.to_numeric(self.raw_df["Pulse_amp"])
+        raw_df["Epoch"] = pd.to_numeric(raw_df["Epoch"])
+        raw_df["Pulse_pattern"] = pd.to_numeric(raw_df["Pulse_pattern"])
+        raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
+        self.df_dict["Raw data"] = raw_df
 
     def average_data(self):
         # I need to separate the delta v and spike ieis from the rest of the
         # dataframe to clean it up.
-        self.df_averaged_data = self.raw_df.groupby(
-            ["Pulse_pattern", "Epoch", "Pulse_amp", "Ramp"]
-        ).mean()
-        self.df_averaged_data.reset_index(inplace=True)
-        self.df_averaged_data.drop(["Pulse_pattern"], axis=1, inplace=True)
-        self.df_averaged_data[["Pulse_amp", "Ramp", "Epoch"]] = self.df_averaged_data[
+        df_averaged_data = (
+            self.df_dict["Raw data"]
+            .groupby(["Pulse_pattern", "Epoch", "Pulse_amp", "Ramp"])
+            .mean()
+        )
+        df_averaged_data.reset_index(inplace=True)
+        df_averaged_data.drop(["Pulse_pattern", "Pulse_start"], axis=1, inplace=True)
+        df_averaged_data[["Pulse_amp", "Ramp", "Epoch"]] = df_averaged_data[
             ["Pulse_amp", "Ramp", "Epoch"]
         ].astype(int)
+        self.df_dict["Averaged data"] = df_averaged_data
 
     def final_data(self):
         # Pivot the dataframe to get it into wideform format
-        pivoted_df = self.df_averaged_data.pivot_table(
+        pivoted_df = self.df_dict["Averaged data"].pivot_table(
             index=["Epoch", "Ramp"], columns=["Pulse_amp"], aggfunc=np.nanmean
         )
 
@@ -47,99 +58,107 @@ class FinalCurrentClampAnalysis:
 
         # Add the input resistance calculate
         resistance_df = self.membrane_resistance(pivoted_df)
-        self.final_df = pd.concat([pivoted_df, resistance_df], axis=1)
+        final_df = pd.concat([pivoted_df, resistance_df], axis=1)
 
-        self.final_df["Baseline_ave", "Average"] = self.final_df["Baseline"].mean(
-            axis=1
-        )
-        del self.final_df["Baseline"]
+        final_df["Baseline_ave", "Average"] = final_df["Baseline"].mean(axis=1)
+        del final_df["Baseline"]
 
-        columns_list = self.final_df.columns.levels[0].tolist()
+        final_df["Baseline_stability_ave", "Average"] = final_df[
+            "Baseline_stability"
+        ].mean(axis=1)
+        del final_df["Baseline_stability"]
+
+        columns_list = final_df.columns.levels[0].tolist()
 
         if "Spike_threshold (mV)" in columns_list:
-            self.final_df[("Spike_threshold_ap", "first")] = (
-                self.final_df["Spike_threshold (mV)"]
+            final_df[("Spike_threshold_ap", "first")] = (
+                final_df["Spike_threshold (mV)"]
                 .replace(0, np.nan)
                 .bfill(axis=1)
                 .iloc[:, 0]
             )
-            del self.final_df["Spike_threshold (mV)"]
+            del final_df["Spike_threshold (mV)"]
 
         if "Spike_threshold_time (ms)" in columns_list:
-            self.final_df[("Spike_threshold_time_ap", "first")] = (
-                self.final_df["Spike_threshold_time (ms)"]
+            final_df[("Spike_threshold_time_ap", "first")] = (
+                final_df["Spike_threshold_time (ms)"]
                 .replace(0, np.nan)
                 .bfill(axis=1)
                 .iloc[:, 0]
             )
-            del self.final_df["Spike_threshold_time (ms)"]
+            del final_df["Spike_threshold_time (ms)"]
 
         if "Hertz" in columns_list:
-            self.final_df[("Pulse", "Rheo")] = (self.final_df["Hertz"] > 0).idxmax(
+            final_df[("Pulse", "Rheo")] = (final_df["Hertz"] > 0).idxmax(
                 axis=1, skipna=True
             )
+            hertz_df = final_df.pop("Hertz")
+            epoch = final_df.loc[:, ("Epoch", "")].copy()
+            hertz_df.insert(0, "Epoch", epoch)
+            ramp = final_df.loc[:, ("Ramp", "")].copy()
+            hertz_df.insert(0, "Ramp", ramp)
+            hertz_df.T.reset_index(inplace=True)
+            self.df_dict["Hertz"] = hertz_df
+            self.hertz = True
 
         if "Spike_width" in columns_list:
-            self.final_df[("Spike", "width")] = (
-                self.final_df["Spike_width"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
+            final_df[("Spike", "width")] = (
+                final_df["Spike_width"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Spike_width"]
+            del final_df["Spike_width"]
 
         if "Spike_freq_adapt" in columns_list:
-            self.final_df[("Spike", "Spike_freq_adapt")] = (
-                self.final_df["Spike_freq_adapt"]
-                .replace(0, np.nan)
-                .bfill(axis=1)
-                .iloc[:, 0]
+            final_df[("Spike", "Spike_freq_adapt")] = (
+                final_df["Spike_freq_adapt"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Spike_freq_adapt"]
+            del final_df["Spike_freq_adapt"]
 
         if "Local_sfa" in columns_list:
-            self.final_df[("Spike", "Local_sfa")] = (
-                self.final_df["Local_sfa"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
+            final_df[("Spike", "Local_sfa")] = (
+                final_df["Local_sfa"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Local_sfa"]
+            del final_df["Local_sfa"]
 
         if "Divisor_sfa" in columns_list:
-            self.final_df[("Spike", "Divisor_sfa")] = (
-                self.final_df["Divisor_sfa"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
+            final_df[("Spike", "Divisor_sfa")] = (
+                final_df["Divisor_sfa"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Divisor_sfa"]
+            del final_df["Divisor_sfa"]
 
         if "Max_AP_vel" in columns_list:
-            self.final_df[("Spike", "Max_AP_vel")] = (
-                self.final_df["Max_AP_vel"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
+            final_df[("Spike", "Max_AP_vel")] = (
+                final_df["Max_AP_vel"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Max_AP_vel"]
+            del final_df["Max_AP_vel"]
 
         if "Peak_AHP (mV)" in columns_list:
-            self.final_df[("Spike", "Peak_AHP (mV)")] = (
-                self.final_df["Peak_AHP (mV)"]
-                .replace(0, np.nan)
-                .bfill(axis=1)
-                .iloc[:, 0]
+            final_df[("Spike", "Peak_AHP (mV)")] = (
+                final_df["Peak_AHP (mV)"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Peak_AHP (mV)"]
+            del final_df["Peak_AHP (mV)"]
 
         if "Peak_AHP (ms)" in columns_list:
-            self.final_df[("Spike", "Peak_AHP (ms)")] = (
-                self.final_df["Peak_AHP (ms)"]
-                .replace(0, np.nan)
-                .bfill(axis=1)
-                .iloc[:, 0]
+            final_df[("Spike", "Peak_AHP (ms)")] = (
+                final_df["Peak_AHP (ms)"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Peak_AHP (ms)"]
+            del final_df["Peak_AHP (ms)"]
 
         if "Spike_peak_volt" in columns_list:
-            self.final_df[("Spike", "Spike_peak_volt")] = (
-                self.final_df["Spike_peak_volt"]
-                .replace(0, np.nan)
-                .bfill(axis=1)
-                .iloc[:, 0]
+            final_df[("Spike", "Spike_peak_volt")] = (
+                final_df["Spike_peak_volt"].replace(0, np.nan).bfill(axis=1).iloc[:, 0]
             )
-            del self.final_df["Spike_peak_volt"]
+            del final_df["Spike_peak_volt"]
 
-            self.final_df.pop("Delta_v")
+        if "Spike_iei" in columns_list:
+            iei_df = final_df.pop("Spike_iei").T.reset_index()
+            self.df_dict["IEI"] = iei_df
+
+        if "Spike_time (ms)" in columns_list:
+            spike_time_df = final_df.pop("Spike_time (ms)").T.reset_index()
+            self.df_dict["Spike time (ms)"] = spike_time_df
+
+        final_df.pop("Delta_v")
+        self.df_dict["Final data"] = final_df
 
     def create_first_ap_dfs(self):
         # Creating the final first action potentials and final data. It takes
@@ -157,18 +176,18 @@ class FinalCurrentClampAnalysis:
             ramp_ap = {}
 
         if pulse_ap:
-            self.pulse_ap_df = pd.DataFrame(
+            pulse_ap_df = pd.DataFrame(
                 dict([(k, pd.Series(v)) for k, v in pulse_ap.items()])
             )
-        else:
-            self.pulse_ap_df = pd.DataFrame()
+            self.pulse_ap = True
+            self.df_dict["Pulse APs"] = pulse_ap_df
 
         if ramp_ap:
-            self.ramp_ap_df = pd.DataFrame(
+            ramp_ap_df = pd.DataFrame(
                 dict([(k, pd.Series(v)) for k, v in ramp_ap.items()])
             )
-        else:
-            self.ramp_ap_df = pd.DataFrame()
+            self.ramp_ap = True
+            self.df_dict["Ramp APs"] = ramp_ap_df
 
     def create_first_aps(self):
         pulse_dict = defaultdict(lambda: defaultdict(list))
@@ -266,19 +285,21 @@ class FinalCurrentClampAnalysis:
             return resistance
 
     def iv_curve_dataframe(self):
-        self.iv_df = pd.DataFrame(self.iv_line)
-        self.iv_df = self.iv_df.transpose()
-        self.iv_df.columns = self.plot_epochs
-        self.iv_df["iv_plot_x"] = self.iv_plot_x
+        iv_df = pd.DataFrame(self.iv_line)
+        iv_df = iv_df.transpose()
+        iv_df.columns = self.plot_epochs
+        iv_df["iv_plot_x"] = self.iv_plot_x
+        self.df_dict["IV"] = iv_df
 
     def deltav_dataframe(self):
-        self.deltav_df = pd.DataFrame(self.iv_y)
-        self.deltav_df = self.deltav_df.transpose()
-        self.deltav_df.columns = self.plot_epochs
-        self.deltav_df["deltav_x"] = self.deltav_x
+        deltav_df = pd.DataFrame(self.iv_y)
+        deltav_df = deltav_df.transpose()
+        deltav_df.columns = self.plot_epochs
+        deltav_df["deltav_x"] = self.deltav_x
+        self.df_dict["Delta V"] = deltav_df
 
     def temp_df(self):
-        temp_df = self.final_df.copy()
+        temp_df = self.df_dict["Final data"].copy()
         mi = temp_df.columns
         ind = pd.Index([e[0] + "_" + str(e[1]) for e in mi.tolist()])
         temp_df.columns = ind
@@ -293,11 +314,17 @@ class FinalCurrentClampAnalysis:
         with pd.ExcelWriter(
             f"{save_filename}.xlsx", mode="w", engine="xlsxwriter"
         ) as writer:
-            self.raw_df.to_excel(writer, index=False, sheet_name="Raw data")
-            self.final_df.to_excel(writer, sheet_name="Final data")
-            self.iv_df.to_excel(writer, index=False, sheet_name="IV_df")
-            self.deltav_df.to_excel(writer, index=False, sheet_name="Deltav_df")
-            if not self.pulse_ap_df.empty:
-                self.pulse_ap_df.to_excel(writer, index=False, sheet_name="Pulse APs")
-            if not self.ramp_ap_df.empty:
-                self.ramp_ap_df.to_excel(writer, index=False, sheet_name="Ramp APs")
+            for key, value in df_dict.items():
+                if i == "Final data":
+                    value.to_excel(writer, sheet_name=key)
+                else:
+                    value.to_excel(writer, index=False, sheet_name=key)
+            # self.raw_df.to_excel(writer, index=False, sheet_name="Raw data")
+            # self.final_df.to_excel(writer, sheet_name="Final data")
+            # self.iv_df.to_excel(writer, index=False, sheet_name="IV_df")
+            # self.deltav_df.to_excel(writer, index=False, sheet_name="Deltav_df")
+            # self.iei_df.to_excel(writer, index=False, sheet_names="Spike_iei")
+            # if not self.pulse_ap_df.empty:
+            #     self.pulse_ap_df.to_excel(writer, index=False, sheet_name="Pulse APs")
+            # if not self.ramp_ap_df.empty:
+            #     self.ramp_ap_df.to_excel(writer, index=False, sheet_name="Ramp APs")

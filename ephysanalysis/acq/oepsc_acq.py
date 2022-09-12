@@ -25,7 +25,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         n_window_end=1050,
         p_window_start=1045,
         p_window_end=1055,
-        find_charge_transfer=False,
+        find_ct=False,
         find_est_decay=False,
         curve_fit_decay=False,
         curve_fit_type="s_exp",
@@ -53,7 +53,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.n_window_end = int(n_window_end * self.s_r_c)
         self.p_window_start = int(p_window_start * self.s_r_c)
         self.p_window_end = int(p_window_end * self.s_r_c)
-        self.find_ct = find_charge_transfer
+        self.find_ct = find_ct
         self.find_edecay = find_est_decay
         self.find_fdecay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
@@ -217,7 +217,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             "Peak direction": self.peak_direction,
             "Amplitude": abs(self.peak_y),
         }
-        if self.find_charge_transfer:
+        if self.find_ct:
             oepsc_dict["Charge_transfer"] = self.charge_transfer
         if self.find_edecay:
             oepsc_dict["Est_decay"] = self.est_decay()

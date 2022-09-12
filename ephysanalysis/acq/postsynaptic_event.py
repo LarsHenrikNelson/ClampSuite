@@ -326,7 +326,12 @@ class MiniEvent:
                 value = np.array(item)
             else:
                 value = item
-            if key not in ("mini_plot_x", "mini_plot_y", "mini_comp_y", "mini_comp_x"):
+            if key not in (
+                "mini_plot_x",
+                "mini_plot_y",
+                "mini_comp_y",
+                "mini_comp_x",
+            ):
                 setattr(self, key, value)
 
         if self.sample_rate_correction is not None:

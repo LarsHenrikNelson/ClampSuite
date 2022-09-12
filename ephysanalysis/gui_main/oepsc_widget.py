@@ -136,7 +136,7 @@ class oEPSCWidget(DragDropWidget):
         # Tab 2 layout
         self.tab2_layout = QHBoxLayout()
         self.analysis_buttons_layout = QFormLayout()
-        self.tab2_layout.addLayout(self.analysis_buttons_layout, 0)
+        self.tab2_layout.addLayout(self.analysis_buttons_layout)
         self.tab2.setLayout(self.tab2_layout)
 
         # Tab 3 Layout
@@ -559,6 +559,7 @@ class oEPSCWidget(DragDropWidget):
         self.delete_lfp_button.setEnabled(False)
 
         self.threadpool = QThreadPool()
+        self.set_width()
 
         # Lists
         self.last_oepsc_point_clicked = []
@@ -572,10 +573,19 @@ class oEPSCWidget(DragDropWidget):
         self.pref_dict = {}
         self.deleted_lfp_acqs = {}
         self.deleted_opesc_acqs = {}
-        self.calc_param_clicked = True
+        self.calc_param_clicked = False
         self.final_data = None
         self.inspection_widget = None
         self.need_to_save = False
+
+    def set_width(self):
+        line_edits = self.findChildren(QLineEdit)
+        for i in line_edits:
+            i.setMinimumWidth(70)
+
+        push_buttons = self.findChildren(QPushButton)
+        for i in push_buttons:
+            i.setMinimumWidth(100)
 
     def inspect_acqs(self, list_model):
         # Creates a separate window to view the loaded acquisitions
@@ -640,7 +650,7 @@ class oEPSCWidget(DragDropWidget):
                     n_window_end=self.o_neg_end_edit.toFloat(),
                     p_window_start=self.o_pos_start_edit.toFloat(),
                     p_window_end=self.o_pos_end_edit.toFloat(),
-                    find_charge_transfer=self.charge_transfer_edit.isChecked(),
+                    find_ct=self.charge_transfer_edit.isChecked(),
                     find_est_decay=self.est_decay_edit.isChecked(),
                     curve_fit_decay=self.curve_fit_decay.isChecked(),
                     curve_fit_type=self.curve_fit_type_edit.currentText(),
@@ -709,10 +719,15 @@ class oEPSCWidget(DragDropWidget):
             self.oepsc_acq_plot.sigPointsClicked.connect(self.oepsc_plot_clicked)
             self.oepsc_plot.addItem(self.oepsc_acq_plot)
             self.oepsc_plot.addItem(self.oepsc_peak_plot)
-            self.oepsc_plot.setXRange(
-                self.o_pulse_start_edit.toInt() - 100,
-                self.o_pulse_start_edit.toInt() + 450,
-            )
+            if self.oepsc_object.peak_direction == "negative":
+                self.oepsc_plot.setXRange(
+                    self.o_pulse_start_edit.toInt() - 100,
+                    self.o_pulse_start_edit.toInt() + 450,
+                )
+            else:
+                self.oepsc_plot.setXRange(
+                    self.o_pulse_start_edit.toInt() - 100, self.oepsc_object.x_array[-1]
+                )
             self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
             if self.oepsc_object.find_ct:
                 self.oepsc_charge_edit.setText(
@@ -749,9 +764,10 @@ class oEPSCWidget(DragDropWidget):
             )
             if self.lfp_object.reg_line is not np.nan:
                 self.lfp_reg = pg.PlotDataItem(
-                    x=(self.lfp_object.slope_x / self.lfp_object.s_r_c),
+                    x=self.lfp_object.plot_slope_x(),
                     y=self.lfp_object.reg_line,
                     pen=pg.mkPen(color="g", width=4),
+                    name="reg_line",
                 )
             self.lfp_acq_plot.sigPointsClicked.connect(self.lfp_plot_clicked)
             self.lfp_plot.addItem(self.lfp_acq_plot)
@@ -768,8 +784,10 @@ class oEPSCWidget(DragDropWidget):
             pass
         if self.oepsc_acq_dict.get(str(h)):
             self.epoch_number.setText(self.oepsc_object.epoch)
-        else:
+        elif self.lfp_acq_dict.get(str(h)):
             self.epoch_number.setText(self.lfp_object.epoch)
+        else:
+            pass
         self.acquisition_number.setEnabled(True)
 
     def reset(self):
@@ -842,6 +860,13 @@ class oEPSCWidget(DragDropWidget):
             symbolBrush="m",
             pen=None,
         )
+        if self.lfp_object.slope is not np.nan:
+            self.lfp_reg.setData(
+                x=self.lfp_object.plot_slope_x(),
+                y=self.lfp_object.reg_line,
+                pen=pg.mkPen(color="g", width=4),
+                name="reg_line",
+            )
         self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
         self.last_lfp_point_clicked[0].resetPen()
         self.last_lfp_point_clicked[0].resetBrush()
@@ -865,13 +890,20 @@ class oEPSCWidget(DragDropWidget):
         y = self.last_lfp_point_clicked[0].pos()[1]
         self.lfp_acq_dict[self.acquisition_number.text()].change_fp(x, y)
         self.lfp_points.setData(
-            x=self.lfp_acq_dict[self.acquisition_number.text()].plot_peak_x(),
-            y=self.lfp_acq_dict[self.acquisition_number.text()].plot_peak_y(),
+            x=self.lfp_acq_dict[self.acquisition_number.text()].plot_elements_x(),
+            y=self.lfp_acq_dict[self.acquisition_number.text()].plot_elements_y(),
             symbol="o",
             symbolSize=8,
             symbolBrush="m",
             pen=None,
         )
+        if self.lfp_object.slope is not np.nan:
+            self.lfp_reg.setData(
+                x=self.lfp_object.plot_slope_x(),
+                y=self.lfp_object.reg_line,
+                pen=pg.mkPen(color="g", width=4),
+                name="reg_line",
+            )
         self.lfp_fp_edit.setText(str(self.round_sig(self.lfp_object.fp_y)))
         self.lfp_fp_slope_edit.setText(str(self.round_sig(self.lfp_object.slope)))
         self.last_lfp_point_clicked[0].resetPen()
@@ -976,7 +1008,7 @@ class oEPSCWidget(DragDropWidget):
         else:
             self.pref_dict["oEPSC name"] = None
         YamlWorker.save_yaml(self.pref_dict, save_filename)
-        if self.pref_dict["Final Analysis"]:
+        if self.final_data is not None:
             self.final_data.save_data(save_filename)
         if self.oepsc_acq_dict:
             self.pbar.setFormat("Saving oEPSC files...")
@@ -1012,9 +1044,18 @@ class oEPSCWidget(DragDropWidget):
                 int(list(self.oepsc_acq_dict.keys())[-1])
             )
             self.acquisition_number.setMinimum(int(list(self.oepsc_acq_dict.keys())[0]))
-        else:
+            self.oepsc_model.setLoadData(self.oepsc_acq_dict)
+            self.set_peak_button.setEnabled(True)
+            self.delete_oepsc_button.setEnabled(True)
+        elif self.lfp_acq_dict:
             self.acquisition_number.setMaximum(int(list(self.lfp_acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.lfp_acq_dict.keys())[0]))
+            self.lfp_model.setLoadData(self.lfp_acq_dict)
+            self.delete_lfp_button.setEnabled(True)
+            self.set_fv_button.setEnabled(True)
+            self.set_fp_button.setEnabled(True)
+        else:
+            pass
         self.set_preferences(load_dict)
         self.acquisition_number.setValue(load_dict["Acq_number"])
         self.acquisition_number.setEnabled(True)
@@ -1024,6 +1065,10 @@ class oEPSCWidget(DragDropWidget):
             self.final_data = LoadEvokedCurrentData(save_values)
             self.raw_datatable.setData(self.final_data.raw_df.T.to_dict("dict"))
             self.final_datatable.setData(self.final_data.final_df.T.to_dict("dict"))
+        self.analyze_acq_button.setEnabled(True)
+        self.reset_button.setEnabled(True)
+        self.acquisition_number.setEnabled(True)
+        self.final_analysis_button.setEnabled(True)
 
     def create_pref_dict(self):
         line_edits = self.findChildren(QLineEdit)

@@ -128,7 +128,9 @@ class FinalMiniAnalysis:
         peak_align_values = sum(
             [item.peak_values() for item in self.acq_dict.values()], []
         )
-        events_list = sum([item.event_arrays() for item in self.acq_dict.values()], [])
+        events_list = sum(
+            [item.get_event_arrays() for item in self.acq_dict.values()], []
+        )
         max_min = max(peak_align_values)
         start_values = [max_min - i for i in peak_align_values]
         arrays = [np.append(i * [j[0]], j) for i, j in zip(start_values, events_list)]

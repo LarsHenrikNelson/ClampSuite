@@ -29,31 +29,49 @@ class LoadEvokedCurrentData:
 
 class LoadCurrentClampData:
     def __init__(self, file_path):
-        with pd.ExcelFile(file_path) as dfs:
-            self.raw_df = pd.read_excel(file_path, sheet_name="Raw data")
-            self.iv_df = pd.read_excel(file_path, sheet_name="IV_df")
-            print
-            self.deltav_df = pd.read_excel(file_path, sheet_name="Deltav_df")
-            self.final_df = pd.read_excel(
-                file_path, sheet_name="Final data", header=[0, 1]
-            ).drop(labels=0)
-            if "Pulse APs" in dfs.sheet_names:
-                self.pulse_ap_df = pd.read_excel(file_path, "Pulse APs").to_numpy()
-            if "Ramp APs" in dfs.sheet_names:
-                self.ramp_df = pd.read_excel(file_path, "Ramp APs").to_numpy()
+        self.df_dict = {}
+        self.hertz = False
+        self.pulse_ap = False
+        self.ramp_ap = False
 
-        self.plot_epochs = self.iv_df.columns.to_list()[:-1]
+        with pd.ExcelFile(file_path) as dfs:
+            for i in dfs.sheet_name:
+                if i == "Final data":
+                    self.df_dict[i] = pd.read_excel(
+                        file_path, sheet_name=i, header=[0, 1]
+                    ).drop(labels=0)
+                else:
+                    self.df_dict[i] = pd.read_excel(file_path, sheet_name=i)
+                if i == "Hertz":
+                    self.hertz = True
+                if i == "Pulse APs":
+                    self.pulse_ap = True
+                if i == "Ramp APs":
+                    self.ramp_ap = True
+
+            # self.iv_df = pd.read_excel(file_path, sheet_name="IV")
+            # self.deltav_df = pd.read_excel(file_path, sheet_name="Delta V")
+            # self.final_df = pd.read_excel(
+            #     file_path, sheet_name="Final data", header=[0, 1]
+            # ).drop(labels=0)
+            # if "Pulse APs" in dfs.sheet_names:
+            #     self.pulse_ap_df = pd.read_excel(file_path, "Pulse APs").to_numpy()
+            # if "Ramp APs" in dfs.sheet_names:
+            #     self.ramp_df = pd.read_excel(file_path, "Ramp APs").to_numpy()
+
+        self.plot_epochs = self.df_dict["IV"].columns.to_list()[:-1]
         self.plot_epochs = [int(i) for i in self.plot_epochs]
         self.process_final_data()
 
     def process_final_data(self):
-        self.final_df.rename(
+        df = self.df_dict["Final data"]
+        df.rename(
             columns={"Unnamed: 2_level_1": "", "Unnamed: 1_level_1": ""},
             level=1,
             inplace=True,
         )
-        self.final_df.rename(columns={"Unnamed: 0_level_0": ""}, level=0, inplace=True)
-        self.final_df["Epoch"] = self.final_df["Epoch"].astype("int64")
-        self.final_df["Ramp"] = self.final_df["Ramp"].astype("int64")
-        self.final_df[""] = self.final_df[""].astype("int64")
-        self.final_df.set_index(self.final_df[""]["Pulse_amp"], inplace=True)
+        df.rename(columns={"Unnamed: 0_level_0": ""}, level=0, inplace=True)
+        df["Epoch"] = self.final_df["Epoch"].astype("int64")
+        df["Ramp"] = df["Ramp"].astype("int64")
+        df[""] = df[""].astype("int64")
+        df.set_index(df[""]["Pulse_amp"], inplace=True)

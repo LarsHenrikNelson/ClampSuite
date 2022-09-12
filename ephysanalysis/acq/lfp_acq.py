@@ -135,6 +135,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         # analysis_end = start + int(20.0*self.s_r_c)
         x_values = np.arange(0, len(self.filtered_array) - 1)
         if w_end is not np.nan:
+            w_end = int(w_end)
             # if (abs(np.max(self.filtered_array[baseline_start:analysis_end]))
             #     < abs(np.min(self.filtered_array[baseline_start:analysis_end]))):
             #     w_end = (np.argmin(self.filtered_array[(start+ 44):analysis_end])
@@ -180,9 +181,11 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
         """
         if len(self.slope_y) > 5:
-            reg = linregress(self.slope_x, self.slope_y)
+            reg = linregress(self.slope_x / self.s_r_c, self.slope_y)
             self.slope = reg[0]
-            self.reg_line = [(self.slope * i) + reg[1] for i in self.slope_x]
+            self.reg_line = [
+                (self.slope * i) + reg[1] for i in self.slope_x / self.s_r_c
+            ]
         else:
             self.b = np.nan
             self.slope = np.nan
@@ -191,16 +194,26 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     def change_fv(self, x, y):
         self.fv_x = x
         self.fv_y = y
+        self.find_slope_array(self.fp_x)
+        self.regression()
 
     def change_fp(self, x, y):
         self.fp_x = x
         self.fp_y = y
+        self.find_slope_array(self.fp_x)
+        self.regression()
 
     def plot_elements_x(self):
         return [self.fv_x / self.s_r_c, self.fp_x / self.s_r_c]
 
     def plot_elements_y(self):
         return [self.fv_y, self.fp_y]
+
+    def plot_slope_x(self):
+        if not np.isnan(self.slope):
+            return self.slope_x / self.s_r_c
+        else:
+            return self.slope_x
 
     def create_dict(self):
         """
