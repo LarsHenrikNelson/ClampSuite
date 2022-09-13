@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 19 10:51:49 2021
-
-@author: LarsNelson
-"""
-
-import json
+from collections import namedtuple
 from glob import glob
+import json
 from math import log10, floor, isnan, nan
 from pathlib import Path
 
@@ -47,6 +41,8 @@ from ..gui_widgets.qtwidgets import (
 )
 from ..acq.acq import Acq
 from ..load_analysis.load_classes import LoadEvokedCurrentData
+
+XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
 
 class oEPSCWidget(DragDropWidget):
@@ -150,13 +146,17 @@ class oEPSCWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.oepsc_plot.setObjectName("oEPSC plot")
+        self.oepsc_plot.setAutoVisible(y=True)
         self.oepsc_plot.setMinimumWidth(500)
+        self.oepsc_plot.sigXRangeChanged.connect(lambda: self.getXRange("oepsc_plot"))
 
         self.lfp_plot = pg.PlotWidget(
             labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}
         )
         self.lfp_plot.setObjectName("LFP plot")
         self.lfp_plot.setMinimumWidth(500)
+        self.lfp_plot.setAutoVisible(y=True)
+        self.lfp_plot.sigXRangeChanged.connect(lambda: self.getXRange("lfp_plot"))
 
         self.oepsc_plot_layout = QHBoxLayout()
         self.lfp_plot_layout = QHBoxLayout()
@@ -604,7 +604,37 @@ class oEPSCWidget(DragDropWidget):
             list_model.deleteSelection(indexes)
             list_view.clearSelection()
 
+    def getXRange(self, plot):
+        h = str(self.acquisition_number.text())
+        if plot == "oepsc_plot":
+            x = self.oepsc_plot.viewRange()[0]
+            if self.oepsc_acq_dict.get(h):
+                self.setOPlotX(x)
+            else:
+                pass
+        elif plot == "lfp_plot":
+            x = self.lfp_plot.viewRange()[0]
+            if self.lfp_acq_dict.get(h):
+                self.setLFPPlotX(x)
+            else:
+                pass
+
+    def setOPlotX(self, x):
+        peak_dir = self.oepsc_acq_dict[
+            str(self.acquisition_number.text())
+        ].peak_direction
+        if peak_dir == "positive":
+            self.op_x_axis = XAxisCoord(x[0], x[1])
+        else:
+            self.on_x_axis = XAxisCoord(x[0], x[1])
+
+    def setLFPPlotX(self, x):
+        self.lfp_x_axis = XAxisCoord(x[0], x[1])
+
     def analyze(self):
+        on_x_set = False
+        op_x_set = False
+        lfp_x_set = False
         self.need_to_save = True
         if self.oepsc_acq_dict or self.lfp_acq_dict:
             self.oepsc_acq_dict = {}
@@ -655,6 +685,18 @@ class oEPSCWidget(DragDropWidget):
                     curve_fit_decay=self.curve_fit_decay.isChecked(),
                     curve_fit_type=self.curve_fit_type_edit.currentText(),
                 )
+                if not on_x_set and o_acq.peak_direction == "negative":
+                    self.on_x_axis = XAxisCoord(
+                        self.o_pulse_start_edit.toInt() - 100,
+                        self.o_pulse_start_edit.toInt() + 450,
+                    )
+                    on_x_set = True
+                elif not op_x_set and o_acq.peak_direction == "positive":
+                    self.op_x_axis = XAxisCoord(
+                        self.o_pulse_start_edit.toInt() - 100,
+                        o_acq.x_array[-1],
+                    )
+                    op_x_set = True
         if self.lfp_model.acq_dict:
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
@@ -675,6 +717,11 @@ class oEPSCWidget(DragDropWidget):
                     polyorder=self.lfp_polyorder_edit.toInt(),
                     pulse_start=self.lfp_pulse_start_edit.toFloat(),
                 )
+                if not lfp_x_set:
+                    self.lfp_x_axis = XAxisCoord(
+                        self.lfp_pulse_start_edit.toInt() - 10,
+                        self.lfp_b_start_edit.toInt() + 250,
+                    )
         # self.pbar.setValue(int(((count+1)/len(self.analysis_list))*100))
         if self.oepsc_acq_dict:
             acq_number = list(self.oepsc_acq_dict.keys())
@@ -720,26 +767,15 @@ class oEPSCWidget(DragDropWidget):
             self.oepsc_plot.addItem(self.oepsc_acq_plot)
             self.oepsc_plot.addItem(self.oepsc_peak_plot)
             if self.oepsc_object.peak_direction == "negative":
-                self.oepsc_plot.setXRange(
-                    self.o_pulse_start_edit.toInt() - 100,
-                    self.o_pulse_start_edit.toInt() + 450,
-                )
+                self.oepsc_plot.setXRange(self.on_x_axis.x_min, self.on_x_axis.x_max)
             else:
-                self.oepsc_plot.setXRange(
-                    self.o_pulse_start_edit.toInt() - 100, self.oepsc_object.x_array[-1]
-                )
+                self.oepsc_plot.setXRange(self.op_x_axis.x_min, self.op_x_axis.x_max)
+            self.oepsc_plot.enableAutoRange(axis="y")
+            self.oepsc_plot.setAutoVisible(y=True)
             self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
             if self.oepsc_object.find_ct:
                 self.oepsc_charge_edit.setText(
                     str(self.round_sig((self.oepsc_object.charge_transfer)))
-                )
-            if self.oepsc_object.find_edecay:
-                self.oepsc_edecay_edit.setText(
-                    str(self.round_sig(self.oepsc_object.est_decay()))
-                )
-            if self.oepsc_object.find_fdecay:
-                self.oepsc_fdecay_edit.setText(
-                    str(self.round_sig(self.oepsc_object.fit_tau))
                 )
         else:
             pass
@@ -773,10 +809,9 @@ class oEPSCWidget(DragDropWidget):
             self.lfp_plot.addItem(self.lfp_acq_plot)
             self.lfp_plot.addItem(self.lfp_points)
             self.lfp_plot.addItem(self.lfp_reg)
-            self.lfp_plot.setXRange(
-                self.lfp_pulse_start_edit.toInt() - 10,
-                self.lfp_b_start_edit.toInt() + 250,
-            )
+            self.lfp_plot.setXRange(self.lfp_x_axis.x_min, self.lfp_x_axis.x_max)
+            self.lfp_plot.enableAutoRange(axis="y")
+            self.lfp_plot.setAutoVisible(y=True)
             self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
             self.lfp_fp_edit.setText(str(self.round_sig(self.lfp_object.fp_y)))
             self.lfp_fp_slope_edit.setText(str(self.round_sig(self.lfp_object.slope)))

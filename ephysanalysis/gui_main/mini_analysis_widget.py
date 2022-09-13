@@ -942,7 +942,7 @@ class MiniAnalysisWidget(DragDropWidget):
         This functions is used for the draggable region.
         See PyQtGraphs documentation for more information.
         """
-        self.region.setZValue(10)
+        self.region.setZValue(100)
         self.minX, self.maxX = self.region.getRegion()
         self.p1.setXRange(self.minX, self.maxX, padding=0)
 

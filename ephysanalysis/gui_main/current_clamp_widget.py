@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
+from .acq_inspection import AcqInspectionWidget
 from ..acq.acq import Acq
 from ..final_analysis.final_current_clamp import FinalCurrentClampAnalysis
 from ..gui_widgets.qtwidgets import (
@@ -62,6 +63,7 @@ class currentClampWidget(DragDropWidget):
         self.final_obj = None
         self.plot_dict = {}
         self.table_dict = {}
+        self.inspection_widget = None
 
         self.signals.dictionary.connect(self.set_preferences)
         self.signals.path.connect(self.open_files)
@@ -157,6 +159,10 @@ class currentClampWidget(DragDropWidget):
         self.acq_model.setAnalysisType(self.analysis_type)
         self.acq_view.setModel(self.acq_model)
         self.input_layout.addRow(self.acq_view)
+
+        self.inspect_acqs_button = QPushButton("Inspect acq(s)")
+        self.input_layout.addRow(self.inspect_acqs_button)
+        self.inspect_acqs_button.clicked.connect(self.inspect_acqs)
 
         self.del_selection_button = QPushButton("Delete selection")
         self.del_selection_button.clicked.connect(self.del_selection)
@@ -270,6 +276,16 @@ class currentClampWidget(DragDropWidget):
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
             i.setMinimumWidth(100)
+
+    def inspect_acqs(self):
+        # Creates a separate window to view the loaded acquisitions
+        if self.inspection_widget is None:
+            self.inspection_widget = AcqInspectionWidget()
+            self.inspection_widget.setFileList(self.acq_model.acq_dict)
+            self.inspection_widget.show()
+        else:
+            self.inspection_widget.close()
+            self.inspection_widget = None
 
     def del_selection(self):
 

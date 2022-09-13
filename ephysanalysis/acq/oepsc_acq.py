@@ -76,7 +76,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def find_peak_dir(self):
         if abs(max(self.filtered_array)) > abs(min(self.filtered_array)):
             self.peak_direction = "positive"
-            self.peak_direction = "positive"
         else:
             self.peak_direction = "negative"
 
