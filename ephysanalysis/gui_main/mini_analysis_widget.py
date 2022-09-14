@@ -335,6 +335,7 @@ class MiniAnalysisWidget(DragDropWidget):
             "remez_1",
             "fir_zero_2",
             "fir_zero_1",
+            "ewma",
             "savgol",
             "median",
             "bessel",
@@ -345,6 +346,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
+        self.filter_selection.currentTextChanged.connect(self.setFiltProp)
         self.filter_selection.setObjectName("filter_selection")
         self.input_layout.addRow(self.filter_type_label, self.filter_selection)
 
@@ -402,6 +404,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
+        self.window_edit.currentTextChanged.connect(self.windowChanged)
         self.window_edit.setObjectName("window_edit")
         self.input_layout.addRow(self.window_label, self.window_edit)
         self.beta_sigma_label = QLabel("Beta/Sigma")
@@ -605,6 +608,25 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_acq_shortcut.activated.connect(self.delete_acq)
 
         self.set_width()
+
+    def windowChanged(self, text):
+        if text == "Gaussian":
+            self.beta_sigma_label.setText("Sigma")
+        else:
+            self.beta_sigma_label.setText("Beta")
+
+    def setFiltProp(self, text):
+        if text == "median":
+            self.order_label.setText("Window size")
+        elif text == "savgol":
+            self.order_label.setText("Window size")
+            self.polyorder_label.setText("Polyorder")
+        elif text == "ewma":
+            self.order_label.setText("Window size")
+            self.polyorder_label.setText("Sum proportion")
+        else:
+            self.order_label.setText("Order")
+            self.polyorder_label.setText("Polyorder")
 
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
@@ -1511,7 +1533,6 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setFormat("Loaded")
 
     def save_as(self, save_filename):
-        self.need_to_save = False
         self.reset_button.setEnabled(False)
         self.pbar.setFormat("Saving...")
         self.pbar.setValue(0)
@@ -1531,6 +1552,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.threadpool.start(self.worker)
         self.pbar.setFormat("Finished saving")
         self.reset_button.setEnabled(True)
+        self.need_to_save = False
 
     def create_pref_dict(self):
         line_edits = self.findChildren(QLineEdit)

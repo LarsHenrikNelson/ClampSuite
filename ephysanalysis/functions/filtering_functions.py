@@ -365,6 +365,14 @@ def nat_spline_filt(array, order):
     return y_hat
 
 
+def ewma_filt(array, window, sum_proportion):
+    alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
+    b = [alpha]
+    a = [1, alpha - 1]
+    filtered = signal.filtfilt(b, a, array)
+    return filtered
+
+
 if __name__ == "__main__":
     fir_zero_2()
     fir_zero_1()
@@ -378,3 +386,4 @@ if __name__ == "__main__":
     butterworth_zero()
     elliptic()
     elliptic_zero()
+    ewma_filt()

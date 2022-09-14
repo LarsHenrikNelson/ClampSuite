@@ -2,17 +2,18 @@ import numpy as np
 from scipy import signal
 
 from ..functions.filtering_functions import (
+    bessel,
+    bessel_zero,
+    butterworth,
+    butterworth_zero,
+    elliptic,
+    elliptic_zero,
+    ewma_filt,
+    fir_zero_1,
+    fir_zero_2,
     median_filter,
     remez_1,
     remez_2,
-    fir_zero_1,
-    fir_zero_2,
-    bessel,
-    butterworth,
-    elliptic,
-    bessel_zero,
-    butterworth_zero,
-    elliptic_zero,
 )
 
 from . import base_acq
@@ -205,10 +206,9 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             self.filtered_array = self.baselined_array - array
 
         elif self.filter_type == "ewma":
-            alpha = 1 - np.exp(np.log(1 - self.polyorder) / self.order)
-            b = [alpha]
-            a = [1, alpha - 1]
-            self.fitered_array = signal.filtfilt(b, a, array)
+            self.filtered_array = ewma_filt(
+                self.baselined_array, self.order, self.polyorder
+            )
 
-    def x_array(self):
+    def plot_x_array(self):
         return np.arange(len(self.filtered_array)) / self.s_r_c

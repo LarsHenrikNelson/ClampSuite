@@ -50,6 +50,10 @@ class oEPSCWidget(DragDropWidget):
 
         super().__init__()
 
+        self.initUI()
+
+    def initUI(self):
+
         self.signals.dictionary.connect(self.set_preferences)
         self.signals.path.connect(self.open_files)
         self.parent_layout = QVBoxLayout()
@@ -102,7 +106,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
         self.del_oepsc_sel = QPushButton("Delete selection")
         self.del_oepsc_sel.clicked.connect(
-            lambda checked: self.del_selection(self.oepsc_model, self.oepsc_view)
+            lambda checked: self.delSelection(self.oepsc_model, self.oepsc_view)
         )
         self.view_layout_1.addWidget(self.del_oepsc_sel)
         self.form_layouts.addLayout(self.view_layout_1)
@@ -121,7 +125,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_2.addWidget(self.inspect_lfp_acqs)
         self.del_lfp_sel = QPushButton("Delete selection")
         self.del_lfp_sel.clicked.connect(
-            lambda checked: self.del_selection(self.lfp_model, self.lfp_view)
+            lambda checked: self.delSelection(self.lfp_model, self.lfp_view)
         )
         self.view_layout_2.addWidget(self.del_lfp_sel)
         self.form_layouts.addLayout(self.view_layout_2)
@@ -215,6 +219,7 @@ class oEPSCWidget(DragDropWidget):
         self.o_filter_selection.setObjectName("o_filter_selection")
         self.o_filter_selection.setCurrentText("savgol")
         self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
+        self.o_filter_selection.currentTextChanged.connect(self.setOFiltProp)
 
         self.o_order_label = QLabel("Order")
         self.o_order_edit = LineEdit()
@@ -270,6 +275,8 @@ class oEPSCWidget(DragDropWidget):
         self.o_window_edit.setObjectName("o_window_edit")
         self.o_window_edit.addItems(windows)
         self.input_layout_1.addRow(self.o_window_label, self.o_window_edit)
+        self.o_window_edit.currentTextChanged.connect(self.oWindowChanged)
+
         self.o_beta_sigma_label = QLabel("Beta/Sigma")
         self.o_beta_sigma = QDoubleSpinBox()
         self.o_beta_sigma.setObjectName("o_beta_sigma")
@@ -403,6 +410,8 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_2.addRow(
             self.lfp_filter_type_label, self.lfp_filter_selection
         )
+        # This has to be added after the labels it changes
+        self.lfp_filter_selection.currentTextChanged.connect(self.setlFiltProp)
 
         self.lfp_order_label = QLabel("Order")
         self.lfp_order_edit = LineEdit()
@@ -458,6 +467,8 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_window_edit.addItems(windows)
         self.lfp_window_edit.setObjectName("lfp_window_edit")
         self.input_layout_2.addRow(self.lfp_window_label, self.lfp_window_edit)
+        self.lfp_window_edit.currentTextChanged.connect(self.lWindowChanged)
+
         self.lfp_beta_sigma_label = QLabel("Beta/Sigma")
         self.lfp_beta_sigma = QDoubleSpinBox()
         self.lfp_beta_sigma.setObjectName("lfp_beta_sigma")
@@ -490,7 +501,7 @@ class oEPSCWidget(DragDropWidget):
         # Analysis layout
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number = QSpinBox()
-        self.acquisition_number.valueChanged.connect(self.acq_spinbox)
+        self.acquisition_number.valueChanged.connect(self.acqSpinbox)
         self.o_info_layout.addRow(
             self.acquisition_number_label, self.acquisition_number
         )
@@ -597,7 +608,45 @@ class oEPSCWidget(DragDropWidget):
             self.inspection_widget.close()
             self.inspection_widget = None
 
-    def del_selection(self, list_model, list_view):
+    def oWindowChanged(self, text):
+        if text == "Gaussian":
+            self.o_beta_sigma_label.setText("Sigma")
+        else:
+            self.o_beta_sigma_label.setText("Beta")
+
+    def setOFiltProp(self, text):
+        if text == "median":
+            self.o_order_label.setText("Window size")
+        elif text == "savgol":
+            self.o_order_label.setText("Window size")
+            self.o_polyorder_label.setText("Polyorder")
+        elif text == "ewma":
+            self.o_order_label.setText("Window size")
+            self.o_polyorder_label.setText("Sum proportion")
+        else:
+            self.o_order_label.setText("Order")
+            self.o_polyorder_label.setText("Polyorder")
+
+    def lWindowChanged(self, text):
+        if text == "Gaussian":
+            self.lfp_beta_sigma_label.setText("Sigma")
+        else:
+            self.lfp_beta_sigma_label.setText("Beta")
+
+    def setlFiltProp(self, text):
+        if text == "median":
+            self.lfp_order_label.setText("Window size")
+        elif text == "savgol":
+            self.lfp_order_label.setText("Window size")
+            self.lfp_polyorder_label.setText("Polyorder")
+        elif text == "ewma":
+            self.lfp_order_label.setText("Window size")
+            self.lfp_polyorder_label.setText("Sum proportion")
+        else:
+            self.lfp_order_label.setText("Order")
+            self.lfp_polyorder_label.setText("Polyorder")
+
+    def delSelection(self, list_model, list_view):
         # Deletes the selected acquisitions from the list
         indexes = list_view.selectedIndexes()
         if len(indexes) > 0:
@@ -730,14 +779,14 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setMaximum(int(acq_number[-1]))
         self.acquisition_number.setMinimum(int(acq_number[0]))
         self.acquisition_number.setValue(int(acq_number[0]))
-        self.acq_spinbox(int(acq_number[0]))
+        self.acqSpinbox(int(acq_number[0]))
         self.analyze_acq_button.setEnabled(True)
         self.reset_button.setEnabled(True)
         self.acquisition_number.setEnabled(True)
         self.final_analysis_button.setEnabled(True)
         self.pbar.setFormat("Analysis finished")
 
-    def acq_spinbox(self, h):
+    def acqSpinbox(self, h):
         self.need_to_save = True
         self.acquisition_number.setDisabled(True)
         self.oepsc_plot.clear()
@@ -767,9 +816,13 @@ class oEPSCWidget(DragDropWidget):
             self.oepsc_plot.addItem(self.oepsc_acq_plot)
             self.oepsc_plot.addItem(self.oepsc_peak_plot)
             if self.oepsc_object.peak_direction == "negative":
-                self.oepsc_plot.setXRange(self.on_x_axis.x_min, self.on_x_axis.x_max)
+                self.oepsc_plot.setXRange(
+                    self.on_x_axis.x_min, self.on_x_axis.x_max, padding=0
+                )
             else:
-                self.oepsc_plot.setXRange(self.op_x_axis.x_min, self.op_x_axis.x_max)
+                self.oepsc_plot.setXRange(
+                    self.op_x_axis.x_min, self.op_x_axis.x_max, padding=0
+                )
             self.oepsc_plot.enableAutoRange(axis="y")
             self.oepsc_plot.setAutoVisible(y=True)
             self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
@@ -809,7 +862,9 @@ class oEPSCWidget(DragDropWidget):
             self.lfp_plot.addItem(self.lfp_acq_plot)
             self.lfp_plot.addItem(self.lfp_points)
             self.lfp_plot.addItem(self.lfp_reg)
-            self.lfp_plot.setXRange(self.lfp_x_axis.x_min, self.lfp_x_axis.x_max)
+            self.lfp_plot.setXRange(
+                self.lfp_x_axis.x_min, self.lfp_x_axis.x_max, padding=0
+            )
             self.lfp_plot.enableAutoRange(axis="y")
             self.lfp_plot.setAutoVisible(y=True)
             self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
@@ -1024,7 +1079,6 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button.setEnabled(True)
 
     def save_as(self, save_filename):
-        self.need_to_save = False
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
         self.create_pref_dict()
@@ -1045,6 +1099,8 @@ class oEPSCWidget(DragDropWidget):
         YamlWorker.save_yaml(self.pref_dict, save_filename)
         if self.final_data is not None:
             self.final_data.save_data(save_filename)
+        self.pbar_number = len(self.oepsc_acq_dict) + len(self.lfp_acq_dict)
+        self.update_number = 0
         if self.oepsc_acq_dict:
             self.pbar.setFormat("Saving oEPSC files...")
             worker1 = SaveWorker(save_filename, self.oepsc_acq_dict)
@@ -1056,6 +1112,7 @@ class oEPSCWidget(DragDropWidget):
             worker2.signals.progress.connect(self.update_save_progress)
             self.threadpool.start(worker2)
         self.pbar.setFormat("Data saved")
+        self.need_to_save = False
 
     def open_files(self, directory):
         self.reset()
@@ -1194,7 +1251,8 @@ class oEPSCWidget(DragDropWidget):
             pass
 
     def update_save_progress(self, progress):
-        self.pbar.setValue(progress)
+        self.update_number += 1
+        self.pbar.setValue(100 * self.update_number / self.pbar_number)
 
     def progress_finished(self, finished):
         self.pbar.setFormat(finished)

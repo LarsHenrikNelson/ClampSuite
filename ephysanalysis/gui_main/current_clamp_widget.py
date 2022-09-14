@@ -720,7 +720,6 @@ class currentClampWidget(DragDropWidget):
 
     def save_as(self, save_filename):
         self.reset_button.setEnabled(False)
-        self.need_to_save = False
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
         self.create_pref_dict()
@@ -735,6 +734,7 @@ class currentClampWidget(DragDropWidget):
         self.worker.signals.finished.connect(self.progress_finished)
         self.threadpool.start(self.worker)
         self.reset_button.setEnabled(True)
+        self.need_to_save = False
 
     def load_preferences(self, file_name):
         self.need_to_save = True

@@ -37,6 +37,9 @@ class filterWidget(QWidget):
         super().__init__()
 
         self.analysis_type = "filter"
+        self.initUI()
+
+    def initUI(self):
 
         # self.path_layout = QHBoxLayout()
         self.plot_layout = QHBoxLayout()
@@ -68,13 +71,13 @@ class filterWidget(QWidget):
         self.load_widget = ListView()
         self.acq_model = ListModel()
         self.acq_model.setAnalysisType(self.analysis_type)
-        # self.acq_model.layoutChanged.emit(self.set_acq_spinbox)
+        # self.acq_model.layoutChanged.emit(self.setAcqSpinbox)
         self.load_widget.setModel(self.acq_model)
         self.filt_layout.addWidget(self.load_widget)
 
         self.del_sel_button = QPushButton("Delete selection")
         self.filt_layout.addRow(self.del_sel_button)
-        self.del_sel_button.clicked.connect(self.del_selection)
+        self.del_sel_button.clicked.connect(self.delSelection)
 
         self.acq_number_label = QLabel("Acquisition")
         self.acq_number = QSpinBox()
@@ -114,11 +117,12 @@ class filterWidget(QWidget):
             "butterworth",
             "bessel_zero",
             "butterworth_zero",
+            "ewma",
         ]
-
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
         self.filt_layout.addRow(self.filter_type_label, self.filter_selection)
+        self.filter_selection.currentTextChanged.connect(self.setFiltProp)
 
         self.order_label = QLabel("Order")
         self.order_edit = LineEdit()
@@ -162,46 +166,64 @@ class filterWidget(QWidget):
             "kaiser",
             "gaussian",
             "parzen",
-            "exponential",
         ]
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
-        self.window_extra = QDoubleSpinBox()
-        self.window_box = QWidget()
-        self.window_box_layout = QVBoxLayout()
-        self.window_box_layout.addWidget(self.window_edit)
-        self.window_box_layout.addWidget(self.window_extra)
-        self.window_box.setLayout(self.window_box_layout)
-        self.filt_layout.addRow(self.window_label, self.window_box)
+        self.window_edit.currentTextChanged.connect(self.windowChanged)
+        self.filt_layout.addRow(self.window_label, self.window_edit)
+
+        self.beta_sigma_label = QLabel("Beta")
+        self.beta_sigma = QDoubleSpinBox()
+        self.beta_sigma.setObjectName("beta_sigma")
+        self.filt_layout.addRow(self.beta_sigma_label, self.beta_sigma)
 
         self.polyorder_label = QLabel("Polyorder")
         self.polyorder_edit = LineEdit()
-        self.polyorder_edit.setValidator(QIntValidator())
+        self.polyorder_edit.setValidator(QDoubleValidator())
         self.polyorder_edit.setEnabled(True)
         self.filt_layout.addRow(self.polyorder_label, self.polyorder_edit)
 
         self.plot_filt = QPushButton("Plot acq")
-        self.plot_filt.clicked.connect(self.plot_filt_button)
+        self.plot_filt.clicked.connect(self.plotFiltButton)
         # self.plot_filt.setMaximumSize(QSize(300,25))
         self.filt_layout.addRow(self.plot_filt)
 
         self.clear_plot = QPushButton("Clear plot")
-        self.clear_plot.clicked.connect(self.clear_plot_button)
+        self.clear_plot.clicked.connect(self.clearPlotButton)
         self.clear_plot.setMaximumSize(QSize(300, 25))
         self.filt_layout.addRow(self.clear_plot)
 
-        self.plot_list = {}
+        self.plot_list = 0
         self.pencil_list = []
         self.counter = 0
         self.filter_list = []
         self.need_to_save = False
         self.acq_number.setMinimum(1)
 
-    def set_acq_spinbox(self):
+    def windowChanged(self, text):
+        if text == "Gaussian":
+            self.beta_sigma_label.setText("Sigma")
+        else:
+            self.beta_sigma_label.setText("Beta")
+
+    def setFiltProp(self, text):
+        if text == "median":
+            self.order_label.setText("Window size")
+        elif text == "savgol":
+            self.order_label.setText("Window size")
+            self.polyorder_label.setText("Polyorder")
+        elif text == "ewma":
+            self.order_label.setText("Window size")
+            self.polyorder_label.setText("Sum proportion")
+        else:
+            self.order_label.setText("Order")
+            self.polyorder_label.setText("Polyorder")
+
+    def setAcqSpinbox(self):
         x = len(self.acq_model.acq_dict)
         self.acq_number.setMaximum(x)
 
-    def del_selection(self):
+    def delSelection(self):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
@@ -213,15 +235,19 @@ class filterWidget(QWidget):
             # actually needed sinced the view seems to change
             # without it.
             self.load_widget.clearSelection()
-        self.set_acq_spinbox()
+            if len(self.acq_model.acq_dict) == 0:
+                self.plot_list = 0
+                self.pencil_list = []
+                self.plot_widget.clear()
+        self.setAcqSpinbox()
 
-    def plot_filt_button(self):
-        self.set_acq_spinbox()
+    def plotFiltButton(self):
+        self.setAcqSpinbox()
         if (
             self.window_edit.currentText() == "gaussian"
             or self.window_edit.currentText() == "kaiser"
         ):
-            window = (self.window_edit.currentText(), self.window_extra.value())
+            window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
             window = self.window_edit.currentText()
         key = list(self.acq_model.acq_dict.keys())[self.acq_number.value() - 1]
@@ -237,7 +263,7 @@ class filterWidget(QWidget):
             low_pass=self.low_pass_edit.toFloat(),
             low_width=self.low_width_edit.toFloat(),
             window=window,
-            polyorder=self.polyorder_edit.toInt(),
+            polyorder=self.polyorder_edit.toFloat(),
         )
         filter_dict = {
             "sample_rate": self.sample_rate_edit.toInt(),
@@ -250,15 +276,12 @@ class filterWidget(QWidget):
             "low_pass": self.low_pass_edit.toFloat(),
             "low_width": self.low_width_edit.toFloat(),
             "window": self.window_edit.currentText(),
-            "polyorder": self.polyorder_edit.toInt(),
+            "polyorder": self.polyorder_edit.toFloat(),
         }
         self.filter_list += [filter_dict]
-        if len(self.plot_list) == 0:
-            pencil = pg.mkPen(color="w", alpha=int(0.75 * 255))
-        else:
-            pencil = pg.mkPen(color=pg.intColor(self.counter))
+        pencil = pg.mkPen(color=pg.intColor(self.counter))
         plot_item = self.p1.plot(
-            x=h.x_array(),
+            x=h.plot_x_array(),
             y=h.filtered_array,
             pen=pencil,
             name=(self.filter_selection.currentText() + "_" + str(self.counter)),
@@ -266,12 +289,12 @@ class filterWidget(QWidget):
         self.legend.addItem(
             plot_item, self.filter_selection.currentText() + "_" + str(self.counter)
         )
-        self.plot_list[str(self.counter)] = h
+        self.plot_list += 1
         self.counter += 1
         self.pencil_list += [pencil]
 
     def spinbox(self, number):
-        if len(self.plot_list.keys()) > 0:
+        if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
                 key = list(self.acq_model.acq_dict.keys())[number - 1]
@@ -289,16 +312,20 @@ class filterWidget(QWidget):
                     window=i["window"],
                     polyorder=i["polyorder"],
                 )
-                self.p1.plot(x=h.x_array(), y=h.filtered_array, pen=j)
+                self.p1.plot(x=h.plot_x_array(), y=h.filtered_array, pen=j)
         else:
             pass
 
-    def clear_plot_button(self):
+    def clearPlotButton(self):
         self.p1.clear()
         self.legend.clear()
         self.counter = 0
-        self.plot_list = {}
+        self.plot_list = 0
+        self.filter_list = []
         self.pencil_list = []
+
+    def removeLastPlotted(self):
+        pass
 
 
 if __name__ == "__main__":
