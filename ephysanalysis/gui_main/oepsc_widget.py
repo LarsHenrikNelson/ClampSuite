@@ -805,11 +805,11 @@ class oEPSCWidget(DragDropWidget):
                 symbolPen=(0, 0, 0, 0),
             )
             self.oepsc_peak_plot = pg.PlotDataItem(
-                x=self.oepsc_object.plot_peak_x(),
-                y=self.oepsc_object.plot_peak_y(),
+                x=self.oepsc_object.plot_x_comps(),
+                y=self.oepsc_object.plot_y_comps(),
                 symbol="o",
                 symbolSize=8,
-                symbolBrush="m",
+                symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m")],
                 pen=None,
             )
             self.oepsc_acq_plot.sigPointsClicked.connect(self.oepsc_plot_clicked)
@@ -1009,11 +1009,11 @@ class oEPSCWidget(DragDropWidget):
         y = self.last_oepsc_point_clicked[0].pos()[1]
         self.oepsc_acq_dict[self.acquisition_number.text()].change_peak(x, y)
         self.oepsc_peak_plot.setData(
-            x=self.oepsc_acq_dict[self.acquisition_number.text()].plot_peak_x(),
-            y=self.oepsc_acq_dict[self.acquisition_number.text()].plot_peak_y(),
+            x=self.oepsc_acq_dict[self.acquisition_number.text()].plot_x_comps(),
+            y=self.oepsc_acq_dict[self.acquisition_number.text()].plot_y_comps(),
             symbol="o",
             symbolSize=8,
-            symbolBrush="m",
+            symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m")],
             pen=None,
         )
         self.oepsc_amp_edit.setText(

@@ -70,6 +70,8 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             self.find_charge_transfer()
         if self.find_edecay:
             self.find_est_decay()
+        else:
+            self.est_tau_x = np.nan
         if self.find_fdecay:
             self.find_fit_decay()
 
@@ -191,23 +193,23 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def est_decay(self):
         return self.est_tau_x - self.peak_x
 
-    def plot_est_decay(self):
-        return [self.est_tau_x]
+    def plot_x_comps(self):
+        if self.find_edecay:
+            return [
+                self.peak_x,
+                self.est_tau_x,
+            ]
+        else:
+            return [self.peak_x, self.est_tau_x]
 
-    def plot_fit_decay(self):
-        return
-
-    def plot_y(self):
-        return self.filtered_array[self.baseline_start :]
-
-    def plot_x(self):
-        return self.x_array[self.baseline_start :]
-
-    def plot_peak_x(self):
-        return [self.peak_x]
-
-    def plot_peak_y(self):
-        return [self.peak_y]
+    def plot_y_comps(self):
+        if self.find_edecay:
+            return [
+                self.peak_y,
+                self.filtered_array[int(self.est_tau_x * self.s_r_c)],
+            ]
+        else:
+            return [self.peak_y, self.est_tau_x]
 
     def create_dict(self):
         oepsc_dict = {
