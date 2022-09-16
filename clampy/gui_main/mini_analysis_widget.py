@@ -336,7 +336,7 @@ class MiniAnalysisWidget(DragDropWidget):
             "fir_zero_2",
             "fir_zero_1",
             "ewma",
-            "savgol",
+            "ewma_a" "savgol",
             "median",
             "bessel",
             "butterworth",

@@ -112,12 +112,13 @@ class filterWidget(QWidget):
             "fir_zero_2",
             "fir_zero_1",
             "savgol",
+            "ewma",
+            "ewma_a",
             "median",
             "bessel",
             "butterworth",
             "bessel_zero",
             "butterworth_zero",
-            "ewma",
         ]
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
@@ -212,7 +213,7 @@ class filterWidget(QWidget):
         elif text == "savgol":
             self.order_label.setText("Window size")
             self.polyorder_label.setText("Polyorder")
-        elif text == "ewma":
+        elif text == "ewma" or text == "ewma_a":
             self.order_label.setText("Window size")
             self.polyorder_label.setText("Sum proportion")
         else:
@@ -235,10 +236,10 @@ class filterWidget(QWidget):
             # actually needed sinced the view seems to change
             # without it.
             self.load_widget.clearSelection()
-            if len(self.acq_model.acq_dict) == 0:
-                self.plot_list = 0
-                self.pencil_list = []
-                self.plot_widget.clear()
+        if len(self.acq_model.acq_dict) == 0:
+            self.plot_list = 0
+            self.pencil_list = []
+            self.p1.clear()
         self.setAcqSpinbox()
 
     def plotFiltButton(self):
@@ -251,6 +252,7 @@ class filterWidget(QWidget):
         else:
             window = self.window_edit.currentText()
         key = list(self.acq_model.acq_dict.keys())[self.acq_number.value() - 1]
+        print(key)
         h = self.acq_model.acq_dict[key].deep_copy()
         h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),

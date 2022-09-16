@@ -14,6 +14,8 @@ from ..functions.filtering_functions import (
     median_filter,
     remez_1,
     remez_2,
+    ewma_afilt,
+    ewma_filt,
 )
 
 from . import base_acq

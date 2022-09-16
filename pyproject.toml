@@ -3,21 +3,21 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ephysanalysis"
+name = "clampy"
 version = "0.1.9"
 dependencies = [
     "bottleneck",
-    "matplotlib",
-    "numpy",
+    "numpy>=1.22",
     "openpyxl",
     "pandas",
+    "patsy",
+    "pyqt",
     "pyqtgraph",
-    "PySide6",
     "pyyaml",
     "qdarkstyle >= 3",
     "qtpy",
     "scikit-learn",
-    "scipy",
+    "scipy>=1.9",
     "statsmodels",
     "xlsxwriter",
 ]
