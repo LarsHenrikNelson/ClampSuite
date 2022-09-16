@@ -477,7 +477,7 @@ class oEPSCWidget(DragDropWidget):
 
         self.lfp_polyorder_label = QLabel("Polyorder")
         self.lfp_polyorder_edit = LineEdit()
-        self.lfp_polyorder_edit.setValidator(QIntValidator())
+        self.lfp_polyorder_edit.setValidator(QDoubleValidator())
         self.lfp_polyorder_edit.setObjectName("lfp_polyorder_edit")
         self.lfp_polyorder_edit.setEnabled(True)
         self.lfp_polyorder_edit.setText("3")
@@ -724,7 +724,7 @@ class oEPSCWidget(DragDropWidget):
                     low_pass=self.o_low_pass_edit.toInt(),
                     low_width=self.o_low_width_edit.toInt(),
                     window=o_window,
-                    polyorder=self.o_polyorder_edit.toInt(),
+                    polyorder=self.o_polyorder_edit.toFloat(),
                     pulse_start=self.o_pulse_start_edit.toInt(),
                     n_window_start=self.o_neg_start_edit.toFloat(),
                     n_window_end=self.o_neg_end_edit.toFloat(),
@@ -764,7 +764,7 @@ class oEPSCWidget(DragDropWidget):
                     low_pass=self.lfp_low_pass_edit.toInt(),
                     low_width=self.lfp_low_width_edit.toInt(),
                     window=lfp_window,
-                    polyorder=self.lfp_polyorder_edit.toInt(),
+                    polyorder=self.lfp_polyorder_edit.toFloat(),
                     pulse_start=self.lfp_pulse_start_edit.toFloat(),
                 )
                 if not lfp_x_set:

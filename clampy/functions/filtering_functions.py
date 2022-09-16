@@ -373,6 +373,15 @@ def ewma_filt(array, window, sum_proportion):
     return filtered
 
 
+def ewma_afilt(array, window, sum_proportion):
+    alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
+    num = np.power(1.0 - alpha, np.arange(window + 1))
+    b = num / np.sum(num)
+    a = 1
+    filtered = signal.filtfilt(b, a, array)
+    return filtered
+
+
 if __name__ == "__main__":
     fir_zero_2()
     fir_zero_1()
@@ -387,3 +396,4 @@ if __name__ == "__main__":
     elliptic()
     elliptic_zero()
     ewma_filt()
+    ewma_afilt()

@@ -209,6 +209,10 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             self.filtered_array = ewma_filt(
                 self.baselined_array, self.order, self.polyorder
             )
+        elif self.filter_type == "ewma_a":
+            self.filtered_array = ewma_afilt(
+                self.baselined_array, self.order, self.polyorder
+            )
 
     def plot_x_array(self):
         return np.arange(len(self.filtered_array)) / self.s_r_c
