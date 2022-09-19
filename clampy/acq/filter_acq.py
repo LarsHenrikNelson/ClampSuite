@@ -8,14 +8,14 @@ from ..functions.filtering_functions import (
     butterworth_zero,
     elliptic,
     elliptic_zero,
+    ewma_afilt,
     ewma_filt,
     fir_zero_1,
     fir_zero_2,
     median_filter,
     remez_1,
     remez_2,
-    ewma_afilt,
-    ewma_filt,
+    savgol_filt,
 )
 
 from . import base_acq
@@ -188,9 +188,10 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
                 self.low_width,
             )
         elif self.filter_type == "savgol":
-            self.filtered_array = signal.savgol_filter(
-                self.baselined_array, self.order, self.polyorder, mode="nearest"
+            self.filtered_array = savgol_filt(
+                self.baselined_array, self.order, self.polyorder
             )
+
         elif self.filter_type == "None":
             self.filtered_array = self.baselined_array.copy()
 

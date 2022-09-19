@@ -58,7 +58,7 @@ class MiniEvent:
     def find_peak(self):
         # np.where(self.x_array == self.prior_peak)
         peaks_1, _ = signal.find_peaks(
-            -1 * self.event_array[self.adjust_pos :],
+            -1 * self.event_array,
             prominence=4,
             width=0.4 * self.s_r_c,
             distance=int(3 * self.s_r_c),
@@ -67,31 +67,42 @@ class MiniEvent:
         # peaks_1 = signal.argrelextrema(
         #     self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
         # )[0]
-        # peaks_1 = peaks_1[peaks_1 > 1 * self.s_r_c]
-        peaks_1 = peaks_1 + self.adjust_pos
+        peaks_1 = peaks_1[peaks_1 > self.adjust_pos]
+        if len(peaks_1) == 0:
+            self.find_peak_alt()
+        else:
+            self.peak_corr(peaks_1[0])
+
+    def peak_corr(self, peak_1):
+        peaks_2 = signal.argrelextrema(
+            self.event_array[:peak_1],
+            comparator=np.less,
+            order=int(0.4 * self.s_r_c),
+        )[0]
+        peaks_2 = peaks_2[peaks_2 > peak_1 - 4 * self.s_r_c]
+        if len(peaks_2) == 0:
+            final_peak = peak_1
+        else:
+            peaks_3 = peaks_2[
+                self.event_array[peaks_2] < 0.85 * self.event_array[peak_1]
+            ]
+            if len(peaks_3) == 0:
+                final_peak = peak_1
+            else:
+                final_peak = peaks_3[0]
+        self.event_peak_x = self.x_array[int(final_peak)]
+        self.event_peak_y = self.event_array[int(final_peak)]
+
+    def find_peak_alt(self):
+        peaks_1 = signal.argrelextrema(
+            self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
+        )[0]
+        peaks_1 = peaks_1[peaks_1 > self.adjust_pos]
         if len(peaks_1) == 0:
             self.event_peak_x = np.nan
             self.event_peak_y = np.nan
         else:
-            peak_1 = peaks_1[0]
-            peaks_2 = signal.argrelextrema(
-                self.event_array[:peak_1],
-                comparator=np.less,
-                order=int(0.4 * self.s_r_c),
-            )[0]
-            peaks_2 = peaks_2[peaks_2 > peak_1 - 4 * self.s_r_c]
-            if len(peaks_2) == 0:
-                final_peak = peak_1
-            else:
-                peaks_3 = peaks_2[
-                    self.event_array[peaks_2] < 0.85 * self.event_array[peak_1]
-                ]
-                if len(peaks_3) == 0:
-                    final_peak = peak_1
-                else:
-                    final_peak = peaks_3[0]
-            self.event_peak_x = self.x_array[int(final_peak)]
-            self.event_peak_y = self.event_array[int(final_peak)]
+            self.peak_corr(peaks_1[0])
 
     def find_alt_baseline(self):
         baselined_array = self.event_array - np.mean(

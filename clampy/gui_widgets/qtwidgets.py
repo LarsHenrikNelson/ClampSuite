@@ -45,7 +45,8 @@ class LineEdit(QLineEdit):
         if len(self.text()) == 0:
             x = None
         else:
-            x = int(self.text())
+            y = float(self.text())
+            x = int(y)
         return x
 
     def toText(self):
@@ -141,6 +142,7 @@ class ListView(QListView):
         self.setAcceptDrops(True)
         self.setSelectionMode(self.MultiSelection)
         self.setDropIndicatorShown(True)
+        self.setModel(ListModel())
 
     def dragEnterEvent(self, e):
         """
@@ -174,6 +176,21 @@ class ListView(QListView):
         else:
             e.ignore()
 
+    def clearData(self):
+        self.model().clearData()
+        self.model().layoutChanged.emit()
+
+    def deleteSelection(self, indices):
+        self.model().deleteSelection(indices)
+        self.model().layoutChanged.emit()
+
+    def addAcq(self, urls):
+        self.model().addAcq(urls)
+        self.model().layoutChanged.emit()
+
+    def setAnalysisType(self, analysis):
+        self.model().setAnalysisType(analysis)
+
 
 class ListModel(QAbstractListModel):
     """
@@ -188,23 +205,16 @@ class ListModel(QAbstractListModel):
         self,
         acq_dict=None,
         fname_list=None,
-        header_name="Acquisition(s)",
     ):
         super().__init__()
         self.acq_dict = acq_dict or {}
         self.fname_list = fname_list or []
         self.acq_names = []
-        self.header_name = header_name
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
             x = self.acq_names[index.row()]
             return x
-
-    def headerData(self, name, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            name = self.header_name
-            return name
 
     def rowCount(self, index):
         return len(self.acq_dict)
@@ -216,19 +226,23 @@ class ListModel(QAbstractListModel):
         """
         self.analysis_type = analysis
 
-    def deleteSelection(self, indexes):
-        for index in sorted(indexes, reverse=True):
-            x = list(self.acq_dict.keys())[index.row()]
-            del self.acq_dict[x]
-            del self.fname_list[index.row()]
-            self.acq_names = [i.name for i in self.acq_dict.values()]
-        self.layoutChanged.emit()
+    def deleteSelection(self, indices):
+        keys = list(self.acq_dict.keys())
+        index_list = sorted(
+            [i.row() for i in indices if i.row() < len(keys)], reverse=True
+        )
+        for index in index_list:
+            self.removeRow(index)
+            key = keys[index]
+            del self.acq_dict[key]
+            del self.fname_list[index]
+            self.layoutChanged.emit()
+        self.acq_names = [i.name for i in self.acq_dict.values()]
 
     def clearData(self):
         self.acq_dict = {}
         self.fname_list = []
         self.acq_names = []
-        self.layoutChanged.emit()
 
     def addAcq(self, urls):
         for url in urls:

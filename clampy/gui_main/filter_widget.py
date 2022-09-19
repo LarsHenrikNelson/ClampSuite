@@ -252,7 +252,6 @@ class filterWidget(QWidget):
         else:
             window = self.window_edit.currentText()
         key = list(self.acq_model.acq_dict.keys())[self.acq_number.value() - 1]
-        print(key)
         h = self.acq_model.acq_dict[key].deep_copy()
         h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),

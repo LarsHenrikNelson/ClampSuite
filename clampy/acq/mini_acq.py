@@ -35,6 +35,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         decon_type="wiener",
         curve_fit_decay=False,
         curve_fit_type="db_exp",
+        baseline_corr=False,
+        temp_tau_1=3,
+        temp_tau_2=50,
+        temp_amplitude=-20,
+        temp_risepower=0.5,
+        temp_t_psc=np.arange(0, 300),
+        temp_spacer=20,
     ):
         # Set the attributes for the acquisition
         self.sample_rate = sample_rate
@@ -50,6 +57,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
+        self.baseline_corr = baseline_corr
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )
@@ -159,7 +167,11 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             (self.template, np.zeros(len(self.final_array) - len(self.template)))
         )
         H = fft(kernel)
-        baseline = self.baseline_correction()
+        if self.baseline_corr:
+            baseline = self.baseline_correction()
+        else:
+            baseline = 0
+
         b_corrected = self.final_array - baseline
         if self.decon_type == "fft":
             deconvolved_array = np.real(ifft(fft(b_corrected) / H))
@@ -193,8 +205,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         baselined_decon_array = deconvolved_array - np.mean(deconvolved_array[0:800])
         if self.decon_type == "fft" or self.decon_type == "wiener":
             filt = signal.firwin2(
-                301,
-                freq=[0, 300, 300, self.sample_rate / 2],
+                351,
+                freq=[0, 300, 400, self.sample_rate / 2],
                 gain=[1, 1, 0, 0],
                 window="hann",
                 fs=self.sample_rate,
@@ -246,7 +258,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     curve_fit_type=self.curve_fit_type,
                     prior_peak=prior_peak,
                 )
-                if event.event_peak_x is np.nan or event.event_peak_x in event_time:
+                if np.isnan(event.event_peak_x) or event.event_peak_x in event_time:
                     pass
                 else:
                     if event_number > 0:
@@ -254,11 +266,11 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                             event.event_peak_x
                             - self.postsynaptic_events[-1].event_peak_x
                             > self.mini_spacing
-                            and event.amplitude > self.amp_threshold
-                            and event.rise_time > self.min_rise_time
-                            and event.rise_time < self.max_rise_time
-                            and event.final_tau_x > self.min_decay_time
-                            and event.final_tau_x > event.rise_time
+                            and event.amplitude >= self.amp_threshold
+                            and event.rise_time >= self.min_rise_time
+                            and event.rise_time <= self.max_rise_time
+                            and event.final_tau_x >= self.min_decay_time
+                            and event.final_tau_x >= event.rise_time
                         ):
                             self.postsynaptic_events += [event]
                             self.final_events += [peak]
@@ -267,7 +279,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                         else:
                             pass
                     else:
-                        if event.amplitude > self.amp_threshold:
+                        if (
+                            event.amplitude > self.amp_threshold
+                            and event.rise_time > self.min_rise_time
+                            and event.rise_time < self.max_rise_time
+                            and event.final_tau_x > self.min_decay_time
+                            and event.final_tau_x > event.rise_time
+                        ):
                             self.postsynaptic_events.append(event)
                             self.final_events += [peak]
                             event_time += [event.event_peak_x]
@@ -317,8 +335,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             curve_fit_decay=self.curve_fit_decay,
             curve_fit_type=self.curve_fit_type,
         )
-        self.final_events += [x]
-        self.postsynaptic_events += [event]
+        if not np.isnan(event.event_peak_x):
+            self.final_events += [x]
+            self.postsynaptic_events += [event]
+            return True
+        else:
+            return False
 
     def final_acq_data(self):
         """
@@ -407,7 +429,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         """
         self.saved_events_dict = []
-        self.final_decon_array = "saved"
+        self.array = "saved"
+        # self.final_decon_array = "saved"
         self.filtered_array = "saved"
         self.events = "saved"
         self.x_array = "saved"

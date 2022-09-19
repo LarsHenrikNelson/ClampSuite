@@ -50,6 +50,9 @@ class MiniAnalysisWidget(DragDropWidget):
     def __init__(self):
 
         super().__init__()
+        self.init_UI()
+
+    def init_UI(self):
 
         # Create tabs for part of the analysis program
         self.signals.dictionary.connect(self.set_preferences)
@@ -74,7 +77,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab_widget.addTab(self.tab3, "Final data")
 
         self.setStyleSheet(
-            """QTabWidget::tab-bar 
+            """QTabWidget::tab-bar
                                           {alignment: left;}"""
         )
 
@@ -96,195 +99,19 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_form = QFormLayout()
         self.tab1.setLayout(self.setup_layout)
         self.setup_layout.addLayout(self.input_layout, 0)
-        self.setup_layout.addLayout(self.extra_layout, 0)
+        self.setup_layout.addLayout(self.extra_layout, 1)
         self.setup_layout.addLayout(self.load_layout, 0)
         self.extra_layout.addLayout(self.other_layout, 0)
         self.other_layout.addLayout(self.settings_layout, 0)
         self.other_layout.addLayout(self.template_form, 0)
         self.setup_layout.addStretch(1)
 
-        # Tab 2 layouts
-        self.plot_layout = QVBoxLayout()
-        self.acq_layout = QHBoxLayout()
-        self.mini_view_layout = QHBoxLayout()
-        self.mini_tab = QTabWidget()
-        self.acq_buttons = QFormLayout()
-        self.acq_2_buttons = QVBoxLayout()
-        self.mini_layout = QFormLayout()
-        self.tab2.setLayout(self.plot_layout)
-        self.plot_layout.addLayout(self.mini_view_layout, 1)
-        self.plot_layout.addLayout(self.acq_layout, 1)
-        self.acq_layout.addLayout(self.acq_2_buttons, 0)
-        self.acq_2_buttons.addLayout(self.acq_buttons, 1)
-        self.acq_layout.addWidget(self.mini_tab, 1)
-
-        # Tab 3 layouts and setup
-        self.table_layout = QVBoxLayout()
-        self.tab3.setLayout(self.table_layout)
-        self.data_layout = QHBoxLayout()
-        self.table_layout.addLayout(self.data_layout)
-        self.raw_data_table = pg.TableWidget(sortable=False)
-        self.raw_data_table.setMinimumHeight(300)
-        self.final_table = pg.TableWidget(sortable=False)
-        self.final_table.setMinimumHeight(100)
-        self.ave_mini_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
-        )
-        self.ave_mini_plot.setMaximumSize(700, 400)
-        self.ave_mini_plot.setObjectName("Ave mini plot")
-        self.data_layout.addWidget(self.raw_data_table, 0)
-        self.final_data_layout = QVBoxLayout()
-        self.final_data_layout.addWidget(self.final_table, 1)
-        self.final_data_layout.addWidget(self.ave_mini_plot, 1)
-        self.data_layout.addLayout(self.final_data_layout, 1)
-        # self.mw = MplWidget()
-        self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
-        self.stem_plot.setMinimumSize(300, 300)
-        self.amp_dist = pg.PlotWidget()
-        self.amp_dist.setMinimumSize(300, 300)
-        self.plot_selector = QComboBox()
-        self.plot_selector.setMaximumWidth(100)
-        self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
-
-        self.matplotlib_layout_h = QHBoxLayout()
-        self.matplotlib_layout_h.addWidget(self.plot_selector, 1)
-        self.matplotlib_layout_h.addWidget(self.stem_plot, 2)
-        self.matplotlib_layout_h.addWidget(self.amp_dist, 2)
-        self.table_layout.addLayout(self.matplotlib_layout_h, 2)
-
-        # Tab2 acq_buttons layout
-        self.acquisition_number_label = QLabel("Acq number")
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.valueChanged.connect(self.acq_spinbox)
-        self.acq_buttons.addRow(self.acquisition_number_label, self.acquisition_number)
-
-        self.epoch_label = QLabel("Epoch")
-        self.epoch_edit = QLineEdit()
-        self.acq_buttons.addRow(self.epoch_label, self.epoch_edit)
-
-        self.baseline_mean_label = QLabel("Baseline mean")
-        self.baseline_mean_edit = QLineEdit()
-        self.acq_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
-
-        self.left_button = QToolButton()
-        self.left_button.pressed.connect(self.leftbutton)
-        self.left_button.setArrowType(Qt.LeftArrow)
-        self.left_button.setAutoRepeat(True)
-        self.left_button.setAutoRepeatInterval(10)
-        self.right_button = QToolButton()
-        self.right_button.pressed.connect(self.rightbutton)
-        self.right_button.setArrowType(Qt.RightArrow)
-        self.right_button.setAutoRepeat(True)
-        self.right_button.setAutoRepeatInterval(10)
-        self.acq_buttons.addRow(self.left_button, self.right_button)
-
-        self.slider_sensitivity = QSlider()
-        self.slider_sensitivity.setObjectName("mini plot slider")
-        self.acq_buttons.addRow(self.slider_sensitivity)
-        self.slider_sensitivity.setOrientation(Qt.Horizontal)
-        self.slider_sensitivity.setValue(20)
-        self.slider_sensitivity.valueChanged.connect(self.slider_value)
-
-        self.create_mini_button = QPushButton("Create new mini")
-        self.create_mini_button.clicked.connect(self.create_mini)
-        self.acq_buttons.addRow(self.create_mini_button)
-
-        self.delete_acq_button = QPushButton("Delete acquisition")
-        self.delete_acq_button.clicked.connect(self.delete_acq)
-        self.acq_buttons.addRow(self.delete_acq_button)
-
-        self.reset_recent_acq_button = QPushButton("Reset recent acq")
-        self.reset_recent_acq_button.clicked.connect(self.reset_recent_reject_acq)
-        self.acq_buttons.addRow(self.reset_recent_acq_button)
-
-        self.acq_2_buttons.addStretch(0)
-
-        self.calculate_parameters_2 = QPushButton("Calculate Parameters")
-        self.acq_2_buttons.addWidget(self.calculate_parameters_2)
-        self.calculate_parameters_2.clicked.connect(self.final_analysis)
-        self.calculate_parameters_2.setEnabled(False)
-
-        # Filling the plot layout.
-        pg.setConfigOptions(antialias=True)
-        self.p1 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
-        )
-        self.p1.setObjectName("p1")
-        self.p1.setMinimumWidth(500)
-        self.acq_layout.addWidget(self.p1, 10)
-
-        self.p2 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
-        )
-        self.p2.setObjectName("p2")
-        self.mini_view_layout.addWidget(self.p2, 10)
-        self.p2.setMinimumWidth(600)
-
-        self.region = pg.LinearRegionItem()
-
-        # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
-        self.region.sigRegionChanged.connect(self.update)
-        self.p1.sigRangeChanged.connect(self.updateRegion)
-
-        self.tab1 = self.p1
-        self.mini_tab.addTab(self.tab1, "Acq view")
-
-        self.mini_view_layout.addLayout(self.mini_layout, 0)
-        self.mini_number_label = QLabel("Event")
-        self.mini_number = QSpinBox()
-        self.mini_number.valueChanged.connect(self.mini_spinbox)
-        self.mini_layout.addRow(self.mini_number_label, self.mini_number)
-
-        self.mini_baseline_label = QLabel("Baseline (pA)")
-        self.mini_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
-        self.mini_baseline = QLineEdit()
-        self.mini_layout.addRow(self.mini_baseline_label, self.mini_baseline)
-
-        self.mini_amplitude_label = QLabel("Amplitude (pA)")
-        self.mini_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
-        self.mini_amplitude = QLineEdit()
-        self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
-
-        self.mini_tau_label = QLabel("Tau (ms)")
-        self.mini_tau = QLineEdit()
-        self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
-        self.mini_layout.addRow(self.mini_tau_label, self.mini_tau)
-
-        self.mini_rise_time_label = QLabel("Rise time (ms)")
-        self.mini_rise_time = QLineEdit()
-        self.mini_layout.addRow(self.mini_rise_time_label, self.mini_rise_time)
-
-        self.mini_rise_rate_label = QLabel("Rise rate (pA/ms)")
-        self.mini_rise_rate = QLineEdit()
-        self.mini_layout.addRow(self.mini_rise_rate_label, self.mini_rise_rate)
-
-        self.delete_mini_button = QPushButton("Delete event")
-        self.mini_layout.addRow(self.delete_mini_button)
-        self.delete_mini_button.clicked.connect(self.delete_mini)
-
-        self.set_baseline = QPushButton("Set point as baseline")
-        self.mini_layout.addRow(self.set_baseline)
-        self.set_baseline.clicked.connect(self.set_point_as_baseline)
-
-        self.set_peak = QPushButton("Set point as peak")
-        self.mini_layout.addRow(self.set_peak)
-        self.set_peak.clicked.connect(self.set_point_as_peak)
-
-        self.mini_view_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
-        )
-        self.mini_view_plot.setObjectName("Mini view plot")
-        self.mini_view_layout.addWidget(self.mini_view_plot, 0)
-
         # Tab1 input
         self.analysis_type = "mini"
         self.load_acq_label = QLabel("Acquisition(s)")
         self.load_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
-        self.acq_model = ListModel()
-        self.acq_model.setAnalysisType(self.analysis_type)
-        self.load_widget.setModel(self.acq_model)
-        # self.load_widget.setItemDelegate(delegate)
+        self.load_widget.setAnalysisType(self.analysis_type)
         self.load_layout.addWidget(self.load_widget)
 
         self.b_start_label = QLabel("Baseline start (ms)")
@@ -336,7 +163,8 @@ class MiniAnalysisWidget(DragDropWidget):
             "fir_zero_2",
             "fir_zero_1",
             "ewma",
-            "ewma_a" "savgol",
+            "ewma_a",
+            "savgol",
             "median",
             "bessel",
             "butterworth",
@@ -409,6 +237,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.input_layout.addRow(self.window_label, self.window_edit)
         self.beta_sigma_label = QLabel("Beta/Sigma")
         self.beta_sigma = QDoubleSpinBox()
+        self.beta_sigma.setMinimumWidth(70)
         self.beta_sigma.setObjectName("beta_sigma")
         self.input_layout.addRow(self.beta_sigma_label, self.beta_sigma)
 
@@ -424,7 +253,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.analyze_acq_button.setObjectName("analyze_acq_button")
         self.analyze_acq_button.clicked.connect(self.analyze)
 
-        self.calculate_parameters = QPushButton("Calculate Parameters")
+        self.calculate_parameters = QPushButton("Final analysis")
         self.input_layout.addRow(self.calculate_parameters)
         self.calculate_parameters.setObjectName("calculate_parameters")
         self.calculate_parameters.clicked.connect(self.final_analysis)
@@ -558,7 +387,7 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.template_plot.setObjectName("Template plot")
-        self.extra_layout.addWidget(self.template_plot, 0)
+        self.extra_layout.addWidget(self.template_plot, 1)
 
         # Setup for the drag and drop load layout
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
@@ -568,6 +397,189 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_sel_button = QPushButton("Delete selection")
         self.load_layout.addWidget(self.del_sel_button)
         self.del_sel_button.clicked.connect(self.del_selection)
+
+        # Tab 2 layouts
+        self.plot_layout = QVBoxLayout()
+        self.acq_layout = QHBoxLayout()
+        self.mini_view_layout = QHBoxLayout()
+        self.mini_tab = QTabWidget()
+        self.acq_buttons = QFormLayout()
+        self.acq_2_buttons = QVBoxLayout()
+        self.mini_layout = QFormLayout()
+        self.tab2.setLayout(self.plot_layout)
+        self.plot_layout.addLayout(self.mini_view_layout, 1)
+        self.plot_layout.addLayout(self.acq_layout, 1)
+        self.acq_layout.addLayout(self.acq_2_buttons, 0)
+        self.acq_2_buttons.addLayout(self.acq_buttons, 0)
+        self.acq_layout.addWidget(self.mini_tab, 1)
+
+        # Tab2 acq_buttons layout
+        self.acquisition_number_label = QLabel("Acq number")
+        self.acquisition_number = QSpinBox()
+        self.acquisition_number.setKeyboardTracking(False)
+        self.acquisition_number.setMinimumWidth(70)
+        self.acq_buttons.addRow(self.acquisition_number_label, self.acquisition_number)
+        self.acquisition_number.valueChanged.connect(self.acq_spinbox)
+
+        self.epoch_label = QLabel("Epoch")
+        self.epoch_edit = QLineEdit()
+        self.acq_buttons.addRow(self.epoch_label, self.epoch_edit)
+
+        self.baseline_mean_label = QLabel("Baseline mean")
+        self.baseline_mean_edit = QLineEdit()
+        self.acq_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
+
+        self.left_button = QToolButton()
+        self.left_button.pressed.connect(self.leftbutton)
+        self.left_button.setArrowType(Qt.LeftArrow)
+        self.left_button.setAutoRepeat(True)
+        self.left_button.setAutoRepeatInterval(10)
+        self.right_button = QToolButton()
+        self.right_button.pressed.connect(self.rightbutton)
+        self.right_button.setArrowType(Qt.RightArrow)
+        self.right_button.setAutoRepeat(True)
+        self.right_button.setAutoRepeatInterval(10)
+        self.acq_buttons.addRow(self.left_button, self.right_button)
+
+        self.slider_sensitivity = QSlider()
+        self.slider_sensitivity.setObjectName("mini plot slider")
+        self.acq_buttons.addRow(self.slider_sensitivity)
+        self.slider_sensitivity.setOrientation(Qt.Horizontal)
+        self.slider_sensitivity.setValue(20)
+        self.slider_sensitivity.valueChanged.connect(self.slider_value)
+
+        self.create_mini_button = QPushButton("Create new mini")
+        self.create_mini_button.clicked.connect(self.create_mini)
+        self.acq_buttons.addRow(self.create_mini_button)
+
+        self.delete_acq_button = QPushButton("Delete acquisition")
+        self.delete_acq_button.clicked.connect(self.delete_acq)
+        self.acq_buttons.addRow(self.delete_acq_button)
+
+        self.reset_recent_acq_button = QPushButton("Reset recent acq")
+        self.reset_recent_acq_button.clicked.connect(self.reset_recent_reject_acq)
+        self.acq_buttons.addRow(self.reset_recent_acq_button)
+
+        self.acq_2_buttons.addStretch(0)
+
+        self.calculate_parameters_2 = QPushButton("Calculate Parameters")
+        self.acq_2_buttons.addWidget(self.calculate_parameters_2)
+        self.calculate_parameters_2.clicked.connect(self.final_analysis)
+        self.calculate_parameters_2.setEnabled(False)
+
+        # Filling the plot layout.
+        pg.setConfigOptions(antialias=True)
+        self.p1 = pg.PlotWidget(
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+        )
+        self.p1.setObjectName("p1")
+        self.p1.setMinimumWidth(500)
+        self.acq_layout.addWidget(self.p1, 10)
+
+        self.p2 = pg.PlotWidget(
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+        )
+        self.p2.setObjectName("p2")
+        self.mini_view_layout.addWidget(self.p2, 10)
+        self.p2.setMinimumWidth(600)
+
+        self.region = pg.LinearRegionItem()
+
+        # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
+        self.region.sigRegionChanged.connect(self.update)
+        self.p1.sigRangeChanged.connect(self.updateRegion)
+
+        self.tab1 = self.p1
+        self.mini_tab.addTab(self.tab1, "Acq view")
+
+        self.mini_view_layout.addLayout(self.mini_layout, 0)
+        self.mini_number_label = QLabel("Event")
+        self.mini_number = QSpinBox()
+        self.mini_number.setKeyboardTracking(False)
+        self.mini_layout.addRow(self.mini_number_label, self.mini_number)
+        self.mini_number.setEnabled(True)
+        self.mini_number.setMinimumWidth(70)
+        self.mini_number.valueChanged.connect(self.mini_spinbox)
+
+        self.mini_baseline_label = QLabel("Baseline (pA)")
+        self.mini_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
+        self.mini_baseline = QLineEdit()
+        self.mini_baseline.setReadOnly(True)
+        self.mini_layout.addRow(self.mini_baseline_label, self.mini_baseline)
+
+        self.mini_amplitude_label = QLabel("Amplitude (pA)")
+        self.mini_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
+        self.mini_amplitude = QLineEdit()
+        self.mini_amplitude.setReadOnly(True)
+        self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
+
+        self.mini_tau_label = QLabel("Tau (ms)")
+        self.mini_tau = QLineEdit()
+        self.mini_tau.setReadOnly(True)
+        self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
+        self.mini_layout.addRow(self.mini_tau_label, self.mini_tau)
+
+        self.mini_rise_time_label = QLabel("Rise time (ms)")
+        self.mini_rise_time = QLineEdit()
+        self.mini_rise_time.setReadOnly(True)
+        self.mini_layout.addRow(self.mini_rise_time_label, self.mini_rise_time)
+
+        self.mini_rise_rate_label = QLabel("Rise rate (pA/ms)")
+        self.mini_rise_rate = QLineEdit()
+        self.mini_rise_rate.setReadOnly(True)
+        self.mini_layout.addRow(self.mini_rise_rate_label, self.mini_rise_rate)
+
+        self.delete_mini_button = QPushButton("Delete event")
+        self.mini_layout.addRow(self.delete_mini_button)
+        self.delete_mini_button.clicked.connect(self.delete_mini)
+
+        self.set_baseline = QPushButton("Set point as baseline")
+        self.mini_layout.addRow(self.set_baseline)
+        self.set_baseline.clicked.connect(self.set_point_as_baseline)
+
+        self.set_peak = QPushButton("Set point as peak")
+        self.mini_layout.addRow(self.set_peak)
+        self.set_peak.clicked.connect(self.set_point_as_peak)
+
+        self.mini_view_plot = pg.PlotWidget(
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+        )
+        self.mini_view_plot.setObjectName("Mini view plot")
+        self.mini_view_layout.addWidget(self.mini_view_plot, 0)
+
+        # Tab 3 layouts and setup
+        self.table_layout = QVBoxLayout()
+        self.tab3.setLayout(self.table_layout)
+        self.data_layout = QHBoxLayout()
+        self.table_layout.addLayout(self.data_layout)
+        self.raw_data_table = pg.TableWidget(sortable=False)
+        self.raw_data_table.setMinimumHeight(300)
+        self.final_table = pg.TableWidget(sortable=False)
+        self.final_table.setMinimumHeight(100)
+        self.ave_mini_plot = pg.PlotWidget(
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+        )
+        self.ave_mini_plot.setMaximumSize(700, 400)
+        self.ave_mini_plot.setObjectName("Ave mini plot")
+        self.data_layout.addWidget(self.raw_data_table, 0)
+        self.final_data_layout = QVBoxLayout()
+        self.final_data_layout.addWidget(self.final_table, 1)
+        self.final_data_layout.addWidget(self.ave_mini_plot, 1)
+        self.data_layout.addLayout(self.final_data_layout, 1)
+        # self.mw = MplWidget()
+        self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
+        self.stem_plot.setMinimumSize(300, 300)
+        self.amp_dist = pg.PlotWidget()
+        self.amp_dist.setMinimumSize(300, 300)
+        self.plot_selector = QComboBox()
+        self.plot_selector.setMaximumWidth(100)
+        self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
+
+        self.matplotlib_layout_h = QHBoxLayout()
+        self.matplotlib_layout_h.addWidget(self.plot_selector, 1)
+        self.matplotlib_layout_h.addWidget(self.stem_plot, 2)
+        self.matplotlib_layout_h.addWidget(self.amp_dist, 2)
+        self.table_layout.addLayout(self.matplotlib_layout_h, 2)
 
         self.threadpool = QThreadPool()
 
@@ -628,10 +640,14 @@ class MiniAnalysisWidget(DragDropWidget):
             self.order_label.setText("Order")
             self.polyorder_label.setText("Polyorder")
 
+    # This needs to be fixed because it changes the lineedits that
+    # are part of the spinboxes which is not ideal. Need to create
+    # a dict to hold the lineedits.
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
-            i.setMinimumWidth(70)
+            i.setMinimumWidth(60)
+            i.setMaximumWidth(60)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
@@ -641,7 +657,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.acq_model.acq_dict)
+            self.inspection_widget.setFileList(self.load_widget.model().acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
@@ -651,7 +667,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # Deletes the selected acquisitions from the list
         indices = self.load_widget.selectedIndexes()
         if len(indices) > 0:
-            self.acq_model.deleteSelection(indices)
+            self.load_widget.deleteSelection(indices)
+            self.load_widget.clearSelection()
 
     def tm_psp(self):
         """
@@ -670,23 +687,23 @@ class MiniAnalysisWidget(DragDropWidget):
         risepower = self.risepower_edit.toFloat()
         t_psc = np.arange(0, int(self.temp_length_edit.toFloat() * s_r_c))
         spacer = int(self.spacer_edit.toFloat() * s_r_c)
-        self.template = np.zeros(len(t_psc) + spacer)
-        offset = len(self.template) - len(t_psc)
+        template = np.zeros(len(t_psc) + spacer)
+        offset = len(template) - len(t_psc)
         Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
         y = (
             amplitude
             / Aprime
             * ((1 - (np.exp(-t_psc / tau_1))) ** risepower * np.exp((-t_psc / tau_2)))
         )
-        self.template[offset:] = y
+        template[offset:] = y
+        return template
 
     def create_template(self):
         self.template_plot.clear()
-        self.tm_psp()
+        template = self.tm_psp()
         s_r_c = self.sample_rate_edit.toInt() / 1000
-        self.template_plot.plot(
-            x=(np.arange(len(self.template)) / s_r_c), y=self.template
-        )
+        self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
+        return template
 
     def analyze(self):
         """
@@ -708,8 +725,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.acq_dict = {}
 
             self.analyze_acq_button.setEnabled(False)
-            if len(self.template) == 0:
-                self.create_template()
+            template = self.create_template()
 
             # Sets the progress bar to 0
             self.pbar.setFormat("Analyzing...")
@@ -739,7 +755,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     low_width=self.low_width_edit.toInt(),
                     window=window,
                     polyorder=self.polyorder_edit.toInt(),
-                    template=self.template,
+                    template=template,
                     rc_check=self.rc_checkbox.isChecked(),
                     rc_check_start=self.rc_check_start_edit.toFloat(),
                     rc_check_end=self.rc_check_end_edit.toFloat(),
@@ -753,6 +769,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     decon_type=self.decon_type_edit.currentText(),
                     curve_fit_decay=self.curve_fit_decay.isChecked(),
                     curve_fit_type=self.curve_fit_edit.currentText(),
+                    baseline_corr=False,
                 )
                 self.pbar.setValue(
                     int(((count + 1) / len(self.acq_model.fname_list)) * 100)
@@ -773,7 +790,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.acquisition_number.setMaximum(int(acq_number[-1]))
             self.acquisition_number.setMinimum(int(acq_number[0]))
             self.acquisition_number.setValue(int(acq_number[0]))
-            self.acq_spinbox(int(acq_number[0]))
+            # self.acq_spinbox(int(acq_number[0]))
 
             # Minis always start from 0 since list indexing in python starts
             # at zero. I choose this because it is easier to reference minis
@@ -814,7 +831,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Temporarily disable the acquisition number to prevent some weird behavior
         # where the the box will skip every other acquisition.
-        self.acquisition_number.setDisabled(True)
+        self.acquisition_number.setEnabled(False)
 
         # I choose to just show
         if self.acq_dict.get(str(self.acquisition_number.value())):
@@ -950,7 +967,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.ave_mini_plot.clear()
         self.pref_dict = {}
         self.calc_param_clicked = False
-        self.template = []
         self.final_obj = None
         self.need_to_save = False
         self.analyze_acq_button.setEnabled(True)
@@ -1306,7 +1322,13 @@ class MiniAnalysisWidget(DragDropWidget):
             if x > int(2 * self.acq_dict[str(self.acquisition_number.text())].s_r_c):
 
                 # Create the new mini.
-                self.acq_dict[str(self.acquisition_number.text())].create_new_mini(x)
+                created = self.acq_dict[
+                    str(self.acquisition_number.text())
+                ].create_new_mini(x)
+
+                if not created:
+                    self.mini_not_created()
+                    return None
 
                 # Reset the mini_spinbox_list.
                 self.mini_spinbox_list = list(
@@ -1346,7 +1368,8 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.last_acq_point_clicked = None
             else:
                 # Raise error if the point is too close to the beginning.
-                self.point_to_close_to_beginning()
+                self.point_too_close_to_beginning()
+                return None
         else:
             pass
 
@@ -1369,9 +1392,14 @@ class MiniAnalysisWidget(DragDropWidget):
             str(self.acquisition_number.text())
         ]
 
-        # Remove deleted acquisition from the acquisition dictionary.
+        # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
+        self.acq_model.deleteSelection(
+            [list(self.acq_dict).index(str(self.acquisition_number.text()))]
+        )
         del self.acq_dict[str(self.acquisition_number.text())]
         self.acqs_deleted += 1
+
+        self.acq_model.deleteSelection(list(self.acq_dict).index())
 
         # Clear plots
         self.p1.clear()
@@ -1484,6 +1512,11 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         self.dlg.exec()
 
+    def mini_not_created(self):
+        self.dlg.setWindowTitle("Information")
+        self.dlg.setText("Event could not be created")
+        self.dlg.exec()
+
     def open_files(self, directory):
         self.reset()
         self.pbar.setFormat("Loading...")
@@ -1562,13 +1595,6 @@ class MiniAnalysisWidget(DragDropWidget):
                 line_edit_dict[i.objectName()] = i.text()
         self.pref_dict["line_edits"] = line_edit_dict
 
-        # spinbox = self.findChildren(QSpinBox)
-        # spinbox_dict = {}
-        # for i in spinbox:
-        #     if i.objectName() != "":
-        #         spinbox_dict[i.objectName()] = i.text()
-        # self.pref_dict["spinbox"] = spinbox_dict
-
         combo_box_dict = {}
         combo_boxes = self.findChildren(QComboBox)
         for i in combo_boxes:
@@ -1582,13 +1608,6 @@ class MiniAnalysisWidget(DragDropWidget):
             if i.objectName() != "":
                 check_box_dict[i.objectName()] = i.isChecked()
         self.pref_dict["check_boxes"] = check_box_dict
-
-        buttons_dict = {}
-        buttons = self.findChildren(QPushButton)
-        for i in buttons:
-            if i.objectName() != "":
-                buttons_dict[i.objectName()] = i.isEnabled()
-        self.pref_dict["buttons"] = buttons_dict
 
         dspinbox_dict = {}
         dspinboxes = self.findChildren(QDoubleSpinBox)
@@ -1628,11 +1647,6 @@ class MiniAnalysisWidget(DragDropWidget):
                     i.setChecked(pref_dict["check_boxes"][i.objectName()])
                 except:
                     pass
-
-        buttons = self.findChildren(QPushButton)
-        for i in buttons:
-            if i.objectName() != "":
-                i.setEnabled(pref_dict["buttons"][i.objectName()])
 
         spinboxes = self.findChildren(QDoubleSpinBox)
         for i in spinboxes:

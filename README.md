@@ -71,7 +71,7 @@ The program also shows the final data in a couple ways that I have found informa
 
 ## To Do
 - Add multi-peak finding for o/eEPSC module.
-- Add acquisition manager to make it easier to integrate other file types
+- Add acquisition manager to make it easier to integrate other file types and add load data for publication or further analysis
 - Improve mini analysis decay curve fit.
 - Save last used user settings.
 - Add more color themes.

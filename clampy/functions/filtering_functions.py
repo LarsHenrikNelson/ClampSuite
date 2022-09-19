@@ -13,6 +13,8 @@ from sklearn.linear_model import LinearRegression
 
 
 def median_filter(array, order):
+    if isinstance(order, float):
+        order = int(order)
     filt_array = signal.medfilt(array, order)
     return filt_array
 
@@ -316,7 +318,6 @@ def remez_2(
 ):
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
-        print("used")
         filt = signal.remez(
             numtaps=order,
             bands=[
@@ -356,6 +357,13 @@ def remez_2(
     return filt_array
 
 
+def savgol_filt(array, order, polyorder):
+    if isinstance(polyorder, float):
+        polyorder = int(polyorder)
+    filtered_array = signal.savgol_filter(array, order, polyorder, mode="nearest")
+    return filtered_array
+
+
 def nat_spline_filt(array, order):
     # Good for finding baselines, but not great for filtering large arrays.
     x_array = np.arange(len(array))
@@ -383,13 +391,7 @@ def ewma_afilt(array, window, sum_proportion):
 
 
 if __name__ == "__main__":
-    fir_zero_2()
-    fir_zero_1()
     bessel()
-    median_filter()
-    nat_spline_filt()
-    remez_2()
-    remez_1()
     bessel_zero()
     butterworth()
     butterworth_zero()
@@ -397,3 +399,10 @@ if __name__ == "__main__":
     elliptic_zero()
     ewma_filt()
     ewma_afilt()
+    fir_zero_2()
+    fir_zero_1()
+    median_filter()
+    nat_spline_filt()
+    remez_2()
+    remez_1()
+    savgol_filt()

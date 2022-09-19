@@ -1,18 +1,13 @@
 from pathlib import Path, PurePath
 
 from PyQt5.QtCore import Qt
+
 # from PyQt5.QtGui import QAction
 from PyQt5.QtWidgets import (
-    QPushButton,
-    QHBoxLayout,
     QComboBox,
     QFileDialog,
     QMainWindow,
-    QWidget,
-    QLabel,
     QFormLayout,
-    QApplication,
-    QSpinBox,
     QToolBar,
     QStackedWidget,
     QAction,
@@ -103,6 +98,7 @@ class MainWindow(QMainWindow):
         self.central_widget.addWidget(self.filter_widget)
 
         self.setComboBoxSpacing()
+        self.working_dir = str(Path().cwd())
 
     def setComboBoxSpacing(self):
         combo_boxes = self.findChildren(QComboBox)
@@ -130,21 +126,32 @@ class MainWindow(QMainWindow):
 
     def save_as(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
-            self, "Save data as...", "save_filename"
+            self,
+            directory=self.working_dir,
+            caption="Save data as...",
         )
         if save_filename:
+            self.working_dir = str(Path(PurePath(save_filename).parent))
             self.central_widget.currentWidget().save_as(save_filename)
 
     def open_files(self):
-        directory = str(QFileDialog.getExistingDirectory())
+        directory = str(
+            QFileDialog.getExistingDirectory(
+                self,
+                directory=self.working_dir,
+                caption="Open files...",
+            )
+        )
         if directory:
-            self.central_widget.currentWidget().open_files(Path(directory))
+            path = Path(directory)
+            self.working_dir = str(path)
+            self.central_widget.currentWidget().open_files(path)
         else:
             pass
 
     def load_preferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
-            self, "Open file", "YAML Files (*.yaml)"
+            self, caption="Open file", filter="YAML Files (*.yaml)"
         )
         if len(file_name) == 0:
             # This prevents an error from showing up when the path is not

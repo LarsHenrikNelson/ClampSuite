@@ -85,6 +85,8 @@ class currentClampWidget(DragDropWidget):
         # Analysis layout setup
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number = QSpinBox()
+        self.acquisition_number.setReadOnly(True)
+        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.spinbox)
         self.analysis_buttons.addRow(
             self.acquisition_number_label, self.acquisition_number
@@ -154,10 +156,8 @@ class currentClampWidget(DragDropWidget):
         self.load_acq_label = QLabel("Acquisition(s)")
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
-        self.acq_model = ListModel()
         self.analysis_type = "current_clamp"
-        self.acq_model.setAnalysisType(self.analysis_type)
-        self.acq_view.setModel(self.acq_model)
+        self.acq_view.setAnalysisType(self.analysis_type)
         self.input_layout.addRow(self.acq_view)
 
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
@@ -271,7 +271,7 @@ class currentClampWidget(DragDropWidget):
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
-            i.setMinimumWidth(70)
+            i.setMinimumWidth(60)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
@@ -293,7 +293,8 @@ class currentClampWidget(DragDropWidget):
         indices = self.acq_view.selectedIndexes()
 
         if len(indices) > 0:
-            self.acq_model.deleteSelection(indices)
+            self.acq_view.deleteSelection(indices)
+            self.acq_view.clearSelection()
 
     def analyze(self):
         self.need_to_save = True
