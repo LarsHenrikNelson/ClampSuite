@@ -180,9 +180,12 @@ class ListView(QListView):
         self.model().clearData()
         self.model().layoutChanged.emit()
 
-    def deleteSelection(self, indices):
-        self.model().deleteSelection(indices)
-        self.model().layoutChanged.emit()
+    def deleteSelection(self, index_list):
+        indexes = sorted([i.row() for i in index_list], reverse=True)
+        for i in indexes:
+            self.model().deleteSelection(i)
+            self.model().layoutChanged.emit()
+            self.clearSelection()
 
     def addAcq(self, urls):
         self.model().addAcq(urls)
@@ -226,18 +229,17 @@ class ListModel(QAbstractListModel):
         """
         self.analysis_type = analysis
 
-    def deleteSelection(self, indices):
+    def deleteSelection(self, index):
         keys = list(self.acq_dict.keys())
-        index_list = sorted(
-            [i.row() for i in indices if i.row() < len(keys)], reverse=True
-        )
-        for index in index_list:
+        if index > len(keys):
+            pass
+        else:
             self.removeRow(index)
             key = keys[index]
             del self.acq_dict[key]
             del self.fname_list[index]
             self.layoutChanged.emit()
-        self.acq_names = [i.name for i in self.acq_dict.values()]
+            self.acq_names = [i.name for i in self.acq_dict.values()]
 
     def clearData(self):
         self.acq_dict = {}
