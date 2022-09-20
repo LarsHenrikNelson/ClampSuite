@@ -591,8 +591,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_mini_deleted = []
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
-        self.last_mini_point_clicked = []
-        self.last_acq_point_clicked = []
+        self.last_mini_point_clicked = None
+        self.last_acq_point_clicked = None
         self.recent_reject_acq = {}
         self.mini_spinbox_list = []
         self.last_mini_clicked_1 = []
@@ -868,8 +868,6 @@ class MiniAnalysisWidget(DragDropWidget):
             # Add the draggable region to p2.
             self.p2.addItem(self.region, ignoreBounds=True)
 
-            self.p1.setXRange(self.minX, self.maxX, padding=0)
-
             # Create the plot with the draggable region. Since there is
             # no interactivity with this plot there is no need to create
             # a plot item.
@@ -977,18 +975,16 @@ class MiniAnalysisWidget(DragDropWidget):
         See PyQtGraphs documentation for more information.
         """
         self.region.setZValue(10)
-        self.minX, self.maxX = self.region.getRegion()
-        print(self.minX, self.maxX)
-        self.p1.setXRange(self.minX, self.maxX, padding=0)
+        minX, maxX = self.region.getRegion()
+        self.p1.setXRange(minX, maxX, padding=0)
 
     def updateRegion(self, window, viewRange):
         """
         This functions is used for the draggable region.
         See PyQtGraphs documentation for more information
         """
-        self.rgn = viewRange[0]
-        print(self.rgn)
-        self.region.setRegion(self.rgn)
+        rgn = viewRange[0]
+        self.region.setRegion(rgn)
 
     def slider_value(self, value):
         self.modify = value
@@ -1056,11 +1052,12 @@ class MiniAnalysisWidget(DragDropWidget):
         # the mini spinbox. The window will only adjust if any part of
         # the mini array falls outside of the current viewable region.
         minX, maxX = self.region.getRegion()
+        width = maxX - minX
         if mini.array_start / mini.s_r_c < minX or mini.array_end / mini.s_r_c > maxX:
             self.region.setRegion(
                 [
                     int(mini.x_array[0] / mini.s_r_c - 100),
-                    int(mini.x_array[0] / mini.s_r_c + 300),
+                    int(mini.x_array[0] / mini.s_r_c + width - 100),
                 ]
             )
 
@@ -1205,44 +1202,44 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.need_to_save = True
 
-        # if len(self.last_mini_point_clicked) > 0:
-        # X and Y point of the mini point that was clicked. The
-        # x point needs to be adjusted back to samples for the
-        # change amplitude function in the postsynaptic event
-        # object.
-        x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
-        y = self.last_mini_point_clicked.pos()[1]
+        if self.last_mini_point_clicked is not None:
+            # X and Y point of the mini point that was clicked. The
+            # x point needs to be adjusted back to samples for the
+            # change amplitude function in the postsynaptic event
+            # object.
+            x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
+            y = self.last_mini_point_clicked.pos()[1]
 
-        # Find the index of the mini so that the correct mini is
-        # modified.
-        mini_index = self.sort_index[int(self.mini_number.text())]
+            # Find the index of the mini so that the correct mini is
+            # modified.
+            mini_index = self.sort_index[int(self.mini_number.text())]
 
-        # Pass the x and y points to the change baseline function
-        # for the postsynaptic event.
-        self.acq_object.postsynaptic_events[mini_index].change_baseline(x, y)
+            # Pass the x and y points to the change baseline function
+            # for the postsynaptic event.
+            self.acq_object.postsynaptic_events[mini_index].change_baseline(x, y)
 
-        # Redraw the minis on p1 and p2 plots. Note that the last
-        # mini clicked provides a "pointed" to the correct plot
-        # object on p1 and p2 so that it does not have to be
-        # referenced again.
-        self.last_mini_clicked_1.setData(
-            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-            color="m",
-            width=2,
-        )
-        self.last_mini_clicked_2.setData(
-            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-            color="m",
-            width=2,
-        )
+            # Redraw the minis on p1 and p2 plots. Note that the last
+            # mini clicked provides a "pointed" to the correct plot
+            # object on p1 and p2 so that it does not have to be
+            # referenced again.
+            self.last_mini_clicked_1.setData(
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+                color="m",
+                width=2,
+            )
+            self.last_mini_clicked_2.setData(
+                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+                color="m",
+                width=2,
+            )
 
-        # This is need to redraw the mini in the mini view.
-        self.mini_spinbox(int(self.mini_number.text()))
+            # This is need to redraw the mini in the mini view.
+            self.mini_spinbox(int(self.mini_number.text()))
 
-        # Reset the last point clicked.
-        self.last_mini_point_clicked = []
+            # Reset the last point clicked.
+            self.last_mini_point_clicked = None
         # else:
         #     pass
 
@@ -1313,7 +1310,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.need_to_save = True
 
         # Make sure that the last acq point that was clicked exists.
-        if self.last_acq_point_clicked:
+        if self.last_acq_point_clicked is not None:
             x = self.last_acq_point_clicked.pos()[0] * self.acq_object.s_r_c
 
             # The mini needs a baseline of at least 2 milliseconds long.
