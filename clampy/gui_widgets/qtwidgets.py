@@ -181,7 +181,8 @@ class ListView(QListView):
         self.model().layoutChanged.emit()
 
     def deleteSelection(self, index_list):
-        indexes = sorted([i.row() for i in index_list], reverse=True)
+        rows = [i.row() for i in index_list]
+        indexes = sorted(rows, reverse=True)
         for i in indexes:
             self.model().deleteSelection(i)
             self.model().layoutChanged.emit()
@@ -193,6 +194,9 @@ class ListView(QListView):
 
     def setAnalysisType(self, analysis):
         self.model().setAnalysisType(analysis)
+
+    def setLoadData(self, acq_dict):
+        self.model().setLoadData(acq_dict)
 
 
 class ListModel(QAbstractListModel):
@@ -231,6 +235,9 @@ class ListModel(QAbstractListModel):
 
     def deleteSelection(self, index):
         keys = list(self.acq_dict.keys())
+
+        # Need to catch cases where the index does not exist anymore.
+        # I cannot figure out why Qt keeps returning the extra index.
         if index > len(keys):
             pass
         else:

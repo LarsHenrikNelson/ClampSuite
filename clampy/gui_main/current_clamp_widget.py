@@ -6,8 +6,6 @@ Last updated on Wed Feb 16 12:33:00 2021
 
 @author: LarsNelson
 """
-from glob import glob
-import json
 from math import log10, floor, isnan, nan
 
 import numpy as np
@@ -17,7 +15,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QVBoxLayout,
-    QWidget,
     QLabel,
     QFormLayout,
     QSpinBox,
@@ -37,7 +34,6 @@ from ..gui_widgets.qtwidgets import (
     SaveWorker,
     YamlWorker,
     ListView,
-    ListModel,
     DragDropWidget,
 )
 from ..load_analysis.load_classes import LoadCurrentClampData
@@ -52,6 +48,8 @@ class currentClampWidget(DragDropWidget):
 
     def __init__(self):
         super().__init__()
+
+        # pg.setConfigOptions(antialias=True)
 
         self.acq_dict = {}
         self.hertz_y = []
@@ -86,7 +84,6 @@ class currentClampWidget(DragDropWidget):
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number = QSpinBox()
         self.acquisition_number.setReadOnly(True)
-        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.spinbox)
         self.analysis_buttons.addRow(
             self.acquisition_number_label, self.acquisition_number
@@ -271,7 +268,8 @@ class currentClampWidget(DragDropWidget):
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
-            i.setMinimumWidth(60)
+            if not isinstance(i.parentWidget(), QSpinBox):
+                i.setMinimumWidth(80)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
@@ -281,7 +279,7 @@ class currentClampWidget(DragDropWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.acq_model.acq_dict)
+            self.inspection_widget.setFileList(self.acq_view.model().acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
@@ -301,8 +299,8 @@ class currentClampWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         if self.acq_dict:
             self.acq_dict = {}
-        self.acq_dict = self.acq_model.acq_dict
-        if not self.acq_model.acq_dict:
+        self.acq_dict = self.acq_view.model().acq_dict
+        if not self.acq_view.model().acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
         else:
@@ -334,7 +332,7 @@ class currentClampWidget(DragDropWidget):
     def reset(self):
         self.need_to_save = False
         self.acq_dict = {}
-        self.acq_model.clearData()
+        self.acq_view.clearData()
         self.analyze_acq_button.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
         self.deleted_acqs = {}
@@ -659,7 +657,7 @@ class currentClampWidget(DragDropWidget):
                 for i in load_dict["Deleted Acqs"]:
                     self.deleted_acqs[i] = self.acq_dict[i]
                     del self.acq_dict[i]
-            self.acq_model.setLoadData(self.acq_dict)
+            self.acq_view.setLoadData(self.acq_dict)
             if load_dict["Final Analysis"]:
                 excel_file = list(directory.glob("*.xlsx"))[0]
                 self.final_obj = LoadCurrentClampData(excel_file)

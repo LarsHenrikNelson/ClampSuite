@@ -2,6 +2,7 @@ import os
 import sys
 
 from PyQt5.QtWidgets import QApplication
+import pyqtgraph as pg
 import qdarkstyle
 from qdarkstyle.dark.palette import DarkPalette
 
@@ -9,7 +10,8 @@ from .gui_main.main_window import MainWindow
 
 
 def main():
-    # os.environ["QT_API"] = "pyqt5"
+    pg.setConfigOptions(antialias=True)
+    os.environ["QT_API"] = "pyqt5"
     app = QApplication([])
     dark_stylesheet = qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=DarkPalette)
     app.setStyleSheet(dark_stylesheet)

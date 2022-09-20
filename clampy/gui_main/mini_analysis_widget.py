@@ -1,6 +1,5 @@
 from math import log10, floor
 from glob import glob
-import json
 
 import numpy as np
 import pandas as pd
@@ -19,8 +18,6 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QTabWidget,
     QScrollArea,
-    QSizePolicy,
-    QListWidget,
     QDoubleSpinBox,
     QSlider,
     QToolButton,
@@ -39,7 +36,6 @@ from ..gui_widgets.qtwidgets import (
     MiniSaveWorker,
     YamlWorker,
     ListView,
-    ListModel,
     DragDropWidget,
 )
 from ..functions.kde import create_kde
@@ -468,7 +464,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(False)
 
         # Filling the plot layout.
-        pg.setConfigOptions(antialias=True)
         self.p1 = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
@@ -488,6 +483,12 @@ class MiniAnalysisWidget(DragDropWidget):
         # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
         self.region.sigRegionChanged.connect(self.update)
         self.p1.sigRangeChanged.connect(self.updateRegion)
+
+        # Set the initial bounds of the region and its layer
+        # position.
+        self.region.setRegion([0, 400])
+        self.region.setZValue(10)
+        self.p1.setAutoVisible(y=True)
 
         self.tab1 = self.p1
         self.mini_tab.addTab(self.tab1, "Acq view")
@@ -599,7 +600,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.sort_index = []
         self.template = []
         self.mini_spinbox_list = []
-        self.save_values = []
         self.minis_deleted = 0
         self.acqs_deleted = 0
         self.calc_param_clicked = False
@@ -646,8 +646,8 @@ class MiniAnalysisWidget(DragDropWidget):
     def set_width(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
-            i.setMinimumWidth(60)
-            i.setMaximumWidth(60)
+            if not isinstance(i.parentWidget(), QSpinBox):
+                i.setMinimumWidth(80)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
@@ -714,7 +714,7 @@ class MiniAnalysisWidget(DragDropWidget):
         chosen because it made the initial debugging easier.
         """
 
-        if not self.acq_model.acq_dict:
+        if not self.load_widget.model().acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
 
@@ -733,7 +733,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # The for loop creates each MiniAnalysis object. Enumerate returns
             # count which is used to adjust the progress bar and acq_components
-            # comes from the acq_model.
+            # comes from the load_widget
             if (
                 self.window_edit.currentText() == "gaussian"
                 or self.window_edit.currentText() == "kaiser"
@@ -741,7 +741,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 window = (self.window_edit.currentText(), self.beta_sigma.value())
             else:
                 window = self.window_edit.currentText()
-            self.acq_dict = self.acq_model.acq_dict
+            self.acq_dict = self.load_widget.model().acq_dict
             for count, acq in enumerate(self.acq_dict.values()):
                 acq.analyze(
                     sample_rate=self.sample_rate_edit.toInt(),
@@ -771,9 +771,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     curve_fit_type=self.curve_fit_edit.currentText(),
                     baseline_corr=False,
                 )
-                self.pbar.setValue(
-                    int(((count + 1) / len(self.acq_model.fname_list)) * 100)
-                )
+                self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
                 # if not acq.postsynaptic_events:
                 #     self.deleted_acqs[
                 #         str(self.acquisition_number.text())
@@ -813,6 +811,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.need_to_save = True
         self.p1.clear()
         self.p2.clear()
+        self.p1.setAutoVisible(y=True)
+        self.p2.enableAutoRange()
         self.mini_view_plot.clear()
 
         # Reset the clicked points since we do not want to accidentally
@@ -865,19 +865,15 @@ class MiniAnalysisWidget(DragDropWidget):
             # the ability to the click on specific points is need.
             self.p1.addItem(acq_plot)
 
+            # Add the draggable region to p2.
+            self.p2.addItem(self.region, ignoreBounds=True)
+
+            self.p1.setXRange(self.minX, self.maxX, padding=0)
+
             # Create the plot with the draggable region. Since there is
             # no interactivity with this plot there is no need to create
             # a plot item.
             self.p2.plot(x=self.acq_object.x_array, y=self.acq_object.final_array)
-
-            # Add the draggable region to p2.
-            self.p2.addItem(self.region, ignoreBounds=True)
-
-            # Set the initial bounds of the region and its layer
-            # position.
-            self.region.setRegion([0, 400])
-            self.region.setZValue(10)
-            self.p1.setAutoVisible(y=True)
 
             # Enabled the acquisition number since it was disabled earlier.
             self.acquisition_number.setEnabled(True)
@@ -931,6 +927,7 @@ class MiniAnalysisWidget(DragDropWidget):
         else:
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             text.setFont(QFont("Ariel", 20))
+            self.p2.setRange(xRange=(-30, 30), yRange=(-30, 30))
             self.p2.addItem(text)
             self.acquisition_number.setEnabled(True)
 
@@ -942,7 +939,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p1.clear()
         self.p2.clear()
         self.template_plot.clear()
-        self.acq_model.clearData()
+        self.load_widget.clearData()
         self.calc_param_clicked = False
         self.mini_view_plot.clear()
         self.acq_dict = {}
@@ -957,7 +954,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_spinbox_list = []
         self.sort_index = []
         self.raw_df = {}
-        self.save_values = []
         self.raw_data_table.clear()
         self.stem_plot.clear()
         self.amp_dist.clear()
@@ -980,16 +976,18 @@ class MiniAnalysisWidget(DragDropWidget):
         This functions is used for the draggable region.
         See PyQtGraphs documentation for more information.
         """
-        self.region.setZValue(100)
+        self.region.setZValue(10)
         self.minX, self.maxX = self.region.getRegion()
+        print(self.minX, self.maxX)
         self.p1.setXRange(self.minX, self.maxX, padding=0)
 
     def updateRegion(self, window, viewRange):
         """
         This functions is used for the draggable region.
-        See PyQtGraphs documentation for more information.
+        See PyQtGraphs documentation for more information
         """
         self.rgn = viewRange[0]
+        print(self.rgn)
         self.region.setRegion(self.rgn)
 
     def slider_value(self, value):
@@ -1138,7 +1136,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Set the color and size of the new mini point that
         # was clicked.
         points[0].setPen("m", width=4)
-        self.last_mini_point_clicked = points
+        self.last_mini_point_clicked = points[0]
 
     def set_point_as_peak(self):
         """
@@ -1153,46 +1151,46 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.need_to_save = True
 
-        if len(self.last_mini_point_clicked) > 0:
-            # X and Y point of the mini point that was clicked. The
-            # x point needs to be adjusted back to samples for the
-            # change amplitude function in the postsynaptic event
-            # object.
-            x = self.last_mini_point_clicked[0].pos()[0] * self.acq_object.s_r_c
-            y = self.last_mini_point_clicked[0].pos()[1]
+        # if len(self.last_mini_point_clicked) > 0:
+        # X and Y point of the mini point that was clicked. The
+        # x point needs to be adjusted back to samples for the
+        # change amplitude function in the postsynaptic event
+        # object.
+        x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
+        y = self.last_mini_point_clicked.pos()[1]
 
-            # Find the index of the mini so that the correct mini is
-            # modified.
-            mini_index = self.sort_index[int(self.mini_number.text())]
+        # Find the index of the mini so that the correct mini is
+        # modified.
+        mini_index = self.sort_index[int(self.mini_number.text())]
 
-            # Pass the x and y points to the change amplitude function
-            # for the postsynaptic event.
-            self.acq_object.postsynaptic_events[mini_index].change_amplitude(x, y)
+        # Pass the x and y points to the change amplitude function
+        # for the postsynaptic event.
+        self.acq_object.postsynaptic_events[mini_index].change_amplitude(x, y)
 
-            # Redraw the minis on p1 and p2 plots. Note that the last
-            # mini clicked provides a "pointed" to the correct plot
-            # object on p1 and p2 so that it does not have to be
-            # referenced again.
-            self.last_mini_clicked_1.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-                color="m",
-                width=2,
-            )
-            self.last_mini_clicked_2.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-                color="m",
-                width=2,
-            )
+        # Redraw the minis on p1 and p2 plots. Note that the last
+        # mini clicked provides a "pointed" to the correct plot
+        # object on p1 and p2 so that it does not have to be
+        # referenced again.
+        self.last_mini_clicked_1.setData(
+            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+            color="m",
+            width=2,
+        )
+        self.last_mini_clicked_2.setData(
+            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+            color="m",
+            width=2,
+        )
 
-            # This is need to redraw the mini in the mini view.
-            self.mini_spinbox(int(self.mini_number.text()))
+        # This is need to redraw the mini in the mini view.
+        self.mini_spinbox(int(self.mini_number.text()))
 
-            # Reset the last point clicked.
-            self.last_mini_point_clicked = []
-        else:
-            pass
+        # Reset the last point clicked.
+        self.last_mini_point_clicked = []
+        # else:
+        #     pass
 
     def set_point_as_baseline(self):
         """
@@ -1207,46 +1205,46 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.need_to_save = True
 
-        if len(self.last_mini_point_clicked) > 0:
-            # X and Y point of the mini point that was clicked. The
-            # x point needs to be adjusted back to samples for the
-            # change amplitude function in the postsynaptic event
-            # object.
-            x = self.last_mini_point_clicked[0].pos()[0] * self.acq_object.s_r_c
-            y = self.last_mini_point_clicked[0].pos()[1]
+        # if len(self.last_mini_point_clicked) > 0:
+        # X and Y point of the mini point that was clicked. The
+        # x point needs to be adjusted back to samples for the
+        # change amplitude function in the postsynaptic event
+        # object.
+        x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
+        y = self.last_mini_point_clicked.pos()[1]
 
-            # Find the index of the mini so that the correct mini is
-            # modified.
-            mini_index = self.sort_index[int(self.mini_number.text())]
+        # Find the index of the mini so that the correct mini is
+        # modified.
+        mini_index = self.sort_index[int(self.mini_number.text())]
 
-            # Pass the x and y points to the change baseline function
-            # for the postsynaptic event.
-            self.acq_object.postsynaptic_events[mini_index].change_baseline(x, y)
+        # Pass the x and y points to the change baseline function
+        # for the postsynaptic event.
+        self.acq_object.postsynaptic_events[mini_index].change_baseline(x, y)
 
-            # Redraw the minis on p1 and p2 plots. Note that the last
-            # mini clicked provides a "pointed" to the correct plot
-            # object on p1 and p2 so that it does not have to be
-            # referenced again.
-            self.last_mini_clicked_1.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-                color="m",
-                width=2,
-            )
-            self.last_mini_clicked_2.setData(
-                x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
-                y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
-                color="m",
-                width=2,
-            )
+        # Redraw the minis on p1 and p2 plots. Note that the last
+        # mini clicked provides a "pointed" to the correct plot
+        # object on p1 and p2 so that it does not have to be
+        # referenced again.
+        self.last_mini_clicked_1.setData(
+            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+            color="m",
+            width=2,
+        )
+        self.last_mini_clicked_2.setData(
+            x=self.acq_object.postsynaptic_events[mini_index].mini_plot_x(),
+            y=self.acq_object.postsynaptic_events[mini_index].mini_plot_y(),
+            color="m",
+            width=2,
+        )
 
-            # This is need to redraw the mini in the mini view.
-            self.mini_spinbox(int(self.mini_number.text()))
+        # This is need to redraw the mini in the mini view.
+        self.mini_spinbox(int(self.mini_number.text()))
 
-            # Reset the last point clicked.
-            self.last_mini_point_clicked = []
-        else:
-            pass
+        # Reset the last point clicked.
+        self.last_mini_point_clicked = []
+        # else:
+        #     pass
 
     def delete_mini(self):
         """
@@ -1393,13 +1391,8 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
 
         # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        self.acq_model.deleteSelection(
-            [list(self.acq_dict).index(str(self.acquisition_number.text()))]
-        )
         del self.acq_dict[str(self.acquisition_number.text())]
         self.acqs_deleted += 1
-
-        self.acq_model.deleteSelection(list(self.acq_dict).index())
 
         # Clear plots
         self.p1.clear()
@@ -1541,7 +1534,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.acquisition_number.setMaximum(max(analysis_list))
             self.acquisition_number.setMinimum(min(analysis_list))
             self.acquisition_number.setValue(int(load_dict["Acq_number"]))
-            self.acq_model.setLoadData(self.acq_dict)
+            self.load_widget.setLoadData(self.acq_dict)
             if load_dict["Final Analysis"]:
                 excel_file = list(directory.glob("*.xlsx"))[0]
                 save_values = pd.read_excel(excel_file, sheet_name=None)
@@ -1583,7 +1576,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.worker.signals.progress.connect(self.update_save_progress)
         self.worker.signals.finished.connect(self.progress_finished)
         self.threadpool.start(self.worker)
-        self.pbar.setFormat("Finished saving")
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 

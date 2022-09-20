@@ -40,6 +40,7 @@ class filterWidget(QWidget):
         self.initUI()
 
     def initUI(self):
+        # pg.setConfigOptions(antialias=True)
 
         # self.path_layout = QHBoxLayout()
         self.plot_layout = QHBoxLayout()
@@ -69,10 +70,7 @@ class filterWidget(QWidget):
         self.load_acq_label = QLabel("Acquisition(s)")
         self.filt_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
-        self.acq_model = ListModel()
-        self.acq_model.setAnalysisType(self.analysis_type)
-        # self.acq_model.layoutChanged.emit(self.setAcqSpinbox)
-        self.load_widget.setModel(self.acq_model)
+        self.load_widget.setAnalysisType(self.analysis_type)
         self.filt_layout.addWidget(self.load_widget)
 
         self.del_sel_button = QPushButton("Delete selection")
@@ -221,7 +219,7 @@ class filterWidget(QWidget):
             self.polyorder_label.setText("Polyorder")
 
     def setAcqSpinbox(self):
-        x = len(self.acq_model.acq_dict)
+        x = len(self.load_widget.model().acq_dict)
         self.acq_number.setMaximum(x)
 
     def delSelection(self):
@@ -230,13 +228,15 @@ class filterWidget(QWidget):
         if len(indexes) > 0:
 
             # Delete selections from model
-            self.acq_model.deleteSelection(indexes)
+            self.load_widget.deleteSelection(indexes)
+            self.load_widget.clearSelection()
 
             # Clear them from the view. Not sure if this is
             # actually needed sinced the view seems to change
             # without it.
             self.load_widget.clearSelection()
-        if len(self.acq_model.acq_dict) == 0:
+
+        if len(self.load_widget.model().acq_dict) == 0:
             self.plot_list = 0
             self.pencil_list = []
             self.p1.clear()
@@ -251,8 +251,10 @@ class filterWidget(QWidget):
             window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
             window = self.window_edit.currentText()
-        key = list(self.acq_model.acq_dict.keys())[self.acq_number.value() - 1]
-        h = self.acq_model.acq_dict[key].deep_copy()
+        key = list(self.load_widget.model().acq_dict.keys())[
+            self.acq_number.value() - 1
+        ]
+        h = self.load_widget.model().acq_dict[key].deep_copy()
         h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
@@ -298,8 +300,8 @@ class filterWidget(QWidget):
         if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                key = list(self.acq_model.acq_dict.keys())[number - 1]
-                h = self.acq_model.acq_dict[key]
+                key = list(self.load_widget.model().acq_dict.keys())[number - 1]
+                h = self.load_widget.model().acq_dict[key]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],

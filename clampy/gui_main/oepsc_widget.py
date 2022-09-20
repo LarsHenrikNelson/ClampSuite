@@ -35,7 +35,6 @@ from ..gui_widgets.qtwidgets import (
     LineEdit,
     SaveWorker,
     YamlWorker,
-    ListModel,
     ListView,
     DragDropWidget,
 )
@@ -53,6 +52,7 @@ class oEPSCWidget(DragDropWidget):
         self.initUI()
 
     def initUI(self):
+        # pg.setConfigOptions(antialias=True)
 
         self.signals.dictionary.connect(self.set_preferences)
         self.signals.path.connect(self.open_files)
@@ -104,7 +104,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
         self.del_oepsc_sel = QPushButton("Delete selection")
         self.del_oepsc_sel.clicked.connect(
-            lambda checked: self.delSelection(self.oepsc_model, self.oepsc_view)
+            lambda checked: self.delSelection(self.oepsc_view)
         )
         self.view_layout_1.addWidget(self.del_oepsc_sel)
         self.form_layouts.addLayout(self.view_layout_1)
@@ -116,12 +116,12 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_2.addWidget(self.lfp_view)
         self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
         self.inspect_lfp_acqs.clicked.connect(
-            lambda checked: self.inspect_acqs(self.lfp_model)
+            lambda checked: self.inspect_acqs(self.lfp_view)
         )
         self.view_layout_2.addWidget(self.inspect_lfp_acqs)
         self.del_lfp_sel = QPushButton("Delete selection")
         self.del_lfp_sel.clicked.connect(
-            lambda checked: self.delSelection(self.lfp_model, self.lfp_view)
+            lambda checked: self.delSelection(self.lfp_view)
         )
         self.view_layout_2.addWidget(self.del_lfp_sel)
         self.form_layouts.addLayout(self.view_layout_2)
@@ -515,7 +515,7 @@ class oEPSCWidget(DragDropWidget):
         self.epoch_number.setReadOnly(True)
         self.o_info_layout.addRow(self.epoch_label, self.epoch_number)
 
-        self.final_analysis_button = QPushButton("Final analysis")
+        self.final_analysis_button = QPushButton("Calculate parameters")
         self.o_info_layout.addRow(self.final_analysis_button)
         self.final_analysis_button.clicked.connect(self.final_analysis)
         self.final_analysis_button.setEnabled(False)
@@ -614,7 +614,7 @@ class oEPSCWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    def inspect_acqs(self, list_model):
+    def inspect_acqs(self, list_view):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
@@ -721,15 +721,17 @@ class oEPSCWidget(DragDropWidget):
             )
         else:
             lfp_window = self.lfp_window_edit.currentText()
-        if not self.oepsc_model.acq_dict and not self.lfp_model.acq_dict:
+        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
             self.file_does_not_exist()
-        self.pbar_number = len(self.oepsc_model.acq_dict) + len(self.lfp_model.acq_dict)
+        self.pbar_number = len(self.oepsc_view.model().acq_dict) + len(
+            self.lfp_view.model().acq_dict
+        )
         self.pbar_count = 0
-        if self.oepsc_model.acq_dict:
+        if self.oepsc_view.model().acq_dict:
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
-            self.oepsc_acq_dict = self.oepsc_model.acq_dict
-            for count, o_acq in enumerate(self.oepsc_acq_dict.values()):
+            self.oepsc_acq_dict = self.oepsc_view.model().acq_dict
+            for o_acq in self.oepsc_acq_dict.values():
                 o_acq.analyze(
                     sample_rate=self.o_sample_rate_edit.toInt(),
                     baseline_start=self.o_b_start_edit.toFloat(),
@@ -765,13 +767,13 @@ class oEPSCWidget(DragDropWidget):
                         o_acq.x_array[-1],
                     )
                     op_x_set = True
-        if self.lfp_model.acq_dict:
+        if self.lfp_view.model().acq_dict:
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
             self.set_slope_start_btn.setEnabled(True)
-            self.lfp_acq_dict = self.lfp_model.acq_dict
-            for count, lfp_acq in enumerate(self.lfp_acq_dict.values()):
+            self.lfp_acq_dict = self.lfp_view.model().acq_dict
+            for lfp_acq in self.lfp_acq_dict.values():
                 lfp_acq.analyze(
                     sample_rate=self.lfp_sample_rate_edit.toInt(),
                     baseline_start=self.lfp_b_start_edit.toFloat(),
@@ -926,8 +928,8 @@ class oEPSCWidget(DragDropWidget):
         self.set_fv_button.setEnabled(False)
         self.set_fp_button.setEnabled(False)
         self.final_data = None
-        self.oepsc_model.clearData()
-        self.lfp_model.clearData()
+        self.oepsc_view.clearData()
+        self.lfp_view.clearData()
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
@@ -1099,9 +1101,6 @@ class oEPSCWidget(DragDropWidget):
         ] = self.oepsc_acq_dict[str(self.acquisition_number.text())]
 
         # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        self.oepsc_model.deleteSelection(
-            [list(self.oepsc_acq_dict).index(str(self.acquisition_number.text()))]
-        )
         del self.oepsc_acq_dict[str(self.acquisition_number.text())]
         self.oepsc_acqs_deleted += 1
 
@@ -1113,9 +1112,6 @@ class oEPSCWidget(DragDropWidget):
         ]
 
         # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        self.lfp_model.deleteSelection(
-            [list(self.lfp_acq_dict).index(str(self.acquisition_number.text()))]
-        )
         del self.lfp_acq_dict[str(self.acquisition_number.text())]
         self.lfp_acqs_deleted += 1
 
@@ -1208,13 +1204,13 @@ class oEPSCWidget(DragDropWidget):
                 int(list(self.oepsc_acq_dict.keys())[-1])
             )
             self.acquisition_number.setMinimum(int(list(self.oepsc_acq_dict.keys())[0]))
-            self.oepsc_model.setLoadData(self.oepsc_acq_dict)
+            self.oepsc_view.setLoadData(self.oepsc_acq_dict)
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
         elif self.lfp_acq_dict:
             self.acquisition_number.setMaximum(int(list(self.lfp_acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.lfp_acq_dict.keys())[0]))
-            self.lfp_model.setLoadData(self.lfp_acq_dict)
+            self.lfp_view.setLoadData(self.lfp_acq_dict)
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
