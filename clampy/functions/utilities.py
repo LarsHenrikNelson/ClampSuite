@@ -125,7 +125,9 @@ class NumpyDecoder(json.JSONDecoder):
 def load_json_file(obj, path: PurePath or str):
     """
     This function loads a json file and sets each key: value pair
-    as an attribute of the an obj.
+    as an attribute of the an obj. The function has to catch a lot
+    things that I have changed over the course of the program so
+    that all of our saved files can be loaded.
     """
     with open(path) as file:
         data = json.load(file, cls=NumpyDecoder)
@@ -136,6 +138,13 @@ def load_json_file(obj, path: PurePath or str):
             obj.curve_fit_decay = False
         for key in data:
             x = data[key]
+            if key in ("fv_x", "fp_x", "pulse_start"):
+                key = "_" + key
+            if key == "peak_x":
+                key = "_" + key
+                x = x * 10
+            if key == "slope" or key == "slope_x":
+                key = "_" + key
             if isinstance(x, list):
                 if key in ["postsynaptic_events", "final_events"]:
                     pass

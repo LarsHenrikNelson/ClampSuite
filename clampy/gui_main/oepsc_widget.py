@@ -560,7 +560,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_fp_edit.setReadOnly(True)
         self.lfp_info_layout.addRow(self.lfp_fp_label, self.lfp_fp_edit)
 
-        self.lfp_fp_slope_label = QLabel("FP slope")
+        self.lfp_fp_slope_label = QLabel("FP slope (mV/ms)")
         self.lfp_fp_slope_edit = QLineEdit()
         self.lfp_fp_slope_edit.setReadOnly(True)
         self.lfp_info_layout.addRow(self.lfp_fp_slope_label, self.lfp_fp_slope_edit)
@@ -624,7 +624,7 @@ class oEPSCWidget(DragDropWidget):
             self.inspection_widget.close()
             self.inspection_widget.removeFileList()
             self.inspection_widget = None
-            self.inspect_acqs()
+            self.inspect_acqs(list_view)
 
     def oWindowChanged(self, text):
         if text == "Gaussian":
@@ -883,7 +883,7 @@ class oEPSCWidget(DragDropWidget):
                 )
                 if self.lfp_object.reg_line is not np.nan:
                     self.lfp_reg = pg.PlotDataItem(
-                        x=self.lfp_object.plot_slope_x(),
+                        x=self.lfp_object.slope_x(),
                         y=self.lfp_object.reg_line,
                         pen=pg.mkPen(color="g", width=4),
                         name="reg_line",
@@ -892,9 +892,8 @@ class oEPSCWidget(DragDropWidget):
                 self.lfp_plot.addItem(self.lfp_reg)
                 self.lfp_fv_edit.setText(str(round_sig(self.lfp_object.fv_y)))
                 self.lfp_fp_edit.setText(str(round_sig(self.lfp_object.fp_y)))
-                self.lfp_fp_slope_edit.setText(
-                    str(round_sig(self.lfp_object.slope))
-                )
+                self.lfp_fp_slope_edit.setText(str(round_sig(self.lfp_object.slope())))
+
             self.lfp_acq_plot.sigPointsClicked.connect(self.LFPPlotClicked)
             self.lfp_plot.setXRange(
                 self.lfp_x_axis.x_min, self.lfp_x_axis.x_max, padding=0
@@ -981,9 +980,9 @@ class oEPSCWidget(DragDropWidget):
             symbolBrush="m",
             pen=None,
         )
-        if self.lfp_object.slope is not np.nan:
+        if self.lfp_object.slope() is not np.nan:
             self.lfp_reg.setData(
-                x=self.lfp_object.plot_slope_x(),
+                x=self.lfp_object.slope_x(),
                 y=self.lfp_object.reg_line,
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
@@ -1021,7 +1020,7 @@ class oEPSCWidget(DragDropWidget):
         )
         if self.lfp_object.slope is not np.nan:
             self.lfp_reg.setData(
-                x=self.lfp_object.plot_slope_x(),
+                x=self.lfp_object.slope_x(),
                 y=self.lfp_object.reg_line,
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
@@ -1057,7 +1056,7 @@ class oEPSCWidget(DragDropWidget):
         )
         if self.lfp_object.slope is not np.nan:
             self.lfp_reg.setData(
-                x=self.lfp_object.plot_slope_x(),
+                x=self.lfp_object.slope_x(),
                 y=self.lfp_object.reg_line,
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
@@ -1082,11 +1081,7 @@ class oEPSCWidget(DragDropWidget):
             pen=None,
         )
         self.oepsc_amp_edit.setText(
-            str(
-                round_sig(
-                    self.oepsc_acq_dict[self.acquisition_number.text()].peak_y
-                )
-            )
+            str(round_sig(self.oepsc_acq_dict[self.acquisition_number.text()].peak_y))
         )
         self.last_oepsc_point_clicked[0].resetPen()
         self.last_oepsc_point_clicked[0].resetBrush()
@@ -1176,8 +1171,11 @@ class oEPSCWidget(DragDropWidget):
     def open_files(self, directory):
         self.reset()
         self.pbar.setFormat("Loading...")
+        self.pbar.setValue(0)
         load_dict = YamlWorker.load_yaml(directory)
+        self.set_preferences(load_dict)
         file_list = list(directory.glob("*.json"))
+        count = 0
         if not file_list:
             self.file_list = None
         else:
@@ -1186,28 +1184,45 @@ class oEPSCWidget(DragDropWidget):
                     x = Acq("oepsc", i)
                     x.load_acq()
                     self.oepsc_acq_dict[x.acq_number] = x
+                    count += 1
+                    self.pbar.setValue(int(count / len(file_list) * 100))
                 else:
                     x = Acq("lfp", i)
                     x.load_acq()
                     self.lfp_acq_dict[x.acq_number] = x
+                    count += 1
+                    self.pbar.setValue(int(count / len(file_list) * 100))
         if self.oepsc_acq_dict:
             self.acquisition_number.setMaximum(
                 int(list(self.oepsc_acq_dict.keys())[-1])
             )
             self.acquisition_number.setMinimum(int(list(self.oepsc_acq_dict.keys())[0]))
-            self.oepsc_view.setLoadData(self.oepsc_acq_dict)
-            self.set_peak_button.setEnabled(True)
-            self.delete_oepsc_button.setEnabled(True)
         elif self.lfp_acq_dict:
             self.acquisition_number.setMaximum(int(list(self.lfp_acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.lfp_acq_dict.keys())[0]))
+        else:
+            pass
+        if self.oepsc_acq_dict:
+            self.oepsc_view.setLoadData(self.oepsc_acq_dict)
+            self.set_peak_button.setEnabled(True)
+            self.delete_oepsc_button.setEnabled(True)
+            self.on_x_axis = XAxisCoord(
+                self.o_pulse_start_edit.toInt() - 100,
+                self.o_pulse_start_edit.toInt() + 450,
+            )
+            self.op_x_axis = XAxisCoord(
+                self.o_pulse_start_edit.toInt() - 100,
+                self.o_pulse_start_edit.toInt() + 450,
+            )
+        if self.lfp_acq_dict:
             self.lfp_view.setLoadData(self.lfp_acq_dict)
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
-        else:
-            pass
-        self.set_preferences(load_dict)
+            self.lfp_x_axis = XAxisCoord(
+                self.lfp_pulse_start_edit.toInt() - 10,
+                self.lfp_b_start_edit.toInt() + 250,
+            )
         self.acquisition_number.setValue(load_dict["Acq_number"])
         self.acquisition_number.setEnabled(True)
         if load_dict["Final Analysis"]:
@@ -1216,6 +1231,7 @@ class oEPSCWidget(DragDropWidget):
             self.final_data = LoadEvokedCurrentData(save_values)
             self.raw_datatable.setData(self.final_data.raw_df.T.to_dict("dict"))
             self.final_datatable.setData(self.final_data.final_df.T.to_dict("dict"))
+        self.pbar.setFormat("Data loaded")
         self.analyze_acq_button.setEnabled(True)
         self.reset_button.setEnabled(True)
         self.acquisition_number.setEnabled(True)

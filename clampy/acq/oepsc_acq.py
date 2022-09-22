@@ -47,8 +47,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )
-        self.pulse_start = int(pulse_start * self.s_r_c)
-        self.pulse_start = int(pulse_start * self.s_r_c)
+        self._pulse_start = int(pulse_start * self.s_r_c)
         self.n_window_start = int(n_window_start * self.s_r_c)
         self.n_window_end = int(n_window_end * self.s_r_c)
         self.p_window_start = int(p_window_start * self.s_r_c)
@@ -115,8 +114,8 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
 
     def find_charge_transfer(self):
         self.charge_transfer = integrate.trapz(
-            self.filtered_array[self.pulse_start : self.index],
-            self.x_array[self.pulse_start : self.index],
+            self.filtered_array[self._pulse_start : self.index],
+            self.x_array[self._pulse_start : self.index],
         )
 
     def find_est_decay(self):
@@ -192,7 +191,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         return self._peak_x / self.s_r_c
 
     def est_decay(self):
-        return self.est_tau_x - self._peak_x()
+        return self.est_tau_x - self.peak_x()
 
     def plot_x_comps(self):
         if self.find_edecay:
@@ -212,17 +211,22 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         else:
             return [self.peak_y, self.est_tau_x]
 
+    def pulse_start(self):
+        return self._pulse_start / self.s_r_c
+
     def create_dict(self):
         oepsc_dict = {
             "Epoch": self.epoch,
             "Acq number": self.acq_number,
             "Peak direction": self.peak_direction,
             "Amplitude": abs(self.peak_y),
+            "Peak time (ms)": self.peak_x(),
+            "oEPSC Pulse start (ms)": self.pulse_start(),
         }
         if self.find_ct:
             oepsc_dict["Charge_transfer"] = self.charge_transfer
         if self.find_edecay:
-            oepsc_dict["Est_decay"] = self.est_decay()
+            oepsc_dict["Est_decay (ms)"] = self.est_decay()
         if self.find_fdecay:
-            oepsc_dict["Curve_fit_tau"] = self.fit_tau
+            oepsc_dict["Curve_fit_tau (ms)"] = self.fit_tau
         return oepsc_dict
