@@ -101,11 +101,15 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
 
     def zero_crossing(self):
         if self.peak_direction == "negative":
-            index = np.where(self.filtered_array[self.peak_x :] > self.baseline_mean)[0]
+            index = np.where(self.filtered_array[self._peak_x :] > self.baseline_mean)[
+                0
+            ]
         else:
-            index = np.where(self.filtered_array[self.peak_x :] < self.baseline_mean)[0]
+            index = np.where(self.filtered_array[self._peak_x :] < self.baseline_mean)[
+                0
+            ]
         if index.shape[0] > 0:
-            self.index = index[0] + self.peak_x
+            self.index = index[0] + self._peak_x
         else:
             self.index = len(self.filtered_array)
 
@@ -116,7 +120,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         )
 
     def find_est_decay(self):
-        self.decay_y = self.filtered_array[self.peak_x : self.index]
+        self.decay_y = self.filtered_array[self._peak_x : self.index]
         if self.decay_y.size > 0:
             self.est_tau_y = self.peak_y * (1 / np.exp(1))
 
@@ -128,7 +132,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             decay_y = self.decay_y
 
         if self.decay_y.size > 0:
-            self.decay_x = self.x_array[self.peak_x : self.index]
+            self.decay_x = self.x_array[self._peak_x : self.index]
             self.est_tau_x = np.interp(y, decay_y, self.decay_x)
 
         else:
@@ -169,7 +173,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
 
     def change_peak(self, x, y):
         x = int(x * self.s_r_c)
-        self.peak_x = x
+        self._peak_x = x
         self.peak_y = y
         if self.peak_y < 0:
             self.peak_direction = "negative"
@@ -185,7 +189,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
 
     # Helper functions for plottings x in the correct units
     def peak_x(self):
-        return self.peak_x / self.s_r_c
+        return self._peak_x / self.s_r_c
 
     def est_decay(self):
         return self.est_tau_x - self._peak_x()
@@ -193,11 +197,11 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def plot_x_comps(self):
         if self.find_edecay:
             return [
-                self._peak_x(),
+                self.peak_x(),
                 self.est_tau_x,
             ]
         else:
-            return [self._peak_x(), self.est_tau_x]
+            return [self.peak_x(), self.est_tau_x]
 
     def plot_y_comps(self):
         if self.find_edecay:

@@ -25,12 +25,12 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtCore import QThreadPool
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
 from ..final_analysis.final_evoked import FinalEvokedCurrent
+from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
     SaveWorker,
@@ -849,14 +849,14 @@ class oEPSCWidget(DragDropWidget):
                 )
             self.oepsc_plot.enableAutoRange(axis="y")
             self.oepsc_plot.setAutoVisible(y=True)
-            self.oepsc_amp_edit.setText(str(self.round_sig(self.oepsc_object.peak_y)))
+            self.oepsc_amp_edit.setText(str(round_sig(self.oepsc_object.peak_y)))
             if self.oepsc_object.find_ct:
                 self.oepsc_charge_edit.setText(
-                    str(self.round_sig((self.oepsc_object.charge_transfer)))
+                    str(round_sig((self.oepsc_object.charge_transfer)))
                 )
             if self.oepsc_object.find_edecay:
                 self.oepsc_edecay_edit.setText(
-                    str(self.round_sig((self.oepsc_object.self.est_decay())))
+                    str(round_sig((self.oepsc_object.est_decay())))
                 )
         else:
             pass
@@ -890,10 +890,10 @@ class oEPSCWidget(DragDropWidget):
                     )
                 self.lfp_plot.addItem(self.lfp_points)
                 self.lfp_plot.addItem(self.lfp_reg)
-                self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
-                self.lfp_fp_edit.setText(str(self.round_sig(self.lfp_object.fp_y)))
+                self.lfp_fv_edit.setText(str(round_sig(self.lfp_object.fv_y)))
+                self.lfp_fp_edit.setText(str(round_sig(self.lfp_object.fp_y)))
                 self.lfp_fp_slope_edit.setText(
-                    str(self.round_sig(self.lfp_object.slope))
+                    str(round_sig(self.lfp_object.slope))
                 )
             self.lfp_acq_plot.sigPointsClicked.connect(self.LFPPlotClicked)
             self.lfp_plot.setXRange(
@@ -989,7 +989,7 @@ class oEPSCWidget(DragDropWidget):
                 name="reg_line",
             )
 
-        self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
+        self.lfp_fv_edit.setText(str(round_sig(self.lfp_object.fv_y)))
         self.last_lfp_point_clicked[0].resetPen()
         self.last_lfp_point_clicked[0].resetBrush()
         self.last_lfp_point_clicked = []
@@ -1026,7 +1026,7 @@ class oEPSCWidget(DragDropWidget):
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
             )
-        self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
+        self.lfp_fv_edit.setText(str(round_sig(self.lfp_object.fv_y)))
         self.last_lfp_point_clicked[0].resetPen()
         self.last_lfp_point_clicked[0].resetBrush()
         self.last_lfp_point_clicked = []
@@ -1062,8 +1062,8 @@ class oEPSCWidget(DragDropWidget):
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
             )
-        self.lfp_fp_edit.setText(str(self.round_sig(self.lfp_object.fp_y)))
-        self.lfp_fp_slope_edit.setText(str(self.round_sig(self.lfp_object.slope)))
+        self.lfp_fp_edit.setText(str(round_sig(self.lfp_object.fp_y)))
+        self.lfp_fp_slope_edit.setText(str(round_sig(self.lfp_object.slope)))
         self.last_lfp_point_clicked[0].resetPen()
         self.last_lfp_point_clicked[0].resetBrush()
         self.last_lfp_point_clicked = []
@@ -1083,7 +1083,7 @@ class oEPSCWidget(DragDropWidget):
         )
         self.oepsc_amp_edit.setText(
             str(
-                self.round_sig(
+                round_sig(
                     self.oepsc_acq_dict[self.acquisition_number.text()].peak_y
                 )
             )
@@ -1119,14 +1119,6 @@ class oEPSCWidget(DragDropWidget):
         self.dlg.setWindowTitle("Error")
         self.dlg.setText("File does not exist")
         self.dlg.exec()
-
-    def round_sig(self, x, sig=4):
-        if isnan(x):
-            return np.nan
-        elif x == 0:
-            return 0
-        elif x != 0 or x is not np.nan or nan:
-            return round(x, sig - int(floor(log10(abs(x)))) - 1)
 
     def final_analysis(self):
         self.need_to_save = True

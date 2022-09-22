@@ -29,6 +29,7 @@ import pyqtgraph as pg
 from .acq_inspection import AcqInspectionWidget
 from ..acq.acq import Acq
 from ..final_analysis.final_current_clamp import FinalCurrentClampAnalysis
+from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
     SaveWorker,
@@ -374,18 +375,16 @@ class currentClampWidget(DragDropWidget):
             acq_object = self.acq_dict[str(self.acquisition_number.text())]
             self.epoch_number.setText(acq_object.epoch)
             self.baseline_mean_edit.setText(
-                str(self.round_sig(acq_object.baseline_mean, sig=4))
+                str(round_sig(acq_object.baseline_mean, sig=4))
             )
-            self.delta_v_edit.setText(str(self.round_sig(acq_object.delta_v, sig=4)))
+            self.delta_v_edit.setText(str(round_sig(acq_object.delta_v, sig=4)))
             self.spike_threshold_edit.setText(
-                str(self.round_sig(acq_object.spike_threshold, sig=4))
+                str(round_sig(acq_object.spike_threshold, sig=4))
             )
-            self.spike_rate_edit.setText(
-                str(self.round_sig(acq_object.hertz_exact, sig=4))
-            )
-            self.ahp_edit.setText(str(self.round_sig(acq_object.ahp_y, sig=4)))
+            self.spike_rate_edit.setText(str(round_sig(acq_object.hertz_exact, sig=4)))
+            self.ahp_edit.setText(str(round_sig(acq_object.ahp_y, sig=4)))
             self.baseline_stability_edit.setText(
-                str(self.round_sig(acq_object.baseline_stability, sig=4))
+                str(round_sig(acq_object.baseline_stability, sig=4))
             )
             if acq_object.ramp == "0":
                 self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
@@ -475,14 +474,6 @@ class currentClampWidget(DragDropWidget):
                     )
         else:
             pass
-
-    def round_sig(self, x, sig=2):
-        if isnan(x):
-            return np.nan
-        elif x == 0:
-            return 0
-        elif x != 0 or x is not np.nan or nan:
-            return round(x, sig - int(floor(log10(abs(x)))) - 1)
 
     def delete_acq(self):
         self.need_to_save = False
