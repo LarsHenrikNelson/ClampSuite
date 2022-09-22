@@ -30,6 +30,7 @@ class AcqInspectionWidget(QWidget):
         # self.path_layout = QHBoxLayout()
         self.plot_layout = QHBoxLayout()
         self.filt_layout = QFormLayout()
+        self.acq_dict = {}
 
         # Since the class is inheriting from QWdiget there is no need to set
         # or define a central widget like the mainwindow setCentralWidget
@@ -54,6 +55,9 @@ class AcqInspectionWidget(QWidget):
         self.acq_dict = file_list
         self.acq_number.setMinimum(int(list(self.acq_dict.keys())[0]))
         self.acq_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
+
+    def removeFileList(self):
+        self.acq_dict = {}
 
     def spinbox(self, number):
         self.plot_widget.clear()

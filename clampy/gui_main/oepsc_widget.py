@@ -622,7 +622,9 @@ class oEPSCWidget(DragDropWidget):
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
+            self.inspection_widget.removeFileList()
             self.inspection_widget = None
+            self.inspect_acqs()
 
     def oWindowChanged(self, text):
         if text == "Gaussian":
@@ -965,12 +967,12 @@ class oEPSCWidget(DragDropWidget):
 
         """
         self.need_to_save = True
-        x = (
-            self.last_lfp_point_clicked[0].pos()[0]
-            * self.lfp_acq_dict[self.acquisition_number.text()].s_r_c
-        )
+
+        x = self.last_lfp_point_clicked[0].pos()[0]
         y = self.last_lfp_point_clicked[0].pos()[1]
+
         self.lfp_acq_dict[self.acquisition_number.text()].change_fv(x, y)
+
         self.lfp_points.setData(
             x=self.lfp_object.plot_elements_x(),
             y=self.lfp_object.plot_elements_y(),
@@ -986,6 +988,7 @@ class oEPSCWidget(DragDropWidget):
                 pen=pg.mkPen(color="g", width=4),
                 name="reg_line",
             )
+
         self.lfp_fv_edit.setText(str(self.round_sig(self.lfp_object.fv_y)))
         self.last_lfp_point_clicked[0].resetPen()
         self.last_lfp_point_clicked[0].resetBrush()
@@ -1002,12 +1005,12 @@ class oEPSCWidget(DragDropWidget):
 
         """
         self.need_to_save = True
-        x = (
-            self.last_lfp_point_clicked[0].pos()[0]
-            * self.lfp_acq_dict[self.acquisition_number.text()].s_r_c
-        )
+
+        x = self.last_lfp_point_clicked[0].pos()[0]
         y = self.last_lfp_point_clicked[0].pos()[1]
+
         self.lfp_acq_dict[self.acquisition_number.text()].change_slope_start(x, y)
+
         self.lfp_points.setData(
             x=self.lfp_object.plot_elements_x(),
             y=self.lfp_object.plot_elements_y(),
@@ -1039,11 +1042,10 @@ class oEPSCWidget(DragDropWidget):
 
         """
         self.need_to_save = True
-        x = (
-            self.last_lfp_point_clicked[0].pos()[0]
-            * self.lfp_acq_dict[self.acquisition_number.text()].s_r_c
-        )
+
+        x = self.last_lfp_point_clicked[0].pos()[0]
         y = self.last_lfp_point_clicked[0].pos()[1]
+
         self.lfp_acq_dict[self.acquisition_number.text()].change_fp(x, y)
         self.lfp_points.setData(
             x=self.lfp_acq_dict[self.acquisition_number.text()].plot_elements_x(),
@@ -1068,10 +1070,7 @@ class oEPSCWidget(DragDropWidget):
 
     def setoEPSCPeak(self):
         self.need_to_save = True
-        x = (
-            self.last_oepsc_point_clicked[0].pos()[0]
-            * self.oepsc_acq_dict[self.acquisition_number.text()].s_r_c
-        )
+        x = self.last_oepsc_point_clicked[0].pos()[0]
         y = self.last_oepsc_point_clicked[0].pos()[1]
         self.oepsc_acq_dict[self.acquisition_number.text()].change_peak(x, y)
         self.oepsc_peak_plot.setData(

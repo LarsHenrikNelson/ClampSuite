@@ -307,7 +307,8 @@ class MiniEvent:
         return self.x_array / self.s_r_c
 
     def change_amplitude(self, x, y):
-        self.event_peak_x = int(x)
+        x = int(x * self.s_r_c)
+        self.event_peak_x = x
         self.event_peak_y = y
         self.amplitude = abs(self.event_peak_y - self.event_start_y)
         self.calc_event_rise_time()
@@ -318,7 +319,8 @@ class MiniEvent:
         self.peak_align_value = self.event_peak_x - self.array_start
 
     def change_baseline(self, x, y):
-        self.event_start_x = int(x)
+        x = int(x * self.s_r_c)
+        self.event_start_x = x
         self.event_start_y = y
         start = int((self.event_start_x - self.array_start) - (0.5 * self.s_r_c))
         end = int(self.event_start_x - self.array_start)

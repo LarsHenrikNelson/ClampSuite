@@ -326,6 +326,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         Creates a new mini event based on the x position.
         The x position needs to be in samples not time.
         """
+        #Convert from time to samples
+        x = int(x*self.s_r_c)
         event = MiniEvent()
         event.analyze(
             acq_number=self.acq_number,

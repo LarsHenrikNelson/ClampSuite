@@ -222,20 +222,23 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self.reg_line = np.nan
 
     def change_fv(self, x, y):
-        self.fv_x = int(x)
+        x = int(x * self.s_r_c)
+        self.fv_x = x
         self.fv_y = y
         self.find_slope_start()
         self.find_slope_array()
         self.regression()
 
     def change_fp(self, x, y):
-        self.fp_x = int(x)
+        x = int(x * self.s_r_c)
+        self.fp_x = x
         self.fp_y = y
         self.find_slope_array()
         self.regression()
 
     def change_slope_start(self, x, y):
-        self.max_x = int(x)
+        x = int(x * self.s_r_c)
+        self.max_x = x
         self.max_y = y
         self.find_slope_array()
         self.regression()

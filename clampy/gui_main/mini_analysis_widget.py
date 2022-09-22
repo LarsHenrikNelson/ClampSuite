@@ -253,7 +253,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.input_layout.addRow(self.calculate_parameters)
         self.calculate_parameters.setObjectName("calculate_parameters")
         self.calculate_parameters.clicked.connect(self.final_analysis)
-        self.calculate_parameters.setEnabled(False)
 
         self.reset_button = QPushButton("Reset Analysis")
         self.input_layout.addRow(self.reset_button)
@@ -458,10 +457,10 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.acq_2_buttons.addStretch(0)
 
-        self.calculate_parameters_2 = QPushButton("Calculate Parameters")
+        self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_2_buttons.addWidget(self.calculate_parameters_2)
         self.calculate_parameters_2.clicked.connect(self.final_analysis)
-        self.calculate_parameters_2.setEnabled(False)
+        self.calculate_parameters_2.setEnabled(True)
 
         # Filling the plot layout.
         self.p1 = pg.PlotWidget(
@@ -661,7 +660,9 @@ class MiniAnalysisWidget(DragDropWidget):
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
+            self.inspection_widget.removeFileList()
             self.inspection_widget = None
+            self.inspect_acqs()
 
     def del_selection(self):
         # Deletes the selected acquisitions from the list
@@ -725,6 +726,8 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.acq_dict = {}
 
             self.analyze_acq_button.setEnabled(False)
+            self.calculate_parameters.setEnabled(False)
+            self.calculate_parameters_2.setEnabled(False)
             template = self.create_template()
 
             # Sets the progress bar to 0
@@ -960,6 +963,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.final_table.clear()
         self.ave_mini_plot.clear()
         self.pref_dict = {}
+        self.inspection_widget.removeFileList()
         self.calc_param_clicked = False
         self.final_obj = None
         self.need_to_save = False
@@ -1127,7 +1131,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         # Resets the color of the previously clicked mini point.
         if self.last_mini_point_clicked:
-            self.last_mini_point_clicked[0].resetPen()
+            self.last_mini_point_clicked.resetPen()
             self.last_mini_point_clicked = []
 
         # Set the color and size of the new mini point that
@@ -1153,7 +1157,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # x point needs to be adjusted back to samples for the
         # change amplitude function in the postsynaptic event
         # object.
-        x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
+        x = self.last_mini_point_clicked.pos()[0]
         y = self.last_mini_point_clicked.pos()[1]
 
         # Find the index of the mini so that the correct mini is
@@ -1207,7 +1211,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # x point needs to be adjusted back to samples for the
             # change amplitude function in the postsynaptic event
             # object.
-            x = self.last_mini_point_clicked.pos()[0] * self.acq_object.s_r_c
+            x = self.last_mini_point_clicked.pos()[0]
             y = self.last_mini_point_clicked.pos()[1]
 
             # Find the index of the mini so that the correct mini is
@@ -1311,10 +1315,10 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Make sure that the last acq point that was clicked exists.
         if self.last_acq_point_clicked is not None:
-            x = self.last_acq_point_clicked.pos()[0] * self.acq_object.s_r_c
+            x = self.last_acq_point_clicked.pos()[0]
 
             # The mini needs a baseline of at least 2 milliseconds long.
-            if x > int(2 * self.acq_dict[str(self.acquisition_number.text())].s_r_c):
+            if x > 2:
 
                 # Create the new mini.
                 created = self.acq_dict[
@@ -1451,6 +1455,8 @@ class MiniAnalysisWidget(DragDropWidget):
         if self.final_obj:
             if y != "IEI (ms)":
                 self.plot_stem_data(y)
+            else:
+                self.stem_plot.clear()
             self.plot_amp_dist(y)
 
     def plot_stem_data(self, y):
@@ -1553,6 +1559,8 @@ class MiniAnalysisWidget(DragDropWidget):
                 "IEI (ms)",
             ]
             self.plot_selector.addItems(plots)
+            self.calculate_parameters_2.setEnabled(True)
+            self.calculate_parameters.setEnabled(True)
             self.pbar.setFormat("Loaded")
 
     def save_as(self, save_filename):

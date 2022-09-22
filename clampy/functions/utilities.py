@@ -1,6 +1,6 @@
 import json
 from math import floor, log10, nan
-from pathlib import PurePath
+from pathlib import PurePath, PurePosixPath, PureWindowsPath
 import re
 from typing import Tuple
 
@@ -137,7 +137,10 @@ def load_json_file(obj, path: PurePath or str):
         for key in data:
             x = data[key]
             if isinstance(x, list):
-                x = np.array(x)
+                if key in ["postsynaptic_events", "final_events"]:
+                    pass
+                else:
+                    x = np.array(x)
             setattr(obj, key, x)
     if obj.sample_rate_correction is not None:
         obj.s_r_c = obj.sample_rate_correction

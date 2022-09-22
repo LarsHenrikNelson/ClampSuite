@@ -77,13 +77,14 @@ class currentClampWidget(DragDropWidget):
         self.v_layout.addLayout(self.input_layout, 0)
         self.main_layout.addLayout(self.v_layout, 0)
         self.main_layout.addLayout(self.analysis_layout, 0)
-        self.analysis_layout.addLayout(self.plot_layout, 1)
+        self.analysis_layout.addLayout(self.plot_layout, 0)
         self.plot_layout.addLayout(self.analysis_buttons, 1)
 
         # Analysis layout setup
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number = QSpinBox()
-        self.acquisition_number.setReadOnly(True)
+        self.acquisition_number.setKeyboardTracking(False)
+        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.spinbox)
         self.analysis_buttons.addRow(
             self.acquisition_number_label, self.acquisition_number
@@ -247,7 +248,7 @@ class currentClampWidget(DragDropWidget):
         self.input_layout.addRow(self.analyze_acq_button)
         self.analyze_acq_button.clicked.connect(self.analyze)
 
-        self.calculate_parameters = QPushButton("Calculate parameters")
+        self.calculate_parameters = QPushButton("Final analysis")
         self.calculate_parameters.setObjectName("calculate_parameters")
         self.input_layout.addRow(self.calculate_parameters)
         self.calculate_parameters.clicked.connect(self.final_analysis_button)
@@ -279,11 +280,13 @@ class currentClampWidget(DragDropWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.acq_view.model().acq_dict)
+            self.inspection_widget.setFileList(self.load_widget.model().acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()
+            self.inspection_widget.removeFileList()
             self.inspection_widget = None
+            self.inspect_acqs()
 
     def del_selection(self):
 
@@ -652,7 +655,7 @@ class currentClampWidget(DragDropWidget):
                 x = Acq(self.analysis_type, filepath)
                 x.load_acq()
                 self.acq_dict[str(x.acq_number)] = x
-                self.pbar.setValue(int(((i) / len(file_list)) * 100))
+                self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
             if load_dict.get("Deleted Acqs"):
                 for i in load_dict["Deleted Acqs"]:
                     self.deleted_acqs[i] = self.acq_dict[i]
