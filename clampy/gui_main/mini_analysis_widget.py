@@ -451,7 +451,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.delete_acq_button.clicked.connect(self.delete_acq)
         self.acq_buttons.addRow(self.delete_acq_button)
 
-        self.reset_recent_acq_button = QPushButton("Reset recent acq")
+        self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
         self.reset_recent_acq_button.clicked.connect(self.reset_recent_reject_acq)
         self.acq_buttons.addRow(self.reset_recent_acq_button)
 
@@ -797,13 +797,14 @@ class MiniAnalysisWidget(DragDropWidget):
             # at zero. I choose this because it is easier to reference minis
             # when adding or removing minis and python list indexing starts at 0.
             self.mini_number.setMinimum(0)
-            self.mini_spinbox(0)
+            # self.mini_spinbox(0)
 
             # Enabling the buttons since they were temporarily disabled while
             # The acquisitions were analyzed.
             self.analyze_acq_button.setEnabled(True)
             self.calculate_parameters.setEnabled(True)
             self.calculate_parameters_2.setEnabled(True)
+            self.tab_widget.setCurrentIndex(1)
             self.pbar.setFormat("Analysis finished")
 
     def acq_spinbox(self, h):
@@ -963,7 +964,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.final_table.clear()
         self.ave_mini_plot.clear()
         self.pref_dict = {}
-        self.inspection_widget.removeFileList()
+        if self.inspection_widget is not None:
+            self.inspection_widget.removeFileList()
+            self.inpspection_widget = None
         self.calc_param_clicked = False
         self.final_obj = None
         self.need_to_save = False
@@ -1427,13 +1430,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.final_obj = FinalMiniAnalysis(
             self.acq_dict, self.minis_deleted, self.acqs_deleted
         )
-        self.ave_mini_plot.clear()
-        self.ave_mini_plot.plot(
-            x=self.final_obj.average_mini_x, y=self.final_obj.average_mini
-        )
-        self.ave_mini_plot.plot(
-            x=self.final_obj.decay_x, y=self.final_obj.fit_decay_y, pen="g"
-        )
+        self.plot_ave_mini()
         self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict("dict"))
         self.final_table.setData(self.final_obj.final_df.T.to_dict("dict"))
         plots = [
@@ -1450,6 +1447,15 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(2)
+
+    def plot_ave_mini(self):
+        self.ave_mini_plot.clear()
+        self.ave_mini_plot.plot(
+            x=self.final_obj.average_mini_x, y=self.final_obj.average_mini
+        )
+        self.ave_mini_plot.plot(
+            x=self.final_obj.decay_x, y=self.final_obj.fit_decay_y, pen="g"
+        )
 
     def plot_raw_data(self, y):
         if self.final_obj:

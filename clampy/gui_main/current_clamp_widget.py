@@ -350,6 +350,9 @@ class currentClampWidget(DragDropWidget):
         self.clearTables()
         self.plot_dict = {}
         self.table_dict = {}
+        if self.inspection_widget is not None:
+            self.inspection_widget.removeFileList()
+            self.inpspection_widget = None
         self.plot_widget.clear()
         self.spike_plot.clear()
         self.pbar.setValue(0)

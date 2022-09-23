@@ -929,6 +929,9 @@ class oEPSCWidget(DragDropWidget):
         self.set_fv_button.setEnabled(False)
         self.set_fp_button.setEnabled(False)
         self.final_data = None
+        if self.inspection_widget is not None:
+            self.inspection_widget.removeFileList()
+            self.inpspection_widget = None
         self.oepsc_view.clearData()
         self.lfp_view.clearData()
         self.need_to_save = False

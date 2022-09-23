@@ -77,8 +77,11 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         # Runs the functions to analyze the acquisition
         self.create_template(template)
-        self.filter_array()
         self.create_mespc_array()
+        if self.baseline_corr:
+            self.baseline_correction()
+        self.filter_array()
+        self.set_array()
         self.set_sign()
         self.decon_filt()
         self.create_events()
@@ -111,16 +114,22 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
     def create_mespc_array(self):
         if self.rc_check is False:
-            self.final_array = np.copy(self.filtered_array)
+            pass
         elif self.rc_check is True:
-            if self.rc_check_end == len(self.filtered_array):
-                self.final_array = np.copy(self.filtered_array[: self.rc_check_start])
-                self.rc_check_array = np.copy(self.array[self.rc_check_start :])
+            if self.rc_check_end == len(self.array):
+                temp_array = np.copy(self.baselined_array[: self.rc_check_start])
+                self.rc_check_array = np.copy(
+                    self.baselined_array[self.rc_check_start :]
+                )
             else:
-                self.final_array = np.copy(self.filtered_array[self.rc_check_end :])
-                self.rc_check_array = np.copy(self.array[self.rc_check_end :])
-        self.x_array = np.arange(len(self.final_array)) / (self.s_r_c)
-        return self.final_array, self.x_array
+                temp_array = np.copy(self.baselined_array[self.rc_check_end :])
+                self.rc_check_array = np.copy(self.baselined_array[self.rc_check_end :])
+            self.baselined_array = temp_array
+        self.x_array = np.arange(len(self.baselined_array)) / (self.s_r_c)
+
+    def set_array(self):
+        self.final_array = self.filtered_array
+        del self.filtered_array
 
     def set_sign(self):
         if not self.invert:
@@ -130,13 +139,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
     def baseline_correction(self):
         a, b, c = 0.93259504, -249.26795569, -1.17790283
-        end = len(self.final_array)
+        end = len(self.baselined_array)
         smooth = a * np.log(end + b) + c
         spl = interpolate.UnivariateSpline(
             self.x_array, self.final_array, s=end * smooth
         )
         baseline = spl(self.x_array)
-        return baseline
+        self.baselined_array = self.baselined_array - baseline
 
     def deconvolution(self, lambd=4):
         """
@@ -167,20 +176,17 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             (self.template, np.zeros(len(self.final_array) - len(self.template)))
         )
         H = fft(kernel)
-        if self.baseline_corr:
-            baseline = self.baseline_correction()
-        else:
-            baseline = 0
 
-        b_corrected = self.final_array - baseline
         if self.decon_type == "fft":
-            deconvolved_array = np.real(ifft(fft(b_corrected) / H))
+            deconvolved_array = np.real(ifft(fft(self.final_array) / H))
         elif self.decon_type == "wiener":
             deconvolved_array = np.real(
-                ifft(fft(b_corrected) * np.conj(H) / (H * np.conj(H) + lambd**2))
+                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
             )
         else:
-            deconvolved_array = signal.convolve(b_corrected, self.template, mode="same")
+            deconvolved_array = signal.convolve(
+                self.final_array, self.template, mode="same"
+            )
         return deconvolved_array
 
     def decon_filt(self):
@@ -326,8 +332,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         Creates a new mini event based on the x position.
         The x position needs to be in samples not time.
         """
-        #Convert from time to samples
-        x = int(x*self.s_r_c)
+        # Convert from time to samples
+        x = int(x * self.s_r_c)
         event = MiniEvent()
         event.analyze(
             acq_number=self.acq_number,
@@ -369,7 +375,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 i.final_tau_x for i in self.postsynaptic_events
             ]
             final_dict["Event time (ms)"] = [
-                i.event_peak_x / self.s_r_c for i in self.postsynaptic_events
+                i.event_peak_x() for i in self.postsynaptic_events
             ]
             final_dict["Acq time stamp"] = [
                 self.time_stamp for i in self.postsynaptic_events
@@ -433,7 +439,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.saved_events_dict = []
         self.array = "saved"
         # self.final_decon_array = "saved"
-        self.filtered_array = "saved"
         self.events = "saved"
         self.x_array = "saved"
         for i in self.postsynaptic_events:
