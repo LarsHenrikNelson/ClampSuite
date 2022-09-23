@@ -301,13 +301,22 @@ class MiniEvent:
         ]
 
     def event_tau_x(self):
-        return self._event_tau_x / self.s_r_c
+        if not np.isnan(self._event_tau_x):
+            return self._event_tau_x / self.s_r_c
+        else:
+            return self._event_tau_x
 
     def event_start_x(self):
-        return self._event_start_x / self.s_r_c
+        if not np.isnan(self._event_start_x):
+            return self._event_start_x / self.s_r_c
+        else:
+            return self._event_start_x
 
     def event_peak_x(self):
-        return self._event_peak_x / self.s_r_c
+        if not np.isnan(self._event_peak_x):
+            return self._event_peak_x / self.s_r_c
+        else:
+            return self._event_peak_x
 
     def mini_plot_y(self):
         return [self.event_start_y, self.event_peak_y]

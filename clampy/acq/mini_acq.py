@@ -66,7 +66,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.rc_check_end = int(rc_check_end * self.s_r_c)
         self.sensitivity = sensitivity
         self.amp_threshold = amp_threshold
-        self.mini_spacing = int(mini_spacing * self.s_r_c)
+        self.mini_spacing = mini_spacing
         self.min_rise_time = min_rise_time
         self.max_rise_time = max_rise_time
         self.min_decay_time = min_decay_time
@@ -251,7 +251,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 pass
             else:
                 if event_number > 0:
-                    prior_peak = self.postsynaptic_events[event_number - 1].event_peak_x
+                    prior_peak = self.postsynaptic_events[
+                        event_number - 1
+                    ]._event_peak_x
                 else:
                     prior_peak = 0
                 event = MiniEvent()
@@ -264,13 +266,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     curve_fit_type=self.curve_fit_type,
                     prior_peak=prior_peak,
                 )
-                if np.isnan(event.event_peak_x) or event.event_peak_x in event_time:
+                if np.isnan(event.event_peak_x()) or event.event_peak_x() in event_time:
                     pass
                 else:
                     if event_number > 0:
                         if (
-                            event.event_peak_x
-                            - self.postsynaptic_events[-1].event_peak_x
+                            event.event_peak_x()
+                            - self.postsynaptic_events[-1].event_peak_x()
                             > self.mini_spacing
                             and event.amplitude >= self.amp_threshold
                             and event.rise_time >= self.min_rise_time
@@ -280,7 +282,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                         ):
                             self.postsynaptic_events += [event]
                             self.final_events += [peak]
-                            event_time += [event.event_peak_x]
+                            event_time += [event.event_peak_x()]
                             event_number += 1
                         else:
                             pass
@@ -343,7 +345,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             curve_fit_decay=self.curve_fit_decay,
             curve_fit_type=self.curve_fit_type,
         )
-        if not np.isnan(event.event_peak_x):
+        if not np.isnan(event.event_peak_x()):
             self.final_events += [x]
             self.postsynaptic_events += [event]
             return True
@@ -365,7 +367,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         # pyqtgraph data items list.
 
         if self.postsynaptic_events:
-            self.postsynaptic_events.sort(key=lambda x: x.event_peak_x)
+            self.postsynaptic_events.sort(key=lambda x: x._event_peak_x)
             self.final_events.sort()
             final_dict["Acquisition"] = [i.acq_number for i in self.postsynaptic_events]
             final_dict["Amplitude (pA)"] = [
@@ -417,9 +419,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         return events
 
     def peak_values(self):
-        peak_align_values = [
-            i.event_peak_x - i.array_start for i in self.postsynaptic_events
-        ]
+        peak_align_values = [i.peak_align_value for i in self.postsynaptic_events]
         return peak_align_values
 
     def total_events(self):

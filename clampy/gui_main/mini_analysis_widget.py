@@ -715,97 +715,103 @@ class MiniAnalysisWidget(DragDropWidget):
         chosen because it made the initial debugging easier.
         """
 
+        self.p1.clear()
+        self.p2.clear()
+        self.p1.setAutoVisible(y=True)
+        self.p2.enableAutoRange()
+        self.mini_view_plot.clear()
+
         if not self.load_widget.model().acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
+            return None
 
+        self.need_to_save = True
+
+        if self.acq_dict:
+            self.acq_dict = {}
+
+        self.analyze_acq_button.setEnabled(False)
+        self.calculate_parameters.setEnabled(False)
+        self.calculate_parameters_2.setEnabled(False)
+        template = self.create_template()
+
+        # Sets the progress bar to 0
+        self.pbar.setFormat("Analyzing...")
+        self.pbar.setValue(0)
+
+        # The for loop creates each MiniAnalysis object. Enumerate returns
+        # count which is used to adjust the progress bar and acq_components
+        # comes from the load_widget
+        if (
+            self.window_edit.currentText() == "gaussian"
+            or self.window_edit.currentText() == "kaiser"
+        ):
+            window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
-            self.need_to_save = True
+            window = self.window_edit.currentText()
+        self.acq_dict = self.load_widget.model().acq_dict
+        for count, acq in enumerate(self.acq_dict.values()):
+            acq.analyze(
+                sample_rate=self.sample_rate_edit.toInt(),
+                baseline_start=self.b_start_edit.toInt(),
+                baseline_end=self.b_end_edit.toInt(),
+                filter_type=self.filter_selection.currentText(),
+                order=self.order_edit.toInt(),
+                high_pass=self.high_pass_edit.toInt(),
+                high_width=self.high_width_edit.toInt(),
+                low_pass=self.low_pass_edit.toInt(),
+                low_width=self.low_width_edit.toInt(),
+                window=window,
+                polyorder=self.polyorder_edit.toInt(),
+                template=template,
+                rc_check=self.rc_checkbox.isChecked(),
+                rc_check_start=self.rc_check_start_edit.toFloat(),
+                rc_check_end=self.rc_check_end_edit.toFloat(),
+                sensitivity=self.sensitivity_edit.toFloat(),
+                amp_threshold=self.amp_thresh_edit.toFloat(),
+                mini_spacing=self.mini_spacing_edit.toFloat(),
+                min_rise_time=self.min_rise_time.toFloat(),
+                max_rise_time=self.max_rise_time.toFloat(),
+                min_decay_time=self.min_decay.toFloat(),
+                invert=self.invert_checkbox.isChecked(),
+                decon_type=self.decon_type_edit.currentText(),
+                curve_fit_decay=self.curve_fit_decay.isChecked(),
+                curve_fit_type=self.curve_fit_edit.currentText(),
+                baseline_corr=False,
+            )
+            self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
+            # if not acq.postsynaptic_events:
+            #     self.deleted_acqs[
+            #         str(self.acquisition_number.text())
+            #     ] = self.acq_dict[str(self.acquisition_number.text())]
+            #     self.recent_reject_acq[
+            #         str(self.acquisition_number.text())
+            #     ] = self.acq_dict[str(self.acquisition_number.text())]
 
-            if self.acq_dict:
-                self.acq_dict = {}
-
-            self.analyze_acq_button.setEnabled(False)
-            self.calculate_parameters.setEnabled(False)
-            self.calculate_parameters_2.setEnabled(False)
-            template = self.create_template()
-
-            # Sets the progress bar to 0
-            self.pbar.setFormat("Analyzing...")
-            self.pbar.setValue(0)
-
-            # The for loop creates each MiniAnalysis object. Enumerate returns
-            # count which is used to adjust the progress bar and acq_components
-            # comes from the load_widget
-            if (
-                self.window_edit.currentText() == "gaussian"
-                or self.window_edit.currentText() == "kaiser"
-            ):
-                window = (self.window_edit.currentText(), self.beta_sigma.value())
-            else:
-                window = self.window_edit.currentText()
-            self.acq_dict = self.load_widget.model().acq_dict
-            for count, acq in enumerate(self.acq_dict.values()):
-                acq.analyze(
-                    sample_rate=self.sample_rate_edit.toInt(),
-                    baseline_start=self.b_start_edit.toInt(),
-                    baseline_end=self.b_end_edit.toInt(),
-                    filter_type=self.filter_selection.currentText(),
-                    order=self.order_edit.toInt(),
-                    high_pass=self.high_pass_edit.toInt(),
-                    high_width=self.high_width_edit.toInt(),
-                    low_pass=self.low_pass_edit.toInt(),
-                    low_width=self.low_width_edit.toInt(),
-                    window=window,
-                    polyorder=self.polyorder_edit.toInt(),
-                    template=template,
-                    rc_check=self.rc_checkbox.isChecked(),
-                    rc_check_start=self.rc_check_start_edit.toFloat(),
-                    rc_check_end=self.rc_check_end_edit.toFloat(),
-                    sensitivity=self.sensitivity_edit.toFloat(),
-                    amp_threshold=self.amp_thresh_edit.toFloat(),
-                    mini_spacing=self.mini_spacing_edit.toFloat(),
-                    min_rise_time=self.min_rise_time.toFloat(),
-                    max_rise_time=self.max_rise_time.toFloat(),
-                    min_decay_time=self.min_decay.toFloat(),
-                    invert=self.invert_checkbox.isChecked(),
-                    decon_type=self.decon_type_edit.currentText(),
-                    curve_fit_decay=self.curve_fit_decay.isChecked(),
-                    curve_fit_type=self.curve_fit_edit.currentText(),
-                    baseline_corr=False,
-                )
-                self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
-                # if not acq.postsynaptic_events:
-                #     self.deleted_acqs[
-                #         str(self.acquisition_number.text())
-                #     ] = self.acq_dict[str(self.acquisition_number.text())]
-                #     self.recent_reject_acq[
-                #         str(self.acquisition_number.text())
-                #     ] = self.acq_dict[str(self.acquisition_number.text())]
-
-                #     # Remove deleted acquisition from the acquisition dictionary.
-                #     del self.acq_dict[str(self.acquisition_number.text())]
+            #     # Remove deleted acquisition from the acquisition dictionary.
+            #     del self.acq_dict[str(self.acquisition_number.text())]
 
             # This part initializes acquisition_number spinbox, sets the min and max.
-            acq_number = list(self.acq_dict.keys())
-            self.acquisition_number.setMaximum(int(acq_number[-1]))
-            self.acquisition_number.setMinimum(int(acq_number[0]))
-            self.acquisition_number.setValue(int(acq_number[0]))
-            # self.acq_spinbox(int(acq_number[0]))
+        acq_number = list(self.acq_dict.keys())
+        self.acquisition_number.setMaximum(int(acq_number[-1]))
+        self.acquisition_number.setMinimum(int(acq_number[0]))
+        self.acquisition_number.setValue(int(acq_number[0]))
+        # self.acq_spinbox(int(acq_number[0]))
 
-            # Minis always start from 0 since list indexing in python starts
-            # at zero. I choose this because it is easier to reference minis
-            # when adding or removing minis and python list indexing starts at 0.
-            self.mini_number.setMinimum(0)
-            # self.mini_spinbox(0)
+        # Minis always start from 0 since list indexing in python starts
+        # at zero. I choose this because it is easier to reference minis
+        # when adding or removing minis and python list indexing starts at 0.
+        self.mini_number.setMinimum(0)
+        # self.mini_spinbox(0)
 
-            # Enabling the buttons since they were temporarily disabled while
-            # The acquisitions were analyzed.
-            self.analyze_acq_button.setEnabled(True)
-            self.calculate_parameters.setEnabled(True)
-            self.calculate_parameters_2.setEnabled(True)
-            self.tab_widget.setCurrentIndex(1)
-            self.pbar.setFormat("Analysis finished")
+        # Enabling the buttons since they were temporarily disabled while
+        # The acquisitions were analyzed.
+        self.analyze_acq_button.setEnabled(True)
+        self.calculate_parameters.setEnabled(True)
+        self.calculate_parameters_2.setEnabled(True)
+        self.tab_widget.setCurrentIndex(1)
+        self.pbar.setFormat("Analysis finished")
 
     def acq_spinbox(self, h):
         """This function plots each acquisition and each of its minis."""
