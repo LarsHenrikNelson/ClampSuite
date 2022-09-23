@@ -142,7 +142,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         end = len(self.baselined_array)
         smooth = a * np.log(end + b) + c
         spl = interpolate.UnivariateSpline(
-            self.x_array, self.final_array, s=end * smooth
+            self.x_array, self.baselined_array, s=end * smooth
         )
         baseline = spl(self.x_array)
         self.baselined_array = self.baselined_array - baseline

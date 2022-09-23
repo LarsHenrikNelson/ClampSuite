@@ -97,7 +97,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.setup_layout.addLayout(self.input_layout, 0)
         self.setup_layout.addLayout(self.extra_layout, 1)
         self.setup_layout.addLayout(self.load_layout, 0)
-        self.extra_layout.addLayout(self.other_layout, 0)
+        self.extra_layout.addLayout(self.other_layout, 10)
         self.other_layout.addLayout(self.settings_layout, 0)
         self.other_layout.addLayout(self.template_form, 0)
         self.setup_layout.addStretch(1)
@@ -330,6 +330,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.decon_type_edit.setObjectName("decon_type_edit")
         self.settings_layout.addRow(self.decon_type_label, self.decon_type_edit)
 
+        self.baseline_corr_label = QLabel("Baseline correction (experimental)")
+        self.baseline_corr_choice = QCheckBox()
+        self.baseline_corr_choice.setChecked(False)
+        self.baseline_corr_choice.setTristate(False)
+        self.settings_layout.addRow(self.baseline_corr_label, self.baseline_corr_choice)
+
         self.tau_1_label = QLabel("Rise tau (ms)")
         self.tau_1_edit = LineEdit()
         self.tau_1_edit.setObjectName("tau_1_edit")
@@ -382,7 +388,7 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.template_plot.setObjectName("Template plot")
-        self.extra_layout.addWidget(self.template_plot, 1)
+        self.extra_layout.addWidget(self.template_plot, 10)
 
         # Setup for the drag and drop load layout
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
@@ -544,6 +550,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_view_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
+        self.mini_view_plot.setMinimumWidth(300)
         self.mini_view_plot.setObjectName("Mini view plot")
         self.mini_view_layout.addWidget(self.mini_view_plot, 0)
 
@@ -752,6 +759,9 @@ class MiniAnalysisWidget(DragDropWidget):
             window = self.window_edit.currentText()
         self.acq_dict = self.load_widget.model().acq_dict
         for count, acq in enumerate(self.acq_dict.values()):
+
+            # I need to just put all the settings into a dictionary,
+            # so the functions are not called for every acquisition
             acq.analyze(
                 sample_rate=self.sample_rate_edit.toInt(),
                 baseline_start=self.b_start_edit.toInt(),
@@ -778,7 +788,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 decon_type=self.decon_type_edit.currentText(),
                 curve_fit_decay=self.curve_fit_decay.isChecked(),
                 curve_fit_type=self.curve_fit_edit.currentText(),
-                baseline_corr=False,
+                baseline_corr=self.baseline_corr_choice.isChecked(),
             )
             self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
             # if not acq.postsynaptic_events:
@@ -816,6 +826,10 @@ class MiniAnalysisWidget(DragDropWidget):
     def acq_spinbox(self, h):
         """This function plots each acquisition and each of its minis."""
 
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         # Plots are cleared first otherwise new data is just appended to
         # the plot.
         self.need_to_save = True
@@ -830,7 +844,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_acq_point_clicked = None
         self.last_mini_clicked_1 = []
         self.last_mini_clicked_2 = []
-        self.last_mini_point_clicked = []
+        self.last_mini_point_clicked = None
         self.acq_object = None
 
         # sort_index and mini_spinbox_list are used to reference the correct
@@ -953,7 +967,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_dict = {}
         self.acq_object = None
         self.file_list = []
-        self.last_mini_point_clicked = []
+        self.last_mini_point_clicked = None
         self.last_acq_point_clicked = None
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
@@ -1036,11 +1050,15 @@ class MiniAnalysisWidget(DragDropWidget):
         Function to plot a mini in the mini plot.
         """
 
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
 
         # if h in self.mini_spinbox_list:
         # Clear the last mini_point_clicked
-        self.last_mini_point_clicked = []
+        self.last_mini_point_clicked = None
 
         # Resets the color of the minis on p1 and p2. In python
         # when you create an object it is given a position in the memory
@@ -1141,7 +1159,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Resets the color of the previously clicked mini point.
         if self.last_mini_point_clicked:
             self.last_mini_point_clicked.resetPen()
-            self.last_mini_point_clicked = []
+            self.last_mini_point_clicked = None
 
         # Set the color and size of the new mini point that
         # was clicked.
@@ -1158,6 +1176,12 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
+        if self.last_mini_point_clicked is None:
+            return None
 
         self.need_to_save = True
 
@@ -1212,6 +1236,12 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
+        if self.last_mini_point_clicked is None:
+            return None
 
         self.need_to_save = True
 
@@ -1265,6 +1295,9 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
 
         self.need_to_save = True
 
@@ -1319,6 +1352,10 @@ class MiniAnalysisWidget(DragDropWidget):
         on the main acquisition and clicking create new mini's button
         will run this function.
         """
+
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
 
         self.need_to_save = True
 
@@ -1387,6 +1424,10 @@ class MiniAnalysisWidget(DragDropWidget):
         button is clicked.
         """
 
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
 
         self.recent_reject_acq = {}
@@ -1414,18 +1455,29 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setValue(int(self.acquisition_number.text()) + 1)
 
     def reset_rejected_acqs(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.acq_dict.update(self.deleted_acqs)
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
         self.acqs_deleted = 0
 
     def reset_recent_reject_acq(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.acq_dict.update(self.recent_reject_acq)
         self.acqs_deleted -= 1
         self.acquisition_number.setValue(int(list(self.recent_reject_acq.keys())[0]))
 
     def final_analysis(self):
-        self.plot_selector.clear()
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         if self.final_obj is not None:
             del self.final_obj
@@ -1446,6 +1498,7 @@ class MiniAnalysisWidget(DragDropWidget):
             "Rise rate (pA/ms)",
             "IEI (ms)",
         ]
+        self.plot_selector.clear()
         self.plot_selector.addItems(plots)
         if self.plot_selector.currentText() != "IEI (ms)":
             self.plot_raw_data(self.plot_selector.currentText())
@@ -1510,7 +1563,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def file_does_not_exist(self):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("File does not exist")
+        self.dlg.setText("No files are loaded")
         self.dlg.exec()
 
     def point_to_close_to_beginning(self):
