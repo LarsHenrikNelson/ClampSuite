@@ -1,4 +1,5 @@
 from .acq import Acq
+from ..functions.load_functions import load_scanimage_file, load_json_file
 
 
 class AcqManager:
@@ -17,9 +18,9 @@ class AcqManager:
     def load_file(self):
         path_obj = PurePath(self.path)
         if path_obj.suffix == ".mat":
-            acq_components = load_scanimage_file(path_obj)
+            acq_components = utilities.load_scanimage_file(path_obj)
         elif path_obj.suffix == ".json":
             with open(path) as file:
-                data = json.load(file)
+                load_json_file(self, path_obj)
         else:
             print("File type not recognized!")

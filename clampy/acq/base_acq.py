@@ -1,7 +1,7 @@
 from pathlib import PurePath
 
 from . import acq
-from ..functions.utilities import load_scanimage_file, load_json_file
+from ..functions.load_functions import load_scanimage_file, load_json_file
 
 
 class BaseAcq(acq.Acq, analysis="base"):
