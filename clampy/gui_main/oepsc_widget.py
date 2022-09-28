@@ -586,6 +586,9 @@ class oEPSCWidget(DragDropWidget):
         self.delete_lfp_button.setEnabled(False)
 
         self.threadpool = QThreadPool()
+
+        self.dlg = QMessageBox(self)
+
         self.set_width()
 
         # Lists
@@ -615,6 +618,11 @@ class oEPSCWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspect_acqs(self, list_view):
+        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
+            self.file_does_not_exist()
+            self.analyze_acq_button.setEnabled(True)
+            return None
+
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
@@ -699,6 +707,10 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_x_axis = XAxisCoord(x[0], x[1])
 
     def analyze(self):
+        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
+            self.file_does_not_exist()
+            return None
+
         on_x_set = False
         op_x_set = False
         lfp_x_set = False
@@ -723,8 +735,7 @@ class oEPSCWidget(DragDropWidget):
             )
         else:
             lfp_window = self.lfp_window_edit.currentText()
-        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
-            self.file_does_not_exist()
+
         self.pbar_number = len(self.oepsc_view.model().acq_dict) + len(
             self.lfp_view.model().acq_dict
         )
@@ -811,6 +822,10 @@ class oEPSCWidget(DragDropWidget):
         self.pbar.setFormat("Analysis finished")
 
     def acqSpinbox(self, h):
+        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         self.acquisition_number.setDisabled(True)
         self.oepsc_plot.clear()
@@ -968,6 +983,10 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
+        if not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
 
         x = self.last_lfp_point_clicked[0].pos()[0]
@@ -1006,6 +1025,10 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
+        if not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
 
         x = self.last_lfp_point_clicked[0].pos()[0]
@@ -1043,6 +1066,10 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
+        if not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
 
         x = self.last_lfp_point_clicked[0].pos()[0]
@@ -1071,6 +1098,10 @@ class oEPSCWidget(DragDropWidget):
         self.last_lfp_point_clicked = []
 
     def setoEPSCPeak(self):
+        if not self.oepsc_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         x = self.last_oepsc_point_clicked[0].pos()[0]
         y = self.last_oepsc_point_clicked[0].pos()[1]
@@ -1091,6 +1122,10 @@ class oEPSCWidget(DragDropWidget):
         self.last_oepsc_point_clicked = []
 
     def deleteoEPSC(self):
+        if not self.oepsc_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         self.oepsc_plot.clear()
         self.deleted_opesc_acqs[
@@ -1102,6 +1137,10 @@ class oEPSCWidget(DragDropWidget):
         self.oepsc_acqs_deleted += 1
 
     def deleteLFP(self):
+        if not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         self.lfp_plot.clear()
         self.deleted_lfp_acqs[str(self.acquisition_number.text())] = self.lfp_acq_dict[
@@ -1112,13 +1151,11 @@ class oEPSCWidget(DragDropWidget):
         del self.lfp_acq_dict[str(self.acquisition_number.text())]
         self.lfp_acqs_deleted += 1
 
-    def file_does_not_exist(self):
-        self.dlg = QMessageBox(self)
-        self.dlg.setWindowTitle("Error")
-        self.dlg.setText("File does not exist")
-        self.dlg.exec()
-
     def final_analysis(self):
+        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         if self.final_data is not None:
             del self.final_data
@@ -1137,6 +1174,10 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button.setEnabled(True)
 
     def save_as(self, save_filename):
+        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
         self.create_pref_dict()
@@ -1334,6 +1375,11 @@ class oEPSCWidget(DragDropWidget):
 
     def progress_finished(self, finished):
         self.pbar.setFormat(finished)
+
+    def file_does_not_exist(self):
+        self.dlg.setWindowTitle("Error")
+        self.dlg.setText("No files are loaded or analyzed")
+        self.dlg.exec()
 
 
 if __name__ == "__main__":

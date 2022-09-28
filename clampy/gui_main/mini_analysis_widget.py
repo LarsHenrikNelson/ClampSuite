@@ -62,15 +62,21 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab1_scroll.setWidgetResizable(True)
-
         self.tab1 = QWidget()
         self.tab1_scroll.setWidget(self.tab1)
+
         self.tab2 = QWidget()
+
+        self.tab3_scroll = QScrollArea()
+        self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.tab3_scroll.setWidgetResizable(True)
         self.tab3 = QWidget()
+        self.tab3_scroll.setWidget(self.tab3)
 
         self.tab_widget.addTab(self.tab1_scroll, "Setup")
         self.tab_widget.addTab(self.tab2, "Analysis")
-        self.tab_widget.addTab(self.tab3, "Final data")
+        self.tab_widget.addTab(self.tab3_scroll, "Final data")
 
         self.setStyleSheet(
             """QTabWidget::tab-bar
@@ -403,7 +409,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.plot_layout = QVBoxLayout()
         self.acq_layout = QHBoxLayout()
         self.mini_view_layout = QHBoxLayout()
-        self.mini_tab = QTabWidget()
+        # self.mini_tab = QTabWidget()
         self.acq_buttons = QFormLayout()
         self.acq_2_buttons = QVBoxLayout()
         self.mini_layout = QFormLayout()
@@ -412,7 +418,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.plot_layout.addLayout(self.acq_layout, 1)
         self.acq_layout.addLayout(self.acq_2_buttons, 0)
         self.acq_2_buttons.addLayout(self.acq_buttons, 0)
-        self.acq_layout.addWidget(self.mini_tab, 1)
+        # self.acq_layout.addWidget(self.mini_tab, 1)
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
@@ -495,8 +501,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setZValue(10)
         self.p1.setAutoVisible(y=True)
 
-        self.tab1 = self.p1
-        self.mini_tab.addTab(self.tab1, "Acq view")
+        # self.tab1 = self.p1
+        # self.mini_tab.addTab(self.tab1, "Acq view")
+        self.acq_layout.addWidget(self.p1, 1)
 
         self.mini_view_layout.addLayout(self.mini_layout, 0)
         self.mini_number_label = QLabel("Event")
@@ -560,19 +567,19 @@ class MiniAnalysisWidget(DragDropWidget):
         self.data_layout = QHBoxLayout()
         self.table_layout.addLayout(self.data_layout)
         self.raw_data_table = pg.TableWidget(sortable=False)
-        self.raw_data_table.setMinimumHeight(300)
+        self.raw_data_table.setMinimumSize(300, 300)
         self.final_table = pg.TableWidget(sortable=False)
-        self.final_table.setMinimumHeight(100)
+        self.final_table.setMinimumSize(300, 100)
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
-        self.ave_mini_plot.setMaximumSize(700, 400)
+        self.ave_mini_plot.setMinimumSize(300, 300)
         self.ave_mini_plot.setObjectName("Ave mini plot")
         self.data_layout.addWidget(self.raw_data_table, 0)
         self.final_data_layout = QVBoxLayout()
-        self.final_data_layout.addWidget(self.final_table, 1)
-        self.final_data_layout.addWidget(self.ave_mini_plot, 1)
-        self.data_layout.addLayout(self.final_data_layout, 1)
+        self.final_data_layout.addWidget(self.final_table, 10)
+        self.final_data_layout.addWidget(self.ave_mini_plot, 10)
+        self.data_layout.addLayout(self.final_data_layout, 10)
         # self.mw = MplWidget()
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
         self.stem_plot.setMinimumSize(300, 300)
@@ -659,7 +666,13 @@ class MiniAnalysisWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
+        combo_boxes = self.findChildren(QComboBox)
+        for i in combo_boxes:
+            i.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+            i.adjustSize()
+
     def inspect_acqs(self):
+
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
@@ -1563,7 +1576,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def file_does_not_exist(self):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("No files are loaded")
+        self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
     def point_to_close_to_beginning(self):

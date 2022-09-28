@@ -263,6 +263,8 @@ class currentClampWidget(DragDropWidget):
         self.pbar.setValue(0)
         self.v_layout.addWidget(self.pbar, 0)
 
+        self.dlg = QMessageBox(self)
+
         self.threadpool = QThreadPool()
 
         self.set_width()
@@ -278,6 +280,10 @@ class currentClampWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspect_acqs(self):
+        if not self.load_widget.model().acq_dict:
+            self.file_does_not_exist()
+            return None
+
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
@@ -290,6 +296,9 @@ class currentClampWidget(DragDropWidget):
             self.inspect_acqs()
 
     def del_selection(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
 
         # Deletes the selected acquisitions from the list
         indices = self.acq_view.selectedIndexes()
@@ -371,6 +380,10 @@ class currentClampWidget(DragDropWidget):
             i.deleteLater()
 
     def spinbox(self, h):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         self.plot_widget.clear()
         self.spike_plot.clear()
@@ -479,6 +492,10 @@ class currentClampWidget(DragDropWidget):
             pass
 
     def delete_acq(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = False
         self.recent_reject_acq = {}
         self.deleted_acqs[str(self.acquisition_number.text())] = self.acq_dict[
@@ -491,16 +508,28 @@ class currentClampWidget(DragDropWidget):
         self.plot_widget.clear()
 
     def reset_rejected_acqs(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = False
         self.acq_dict.update(self.deleted_acqs)
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
 
     def reset_recent_reject_acq(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = False
         self.acq_dict.update(self.recent_reject_acq)
 
     def final_analysis_button(self):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.need_to_save = True
         self.calculate_parameters.setEnabled(False)
         if self.final_obj is not None:
@@ -709,12 +738,15 @@ class currentClampWidget(DragDropWidget):
         # self.pref_dict["buttons"] = buttons_dict
 
     def file_does_not_exist(self):
-        self.dlg = QMessageBox(self)
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("File does not exist")
+        self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
     def save_as(self, save_filename):
+        if not self.acq_dict:
+            self.file_does_not_exist()
+            return None
+
         self.reset_button.setEnabled(False)
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")

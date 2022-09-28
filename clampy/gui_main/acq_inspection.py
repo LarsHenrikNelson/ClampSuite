@@ -7,20 +7,14 @@ Created on Sun Apr  3 12:20:28 2022
 """
 import numpy as np
 from PyQt5.QtWidgets import (
-    QPushButton,
     QHBoxLayout,
-    QComboBox,
     QWidget,
     QLabel,
     QFormLayout,
     QSpinBox,
 )
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QSize
-import pyqtgraph as pg
 
-from ..functions.utilities import load_scanimage_file
-from ..gui_widgets.qtwidgets import LineEdit, ListView, ListModel
+import pyqtgraph as pg
 
 
 class AcqInspectionWidget(QWidget):
