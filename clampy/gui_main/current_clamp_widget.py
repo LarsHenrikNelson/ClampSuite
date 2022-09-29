@@ -6,8 +6,6 @@ Last updated on Wed Feb 16 12:33:00 2021
 
 @author: LarsNelson
 """
-from math import log10, floor, isnan, nan
-
 import numpy as np
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (

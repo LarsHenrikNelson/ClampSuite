@@ -102,7 +102,6 @@ class PreferencesWidget(QWidget):
 
     def style_choice(self, text):
         palette = self.style_dict.get(text)
-        print(palette.ID)
         app = QApplication.instance()
         app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=palette))
 

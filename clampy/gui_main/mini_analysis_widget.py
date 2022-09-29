@@ -3,33 +3,36 @@ from glob import glob
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtWidgets import (
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QWidget,
-    QLabel,
-    QFormLayout,
-    QComboBox,
-    QSpinBox,
-    QCheckBox,
-    QProgressBar,
-    QMessageBox,
-    QTabWidget,
-    QScrollArea,
-    QDoubleSpinBox,
-    QSlider,
-    QToolButton,
-    QShortcut,
-)
+import pyqtgraph as pg
 from PyQt5.QtGui import QIntValidator, QKeySequence, QFont
 from PyQt5.QtCore import QThreadPool, Qt
-import pyqtgraph as pg
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QShortcut,
+    QSizePolicy,
+    QSlider,
+    QSpinBox,
+    QTabWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..acq.acq import Acq
 from .acq_inspection import AcqInspectionWidget
 from ..final_analysis.final_mini_analysis import FinalMiniAnalysis
+from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
@@ -38,7 +41,6 @@ from ..gui_widgets.qtwidgets import (
     ListView,
     DragDropWidget,
 )
-from ..functions.kde import create_kde
 from ..load_analysis.load_classes import LoadMiniSaveData
 
 
@@ -116,49 +118,42 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_widget.setAnalysisType(self.analysis_type)
         self.load_layout.addWidget(self.load_widget)
 
-        self.b_start_label = QLabel("Baseline start (ms)")
         self.b_start_edit = LineEdit()
         self.b_start_edit.setObjectName("b_start_edit")
         self.b_start_edit.setEnabled(True)
         self.b_start_edit.setText("0")
-        self.input_layout.addRow(self.b_start_label, self.b_start_edit)
+        self.input_layout.addRow("Baseline start (ms)", self.b_start_edit)
 
-        self.b_end_label = QLabel("Baseline end (ms)")
         self.b_end_edit = LineEdit()
         self.b_end_edit.setObjectName("b_end_edit")
         self.b_end_edit.setEnabled(True)
         self.b_end_edit.setText("80")
-        self.input_layout.addRow(self.b_end_label, self.b_end_edit)
+        self.input_layout.addRow("Baseline end (ms)", self.b_end_edit)
 
-        self.sample_rate_label = QLabel("Sample rate")
         self.sample_rate_edit = LineEdit()
         self.sample_rate_edit.setObjectName("sample_rate_edit")
         self.sample_rate_edit.setEnabled(True)
         self.sample_rate_edit.setText("10000")
-        self.input_layout.addRow(self.sample_rate_label, self.sample_rate_edit)
+        self.input_layout.addRow("Sample rate", self.sample_rate_edit)
 
-        self.rc_checkbox_label = QLabel("RC check")
-        self.rc_checkbox = QCheckBox(self)
+        self.rc_checkbox = QCheckBox()
         self.rc_checkbox.setObjectName("rc_checkbox")
         self.rc_checkbox.setChecked(True)
         self.rc_checkbox.setTristate(False)
-        self.input_layout.addRow(self.rc_checkbox_label, self.rc_checkbox)
+        self.input_layout.addRow("RC check", self.rc_checkbox)
 
-        self.rc_check_start = QLabel("RC Check Start (ms)")
         self.rc_check_start_edit = LineEdit()
         self.rc_check_start_edit.setEnabled(True)
         self.rc_check_start_edit.setObjectName("rc_check_start_edit")
         self.rc_check_start_edit.setText("10000")
-        self.input_layout.addRow(self.rc_check_start, self.rc_check_start_edit)
+        self.input_layout.addRow("RC check start (ms)", self.rc_check_start_edit)
 
-        self.rc_check_end = QLabel("RC Check End (ms)")
         self.rc_check_end_edit = LineEdit()
         self.rc_check_end_edit.setEnabled(True)
-        self.rc_check_end.setObjectName("rc_check_end_edit")
+        self.rc_check_end_edit.setObjectName("rc_check_end_edit")
         self.rc_check_end_edit.setText("10300")
-        self.input_layout.addRow(self.rc_check_end, self.rc_check_end_edit)
+        self.input_layout.addRow("RC check end (ms)", self.rc_check_end_edit)
 
-        self.filter_type_label = QLabel("Filter Type")
         filters = [
             "remez_2",
             "remez_1",
@@ -178,7 +173,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.filter_selection.addItems(filters)
         self.filter_selection.currentTextChanged.connect(self.setFiltProp)
         self.filter_selection.setObjectName("filter_selection")
-        self.input_layout.addRow(self.filter_type_label, self.filter_selection)
+        self.input_layout.addRow("Filter type", self.filter_selection)
 
         self.order_label = QLabel("Order")
         self.order_edit = LineEdit()
@@ -188,37 +183,32 @@ class MiniAnalysisWidget(DragDropWidget):
         self.order_edit.setText("201")
         self.input_layout.addRow(self.order_label, self.order_edit)
 
-        self.high_pass_label = QLabel("High-pass")
         self.high_pass_edit = LineEdit()
         self.high_pass_edit.setValidator(QIntValidator())
         self.high_pass_edit.setObjectName("high_pass_edit")
         self.high_pass_edit.setEnabled(True)
-        self.input_layout.addRow(self.high_pass_label, self.high_pass_edit)
+        self.input_layout.addRow("High pass", self.high_pass_edit)
 
-        self.high_width_label = QLabel("High-width")
         self.high_width_edit = LineEdit()
         self.high_width_edit.setValidator(QIntValidator())
         self.high_width_edit.setObjectName("high_width_edit")
         self.high_width_edit.setEnabled(True)
-        self.input_layout.addRow(self.high_width_label, self.high_width_edit)
+        self.input_layout.addRow("High width", self.high_width_edit)
 
-        self.low_pass_label = QLabel("Low-pass")
         self.low_pass_edit = LineEdit()
         self.low_pass_edit.setValidator(QIntValidator())
         self.low_pass_edit.setObjectName("low_pass_edit")
         self.low_pass_edit.setEnabled(True)
         self.low_pass_edit.setText("600")
-        self.input_layout.addRow(self.low_pass_label, self.low_pass_edit)
+        self.input_layout.addRow("Low pass", self.low_pass_edit)
 
-        self.low_width_label = QLabel("Low-width")
         self.low_width_edit = LineEdit()
         self.low_width_edit.setValidator(QIntValidator())
         self.low_width_edit.setObjectName("low_width_edit")
         self.low_width_edit.setEnabled(True)
         self.low_width_edit.setText("600")
-        self.input_layout.addRow(self.low_width_label, self.low_width_edit)
+        self.input_layout.addRow("Low width", self.low_width_edit)
 
-        self.window_label = QLabel("Window type")
         windows = [
             "hann",
             "hamming",
@@ -236,8 +226,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.window_edit.addItems(windows)
         self.window_edit.currentTextChanged.connect(self.windowChanged)
         self.window_edit.setObjectName("window_edit")
-        self.input_layout.addRow(self.window_label, self.window_edit)
-        self.beta_sigma_label = QLabel("Beta/Sigma")
+        self.input_layout.addRow("Window type", self.window_edit)
+
+        self.beta_sigma_label = QLabel("Beta")
         self.beta_sigma = QDoubleSpinBox()
         self.beta_sigma.setMinimumWidth(70)
         self.beta_sigma.setObjectName("beta_sigma")
@@ -260,129 +251,122 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters.setObjectName("calculate_parameters")
         self.calculate_parameters.clicked.connect(self.final_analysis)
 
-        self.reset_button = QPushButton("Reset Analysis")
+        self.reset_button = QPushButton("Reset analysis")
         self.input_layout.addRow(self.reset_button)
         self.reset_button.clicked.connect(self.reset)
 
         self.reset_button.setObjectName("reset_button")
 
-        self.sensitivity_label = QLabel("Sensitivity")
         self.sensitivity_edit = LineEdit()
         self.sensitivity_edit.setObjectName("sensitivity_edit")
         self.sensitivity_edit.setEnabled(True)
         self.sensitivity_edit.setText("4")
-        self.settings_layout.addRow(self.sensitivity_label, self.sensitivity_edit)
+        self.settings_layout.addRow("Sensitivity", self.sensitivity_edit)
 
-        self.amp_thresh_label = QLabel("Amplitude Threshold (pA)")
         self.amp_thresh_edit = LineEdit()
         self.amp_thresh_edit.setObjectName("amp_thresh_edit")
         self.amp_thresh_edit.setEnabled(True)
         self.amp_thresh_edit.setText("4")
-        self.settings_layout.addRow(self.amp_thresh_label, self.amp_thresh_edit)
+        self.settings_layout.addRow("Amplitude threshold (pA)", self.amp_thresh_edit)
 
-        self.mini_spacing_label = QLabel("Min mini spacing (ms)")
         self.mini_spacing_edit = LineEdit()
         self.mini_spacing_edit.setObjectName("mini_spacing_edit")
         self.mini_spacing_edit.setEnabled(True)
         self.mini_spacing_edit.setText("2")
-        self.settings_layout.addRow(self.mini_spacing_label, self.mini_spacing_edit)
+        self.settings_layout.addRow("Min mini spacing (ms)", self.mini_spacing_edit)
 
-        self.min_rise_time_label = QLabel("Min rise time (ms)")
         self.min_rise_time = LineEdit()
         self.min_rise_time.setObjectName("min_rise_time")
         self.min_rise_time.setEnabled(True)
         self.min_rise_time.setText("0.5")
-        self.settings_layout.addRow(self.min_rise_time_label, self.min_rise_time)
+        self.settings_layout.addRow("Min rise time (ms)", self.min_rise_time)
 
-        self.max_rise_time_label = QLabel("Max rise time (ms)")
         self.max_rise_time = LineEdit()
         self.max_rise_time.setObjectName("max_rise_time")
         self.max_rise_time.setEnabled(True)
         self.max_rise_time.setText("4")
-        self.settings_layout.addRow(self.max_rise_time_label, self.max_rise_time)
+        self.settings_layout.addRow("Max rise time (ms)", self.max_rise_time)
 
-        self.min_decay_label = QLabel("Min decay time (ms)")
         self.min_decay = LineEdit()
         self.min_decay.setObjectName("min_decay")
         self.min_decay.setEnabled(True)
         self.min_decay.setText("0.5")
-        self.settings_layout.addRow(self.min_decay_label, self.min_decay)
+        self.settings_layout.addRow("Min decay time (ms)", self.min_decay)
 
-        self.curve_fit_decay_label = QLabel("Curve fit decay")
+        self.decay_rise = QCheckBox()
+        self.decay_rise.setObjectName("decay_rise")
+        self.decay_rise.setChecked(True)
+        self.decay_rise.setTristate(False)
+        self.settings_layout.addRow("Decay slower than rise time", self.decay_rise)
+
         self.curve_fit_decay = QCheckBox(self)
         self.curve_fit_decay.setObjectName("curve_fit_decay")
         self.curve_fit_decay.setChecked(False)
         self.curve_fit_decay.setTristate(False)
-        self.settings_layout.addRow(self.curve_fit_decay_label, self.curve_fit_decay)
+        self.settings_layout.addRow("Curve fit decay", self.curve_fit_decay)
 
-        self.curve_fit_type_label = QLabel("Curve fit type")
         fit_types = ["exp", "db_exp"]
         self.curve_fit_edit = QComboBox(self)
         self.curve_fit_edit.addItems(fit_types)
         self.curve_fit_edit.setObjectName("curve_fit_type")
-        self.settings_layout.addRow(self.curve_fit_type_label, self.curve_fit_edit)
+        self.settings_layout.addRow("Curve fit type", self.curve_fit_edit)
 
-        self.invert_label = QLabel("Invert (For positive currents)")
         self.invert_checkbox = QCheckBox(self)
         self.invert_checkbox.setObjectName("invert_checkbox")
         self.invert_checkbox.setChecked(False)
         self.invert_checkbox.setTristate(False)
-        self.settings_layout.addRow(self.invert_label, self.invert_checkbox)
+        self.settings_layout.addRow(
+            "Invert (for positive currents)", self.invert_checkbox
+        )
 
-        self.decon_type_label = QLabel("Deconvolution type")
         self.decon_type_edit = QComboBox(self)
         decon_list = ["wiener", "fft"]
         self.decon_type_edit.addItems(decon_list)
         self.decon_type_edit.setObjectName("decon_type_edit")
-        self.settings_layout.addRow(self.decon_type_label, self.decon_type_edit)
+        self.settings_layout.addRow("Deconvolution type", self.decon_type_edit)
 
-        self.baseline_corr_label = QLabel("Baseline correction (experimental)")
         self.baseline_corr_choice = QCheckBox()
         self.baseline_corr_choice.setChecked(False)
         self.baseline_corr_choice.setTristate(False)
-        self.settings_layout.addRow(self.baseline_corr_label, self.baseline_corr_choice)
+        self.settings_layout.addRow(
+            "Baseline correction (experimental)", self.baseline_corr_choice
+        )
 
-        self.tau_1_label = QLabel("Rise tau (ms)")
         self.tau_1_edit = LineEdit()
         self.tau_1_edit.setObjectName("tau_1_edit")
         self.tau_1_edit.setEnabled(True)
         self.tau_1_edit.setText("0.3")
-        self.template_form.addRow(self.tau_1_label, self.tau_1_edit)
+        self.template_form.addRow("Rise tau (ms)", self.tau_1_edit)
 
-        self.tau_2_label = QLabel("Decay tau (ms)")
         self.tau_2_edit = LineEdit()
         self.tau_2_edit.setObjectName("tau_2_edit")
         self.tau_2_edit.setEnabled(True)
         self.tau_2_edit.setText("5")
-        self.template_form.addRow(self.tau_2_label, self.tau_2_edit)
+        self.template_form.addRow("Decay tau (ms)", self.tau_2_edit)
 
-        self.amplitude_label = QLabel("Amplitude (pA)")
         self.amplitude_edit = LineEdit()
         self.amplitude_edit.setObjectName("amplitude_edit")
         self.amplitude_edit.setEnabled(True)
         self.amplitude_edit.setText("-20")
-        self.template_form.addRow(self.amplitude_label, self.amplitude_edit)
+        self.template_form.addRow("Amplitude (pA)", self.amplitude_edit)
 
-        self.risepower_label = QLabel("Risepower")
         self.risepower_edit = LineEdit()
         self.risepower_edit.setObjectName("risepower_edit")
         self.risepower_edit.setEnabled(True)
         self.risepower_edit.setText("0.5")
-        self.template_form.addRow(self.risepower_label, self.risepower_edit)
+        self.template_form.addRow("Risepower", self.risepower_edit)
 
-        self.temp_length_label = QLabel("Template length (ms)")
         self.temp_length_edit = LineEdit()
         self.temp_length_edit.setObjectName("temp_length_edit")
         self.temp_length_edit.setEnabled(True)
         self.temp_length_edit.setText("30")
-        self.template_form.addRow(self.temp_length_label, self.temp_length_edit)
+        self.template_form.addRow("Template length", self.temp_length_edit)
 
-        self.spacer_label = QLabel("Spacer (ms)")
         self.spacer_edit = LineEdit()
         self.spacer_edit.setObjectName("spacer_edit")
         self.spacer_edit.setEnabled(True)
         self.spacer_edit.setText("2")
-        self.template_form.addRow(self.spacer_label, self.spacer_edit)
+        self.template_form.addRow("Spacer (ms)", self.spacer_edit)
 
         self.template_button = QPushButton("Create template")
         self.template_form.addRow(self.template_button)
@@ -410,7 +394,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_layout = QHBoxLayout()
         self.mini_view_layout = QHBoxLayout()
         # self.mini_tab = QTabWidget()
-        self.acq_buttons = QFormLayout()
+        self.acq_buttons = QGridLayout()
+        self.acq_buttons.setColumnStretch(1, 1)
+        self.acq_buttons.setColumnStretch(0, 1)
         self.acq_2_buttons = QVBoxLayout()
         self.mini_layout = QFormLayout()
         self.tab2.setLayout(self.plot_layout)
@@ -422,50 +408,69 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
+        self.acquisition_number_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
+        )
+        self.acq_buttons.addWidget(self.acquisition_number_label, 0, 0)
         self.acquisition_number = QSpinBox()
         self.acquisition_number.setKeyboardTracking(False)
         self.acquisition_number.setMinimumWidth(70)
-        self.acq_buttons.addRow(self.acquisition_number_label, self.acquisition_number)
+        self.acq_buttons.addWidget(self.acquisition_number, 0, 1)
         self.acquisition_number.valueChanged.connect(self.acq_spinbox)
 
         self.epoch_label = QLabel("Epoch")
+        self.epoch_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
+        )
+        self.acq_buttons.addWidget(self.epoch_label, 1, 0)
         self.epoch_edit = QLineEdit()
-        self.acq_buttons.addRow(self.epoch_label, self.epoch_edit)
+        self.acq_buttons.addWidget(self.epoch_edit, 1, 1)
 
         self.baseline_mean_label = QLabel("Baseline mean")
+        self.baseline_mean_label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
+        )
+        self.acq_buttons.addWidget(self.baseline_mean_label, 2, 0)
         self.baseline_mean_edit = QLineEdit()
-        self.acq_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
+        self.acq_buttons.addWidget(self.baseline_mean_edit, 2, 1)
 
         self.left_button = QToolButton()
+        self.left_button.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
+        )
         self.left_button.pressed.connect(self.leftbutton)
         self.left_button.setArrowType(Qt.LeftArrow)
         self.left_button.setAutoRepeat(True)
         self.left_button.setAutoRepeatInterval(10)
+        self.acq_buttons.addWidget(self.left_button, 3, 0)
         self.right_button = QToolButton()
+        self.right_button.setSizePolicy(
+            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
+        )
         self.right_button.pressed.connect(self.rightbutton)
         self.right_button.setArrowType(Qt.RightArrow)
         self.right_button.setAutoRepeat(True)
         self.right_button.setAutoRepeatInterval(10)
-        self.acq_buttons.addRow(self.left_button, self.right_button)
+        self.acq_buttons.addWidget(self.right_button, 3, 1)
 
         self.slider_sensitivity = QSlider()
         self.slider_sensitivity.setObjectName("mini plot slider")
-        self.acq_buttons.addRow(self.slider_sensitivity)
         self.slider_sensitivity.setOrientation(Qt.Horizontal)
         self.slider_sensitivity.setValue(20)
         self.slider_sensitivity.valueChanged.connect(self.slider_value)
+        self.acq_buttons.addWidget(self.slider_sensitivity, 4, 0, 1, 2)
 
         self.create_mini_button = QPushButton("Create new mini")
         self.create_mini_button.clicked.connect(self.create_mini)
-        self.acq_buttons.addRow(self.create_mini_button)
+        self.acq_buttons.addWidget(self.create_mini_button, 5, 0, 1, 2)
 
         self.delete_acq_button = QPushButton("Delete acquisition")
         self.delete_acq_button.clicked.connect(self.delete_acq)
-        self.acq_buttons.addRow(self.delete_acq_button)
+        self.acq_buttons.addWidget(self.delete_acq_button, 6, 0, 1, 2)
 
         self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
         self.reset_recent_acq_button.clicked.connect(self.reset_recent_reject_acq)
-        self.acq_buttons.addRow(self.reset_recent_acq_button)
+        self.acq_buttons.addWidget(self.reset_recent_acq_button, 7, 0, 1, 2)
 
         self.acq_2_buttons.addStretch(0)
 
@@ -660,7 +665,7 @@ class MiniAnalysisWidget(DragDropWidget):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if not isinstance(i.parentWidget(), QSpinBox):
-                i.setMinimumWidth(80)
+                i.setMinimumWidth(70)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
@@ -797,6 +802,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 min_rise_time=self.min_rise_time.toFloat(),
                 max_rise_time=self.max_rise_time.toFloat(),
                 min_decay_time=self.min_decay.toFloat(),
+                decay_rise=self.decay_rise.isChecked(),
                 invert=self.invert_checkbox.isChecked(),
                 decon_type=self.decon_type_edit.currentText(),
                 curve_fit_decay=self.curve_fit_decay.isChecked(),

@@ -4,22 +4,21 @@ from PyQt5.QtCore import Qt
 
 # from PyQt5.QtGui import QAction
 from PyQt5.QtWidgets import (
+    QAction,
     QComboBox,
     QFileDialog,
     QMainWindow,
-    QFormLayout,
-    QToolBar,
+    QPushButton,
     QStackedWidget,
-    QAction,
+    QStyle,
+    QToolBar,
 )
-import qdarkstyle
 
 from .current_clamp_widget import currentClampWidget
 from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
-from ..gui_widgets.qtwidgets import LineEdit
 from ..gui_widgets.utility_classes import YamlWorker
 
 
@@ -73,13 +72,17 @@ class MainWindow(QMainWindow):
         )
         self.widget_chooser.currentTextChanged.connect(self.set_widget)
 
-        # self.path_edit = LineEdit(expanduser("~"))
-        # self.path_edit.setEnabled(False)
-        # self.tool_bar.addWidget(self.path_edit)
+        self.save_button = QPushButton()
+        style = self.save_button.style()
+        icon = style.standardIcon(style.SP_DialogSaveButton)
+        self.save_button.setIcon(icon)
+        self.tool_bar.addWidget(self.save_button)
 
-        # self.button = QPushButton("Set Path")
-        # self.button.clicked.connect(self.set_path)
-        # self.tool_bar.addWidget(self.button)
+        self.open_button = QPushButton()
+        style = self.open_button.style()
+        icon = style.standardIcon(style.SP_DirOpenIcon)
+        self.open_button.setIcon(icon)
+        self.tool_bar.addWidget(self.open_button)
 
         self.preferences_widget = PreferencesWidget()
 
@@ -114,15 +117,6 @@ class MainWindow(QMainWindow):
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
-        # self.central_widget.currentWidget().releaseKeyboard()
-
-    # def set_path(self, click):
-    #     self.directory = str(QFileDialog.getExistingDirectory())
-    #     if len(self.directory) == 0:
-    #         os.chdir(expanduser("~"))
-    #     else:
-    #         self.path_edit.setText("{}".format(self.directory))
-    #         os.chdir(self.directory)
 
     def save_as(self):
         save_filename, _extension = QFileDialog.getSaveFileName(

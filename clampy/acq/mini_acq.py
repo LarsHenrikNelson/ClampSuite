@@ -31,6 +31,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         min_rise_time=0.5,
         max_rise_time=4,
         min_decay_time=0.5,
+        decay_rise=True,
         invert=False,
         decon_type="wiener",
         curve_fit_decay=False,
@@ -70,6 +71,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.min_rise_time = min_rise_time
         self.max_rise_time = max_rise_time
         self.min_decay_time = min_decay_time
+        self.decay_rise = decay_rise
         self.invert = invert
         self.curve_fit_decay = curve_fit_decay
         self.decon_type = decon_type
@@ -328,6 +330,22 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         #             event_number += 1
         #         else:
         #             pass
+
+    def check_event(self, event, prior_peak, events):
+        if np.isnan(event.event_peak_x()) or event.event_peak_x() in events:
+            return False
+        elif (
+            event.event_peak_x() - prior_peak > self.mini_spacing
+            and event.amplitude <= self.amp_threshold
+            and event.rise_time <= self.min_rise_time
+            and event.rise_time >= self.max_rise_time
+            and event.final_tau_x <= self.min_decay_time
+        ):
+            return False
+        elif self.decay_rise and event.final_tau_x <= event.rise_time:
+            return False
+        else:
+            return True
 
     def create_new_mini(self, x):
         """
