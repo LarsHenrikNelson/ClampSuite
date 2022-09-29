@@ -43,7 +43,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )
-        self.pulse_start = int(pulse_start * self.s_r_c)
+        self._pulse_start = int(pulse_start * self.s_r_c)
         self.pulse_end = int(pulse_end * self.s_r_c)
         self.ramp_start = int(ramp_start * self.s_r_c)
         self.ramp_end = int(ramp_end * self.s_r_c)
@@ -79,9 +79,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.baseline_mean = np.mean(
                 self.array[self.baseline_start : self.baseline_end]
             )
-            max_value = np.max(self.array[self.pulse_start : self.pulse_end])
+            max_value = np.max(self.array[self._pulse_start : self.pulse_end])
             self.start = int(
-                self.pulse_start + ((self.pulse_end - self.pulse_start) / 2)
+                self._pulse_start + ((self.pulse_end - self._pulse_start) / 2)
             )
             if max_value < self.threshold:
                 self.delta_v = (
@@ -182,13 +182,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 try:
                     self.rheo_x = (
                         np.argwhere(
-                            np.gradient(dv[self.pulse_start : peak_dv[0]]) < (0.3)
+                            np.gradient(dv[self._pulse_start : peak_dv[0]]) < (0.3)
                         )
-                        + self.pulse_start
+                        + self._pulse_start
                     )[-1][0]
                 except:
                     self.rheo_x = (
-                        np.argmin(dv[self.pulse_start : peak_dv[0]]) + self.pulse_start
+                        np.argmin(dv[self._pulse_start : peak_dv[0]])
+                        + self._pulse_start
                     )
 
                 # Find the spike_threshold using the timing found above
@@ -199,7 +200,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # returns an impossibly fast number is you take only divide by
                 # the start of the spike_threshold to the end of the pulse.
                 self.hertz_exact = len(self.peaks) / (
-                    (self.pulse_end - self.pulse_start) / self.sample_rate
+                    (self.pulse_end - self._pulse_start) / self.sample_rate
                 )
 
             elif self.ramp == "1":
@@ -207,8 +208,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # less than the threshold. It was the most robust way to find
                 # the spike threshold time.
                 self.rheo_x = (
-                    np.argwhere(dv[self.pulse_start : peak_dv[0]] < (8 * baseline_std))
-                    + self.pulse_start
+                    np.argwhere(dv[self._pulse_start : peak_dv[0]] < (8 * baseline_std))
+                    + self._pulse_start
                 )[-1][0]
                 self.spike_threshold = self.array[self.rheo_x]
                 self.hertz_exact = len(self.peaks) / (
@@ -315,7 +316,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def find_baseline_stability(self):
         if self.ramp == "0":
             self.baseline_stability = np.abs(
-                np.mean(self.array[: self.pulse_start])
+                np.mean(self.array[: self._pulse_start])
                 - np.mean(self.array[self.pulse_end :])
             )
         elif self.ramp == "1":
@@ -479,7 +480,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         if self.ramp == "0":
             x = (
-                int(((self.pulse_end - self.pulse_start) / 2) + self.pulse_start)
+                int(((self.pulse_end - self._pulse_start) / 2) + self._pulse_start)
                 / self.s_r_c
             )
             voltage_response = self.delta_v + self.baseline_mean
@@ -514,7 +515,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Ramp": self.ramp,
             "Epoch": self.epoch,
             "Baseline": self.baseline_mean,
-            "Pulse_start": self.pulse_start / self.s_r_c,
+            "Pulse_start": self._pulse_start / self.s_r_c,
             "Delta_v": self.delta_v,
             "Spike_threshold (mV)": self.spike_threshold,
             "Spike_threshold_time (ms)": self.spike_threshold_time(),
