@@ -25,11 +25,9 @@ class MiniEvent:
         sample_rate,
         curve_fit_decay=False,
         curve_fit_type="db_exp",
-        prior_peak=0,
     ):
         self.acq_number = acq_number
         self.event_pos = int(event_pos)
-        self.prior_peak = prior_peak
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
         self.curve_fit_decay = curve_fit_decay
@@ -56,7 +54,6 @@ class MiniEvent:
 
     # Fix the find peak to scipy find peaks
     def find_peak(self):
-        # np.where(self.x_array == self.prior_peak)
         peaks_1, _ = signal.find_peaks(
             -1 * self.event_array,
             prominence=4,

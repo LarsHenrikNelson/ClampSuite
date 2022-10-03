@@ -365,7 +365,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.spacer_edit = LineEdit()
         self.spacer_edit.setObjectName("spacer_edit")
         self.spacer_edit.setEnabled(True)
-        self.spacer_edit.setText("2")
+        self.spacer_edit.setText("1.5")
         self.template_form.addRow("Spacer (ms)", self.spacer_edit)
 
         self.template_button = QPushButton("Create template")
@@ -504,7 +504,6 @@ class MiniAnalysisWidget(DragDropWidget):
         # position.
         self.region.setRegion([0, 400])
         self.region.setZValue(10)
-        self.p1.setAutoVisible(y=True)
 
         # self.tab1 = self.p1
         # self.mini_tab.addTab(self.tab1, "Acq view")
@@ -786,10 +785,10 @@ class MiniAnalysisWidget(DragDropWidget):
                 baseline_end=self.b_end_edit.toInt(),
                 filter_type=self.filter_selection.currentText(),
                 order=self.order_edit.toInt(),
-                high_pass=self.high_pass_edit.toInt(),
-                high_width=self.high_width_edit.toInt(),
-                low_pass=self.low_pass_edit.toInt(),
-                low_width=self.low_width_edit.toInt(),
+                high_pass=self.high_pass_edit.toFloat(),
+                high_width=self.high_width_edit.toFloat(),
+                low_pass=self.low_pass_edit.toFloat(),
+                low_width=self.low_width_edit.toFloat(),
                 window=window,
                 polyorder=self.polyorder_edit.toInt(),
                 template=template,

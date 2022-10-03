@@ -5,16 +5,9 @@ from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
 
 from PyQt5.QtWidgets import (
     QLineEdit,
-    QSizePolicy,
     QWidget,
-    QVBoxLayout,
     QListView,
     QSpinBox,
-    QStyledItemDelegate,
-    QScrollArea,
-    QHBoxLayout,
-    QLabel,
-    QAbstractItemDelegate,
 )
 from PyQt5.QtCore import (
     QRunnable,
@@ -23,9 +16,6 @@ from PyQt5.QtCore import (
     pyqtSignal,
     Qt,
     QAbstractListModel,
-    QPointF,
-    QLineF,
-    QSize,
 )
 
 from .utility_classes import NumpyEncoder, YamlWorker

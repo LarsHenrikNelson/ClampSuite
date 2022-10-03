@@ -37,12 +37,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         curve_fit_decay=False,
         curve_fit_type="db_exp",
         baseline_corr=False,
-        temp_tau_1=3,
-        temp_tau_2=50,
-        temp_amplitude=-20,
-        temp_risepower=0.5,
-        temp_t_psc=np.arange(0, 300),
-        temp_spacer=20,
     ):
         # Set the attributes for the acquisition
         self.sample_rate = sample_rate
@@ -88,26 +82,53 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.decon_filt()
         self.create_events()
 
-    def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=0):
+    def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=1.5):
+        """Creates a template based on several factors.
+
+        Args:
+            amplitude (float): Amplitude of template
+            tau_1 (float): Rise tau (ms) of template
+            tau_2 (float): Decay tau (ms) of template
+            risepower (float): Risepower of template
+            t_psc (float): Length of time (ms) for template
+            spacer (int, optional): Delay (ms) until template starts. Defaults to 1.5.
+
+        Returns:
+            np.array: Numpy array of the template.
+        """
+        tau_1 = int(tau_1 * self.s_r_c)
+        tau_2 = int(tau_2 * self.s_r_c)
+        t_psc = int(t_psc * self.s_r_c)
+        spacer = int(spacer * self.s_r_c)
         template = np.zeros(len(t_psc) + spacer)
+        t_length = np.arange(0, t_psc)
         offset = len(template) - len(t_psc)
         Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
         y = (
             amplitude
             / Aprime
-            * ((1 - (np.exp(-t_psc / tau_1))) ** risepower * np.exp((-t_psc / tau_2)))
+            * (
+                (1 - (np.exp(-t_length / tau_1))) ** risepower
+                * np.exp((-t_length / tau_2))
+            )
         )
         template[offset:] = y
         return template
 
     def create_template(self, template):
+        """Creates the template use for deconvolution. Only used internally
+        if there is not template provided.
+
+        Args:
+            template (np.array): Previously created template.
+        """
         if template is None:
-            tau_1 = 3
-            tau_2 = 50
+            tau_1 = 0.3
+            tau_2 = 5
             amplitude = -20
             risepower = 0.5
-            t_psc = np.arange(0, 300)
-            spacer = 20
+            t_psc = 30
+            spacer = 1.5
             self.template = self.tm_psp(
                 amplitude, tau_1, tau_2, risepower, t_psc, spacer=spacer
             )
@@ -115,6 +136,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.template = template
 
     def create_mespc_array(self):
+        """The function creates the mEPSC array by removing the RC
+        check if there is one. The functions runs before the array
+        is filtered.
+        """
         if self.rc_check is False:
             pass
         elif self.rc_check is True:
@@ -130,10 +155,16 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.x_array = np.arange(len(self.baselined_array)) / (self.s_r_c)
 
     def set_array(self):
+        """Used to reduce the memory load of the class
+        since the filtered array is not needed.
+        """
         self.final_array = self.filtered_array
         del self.filtered_array
 
     def set_sign(self):
+        """Changes the sign of an array if the events are outward
+        (i.e. positive) events.
+        """
         if not self.invert:
             self.final_array = self.final_array * 1
         else:
@@ -150,13 +181,18 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.baselined_array = self.baselined_array - baseline
 
     def deconvolution(self, lambd=4):
-        """
-        The Wiener deconvolution equation can be found on GitHub from pbmanis
+        """The Wiener deconvolution equation can be found on GitHub from pbmanis
         and danstowell. The basic idea behind this function is deconvolution
         or divsion in the frequency domain. I have found that changing lambd
         from 2-10 does not seem to affect the performance of the Wiener
         equation. The fft deconvolution type is the most simple and default
-        choice.
+        choice and is also what the original paper used.
+
+        Pernía-Andrade, A. J. et al. A Deconvolution-Based Method with High
+        Sensitivity and Temporal Resolution for Detection of Spontaneous
+        Synaptic Currents In Vitro and In Vivo. Biophysical Journal 103,
+        1429–1439 (2012).
+
 
         Parameters
         ----------
@@ -173,44 +209,39 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             Time domain deconvolved signal that is returned for filtering.
 
         """
-
+        # The kernel needs to be the same length as the array that is being
+        # deconvolved.
         kernel = np.hstack(
             (self.template, np.zeros(len(self.final_array) - len(self.template)))
         )
         H = fft(kernel)
 
+        # Choose the method for finding minis. FFT and Wiener are almost identical.
+        # Convolution is similar to template fitting (correlation).
         if self.decon_type == "fft":
             deconvolved_array = np.real(ifft(fft(self.final_array) / H))
         elif self.decon_type == "wiener":
             deconvolved_array = np.real(
                 ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
             )
-        else:
+        elif self.decon_type == "convolution":
             deconvolved_array = signal.convolve(
                 self.final_array, self.template, mode="same"
             )
         return deconvolved_array
 
     def decon_filt(self):
+        """This function takes the deconvolved array, filters it and finds the
+        peaks which are where mini events are located.
         """
-        This function takes the deconvolved array, filters it and finds the
-        peaks of the which is where mini events are located.
 
-        Parameters
-        ----------
-        array : Filtered signal in a numpy array form.There are edge effects if
-            an unfiltered signal is used.
-        template : A representative PSC or PSP. Can be an averaged or synthetic
-            template. The template works best when there is a small array of
-            before the mini onset.
-
-        Returns
-        -------
-        None.
-
-        """
+        # Get the deconvolved array and baseline it.
         deconvolved_array = self.deconvolution()
         baselined_decon_array = deconvolved_array - np.mean(deconvolved_array[0:800])
+
+        # Filter the deconvolved array if fft or wiener method is used.
+        # The filter settings are fixed since there seems to be a small
+        # window for an acceptable filter.
         if self.decon_type == "fft" or self.decon_type == "wiener":
             filt = signal.firwin2(
                 351,
@@ -222,42 +253,64 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             y = signal.filtfilt(filt, 1.0, baselined_decon_array)
             self.final_decon_array = y
         else:
+            # If convolution is used there is no need to filter.
             self.final_decon_array = deconvolved_array
-        mu, std = stats.norm.fit(self.final_decon_array)
-        peaks, _ = signal.find_peaks(
-            self.final_decon_array - mu, height=self.sensitivity * abs(std)
+
+        # This is not the method from the original paper but it works a
+        # lot better. The original paper used 4*std of the deconvolved array.
+        # The problem with that method is that interneurons needs a
+        # different sensitivity setting. I wanted to keep the settings as
+        # consistent as possible between different cell types.
+
+        # Get the top and bottom 2.5% cutoff.
+        bottom, top = np.percentile(self.final_decon_array, [2.5, 97.5])
+
+        # Return the middle values.
+        middle = np.hstack(
+            self.final_decon_array[
+                np.argwhere(
+                    (self.final_decon_array > bottom) & (self.final_decon_array < top)
+                )
+            ]
         )
+        # Calculate the mean and rms.
+        mu = np.mean(middle)
+        rms = np.sqrt(np.mean(np.square(middle - mu)))
+
+        # Find the events.
+        peaks, _ = signal.find_peaks(
+            self.final_decon_array - mu,
+            height=self.sensitivity * (rms),
+            distance=self.mini_spacing * self.s_r_c,
+        )
+
+        # There was an issue with the peaks list being a numpy array
+        # so it is converted to a python list.
         self.events = peaks.tolist()
 
     def create_events(self):
-        """
-        This functions creates the events based on the list of peaks found
+        """This functions creates the events based on the list of peaks found
         from the deconvolution. Events less than 20 ms before the end of
-        the acquisitions are not counted. Events get screened out based on the
-        amplitude, min_rise_time, and min_decay_time passed by the
-        experimenter.
-
-        Returns
-        -------
-        None.
-
+        the acquisitions are not counted. Events get screened out based on
+        the experimenters settings.
         """
+        # Create the lists to store values need for analysis.
         self.postsynaptic_events = []
         self.final_events = []
         event_number = 0
         event_time = []
-        if len(self.events) == 0:
-            pass
+
+        # The for loop won't run if there are no events.
+        # So there is no need to catch instances where
+        # there are no events.
+
+        # if len(self.events) == 0:
+        #     return None
         for peak in self.events:
             if len(self.final_array) - peak < 20 * self.s_r_c:
                 pass
             else:
-                if event_number > 0:
-                    prior_peak = self.postsynaptic_events[
-                        event_number - 1
-                    ]._event_peak_x
-                else:
-                    prior_peak = 0
+                # Create the mini class then analyze.
                 event = MiniEvent()
                 event.analyze(
                     acq_number=self.acq_number,
@@ -266,42 +319,52 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     sample_rate=self.sample_rate,
                     curve_fit_decay=self.curve_fit_decay,
                     curve_fit_type=self.curve_fit_type,
-                    prior_peak=prior_peak,
                 )
-                if np.isnan(event.event_peak_x()) or event.event_peak_x() in event_time:
-                    pass
+
+                # Screen out methods using the function.
+                # See the function below for further details.
+                if self.check_event(event, event_time):
+                    self.postsynaptic_events += [event]
+                    self.final_events += [peak]
+                    event_time += [event.event_peak_x()]
+                    event_number += 1
                 else:
-                    if event_number > 0:
-                        if (
-                            event.event_peak_x()
-                            - self.postsynaptic_events[-1].event_peak_x()
-                            > self.mini_spacing
-                            and event.amplitude >= self.amp_threshold
-                            and event.rise_time >= self.min_rise_time
-                            and event.rise_time <= self.max_rise_time
-                            and event.final_tau_x >= self.min_decay_time
-                            and event.final_tau_x >= event.rise_time
-                        ):
-                            self.postsynaptic_events += [event]
-                            self.final_events += [peak]
-                            event_time += [event.event_peak_x()]
-                            event_number += 1
-                        else:
-                            pass
-                    else:
-                        if (
-                            event.amplitude > self.amp_threshold
-                            and event.rise_time > self.min_rise_time
-                            and event.rise_time < self.max_rise_time
-                            and event.final_tau_x > self.min_decay_time
-                            and event.final_tau_x > event.rise_time
-                        ):
-                            self.postsynaptic_events.append(event)
-                            self.final_events += [peak]
-                            event_time += [event.event_peak_x]
-                            event_number += 1
-                        else:
-                            pass
+                    pass
+
+                # if np.isnan(event.event_peak_x()) or event.event_peak_x() in event_time:
+                #     pass
+                # else:
+                #     if event_number > 0:
+                #         if (
+                #             event.event_peak_x()
+                #             - self.postsynaptic_events[-1].event_peak_x()
+                #             > self.mini_spacing
+                #             and event.amplitude >= self.amp_threshold
+                #             and event.rise_time >= self.min_rise_time
+                #             and event.rise_time <= self.max_rise_time
+                #             and event.final_tau_x >= self.min_decay_time
+                #             and event.final_tau_x >= event.rise_time
+                #         ):
+                #             self.postsynaptic_events += [event]
+                #             self.final_events += [peak]
+                #             event_time += [event.event_peak_x()]
+                #             event_number += 1
+                #         else:
+                #             pass
+                #     else:
+                #         if (
+                #             event.amplitude > self.amp_threshold
+                #             and event.rise_time > self.min_rise_time
+                #             and event.rise_time < self.max_rise_time
+                #             and event.final_tau_x > self.min_decay_time
+                #             and event.final_tau_x > event.rise_time
+                #         ):
+                #             self.postsynaptic_events.append(event)
+                #             self.final_events += [peak]
+                #             event_time += [event.event_peak_x]
+                #             event_number += 1
+                #         else:
+                #             pass
         # else:
         #     peak = self.events[0]
         #     event = MiniEvent()
@@ -331,15 +394,40 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         #         else:
         #             pass
 
-    def check_event(self, event, prior_peak, events):
-        if np.isnan(event.event_peak_x()) or event.event_peak_x() in events:
+    def check_event(self, event, events):
+        """The function is used to screen out events based
+        on several values set by the experimenter.
+
+        Args:
+            event (MiniEvent): An analyzed MiniEvent
+            events (list): List of previous events
+
+        Returns:
+            Bool: Boolean value can be used to determine if
+            the event qualifies for inclusion in final events.
+        """
+
+        # Retrieve the peak of the previous event.
+        if len(events) > 0:
+            prior_peak = events[-1]
+        else:
+            prior_peak = 0
+
+        # Retrieve the peak to compare to values set
+        # by the experimenter.
+        event_peak = event.event_peak_x()
+
+        # The function checks, in order of importance, the
+        # qualities of the event.
+        if np.isnan(event_peak) or event_peak in events:
             return False
         elif (
-            event.event_peak_x() - prior_peak > self.mini_spacing
-            and event.amplitude <= self.amp_threshold
-            and event.rise_time <= self.min_rise_time
-            and event.rise_time >= self.max_rise_time
-            and event.final_tau_x <= self.min_decay_time
+            event_peak - prior_peak < self.mini_spacing
+            or event.amplitude <= self.amp_threshold
+            or event.rise_time <= self.min_rise_time
+            or event.rise_time >= self.max_rise_time
+            or event.final_tau_x <= self.min_decay_time
+            or event.event_start_x() > event_peak
         ):
             return False
         elif self.decay_rise and event.final_tau_x <= event.rise_time:
@@ -348,12 +436,24 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             return True
 
     def create_new_mini(self, x):
+        """Creates a new mini event based on the time
+        of the event passed to the function. The new
+        event is not screened like the automatically
+        created events since creating new events is up
+        to the discresion of the experimenter.
+
+        Args:
+            x (float): Time of event
+
+        Returns:
+            Bool: The return value is used to determine
+            whether the event is valid.
         """
-        Creates a new mini event based on the x position.
-        The x position needs to be in samples not time.
-        """
-        # Convert from time to samples
+        # Convert from time to samples simce most people
+        # will likely think in time and not samples.
         x = int(x * self.s_r_c)
+
+        # Create new event instance and analyzed.
         event = MiniEvent()
         event.analyze(
             acq_number=self.acq_number,
@@ -466,6 +566,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.postsynaptic_events = "saved"
 
     def create_postsynaptic_events(self):
+        """
+        This function is used to create postsynaptic events from a
+        saved JSON file since mini events are load as a dictionary.
+        """
         self.postsynaptic_events = []
         for i in self.saved_events_dict:
             h = MiniEvent()

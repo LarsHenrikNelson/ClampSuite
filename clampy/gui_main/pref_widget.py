@@ -7,18 +7,14 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     QApplication,
     QLayout,
-    QVBoxLayout,
-    QTabWidget,
     QListWidget,
     QColorDialog,
     QStackedLayout,
-    QGraphicsView,
     QGridLayout,
 )
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-import pyqtgraph as pg
 import qdarkstyle
 
 

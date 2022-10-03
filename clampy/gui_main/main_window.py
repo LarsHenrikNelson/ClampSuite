@@ -5,12 +5,12 @@ from PyQt5.QtCore import Qt
 # from PyQt5.QtGui import QAction
 from PyQt5.QtWidgets import (
     QAction,
+    QApplication,
     QComboBox,
     QFileDialog,
     QMainWindow,
     QPushButton,
     QStackedWidget,
-    QStyle,
     QToolBar,
 )
 
@@ -85,8 +85,6 @@ class MainWindow(QMainWindow):
         self.tool_bar.addWidget(self.open_button)
 
         self.preferences_widget = PreferencesWidget()
-
-        # self.directory = str(os.chdir(expanduser("~")))
 
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
