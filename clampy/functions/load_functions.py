@@ -146,9 +146,7 @@ def load_json_file(obj, path: PurePath or str):
             if key == "slope" or key == "slope_x":
                 key = "_" + key
             if isinstance(x, list):
-                if key in ["postsynaptic_events", "final_events"]:
-                    pass
-                else:
+                if key not in ["postsynaptic_events", "final_events"]:
                     x = np.array(x)
             setattr(obj, key, x)
     if obj.sample_rate_correction is not None:
