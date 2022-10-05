@@ -100,9 +100,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         tau_2 = int(tau_2 * self.s_r_c)
         t_psc = int(t_psc * self.s_r_c)
         spacer = int(spacer * self.s_r_c)
-        template = np.zeros(len(t_psc) + spacer)
+        template = np.zeros(t_psc + spacer)
         t_length = np.arange(0, t_psc)
-        offset = len(template) - len(t_psc)
+        offset = len(template) - t_psc
         Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
         y = (
             amplitude
