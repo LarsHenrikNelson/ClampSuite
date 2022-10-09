@@ -261,7 +261,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.sensitivity_edit.setObjectName("sensitivity_edit")
         self.sensitivity_edit.setEnabled(True)
         self.sensitivity_edit.setText("4")
-        self.settings_layout.addRow("Sensitivity", self.sensitivity_edit)
+        self.settings_layout.addRow("Deconvolution threshold", self.sensitivity_edit)
 
         self.amp_thresh_edit = LineEdit()
         self.amp_thresh_edit.setObjectName("amp_thresh_edit")
