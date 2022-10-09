@@ -573,11 +573,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.raw_data_table = pg.TableWidget(sortable=False)
         self.raw_data_table.setMinimumSize(300, 300)
         self.final_table = pg.TableWidget(sortable=False)
-        self.final_table.setMinimumSize(300, 100)
+        self.final_table.setMinimumSize(400, 200)
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
-        self.ave_mini_plot.setMinimumSize(300, 300)
+        self.ave_mini_plot.setMinimumSize(400, 300)
         self.ave_mini_plot.setObjectName("Ave mini plot")
         self.data_layout.addWidget(self.raw_data_table, 0)
         self.final_data_layout = QVBoxLayout()
