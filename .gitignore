@@ -7,3 +7,5 @@ final_test_doct.py
 ._env.yml
 ephysanalysis/acq/._acq_manager.py
 dev_env.yml
+dist/
+clampy.egg-info/
