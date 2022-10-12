@@ -1668,6 +1668,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.need_to_save = False
 
     def create_pref_dict(self):
+        self.pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
         for i in line_edits:
