@@ -5,8 +5,6 @@ Created on Sun Apr  3 12:20:28 2022
 
 @author: Lars
 """
-from copy import deepcopy
-
 from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,
@@ -15,7 +13,6 @@ from PyQt5.QtWidgets import (
     QLabel,
     QFormLayout,
     QSpinBox,
-    QVBoxLayout,
     QDoubleSpinBox,
 )
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
@@ -23,8 +20,7 @@ from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
 
-from ..acq.acq import Acq
-from ..gui_widgets.qtwidgets import LineEdit, ListView, ListModel
+from ..gui_widgets.qtwidgets import LineEdit, ListView
 
 
 class filterWidget(QWidget):

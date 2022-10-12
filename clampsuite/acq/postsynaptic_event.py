@@ -354,7 +354,7 @@ class MiniEvent:
                 value = np.array(item)
             else:
                 value = item
-            if key in ("event_tau_x", "event_peak_x", "event_start_x"):
+            if key in {"event_tau_x", "event_peak_x", "event_start_x"}:
                 key = "_" + key
             if key not in (
                 "mini_plot_x",
@@ -368,3 +368,6 @@ class MiniEvent:
             self.s_r_c = self.sample_rate_correction
 
         self.create_event_array(final_array)
+
+        if "_event_tau_x" or "event_tau_x" not in event_dict.keys():
+            self.est_decay()

@@ -157,15 +157,3 @@ def load_json_file(obj, path: PurePath or str):
         obj.event_arrays = [
             i.event_array - i.event_start_y for i in obj.postsynaptic_events
         ]
-
-
-def round_sig(x, sig=2):
-    if np.isnan(x):
-        return np.nan
-    elif x == 0:
-        return 0
-    elif x != 0 or not np.isnan(x):
-        if np.isnan(floor(log10(abs(x)))):
-            return round(x, 0)
-        else:
-            return round(x, sig - int(floor(log10(abs(x)))) - 1)
