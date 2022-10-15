@@ -3,8 +3,8 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "clampy"
-version = "0.1.0"
+name = "clampsuite"
+version = "0.0.2"
 description = "Slice electrophysiology analysis package for analyzing mEPSCs, o/eEPSCs and standard current clamp data."
 readme = "README.md"
 authors = [{ name = "Lars Henrik Nelson", email = "larshnelson@protonmail.com" }]
@@ -15,7 +15,7 @@ dependencies = [
     "openpyxl>=3.0.10",
     "pandas>=1.4.4",
     "patsy>=0.5.2",
-    "pyqt>=5.15.7",
+    "PyQt5>=5.15.7",
     "pyqtgraph>=0.13.1",
     "pyyaml>=6.0",
     "qdarkstyle>=3.0",

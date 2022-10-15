@@ -608,6 +608,8 @@ class oEPSCWidget(DragDropWidget):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             i.setMinimumWidth(60)
+            if not isinstance(i.parentWidget(), QSpinBox):
+                i.setMinimumWidth(70)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
