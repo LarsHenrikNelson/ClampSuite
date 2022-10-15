@@ -27,6 +27,14 @@ dependencies = [
 requires-python = ">=3.10"
 license = {text = 'GNU General Public License v3 (GPLv3)'}
 
+[project.optional-dependencies]
+plotting = [
+    "matplotlib",
+]
+data = [
+    "h5py"
+]
+
 [project.urls]
 Homepage = "https://github.com/LarsHenrikNelson/ClamPy"
 
