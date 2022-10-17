@@ -504,7 +504,7 @@ class oEPSCWidget(DragDropWidget):
         self.o_info_layout.addRow(
             self.acquisition_number_label, self.acquisition_number
         )
-        self.acquisition_number.setEnabled(False)
+        self.acquisition_number.setEnabled(True)
 
         self.epoch_label = QLabel("Epoch")
         self.epoch_number = QLineEdit()
@@ -514,7 +514,7 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button = QPushButton("Calculate parameters")
         self.o_info_layout.addRow(self.final_analysis_button)
         self.final_analysis_button.clicked.connect(self.final_analysis)
-        self.final_analysis_button.setEnabled(False)
+        self.final_analysis_button.setEnabled(True)
 
         self.oepsc_amp_label = QLabel("Amplitude")
         self.oepsc_amp_edit = QLineEdit()
@@ -539,12 +539,12 @@ class oEPSCWidget(DragDropWidget):
         self.set_peak_button = QPushButton("Set point as peak")
         self.set_peak_button.clicked.connect(self.setoEPSCPeak)
         self.o_info_layout.addRow(self.set_peak_button)
-        self.set_peak_button.setEnabled(False)
+        self.set_peak_button.setEnabled(True)
 
         self.delete_oepsc_button = QPushButton("Delete oEPSC")
         self.delete_oepsc_button.clicked.connect(self.deleteoEPSC)
         self.o_info_layout.addRow(self.delete_oepsc_button)
-        self.delete_oepsc_button.setEnabled(False)
+        self.delete_oepsc_button.setEnabled(True)
 
         self.lfp_fv_label = QLabel("Fiber volley")
         self.lfp_fv_edit = QLineEdit()
@@ -564,22 +564,22 @@ class oEPSCWidget(DragDropWidget):
         self.set_fv_button = QPushButton("Set point as fiber volley")
         self.set_fv_button.clicked.connect(self.setPointAsFV)
         self.lfp_info_layout.addRow(self.set_fv_button)
-        self.set_fv_button.setEnabled(False)
+        self.set_fv_button.setEnabled(True)
 
         self.set_slope_start_btn = QPushButton("Set point as slope start")
         self.set_slope_start_btn.clicked.connect(self.setPointAsSlopeStart)
         self.lfp_info_layout.addRow(self.set_slope_start_btn)
-        self.set_slope_start_btn.setEnabled(False)
+        self.set_slope_start_btn.setEnabled(True)
 
         self.set_fp_button = QPushButton("Set point as field potential")
         self.set_fp_button.clicked.connect(self.setPointAsFP)
         self.lfp_info_layout.addRow(self.set_fp_button)
-        self.set_fp_button.setEnabled(False)
+        self.set_fp_button.setEnabled(True)
 
         self.delete_lfp_button = QPushButton("Delete LFP")
         self.delete_lfp_button.clicked.connect(self.deleteLFP)
         self.lfp_info_layout.addRow(self.delete_lfp_button)
-        self.delete_lfp_button.setEnabled(False)
+        self.delete_lfp_button.setEnabled(True)
 
         self.threadpool = QThreadPool()
 
@@ -934,13 +934,6 @@ class oEPSCWidget(DragDropWidget):
         self.deleted_lfp_acqs = {}
         self.deleted_opesc_acqs = {}
         self.calc_param_clicked = False
-        self.analyze_acq_button.setEnabled(True)
-        self.lfp_info_layout.setEnabled(False)
-        self.delete_oepsc_button.setEnabled(False)
-        self.acquisition_number.setEnabled(False)
-        self.final_analysis_button.setEnabled(False)
-        self.set_fv_button.setEnabled(False)
-        self.set_fp_button.setEnabled(False)
         self.final_data = None
         if self.inspection_widget is not None:
             self.inspection_widget.removeFileList()
