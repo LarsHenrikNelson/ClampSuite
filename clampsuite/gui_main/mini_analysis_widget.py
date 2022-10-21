@@ -4,6 +4,8 @@ from glob import glob
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
 from PyQt5.QtGui import QIntValidator, QKeySequence, QFont
 from PyQt5.QtCore import QThreadPool, Qt
 from PyQt5.QtWidgets import (
@@ -68,6 +70,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1_scroll.setWidget(self.tab1)
 
         self.tab2 = QWidget()
+        self.dock_area2 = DockArea()
 
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -77,7 +80,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab3_scroll.setWidget(self.tab3)
 
         self.tab_widget.addTab(self.tab1_scroll, "Setup")
-        self.tab_widget.addTab(self.tab2, "Analysis")
+        self.tab_widget.addTab(self.dock_area2, "Analysis")
         self.tab_widget.addTab(self.tab3_scroll, "Final data")
 
         self.setStyleSheet(
@@ -390,21 +393,30 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_sel_button.clicked.connect(self.del_selection)
 
         # Tab 2 layouts
-        self.plot_layout = QVBoxLayout()
+        self.d1 = Dock("Overview")
+        self.d2 = Dock("Mini")
+        self.d3 = Dock("Acq view")
+        self.d1.hideTitleBar()
+        self.d2.hideTitleBar()
+        self.d3.hideTitleBar()
+        self.dock_area2.addDock(self.d1, "left")
+        self.dock_area2.addDock(self.d2, "right")
+        self.dock_area2.addDock(self.d3, "bottom")
+        self.acq_widget = QWidget()
         self.acq_layout = QHBoxLayout()
+        self.acq_widget.setLayout(self.acq_layout)
+        self.d3.addWidget(self.acq_widget)
+        self.mini_view_widget = QWidget()
         self.mini_view_layout = QHBoxLayout()
-        # self.mini_tab = QTabWidget()
+        self.mini_view_widget.setLayout(self.mini_view_layout)
+        self.d2.addWidget(self.mini_view_widget)
         self.acq_buttons = QGridLayout()
         self.acq_buttons.setColumnStretch(1, 1)
         self.acq_buttons.setColumnStretch(0, 1)
         self.acq_2_buttons = QVBoxLayout()
         self.mini_layout = QFormLayout()
-        self.tab2.setLayout(self.plot_layout)
-        self.plot_layout.addLayout(self.mini_view_layout, 1)
-        self.plot_layout.addLayout(self.acq_layout, 1)
         self.acq_layout.addLayout(self.acq_2_buttons, 0)
         self.acq_2_buttons.addLayout(self.acq_buttons, 0)
-        # self.acq_layout.addWidget(self.mini_tab, 1)
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
@@ -491,7 +503,7 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.p2.setObjectName("p2")
-        self.mini_view_layout.addWidget(self.p2, 10)
+        self.d1.addWidget(self.p2)
         self.p2.setMinimumWidth(600)
 
         self.region = pg.LinearRegionItem()
@@ -505,8 +517,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setRegion([0, 400])
         self.region.setZValue(10)
 
-        # self.tab1 = self.p1
-        # self.mini_tab.addTab(self.tab1, "Acq view")
         self.acq_layout.addWidget(self.p1, 1)
 
         self.mini_view_layout.addLayout(self.mini_layout, 0)
@@ -563,7 +573,7 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         self.mini_view_plot.setMinimumWidth(300)
         self.mini_view_plot.setObjectName("Mini view plot")
-        self.mini_view_layout.addWidget(self.mini_view_plot, 0)
+        self.mini_view_layout.addWidget(self.mini_view_plot, 1)
 
         # Tab 3 layouts and setup
         self.table_layout = QVBoxLayout()
