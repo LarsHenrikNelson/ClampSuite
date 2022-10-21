@@ -3,18 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ClampSuite's documentation!
-======================================
+ClampSuite: a python package for analyzing slice electrophysiology data.
+========================================================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+**ClampSuite** is a Python package to analyze to slice electrophysiology data. ClampSuite
+can be used to analyze data through the GUI and import previously analyzed data through python
+scripts for creating figures.
 
-
-
-Indices and tables
-==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+  
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Basics:
+
+   installation
+   gui

@@ -2,20 +2,24 @@ Installation
 ----------------
 Anaconda
 ~~~~~~~~
-1. Install an `Anaconda <https://www.anaconda.com/download/>`_ distribution of Python and your operating system. Note you might need to use an anaconda prompt if you did not add anaconda to the path.
-2. Open an anaconda prompt if you are on Windows, otherwise open terminal and if (base) is on the commandline then anaconda conda is ready to use.
-3. Create a new environment with ``conda create -n clampsuite python=3.10``.
-4. To activate this new environment, run ``conda activate clampsuite``.
-5. To install run ``pip install clampsuite``.
-6. Install optional depedencies if needed.
-7. Now run ``python -m clampsuite`` and you're all set.
-8. Running the command ``clampsuite --version`` in the terminal will print the install version of clampsuite.
+1. Install an `Anaconda <https://www.anaconda.com/download/>`_ distribution of Python and your operating system. Note you might need to use an 
+2. anaconda prompt if you did not add anaconda to the path.
+3. Open an anaconda prompt if you are on Windows, otherwise open terminal and if (base) is on the commandline then anaconda conda is ready to use.
+4. Anaconda has an experimental option for `pip interoperability <https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html>`_ that makes it easier to install packages using pip however this is not need if you install a single program in a dedicated environment.
+5. Create a new environment with ``conda create -n clampsuite python=3.10``.
+6. To activate this new environment, run ``conda activate clampsuite``.
+7. To install run ``pip install clampsuite``.
+8. Install optional depedencies if needed.
+9. Now run ``python -m clampsuite`` and you're all set.
+10. Running the command ``clampsuite --version`` in the terminal will print the install version of clampsuite.
 
 Alternative
 ~~~~~~~~~~~~
-You can also run the package with out installing it by downloading the package from Github `<https://github.com/LarsHenrikNelson/ClampSuite>`_. There are two branches, main and develop. Main will always be a stable version of ClampSuite and develop with contain the newest additions but may not be stable.
+You can also run the package with out installing it by downloading the package from Github `<https://github.com/LarsHenrikNelson/ClampSuite>`_. There 
+are two branches, main and develop. The main branch will always be a stable version of ClampSuite and the develop branch will contain the newest 
+additions but may not be stable.
 
-1. Install an `Anaconda <https://www.anaconda.com/download/>`_ distribution of Python and your operating system. Note you might need to use an anaconda prompt if you did not add anaconda to the path.
+1. Install an `Anaconda <https://www.anaconda.com/download/>`_ distribution of Python and your operating system. You might need to use an anaconda prompt if you did not add anaconda to the path.
 2. For windows open Anaconda prompt. If you are on Mac open terminal and if (base) is on the commandline then anaconda conda is ready to use.
 3. Create a new environment using the env.yaml file by typing ``conda create -f`` then drag and drop the env.yaml file into prompt/terminal and hit enter.
 4. To activate this new environment, run ``conda activate clampsuite``.
