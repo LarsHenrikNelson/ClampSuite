@@ -149,13 +149,15 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         x_values = np.arange(0, len(self.filtered_array) - 1)
         if w_end is not np.nan:
             w_end = int(w_end)
-            if w_end < (start + 74):
-                x = w_end - 19
+            if w_end < (start + int(7.4 * self.s_r_c)):
+                x = w_end - int(1.9 * self.s_r_c)
             else:
-                x = w_end - 39
-                if x > (start + 49):
-                    x = start + 49
-            w_start = np.argmin(self.filtered_array[(start + 9) : x]) + (start + 9)
+                x = w_end - int(3.9 * self.s_r_c)
+                if x > (start + int(4.9 * self.s_r_c)):
+                    x = start + int(4.9 * self.s_r_c)
+            w_start = np.argmin(
+                self.filtered_array[(start + int(0.9 * self.s_r_c)) : x]
+            ) + (start + int(0.9 * self.s_r_c))
             if w_end < w_start:
                 self.slope_y = [np.nan]
                 self._slope_x = [np.nan]

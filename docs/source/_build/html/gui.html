@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Basic GUI usage &#8212; ClampSuite 0.0.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="basic-gui-usage">
+<h1>Basic GUI usage<a class="headerlink" href="#basic-gui-usage" title="Permalink to this heading">¶</a></h1>
+<p>The GUI consists of four different modules: Mini analysis, oEPSC, current clamp and filtering.
+The specific module can be choosen by using the drop-down menu in the top left corner of the interface.</p>
+<img alt="_images/widget_chooser_edit.png" src="_images/widget_chooser_edit.png" />
+<p>Each module features drag and drop loading. To drag and drop .mat files for first time analysis. Just select your files
+and drag and drop onto the acquisition area of within each module.</p>
+<img alt="_images/drag_and_drop.png" src="_images/drag_and_drop.png" />
+<p>Each module has three main buttons: Analyze acquisition(s), Final analysis and Reset analysis. Analyze acquisitions
+analyze the acquisition after which you can go through and remove or modified specific paramters. The final analysis
+button pulls all the data from each acquisition and puts into a table as well as averages data across epochs (1 cells
+worth of data). Reset analysis clears all plots, data tables and acquisitions from the interface however settings are
+not reset so one can quickly analyze several cells or even days worth of data at a time.</p>
+<p>The analyzed data can be saved before or after the final analysis and loaded back into ClampSuite. The acquisition data
+is saved into JSON files since these files are portable and can be opened in most programming languages. The settings
+are saved as YAML files. The final data in the tables are saved to excel files. It is recommended that you save each
+analysis into a separate folder since it is easier to load the data back into ClampSuite.</p>
+<p>Data that has been previously analyzed can be load back into the program by dragging and dropping the folder into
+ClampSuite. The folder can be dropped anywhere but the Acquisitions area where acquisitions are loaded.</p>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ClampSuite</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Basics:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#alternative">Alternative</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basic GUI usage</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Lars Henrik Nelson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/gui.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -242,7 +242,7 @@ class currentClampWidget(DragDropWidget):
         self.iv_end_edit.setText("6")
         self.input_layout.addRow(self.iv_end_label, self.iv_end_edit)
 
-        self.analyze_acq_button = QPushButton("Analyze acquisitions")
+        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
         self.analyze_acq_button.setObjectName("analyze_acq_button")
         self.input_layout.addRow(self.analyze_acq_button)
         self.analyze_acq_button.clicked.connect(self.analyze)
@@ -252,7 +252,7 @@ class currentClampWidget(DragDropWidget):
         self.input_layout.addRow(self.calculate_parameters)
         self.calculate_parameters.clicked.connect(self.final_analysis_button)
 
-        self.reset_button = QPushButton("Reset Analysis")
+        self.reset_button = QPushButton("Reset analysis")
         self.input_layout.addRow(self.reset_button)
         self.reset_button.clicked.connect(self.reset)
         self.reset_button.setObjectName("reset_button")

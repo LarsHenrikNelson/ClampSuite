@@ -92,6 +92,8 @@ class oEPSCWidget(DragDropWidget):
         self.oepsc_view = ListView()
         self.oepsc_analysis = "oepsc"
         self.oepsc_view.setAnalysisType(self.oepsc_analysis)
+        self.acq_label_1 = QLabel("Acquisition(s)")
+        self.view_layout_1.addWidget(self.acq_label_1)
         self.view_layout_1.addWidget(self.oepsc_view)
         self.inspect_oepsc_acqs = QPushButton("Inspect acquistions")
         self.inspect_oepsc_acqs.clicked.connect(
@@ -109,6 +111,8 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_view = ListView()
         self.lfp_analysis = "lfp"
         self.lfp_view.setAnalysisType(self.lfp_analysis)
+        self.acq_label_2 = QLabel("Acquisition(s)")
+        self.view_layout_2.addWidget(self.acq_label_2)
         self.view_layout_2.addWidget(self.lfp_view)
         self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
         self.inspect_lfp_acqs.clicked.connect(
@@ -487,7 +491,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_2.addRow(self.lfp_pulse_start, self.lfp_pulse_start_edit)
 
         # Tab1 buttons
-        self.analyze_acq_button = QPushButton("Analyze acquisitions")
+        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
         self.tab1_layout.addWidget(self.analyze_acq_button)
         self.analyze_acq_button.clicked.connect(self.analyze)
 
@@ -511,7 +515,7 @@ class oEPSCWidget(DragDropWidget):
         self.epoch_number.setReadOnly(True)
         self.o_info_layout.addRow(self.epoch_label, self.epoch_number)
 
-        self.final_analysis_button = QPushButton("Calculate parameters")
+        self.final_analysis_button = QPushButton("Final analysis")
         self.o_info_layout.addRow(self.final_analysis_button)
         self.final_analysis_button.clicked.connect(self.final_analysis)
         self.final_analysis_button.setEnabled(True)

@@ -241,7 +241,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.polyorder_edit.setEnabled(True)
         self.input_layout.addRow(self.polyorder_label, self.polyorder_edit)
 
-        self.analyze_acq_button = QPushButton("Analyze acquisitions")
+        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
         self.input_layout.addRow(self.analyze_acq_button)
         self.analyze_acq_button.setObjectName("analyze_acq_button")
         self.analyze_acq_button.clicked.connect(self.analyze)
@@ -1489,6 +1489,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.acq_dict.update(self.recent_reject_acq)
         self.acqs_deleted -= 1
+        self.recent_reject_acq = {}
         self.acquisition_number.setValue(int(list(self.recent_reject_acq.keys())[0]))
 
     def final_analysis(self):
@@ -1657,10 +1658,10 @@ class MiniAnalysisWidget(DragDropWidget):
         YamlWorker.save_yaml(self.pref_dict, save_filename)
         if self.pref_dict["Final Analysis"]:
             self.final_obj.save_data(save_filename)
+        self.worker = MiniSaveWorker(save_filename, self.acq_dict)
         if self.deleted_acqs:
             self.worker_2 = MiniSaveWorker(save_filename, self.deleted_acqs)
             self.threadpool.start(self.worker_2)
-        self.worker = MiniSaveWorker(save_filename, self.acq_dict)
         self.worker.signals.progress.connect(self.update_save_progress)
         self.worker.signals.finished.connect(self.progress_finished)
         self.threadpool.start(self.worker)

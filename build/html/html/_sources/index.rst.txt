@@ -11,16 +11,14 @@ can be used to analyze data through the GUI and import previously analyzed data 
 scripts for creating figures.
 
 
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-
-Indices and tables
-==================
-
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+  
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Basics:
+
+   installation
+   gui
