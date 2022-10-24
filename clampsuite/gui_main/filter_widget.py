@@ -115,6 +115,7 @@ class filterWidget(QWidget):
             "butterworth_zero",
         ]
         self.filter_selection = QComboBox(self)
+        self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.filter_selection.addItems(filters)
         self.filt_layout.addRow(self.filter_type_label, self.filter_selection)
         self.filter_selection.currentTextChanged.connect(self.setFiltProp)
@@ -164,6 +165,7 @@ class filterWidget(QWidget):
         ]
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
+        self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
         self.window_edit.currentTextChanged.connect(self.windowChanged)
         self.filt_layout.addRow(self.window_label, self.window_edit)
 

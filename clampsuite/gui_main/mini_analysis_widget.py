@@ -174,6 +174,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
+        self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.filter_selection.currentTextChanged.connect(self.setFiltProp)
         self.filter_selection.setObjectName("filter_selection")
         self.input_layout.addRow("Filter type", self.filter_selection)
@@ -227,6 +228,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
+        self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
         self.window_edit.currentTextChanged.connect(self.windowChanged)
         self.window_edit.setObjectName("window_edit")
         self.input_layout.addRow("Window type", self.window_edit)
@@ -311,6 +313,7 @@ class MiniAnalysisWidget(DragDropWidget):
         fit_types = ["exp", "db_exp"]
         self.curve_fit_edit = QComboBox(self)
         self.curve_fit_edit.addItems(fit_types)
+        self.curve_fit_edit.setMinimumContentsLength(len(max(fit_types, key=len)))
         self.curve_fit_edit.setObjectName("curve_fit_type")
         self.settings_layout.addRow("Curve fit type", self.curve_fit_edit)
 
@@ -325,6 +328,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.decon_type_edit = QComboBox(self)
         decon_list = ["wiener", "fft"]
         self.decon_type_edit.addItems(decon_list)
+        self.decon_type_edit.setMinimumContentsLength(len(max(decon_list, key=len)))
         self.decon_type_edit.setObjectName("decon_type_edit")
         self.settings_layout.addRow("Deconvolution type", self.decon_type_edit)
 
@@ -1529,6 +1533,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ]
         self.plot_selector.clear()
         self.plot_selector.addItems(plots)
+        self.plot_selector.setMinimumContentsLength(len(max(plots, key=len)))
         if self.plot_selector.currentText() != "IEI (ms)":
             self.plot_raw_data(self.plot_selector.currentText())
         self.pbar.setFormat("Finished analysis")
@@ -1546,7 +1551,7 @@ class MiniAnalysisWidget(DragDropWidget):
         )
 
     def plot_raw_data(self, y):
-        if self.final_obj:
+        if self.final_obj and y != "":
             if y != "IEI (ms)":
                 self.plot_stem_data(y)
             else:

@@ -66,9 +66,9 @@ class MainWindow(QMainWindow):
 
         self.widget_chooser = QComboBox()
         self.tool_bar.addWidget(self.widget_chooser)
-        self.widget_chooser.addItems(
-            ["Mini Analysis", "oEPSC", "Current Clamp", "Filtering setup"]
-        )
+        widgets = ["Mini Analysis", "oEPSC", "Current Clamp", "Filtering setup"]
+        self.widget_chooser.addItems(widgets)
+        self.widget_chooser.setMinimumContentsLength(len(max(widgets, key=len)))
         self.widget_chooser.currentTextChanged.connect(self.set_widget)
 
         self.save_button = QPushButton()

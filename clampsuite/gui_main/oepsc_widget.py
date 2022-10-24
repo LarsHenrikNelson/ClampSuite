@@ -214,6 +214,7 @@ class oEPSCWidget(DragDropWidget):
         ]
         self.o_filter_selection = QComboBox()
         self.o_filter_selection.addItems(filters)
+        self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.o_filter_selection.setObjectName("o_filter_selection")
         self.o_filter_selection.setCurrentText("savgol")
         self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
@@ -272,6 +273,7 @@ class oEPSCWidget(DragDropWidget):
         self.o_window_edit = QComboBox(self)
         self.o_window_edit.setObjectName("o_window_edit")
         self.o_window_edit.addItems(windows)
+        self.o_window_edit.setMinimumContentsLength(len(max(windows, key=len)))
         self.input_layout_1.addRow(self.o_window_label, self.o_window_edit)
         self.o_window_edit.currentTextChanged.connect(self.oWindowChanged)
 
@@ -357,6 +359,7 @@ class oEPSCWidget(DragDropWidget):
         self.curve_fit_type_label = QLabel("Curve fit type")
         fit_types = ["s_exp", "db_exp"]
         self.curve_fit_type_edit = QComboBox(self)
+        self.curve_fit_type_edit.setMinimumContentsLength(len(max(fit_types, key=len)))
         self.curve_fit_type_edit.addItems(fit_types)
         self.curve_fit_type_edit.setObjectName("curve_fit_type")
         self.input_layout_3.addRow(self.curve_fit_type_label, self.curve_fit_type_edit)
@@ -389,22 +392,9 @@ class oEPSCWidget(DragDropWidget):
         )
 
         self.lfp_filter_type_label = QLabel("Filter Type")
-        filters = [
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "savgol",
-            "ewma",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ]
         self.lfp_filter_selection = QComboBox(self)
         self.lfp_filter_selection.addItems(filters)
+        self.lfp_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.lfp_filter_selection.setObjectName("lfp_filter_selection")
         self.lfp_filter_selection.setCurrentText("savgol")
         self.input_layout_2.addRow(
@@ -450,21 +440,9 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_2.addRow(self.lfp_low_width_label, self.lfp_low_width_edit)
 
         self.lfp_window_label = QLabel("Window type")
-        windows = [
-            "hann",
-            "hamming",
-            "blackmmaharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ]
         self.lfp_window_edit = QComboBox(self)
         self.lfp_window_edit.addItems(windows)
+        self.lfp_window_edit.setMinimumContentsLength(len(max(windows, key=len)))
         self.lfp_window_edit.setObjectName("lfp_window_edit")
         self.input_layout_2.addRow(self.lfp_window_label, self.lfp_window_edit)
         self.lfp_window_edit.currentTextChanged.connect(self.lWindowChanged)
