@@ -39,7 +39,7 @@ class FinalCurrentClampAnalysis:
         df_averaged_data = (
             self.df_dict["Raw data"]
             .groupby(["Pulse_pattern", "Epoch", "Pulse_amp", "Ramp"])
-            .mean()
+            .mean(numeric_only=True)
         )
         df_averaged_data.reset_index(inplace=True)
         df_averaged_data.drop(["Pulse_pattern", "Pulse_start"], axis=1, inplace=True)
