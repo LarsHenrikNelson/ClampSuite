@@ -285,7 +285,7 @@ class currentClampWidget(DragDropWidget):
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
             self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.load_widget.model().acq_dict)
+            self.inspection_widget.setFileList(self.acq_view.model().acq_dict)
             self.inspection_widget.show()
         else:
             self.inspection_widget.close()

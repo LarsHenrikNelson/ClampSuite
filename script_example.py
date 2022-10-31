@@ -5,4 +5,3 @@ from clampy import (
     FinalEvokedCurrent,
     FinalMiniAnalysis,
 )
-from clampy import 
