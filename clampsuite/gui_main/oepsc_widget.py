@@ -598,7 +598,7 @@ class oEPSCWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspect_acqs(self, list_view):
-        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
+        if not list_view.model().acq_dict:
             self.file_does_not_exist()
             self.analyze_acq_button.setEnabled(True)
             return None

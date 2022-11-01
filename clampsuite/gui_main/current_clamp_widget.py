@@ -294,7 +294,7 @@ class currentClampWidget(DragDropWidget):
             self.inspect_acqs()
 
     def del_selection(self):
-        if not self.acq_dict:
+        if not self.acq_view.model().acq_dict:
             self.file_does_not_exist()
             return None
 
