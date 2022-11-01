@@ -9,3 +9,4 @@ ephysanalysis/acq/._acq_manager.py
 dev_env.yml
 dist/
 clampsuite.egg-info/
+.vscode/settings.json
