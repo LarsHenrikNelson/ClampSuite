@@ -2,16 +2,15 @@ Installation
 ----------------
 Anaconda
 ~~~~~~~~
-1. Install an `Anaconda <https://www.anaconda.com/download/>`_ distribution of Python and your operating system. Note you might need to use an 
-2. anaconda prompt if you did not add anaconda to the path.
-3. Open an anaconda prompt if you are on Windows, otherwise open terminal and if (base) is on the commandline then anaconda conda is ready to use.
-4. Anaconda has an experimental option for `pip interoperability <https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html>`_ that makes it easier to install packages using pip however this is not need if you install a single program in a dedicated environment.
-5. Create a new environment with ``conda create -n clampsuite python=3.10``.
-6. To activate this new environment, run ``conda activate clampsuite``.
-7. To install run ``pip install clampsuite``.
-8. Install optional depedencies if needed.
-9. Now run ``python -m clampsuite`` and you're all set.
-10. Running the command ``clampsuite --version`` in the terminal will print the install version of clampsuite.
+1. Install an `Anaconda <https://www.anaconda.com/download/>`_ or `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ distribution of Python and your operating system. Note you will need to use an anaconda prompt if you did not add anaconda to the path.
+2. Open an anaconda prompt if you are on Windows, otherwise open terminal and if (base) is on the commandline then anaconda conda is ready to use.
+3. Anaconda has an experimental option for `pip interoperability <https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html>`_ that makes it easier to install packages using pip however this is not need if you install a single program in a dedicated environment.
+4. Create a new environment with ``conda create -n clampsuite python=3.10``.
+5. To activate this new environment, run ``conda activate clampsuite``.
+6. To install run ``pip install clampsuite``.
+7. Install optional depedencies if needed.
+8. Now run ``python -m clampsuite`` and you're all set.
+9.  Running the command ``clampsuite --version`` in the terminal will print the install version of clampsuite.
 
 Alternative
 ~~~~~~~~~~~~
