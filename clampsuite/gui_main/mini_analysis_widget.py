@@ -690,6 +690,9 @@ class MiniAnalysisWidget(DragDropWidget):
             i.adjustSize()
 
     def inspect_acqs(self):
+        if not self.acq_view.model().acq_dict:
+            self.file_does_not_exist()
+            return None
 
         # Creates a separate window to view the loaded acquisitions
         if self.inspection_widget is None:
