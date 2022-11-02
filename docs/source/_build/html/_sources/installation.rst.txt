@@ -27,7 +27,7 @@ additions but may not be stable.
 6. Now run ``python -m clampsuite`` and you're all set.
 
 Dependencies
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 -  `bottleneck <https://github.com/pydata/bottleneck>`_
 -  `numpy <https://numpy.org/>`_
 -  `openpyxl <https://openpyxl.readthedocs.io/en/stable/>`_
@@ -42,6 +42,6 @@ Dependencies
 -  `xlsxwriter <https://github.com/jmcnamara/XlsxWriter>`_
 
 Optional dependencies
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 -  `h5py <https://www.h5py.org/>`_
 -  `matplotlib <https://matplotlib.org/>`_
