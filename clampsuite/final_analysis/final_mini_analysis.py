@@ -22,7 +22,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         acq_dict: dict,
         events_deleted: int = 0,
         acqs_deleted: int = 0,
-        sample_rate: Union(int, float) = 10000,
+        sample_rate: Union[int, float] = 10000,
         curve_fit_decay: bool = False,
         curve_fit_type: str = "db_exp",
     ):
@@ -166,7 +166,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
 
     def stem_components(
         self, column: str
-    ) -> tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         df = self.df_dict.get("Raw data")
         if df is not None:
             array_x = df.get("Real time").to_numpy()
@@ -190,37 +190,37 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
     def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)
 
-    def final_data(self) -> Union(None, pd.DataFrame):
+    def final_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Final data")
 
-    def raw_data(self) -> Union(None, pd.DataFrame):
+    def raw_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Raw data")
 
-    def extra_data(self) -> Union(None, pd.DataFrame):
+    def extra_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Extra data")
 
-    def average_mini_y(self) -> Union(None, np.ndarray):
+    def average_mini_y(self) -> Union[None, np.ndarray]:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_y"].dropna().to_numpy()
         else:
             return df
 
-    def average_mini_x(self) -> Union(None, np.ndarray):
+    def average_mini_x(self) -> Union[None, np.ndarray]:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_x"].dropna().to_numpy()
         else:
             return df
 
-    def fit_decay_y(self) -> Union(None, np.ndarray):
+    def fit_decay_y(self) -> Union[None, np.ndarray]:
         df = self.extra_data()
         if df is not None:
             return df["fit_decay_y"].dropna().to_numpy()
         else:
             return df
 
-    def fit_decay_x(self) -> Union(bool, np.ndarray):
+    def fit_decay_x(self) -> Union[bool, np.ndarray]:
         df = self.extra_data()
         if df is not None:
             return df["fit_decay_x"].dropna().to_numpy()

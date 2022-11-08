@@ -8,8 +8,8 @@ from . import final_analysis
 class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
     def analyze(
         self,
-        o_acq_dict: Union(dict, None) = None,
-        lfp_acq_dict: Union(dict, None) = None,
+        o_acq_dict: Union[dict, None] = None,
+        lfp_acq_dict: Union[dict, None] = None,
     ):
         self.o_acq_dict = o_acq_dict
         self.lfp_acq_dict = lfp_acq_dict

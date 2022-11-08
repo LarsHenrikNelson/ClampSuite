@@ -11,23 +11,23 @@ from . import filter_acq
 class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def analyze(
         self,
-        sample_rate: Union(int, float) = 10000,
-        baseline_start: Union(int, float) = 0,
-        baseline_end: Union(int, float) = 100,
+        sample_rate: Union[int, float] = 10000,
+        baseline_start: Union[int, float] = 0,
+        baseline_end: Union[int, float] = 100,
         filter_type: str = "None",
-        order: Union(None, int) = 201,
-        high_pass: Union(None, int, float) = None,
-        high_width: Union(None, int, float) = None,
-        low_pass: Union(None, int, float) = None,
-        low_width: Union(None, int, float) = None,
-        window: Union(None, int) = None,
-        polyorder: Union(None, int, float) = None,
-        pulse_start: Union(int, float) = 300,
-        pulse_end: Union(int, float) = 1000,
-        ramp_start: Union(int, float) = 300,
-        ramp_end: Union(int, float) = 4000,
-        threshold: Union(int, float) = -15,
-        min_spikes: Union(int, float) = 2,
+        order: Union[None, int] = 201,
+        high_pass: Union[None, int, float] = None,
+        high_width: Union[None, int, float] = None,
+        low_pass: Union[None, int, float] = None,
+        low_width: Union[None, int, float] = None,
+        window: Union[None, int] = None,
+        polyorder: Union[None, int, float] = None,
+        pulse_start: Union[int, float] = 300,
+        pulse_end: Union[int, float] = 1000,
+        ramp_start: Union[int, float] = 300,
+        ramp_end: Union[int, float] = 4000,
+        threshold: Union[int, float] = -15,
+        min_spikes: Union[int, float] = 2,
     ):
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
@@ -434,7 +434,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ahp_y = np.nan
 
     # Helper functions that correct x-values for plotting
-    def spike_width(self) -> Union(int, float, np.nan):
+    def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:
             return self.width_comp[0][0] / self.s_r_c
         else:
@@ -450,7 +450,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.width_comp[3][0] / self.s_r_c,
         ]
 
-    def spike_threshold_time(self) -> Union(int, float):
+    def spike_threshold_time(self) -> Union[int, float]:
         if not np.isnan(self.rheo_x):
             return self.rheo_x / self.s_r_c
         else:
@@ -474,7 +474,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def plot_rheo_x(self) -> list:
         return [self.rheo_x / self.s_r_c]
 
-    def plot_delta_v(self) -> tuple(list, list):
+    def plot_delta_v(self) -> tuple[list, list]:
         """
         This function creates the elements to plot the delta-v as a vertical
         line in the middle of the pulse. The elements are corrected so that

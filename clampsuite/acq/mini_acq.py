@@ -11,27 +11,27 @@ from .postsynaptic_event import MiniEvent
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def analyze(
         self,
-        sample_rate: Union(int, float) = 10000,
-        baseline_start: Union(int, float) = 0,
-        baseline_end: Union(int, float) = 80,
+        sample_rate: Union[int, float] = 10000,
+        baseline_start: Union[int, float] = 0,
+        baseline_end: Union[int, float] = 80,
         filter_type: str = "remez_2",
         order: int = 201,
-        high_pass: Union(int, float) = None,
-        high_width: Union(int, float) = None,
-        low_pass: Union(int, float) = 600,
-        low_width: Union(int, float) = 300,
-        window: Union(str, None) = None,
-        polyorder: Union(str, None) = None,
-        template: Union(list, np.ndarray, None) = None,
+        high_pass: Union[int, float] = None,
+        high_width: Union[int, float] = None,
+        low_pass: Union[int, float] = 600,
+        low_width: Union[int, float] = 300,
+        window: Union[str, None] = None,
+        polyorder: Union[str, None] = None,
+        template: Union[list, np.ndarray, None] = None,
         rc_check: bool = True,
-        rc_check_start: Union(int, float) = 10000,
-        rc_check_end: Union(int, float) = 10300,
-        sensitivity: Union(int, float) = 4,
-        amp_threshold: Union(int, float) = 4,
-        mini_spacing: Union(int, float) = 2,
-        min_rise_time: Union(int, float) = 0.5,
-        max_rise_time: Union(int, float) = 4,
-        min_decay_time: Union(int, float) = 0.5,
+        rc_check_start: Union[int, float] = 10000,
+        rc_check_end: Union[int, float] = 10300,
+        sensitivity: Union[int, float] = 4,
+        amp_threshold: Union[int, float] = 4,
+        mini_spacing: Union[int, float] = 2,
+        min_rise_time: Union[int, float] = 0.5,
+        max_rise_time: Union[int, float] = 4,
+        min_decay_time: Union[int, float] = 0.5,
         decay_rise: bool = True,
         invert: bool = False,
         decon_type: str = "wiener",
@@ -85,12 +85,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
     def tm_psp(
         self,
-        amplitude: Union(int, float),
-        tau_1: Union(int, float),
-        tau_2: Union(int, float),
-        risepower: Union(int, float),
-        t_psc: Union(int, float),
-        spacer: Union(int, float) = 1.5,
+        amplitude: Union[int, float],
+        tau_1: Union[int, float],
+        tau_2: Union[int, float],
+        risepower: Union[int, float],
+        t_psc: Union[int, float],
+        spacer: Union[int, float] = 1.5,
     ) -> np.ndarray:
         """Creates a template based on several factors.
 
@@ -189,7 +189,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         baseline = spl(self.x_array)
         self.baselined_array = self.baselined_array - baseline
 
-    def deconvolution(self, lambd: Union(int, float) = 4) -> np.ndarray:
+    def deconvolution(self, lambd: Union[int, float] = 4) -> np.ndarray:
         """The Wiener deconvolution equation can be found on GitHub from pbmanis
         and danstowell. The basic idea behind this function is deconvolution
         or divsion in the frequency domain. I have found that changing lambd
@@ -379,7 +379,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return True
 
-    def create_new_mini(self, x: Union(int, float)) -> bool:
+    def create_new_mini(self, x: Union[int, float]) -> bool:
         """Creates a new mini event based on the time
         of the event passed to the function. The new
         event is not screened like the automatically

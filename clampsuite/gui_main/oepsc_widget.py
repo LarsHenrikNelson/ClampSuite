@@ -50,7 +50,7 @@ class oEPSCWidget(DragDropWidget):
     def initUI(self):
         # pg.setConfigOptions(antialias=True)
 
-        self.signals.dictionary.connect(self.set_preferences)
+        self.signals.dictionary.connect(self.setPrefrences)
         self.signals.path.connect(self.open_files)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
@@ -97,7 +97,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_1.addWidget(self.oepsc_view)
         self.inspect_oepsc_acqs = QPushButton("Inspect acquistions")
         self.inspect_oepsc_acqs.clicked.connect(
-            lambda checked: self.inspect_acqs(self.oepsc_view)
+            lambda checked: self.inspectAcqs(self.oepsc_view)
         )
         self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
         self.del_oepsc_sel = QPushButton("Delete selection")
@@ -116,7 +116,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_2.addWidget(self.lfp_view)
         self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
         self.inspect_lfp_acqs.clicked.connect(
-            lambda checked: self.inspect_acqs(self.lfp_view)
+            lambda checked: self.inspectAcqs(self.lfp_view)
         )
         self.view_layout_2.addWidget(self.inspect_lfp_acqs)
         self.del_lfp_sel = QPushButton("Delete selection")
@@ -495,7 +495,7 @@ class oEPSCWidget(DragDropWidget):
 
         self.final_analysis_button = QPushButton("Final analysis")
         self.o_info_layout.addRow(self.final_analysis_button)
-        self.final_analysis_button.clicked.connect(self.final_analysis)
+        self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
         self.final_analysis_button.setEnabled(True)
 
         self.oepsc_amp_label = QLabel("Amplitude")
@@ -567,7 +567,7 @@ class oEPSCWidget(DragDropWidget):
 
         self.dlg = QMessageBox(self)
 
-        self.set_width()
+        self.setWidth()
 
         # Lists
         self.last_oepsc_point_clicked = []
@@ -586,7 +586,7 @@ class oEPSCWidget(DragDropWidget):
         self.inspection_widget = None
         self.need_to_save = False
 
-    def set_width(self):
+    def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             i.setMinimumWidth(60)
@@ -597,9 +597,9 @@ class oEPSCWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    def inspect_acqs(self, list_view):
+    def inspectAcqs(self, list_view):
         if not list_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
             return None
 
@@ -612,7 +612,7 @@ class oEPSCWidget(DragDropWidget):
             self.inspection_widget.close()
             self.inspection_widget.removeFileList()
             self.inspection_widget = None
-            self.inspect_acqs(list_view)
+            self.inspectAcqs(list_view)
 
     def oWindowChanged(self, text):
         if text == "Gaussian":
@@ -688,7 +688,7 @@ class oEPSCWidget(DragDropWidget):
 
     def analyze(self):
         if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         on_x_set = False
@@ -803,7 +803,7 @@ class oEPSCWidget(DragDropWidget):
 
     def acqSpinbox(self, h):
         if not self.oepsc_acq_dict and not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -957,7 +957,7 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -999,7 +999,7 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1040,7 +1040,7 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1072,7 +1072,7 @@ class oEPSCWidget(DragDropWidget):
 
     def setoEPSCPeak(self):
         if not self.oepsc_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1096,7 +1096,7 @@ class oEPSCWidget(DragDropWidget):
 
     def deleteoEPSC(self):
         if not self.oepsc_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1111,7 +1111,7 @@ class oEPSCWidget(DragDropWidget):
 
     def deleteLFP(self):
         if not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1124,9 +1124,9 @@ class oEPSCWidget(DragDropWidget):
         del self.lfp_acq_dict[str(self.acquisition_number.text())]
         self.lfp_acqs_deleted += 1
 
-    def final_analysis(self):
+    def runFinalAnalysis(self):
         if not self.oepsc_acq_dict and not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1148,12 +1148,12 @@ class oEPSCWidget(DragDropWidget):
 
     def save_as(self, save_filename):
         if not self.oepsc_acq_dict and not self.lfp_acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
-        self.create_pref_dict()
+        self.createPrefDict()
         self.pref_dict["Acq_number"] = self.acquisition_number.value()
         self.pref_dict["Final Analysis"] = self.calc_param_clicked
         if self.lfp_acq_dict:
@@ -1190,7 +1190,7 @@ class oEPSCWidget(DragDropWidget):
         self.pbar.setFormat("Loading...")
         self.pbar.setValue(0)
         load_dict = YamlWorker.load_yaml(directory)
-        self.set_preferences(load_dict)
+        self.setPrefrences(load_dict)
         file_list = list(directory.glob("*.json"))
         count = 0
         if not file_list:
@@ -1254,7 +1254,7 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setEnabled(True)
         self.final_analysis_button.setEnabled(True)
 
-    def create_pref_dict(self):
+    def createPrefDict(self):
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
         for i in line_edits:
@@ -1290,7 +1290,7 @@ class oEPSCWidget(DragDropWidget):
                 dspinbox_dict[i.objectName()] = i.text()
         self.pref_dict["double_spinboxes"] = dspinbox_dict
 
-    def set_preferences(self, pref_dict):
+    def setPrefrences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1331,12 +1331,12 @@ class oEPSCWidget(DragDropWidget):
                 except:
                     pass
 
-    def load_preferences(self, file_name):
+    def loadPrefences(self, file_name: str):
         load_dict = YamlWorker.load_yaml(file_name)
-        self.set_preferences(load_dict)
+        self.setPrefrences(load_dict)
 
-    def save_preferences(self, save_filename):
-        self.create_pref_dict()
+    def savePreferences(self, save_filename: str):
+        self.createPrefDict()
         if self.pref_dict:
             YamlWorker.save_yaml(self.pref_dict, save_filename)
         else:
@@ -1346,10 +1346,10 @@ class oEPSCWidget(DragDropWidget):
         self.pbar_count += 1
         self.pbar.setValue(int(100 * self.pbar_count / self.pbar_number))
 
-    def progress_finished(self, finished):
+    def progressFinished(self, finished):
         self.pbar.setFormat(finished)
 
-    def file_does_not_exist(self):
+    def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")
         self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()

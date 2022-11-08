@@ -15,18 +15,18 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
     def analyze(
         self,
-        sample_rate: Union(int, float) = 10000,
-        baseline_start: Union(int, float) = 0,
-        baseline_end: Union(int, float) = 800,
+        sample_rate: Union[int, float] = 10000,
+        baseline_start: Union[int, float] = 0,
+        baseline_end: Union[int, float] = 800,
         filter_type: str = "remez_2",
-        order: Union(int, float) = 301,
-        high_pass: Union(int, float, None) = None,
-        high_width: Union(int, float, None) = None,
-        low_pass: Union(int, float) = 300,
-        low_width: Union(int, float) = 100,
-        window: Union(int, None) = None,
-        polyorder: Union(int, None) = None,
-        pulse_start: Union(int, float) = 1000,
+        order: Union[int, float] = 301,
+        high_pass: Union[int, float, None] = None,
+        high_width: Union[int, float, None] = None,
+        low_pass: Union[int, float] = 300,
+        low_width: Union[int, float] = 100,
+        window: Union[int, None] = None,
+        polyorder: Union[int, None] = None,
+        pulse_start: Union[int, float] = 1000,
     ):
         """
         This function runs all the other functions in one place. This makes
@@ -223,7 +223,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self._slope = np.nan
             self.reg_line = np.nan
 
-    def change_fv(self, x, y):
+    def change_fv(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._fv_x = x
         self.fv_y = y
@@ -231,54 +231,54 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.find_slope_array()
         self.regression()
 
-    def change_fp(self, x, y):
+    def change_fp(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._fp_x = x
         self.fp_y = y
         self.find_slope_array()
         self.regression()
 
-    def change_slope_start(self, x, y):
+    def change_slope_start(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self.max_x = x
         self.max_y = y
         self.find_slope_array()
         self.regression()
 
-    def plot_elements_x(self):
+    def plot_elements_x(self) -> list:
         return [self.fv_x(), self.fp_x()]
 
-    def plot_elements_y(self):
+    def plot_elements_y(self) -> list:
         return [self.fv_y, self.fp_y]
 
-    def slope_x(self):
+    def slope_x(self) -> Union[float, int]:
         if not np.isnan(self._slope):
             return self._slope_x / self.s_r_c
         else:
             return self._slope_x
 
-    def fp_x(self):
+    def fp_x(self) -> Union[float, int]:
         if not np.isnan(self._fp_x):
             return self._fp_x / self.s_r_c
         else:
             return self._fp_x
 
-    def fv_x(self):
+    def fv_x(self) -> float:
         if not np.isnan(self._fv_x):
             return self._fv_x / self.s_r_c
         else:
             return self._fv_x
 
-    def pulse_start(self):
+    def pulse_start(self) -> Union[int, float]:
         return self._pulse_start / self.s_r_c
 
-    def slope(self):
+    def slope(self) -> float:
         if not np.isnan(self._slope):
             return self._slope * self.s_r_c
         else:
             return self._slope
 
-    def create_dict(self):
+    def create_dict(self) -> dict:
         """
         This function returns a dictionary of all the values you will need to
         analyze the lfp. The dictionary is not an attribute of the class to

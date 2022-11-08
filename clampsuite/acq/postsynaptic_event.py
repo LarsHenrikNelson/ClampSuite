@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from scipy import signal, optimize
 from scipy.stats import linregress
@@ -19,12 +21,12 @@ class MiniEvent:
 
     def analyze(
         self,
-        acq_number,
-        event_pos,
-        y_array,
-        sample_rate,
-        curve_fit_decay=False,
-        curve_fit_type="db_exp",
+        acq_number: int,
+        event_pos: int,
+        y_array: Union[np.ndarray, list],
+        sample_rate: int,
+        curve_fit_decay: bool = False,
+        curve_fit_type: str = "db_exp",
     ):
         self.acq_number = acq_number
         self.event_pos = int(event_pos)
@@ -38,7 +40,7 @@ class MiniEvent:
         self.find_event_parameters(y_array)
         self.peak_align_value = self._event_peak_x - self.array_start
 
-    def create_event(self, y_array):
+    def create_event(self, y_array: Union[np.ndarray, list]):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
         self.adjust_pos = int(self.event_pos - self.array_start)
         end = int(self.event_pos + (30 * self.s_r_c))
@@ -48,7 +50,7 @@ class MiniEvent:
             self.array_end = end
         self.create_event_array(y_array)
 
-    def create_event_array(self, y_array):
+    def create_event_array(self, y_array: Union[np.ndarray, list]):
         self.event_array = y_array[self.array_start : self.array_end]
         self.x_array = np.arange(self.array_start, self.array_end)
 
@@ -70,7 +72,7 @@ class MiniEvent:
         else:
             self.peak_corr(peaks_1[0])
 
-    def peak_corr(self, peak_1):
+    def peak_corr(self, peak_1: int):
         peaks_2 = signal.argrelextrema(
             self.event_array[:peak_1],
             comparator=np.less,
@@ -166,7 +168,7 @@ class MiniEvent:
         else:
             self.find_alt_baseline()
 
-    def calc_event_amplitude(self, y_array):
+    def calc_event_amplitude(self):
         self.amplitude = abs(self.event_peak_y - self.event_start_y)
 
     def calc_event_rise_time(self):
@@ -267,19 +269,19 @@ class MiniEvent:
             self.fit_decay_y = np.nan
             self.fit_tau = np.nan
 
-    def find_event_parameters(self, y_array):
+    def find_event_parameters(self, y_array: Union[np.ndarray, list]):
         if self._event_peak_x is np.nan:
             pass
         else:
             self.find_baseline()
-            self.calc_event_amplitude(y_array)
+            self.calc_event_amplitude()
             self.est_decay()
             self.calc_event_rise_time()
             self.peak_align_value = self._event_peak_x - self.array_start
             if self.curve_fit_decay:
                 self.fit_decay(fit_type=self.curve_fit_type)
 
-    def mini_x_comp(self):
+    def mini_x_comp(self) -> list:
         x = [
             self.event_start_x(),
             self.event_peak_x(),
@@ -287,41 +289,41 @@ class MiniEvent:
         ]
         return x
 
-    def mini_y_comp(self):
+    def mini_y_comp(self) -> list:
         y = [self.event_start_y, self.event_peak_y, self.est_tau_y]
         return y
 
-    def mini_plot_x(self):
+    def mini_plot_x(self) -> list:
         return [
             self.event_start_x(),
             self.event_peak_x(),
         ]
 
-    def event_tau_x(self):
+    def event_tau_x(self) -> float:
         if not np.isnan(self._event_tau_x):
             return self._event_tau_x / self.s_r_c
         else:
             return self._event_tau_x
 
-    def event_start_x(self):
+    def event_start_x(self) -> Union[int, float]:
         if not np.isnan(self._event_start_x):
             return self._event_start_x / self.s_r_c
         else:
             return self._event_start_x
 
-    def event_peak_x(self):
+    def event_peak_x(self) -> Union[int, float]:
         if not np.isnan(self._event_peak_x):
             return self._event_peak_x / self.s_r_c
         else:
             return self._event_peak_x
 
-    def mini_plot_y(self):
+    def mini_plot_y(self) -> list:
         return [self.event_start_y, self.event_peak_y]
 
-    def mini_x_array(self):
+    def mini_x_array(self) -> np.ndarray:
         return self.x_array / self.s_r_c
 
-    def change_amplitude(self, x, y):
+    def change_amplitude(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._event_peak_x = x
         self.event_peak_y = y
@@ -333,7 +335,7 @@ class MiniEvent:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self._event_peak_x - self.array_start
 
-    def change_baseline(self, x, y):
+    def change_baseline(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._event_start_x = x
         self.event_start_y = y
@@ -346,7 +348,7 @@ class MiniEvent:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self._event_peak_x - self.array_start
 
-    def load_mini(self, event_dict, final_array):
+    def load_mini(self, event_dict: dict, final_array: np.ndarray):
         self.sample_rate_correction = None
 
         for key, item in event_dict.items():

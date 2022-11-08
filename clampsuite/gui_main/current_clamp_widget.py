@@ -1,11 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 19 09:21:26 2021
+from pathlib import PurePath
+from typing import Union
 
-Last updated on Wed Feb 16 12:33:00 2021 
-
-@author: LarsNelson
-"""
 import numpy as np
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
@@ -62,8 +57,8 @@ class currentClampWidget(DragDropWidget):
         self.table_dict = {}
         self.inspection_widget = None
 
-        self.signals.dictionary.connect(self.set_preferences)
-        self.signals.path.connect(self.open_files)
+        self.signals.dictionary.connect(self.setPrefences)
+        self.signals.path.connect(self.openFiles)
         self.main_widget = QScrollArea()
         self.main_layout = QHBoxLayout()
         self.input_layout = QFormLayout()
@@ -122,17 +117,17 @@ class currentClampWidget(DragDropWidget):
         )
 
         self.delete_event_button = QPushButton("Delete acquisition")
-        self.delete_event_button.clicked.connect(self.delete_acq)
+        self.delete_event_button.clicked.connect(self.deleteAcq)
         self.analysis_buttons.addRow(self.delete_event_button)
 
         self.reset_recent_reject_button = QPushButton(
             "Reset recent rejected acquisition"
         )
-        self.reset_recent_reject_button.clicked.connect(self.reset_recent_reject_acq)
+        self.reset_recent_reject_button.clicked.connect(self.resetRecentRejectAcq)
         self.analysis_buttons.addRow(self.reset_recent_reject_button)
 
         self.reset_rejected_acqs_button = QPushButton("Reset rejected acquistions")
-        self.reset_rejected_acqs_button.clicked.connect(self.reset_rejected_acqs)
+        self.reset_rejected_acqs_button.clicked.connect(self.resetRejectedAcqs)
         self.analysis_buttons.addRow(self.reset_rejected_acqs_button)
 
         self.plot_widget = pg.PlotWidget()
@@ -159,10 +154,10 @@ class currentClampWidget(DragDropWidget):
 
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
         self.input_layout.addRow(self.inspect_acqs_button)
-        self.inspect_acqs_button.clicked.connect(self.inspect_acqs)
+        self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
 
         self.del_selection_button = QPushButton("Delete selection")
-        self.del_selection_button.clicked.connect(self.del_selection)
+        self.del_selection_button.clicked.connect(self.deleteSelection)
         self.input_layout.addRow(self.del_selection_button)
 
         self.b_start_label = QLabel("Baseline start (ms)")
@@ -250,7 +245,7 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters = QPushButton("Final analysis")
         self.calculate_parameters.setObjectName("calculate_parameters")
         self.input_layout.addRow(self.calculate_parameters)
-        self.calculate_parameters.clicked.connect(self.final_analysis_button)
+        self.calculate_parameters.clicked.connect(self.runFinalAnalysis)
 
         self.reset_button = QPushButton("Reset analysis")
         self.input_layout.addRow(self.reset_button)
@@ -265,9 +260,9 @@ class currentClampWidget(DragDropWidget):
 
         self.threadpool = QThreadPool()
 
-        self.set_width()
+        self.setWidth()
 
-    def set_width(self):
+    def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if not isinstance(i.parentWidget(), QSpinBox):
@@ -277,9 +272,9 @@ class currentClampWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    def inspect_acqs(self):
+    def inspectAcqs(self):
         if not self.acq_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         # Creates a separate window to view the loaded acquisitions
@@ -291,11 +286,11 @@ class currentClampWidget(DragDropWidget):
             self.inspection_widget.close()
             self.inspection_widget.removeFileList()
             self.inspection_widget = None
-            self.inspect_acqs()
+            self.inspectAcqs()
 
-    def del_selection(self):
+    def deleteSelection(self):
         if not self.acq_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         # Deletes the selected acquisitions from the list
@@ -312,7 +307,7 @@ class currentClampWidget(DragDropWidget):
             self.acq_dict = {}
         self.acq_dict = self.acq_view.model().acq_dict
         if not self.acq_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
         else:
 
@@ -379,7 +374,7 @@ class currentClampWidget(DragDropWidget):
 
     def spinbox(self, h):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -489,9 +484,9 @@ class currentClampWidget(DragDropWidget):
         else:
             pass
 
-    def delete_acq(self):
+    def deleteAcq(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = False
@@ -505,9 +500,9 @@ class currentClampWidget(DragDropWidget):
         del self.acq_dict[str(self.acquisition_number.text())]
         self.plot_widget.clear()
 
-    def reset_rejected_acqs(self):
+    def resetRejectedAcqs(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = False
@@ -515,17 +510,17 @@ class currentClampWidget(DragDropWidget):
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
 
-    def reset_recent_reject_acq(self):
+    def resetRecentRejectAcq(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = False
         self.acq_dict.update(self.recent_reject_acq)
 
-    def final_analysis_button(self):
+    def runFinalAnalysis(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -544,18 +539,16 @@ class currentClampWidget(DragDropWidget):
             table.setData(value.T.to_dict())
             self.table_dict["key"] = table
             self.tabs.addTab(table, key)
-        self.plot_iv_curve()
+        self.plotIVCurve()
         if self.final_obj.hertz:
-            self.plot_spike_frequency(self.final_obj.df_dict["Hertz"])
+            self.plotSpikeFrequency(self.final_obj.df_dict["Hertz"])
         if self.final_obj.pulse_ap:
-            self.plot_pulse_ap(self.final_obj.df_dict["Pulse APs"])
-            # self.pulse_aps.setData(self.final_obj["Pulse APs"].T.to_dict())
+            self.plotPulseAP(self.final_obj.df_dict["Pulse APs"])
         if self.final_obj.ramp_ap:
-            self.plot_ramp_ap(self.final_obj.df_dict["Ramp APs"])
-            # self.ramp_aps.setData(self.final_obj["Ramp APs"].T.to_dict())
+            self.plotRampAP(self.final_obj.df_dict["Ramp APs"])
         self.calculate_parameters.setEnabled(True)
 
-    def plot_iv_curve(self):
+    def plotIVCurve(self):
         iv_curve_plot = pg.PlotWidget()
         self.plot_dict["iv_curve_plot"] = iv_curve_plot
         self.tabs.addTab(iv_curve_plot, "IV curve")
@@ -590,7 +583,7 @@ class currentClampWidget(DragDropWidget):
                         name=f"Epoch {i}",
                     )
 
-    def plot_spike_frequency(self, df):
+    def plotSpikeFrequency(self, df):
         spike_curve_plot = pg.PlotWidget()
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.tabs.addTab(spike_curve_plot, "Spike curve")
@@ -628,7 +621,7 @@ class currentClampWidget(DragDropWidget):
                             symbolBrush=brush,
                         )
 
-    def plot_pulse_ap(self, df):
+    def plotPulseAP(self, df):
         pulse_ap_plot = pg.PlotWidget()
         self.plot_dict["pulse_ap_plot"] = pulse_ap_plot
         self.tabs.addTab(pulse_ap_plot, "Pulse AP")
@@ -645,7 +638,7 @@ class currentClampWidget(DragDropWidget):
             array = df[i]
             pulse_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
-    def plot_ramp_ap(self, df):
+    def plotRampAP(self, df):
         ramp_ap_plot = pg.PlotWidget()
         self.plot_dict["ramp_ap_plot"] = ramp_ap_plot
         self.tabs.addTab(ramp_ap_plot, "Ramp AP")
@@ -662,11 +655,11 @@ class currentClampWidget(DragDropWidget):
             array = df[i]
             ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
-    def open_files(self, directory):
+    def openFiles(self, directory: Union[str, PurePath]):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         load_dict = YamlWorker.load_yaml(directory)
-        self.set_preferences(load_dict)
+        self.setPrefences(load_dict)
         self.pbar.setFormat("Loading...")
         file_list = list(directory.glob("*.json"))
         if len(file_list) == 0:
@@ -690,13 +683,13 @@ class currentClampWidget(DragDropWidget):
                     table.setData(value.T.to_dict())
                     self.table_dict["key"] = table
                     self.tabs.addTab(table, key)
-                self.plot_iv_curve()
+                self.plotIVCurve()
                 if self.final_obj.hertz:
-                    self.plot_spike_frequency(self.final_obj.df_dict["Hertz"])
+                    self.plotSpikeFrequency(self.final_obj.df_dict["Hertz"])
                 if self.final_obj.pulse_ap:
-                    self.plot_pulse_ap(self.final_obj.df_dict["Pulse APs"])
+                    self.plotPulseAP(self.final_obj.df_dict["Pulse APs"])
                 if self.final_obj.ramp_ap:
-                    self.plot_ramp_ap(self.final_obj.df_dict["Ramp APs"])
+                    self.plotRampAP(self.final_obj.df_dict["Ramp APs"])
             self.pbar.setFormat("Loaded")
             self.acquisition_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
             self.acquisition_number.setMinimum(int(list(self.acq_dict.keys())[0]))
@@ -709,18 +702,13 @@ class currentClampWidget(DragDropWidget):
             self.calculate_parameters.setEnabled(True)
             self.analyze_acq_button.setEnabled(True)
 
-    def set_preferences(self, pref_dict):
+    def setPrefences(self, pref_dict: dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
                 i.setText(pref_dict["line_edits"][i.objectName()])
 
-        # buttons = self.findChildren(QPushButton)
-        # for i in buttons:
-        #     if i.objectName() != "":
-        #         i.setEnabled(pref_dict["buttons"][i.objectName()])
-
-    def create_pref_dict(self):
+    def createPrefDict(self):
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
         for i in line_edits:
@@ -728,27 +716,20 @@ class currentClampWidget(DragDropWidget):
                 line_edit_dict[i.objectName()] = i.text()
         self.pref_dict["line_edits"] = line_edit_dict
 
-        # buttons_dict = {}
-        # buttons = self.findChildren(QPushButton)
-        # for i in buttons:
-        #     if i.objectName() != "":
-        #         buttons_dict[i.objectName()] = i.isEnabled()
-        # self.pref_dict["buttons"] = buttons_dict
-
-    def file_does_not_exist(self):
+    def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")
         self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
-    def save_as(self, save_filename):
+    def saveAs(self, save_filename: Union[str, PurePath]):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.reset_button.setEnabled(False)
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
-        self.create_pref_dict()
+        self.createPrefDict()
         self.pref_dict["Final Analysis"] = self.calc_param_clicked
         self.pref_dict["Acq_number"] = self.acquisition_number.value()
         self.pref_dict["Deleted Acqs"] = list(self.deleted_acqs.keys())
@@ -756,28 +737,28 @@ class currentClampWidget(DragDropWidget):
         if self.pref_dict["Final Analysis"]:
             self.final_obj.save_data(save_filename)
         self.worker = SaveWorker(save_filename, self.acq_dict)
-        self.worker.signals.progress.connect(self.update_save_progress)
-        self.worker.signals.finished.connect(self.progress_finished)
+        self.worker.signals.progress.connect(self.updateSaveProgress)
+        self.worker.signals.finished.connect(self.progressFinished)
         self.threadpool.start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
-    def load_preferences(self, file_name):
+    def loadPrefences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True
         load_dict = YamlWorker.load_yaml(file_name)
-        self.set_preferences(load_dict)
+        self.setPrefences(load_dict)
 
-    def save_preferences(self, save_filename):
-        self.create_pref_dict()
+    def savePrefences(self, save_filename: Union[str, PurePath]):
+        self.createPrefDict()
         if self.pref_dict:
             YamlWorker.save_yaml(self.pref_dict, save_filename)
         else:
             pass
 
-    def update_save_progress(self, progress):
+    def updateSaveProgress(self, progress):
         self.pbar.setValue(progress)
 
-    def progress_finished(self, finished):
+    def progressFinished(self, finished):
         self.pbar.setFormat(finished)
 
 

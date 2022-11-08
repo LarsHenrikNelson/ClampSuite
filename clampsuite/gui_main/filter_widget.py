@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr  3 12:20:28 2022
-
-@author: Lars
-"""
 from PyQt5.QtWidgets import (
     QPushButton,
     QHBoxLayout,

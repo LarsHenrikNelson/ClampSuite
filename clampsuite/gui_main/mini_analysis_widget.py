@@ -1,6 +1,3 @@
-from math import log10, floor
-from glob import glob
-
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
@@ -33,7 +30,7 @@ from PyQt5.QtWidgets import (
 
 from ..acq.acq import Acq
 from .acq_inspection import AcqInspectionWidget
-from ..final_analysis.final_mini_analysis import FinalMiniAnalysis
+from ..final_analysis import FinalAnalysis
 from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
@@ -43,7 +40,6 @@ from ..gui_widgets.qtwidgets import (
     ListView,
     DragDropWidget,
 )
-from ..load_analysis.load_classes import LoadMiniSaveData
 
 
 class MiniAnalysisWidget(DragDropWidget):
@@ -55,8 +51,8 @@ class MiniAnalysisWidget(DragDropWidget):
     def init_UI(self):
 
         # Create tabs for part of the analysis program
-        self.signals.dictionary.connect(self.set_preferences)
-        self.signals.path.connect(self.open_files)
+        self.signals.dictionary.connect(self.setPrefences)
+        self.signals.path.connect(self.openFiles)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.tab_widget = QTabWidget()
@@ -254,7 +250,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters = QPushButton("Final analysis")
         self.input_layout.addRow(self.calculate_parameters)
         self.calculate_parameters.setObjectName("calculate_parameters")
-        self.calculate_parameters.clicked.connect(self.final_analysis)
+        self.calculate_parameters.clicked.connect(self.runFinalAnalysis)
 
         self.reset_button = QPushButton("Reset analysis")
         self.input_layout.addRow(self.reset_button)
@@ -378,7 +374,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_button = QPushButton("Create template")
         self.template_form.addRow(self.template_button)
         # self.template_button.setMinimumWidth(250)
-        self.template_button.clicked.connect(self.create_template)
+        self.template_button.clicked.connect(self.createTemplate)
         self.template_button.setObjectName("template_button")
 
         self.template_plot = pg.PlotWidget(
@@ -390,11 +386,11 @@ class MiniAnalysisWidget(DragDropWidget):
         # Setup for the drag and drop load layout
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
         self.load_layout.addWidget(self.inspect_acqs_button)
-        self.inspect_acqs_button.clicked.connect(self.inspect_acqs)
+        self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
 
         self.del_sel_button = QPushButton("Delete selection")
         self.load_layout.addWidget(self.del_sel_button)
-        self.del_sel_button.clicked.connect(self.del_selection)
+        self.del_sel_button.clicked.connect(self.delSelection)
 
         # Tab 2 layouts
         self.d1 = Dock("Overview")
@@ -432,7 +428,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setKeyboardTracking(False)
         self.acquisition_number.setMinimumWidth(70)
         self.acq_buttons.addWidget(self.acquisition_number, 0, 1)
-        self.acquisition_number.valueChanged.connect(self.acq_spinbox)
+        self.acquisition_number.valueChanged.connect(self.acqSpinbox)
 
         self.epoch_label = QLabel("Epoch")
         self.epoch_label.setSizePolicy(
@@ -477,22 +473,26 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_buttons.addWidget(self.slider_sensitivity, 4, 0, 1, 2)
 
         self.create_mini_button = QPushButton("Create new mini")
-        self.create_mini_button.clicked.connect(self.create_mini)
+        self.create_mini_button.clicked.connect(self.createMini)
         self.acq_buttons.addWidget(self.create_mini_button, 5, 0, 1, 2)
 
         self.delete_acq_button = QPushButton("Delete acquisition")
-        self.delete_acq_button.clicked.connect(self.delete_acq)
+        self.delete_acq_button.clicked.connect(self.deleteAcq)
         self.acq_buttons.addWidget(self.delete_acq_button, 6, 0, 1, 2)
 
         self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
-        self.reset_recent_acq_button.clicked.connect(self.reset_recent_reject_acq)
+        self.reset_recent_acq_button.clicked.connect(self.resetRecentRejectedAcq)
         self.acq_buttons.addWidget(self.reset_recent_acq_button, 7, 0, 1, 2)
+
+        self.reset_acq_button = QPushButton("Reset deleted acqs")
+        self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
+        self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
 
         self.acq_2_buttons.addStretch(0)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_2_buttons.addWidget(self.calculate_parameters_2)
-        self.calculate_parameters_2.clicked.connect(self.final_analysis)
+        self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
         self.calculate_parameters_2.setEnabled(True)
 
         # Filling the plot layout.
@@ -562,15 +562,15 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.delete_mini_button = QPushButton("Delete event")
         self.mini_layout.addRow(self.delete_mini_button)
-        self.delete_mini_button.clicked.connect(self.delete_mini)
+        self.delete_mini_button.clicked.connect(self.deleteMini)
 
         self.set_baseline = QPushButton("Set point as baseline")
         self.mini_layout.addRow(self.set_baseline)
-        self.set_baseline.clicked.connect(self.set_point_as_baseline)
+        self.set_baseline.clicked.connect(self.setPointAsBaseline)
 
         self.set_peak = QPushButton("Set point as peak")
         self.mini_layout.addRow(self.set_peak)
-        self.set_peak.clicked.connect(self.set_point_as_peak)
+        self.set_peak.clicked.connect(self.setPointAsPeak)
 
         self.mini_view_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
@@ -584,28 +584,21 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab3.setLayout(self.table_layout)
         self.data_layout = QHBoxLayout()
         self.table_layout.addLayout(self.data_layout)
-        # self.raw_data_table = pg.TableWidget(sortable=False)
-        # self.raw_data_table.setMinimumSize(300, 300)
-        # self.final_table = pg.TableWidget(sortable=False)
-        # self.final_table.setMinimumSize(400, 200)
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.ave_mini_plot.setMinimumSize(400, 300)
         self.ave_mini_plot.setObjectName("Ave mini plot")
-        # self.data_layout.addWidget(self.raw_data_table, 0)
-        # self.final_data_layout = QVBoxLayout()
-        # self.final_data_layout.addWidget(self.final_table, 10)
+        self.final_tab_widget = QTabWidget()
+        self.data_layout.addWidget(self.final_tab_widget)
         self.data_layout.addWidget(self.ave_mini_plot, 10)
-        # self.data_layout.addLayout(self.final_data_layout, 10)
-        # self.mw = MplWidget()
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
         self.stem_plot.setMinimumSize(300, 300)
         self.amp_dist = pg.PlotWidget()
         self.amp_dist.setMinimumSize(300, 300)
         self.plot_selector = QComboBox()
         self.plot_selector.setMaximumWidth(100)
-        self.plot_selector.currentTextChanged.connect(self.plot_raw_data)
+        self.plot_selector.currentTextChanged.connect(self.plotRawData)
 
         self.matplotlib_layout_h = QHBoxLayout()
         self.matplotlib_layout_h.addWidget(self.plot_selector, 1)
@@ -635,6 +628,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acqs_deleted = 0
         self.calc_param_clicked = False
         self.pref_dict = {}
+        self.table_dict = {}
         self.final_obj = None
         self.need_to_save = False
         # self.releaseKeyboard()
@@ -642,15 +636,15 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Shortcuts
         self.del_mini_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
-        self.del_mini_shortcut.activated.connect(self.delete_mini)
+        self.del_mini_shortcut.activated.connect(self.deleteMini)
 
         self.create_mini_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
-        self.create_mini_shortcut.activated.connect(self.create_mini)
+        self.create_mini_shortcut.activated.connect(self.createMini)
 
         self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
-        self.del_acq_shortcut.activated.connect(self.delete_acq)
+        self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
-        self.set_width()
+        self.setWidth()
 
     def windowChanged(self, text):
         if text == "Gaussian":
@@ -671,10 +665,16 @@ class MiniAnalysisWidget(DragDropWidget):
             self.order_label.setText("Order")
             self.polyorder_label.setText("Polyorder")
 
+    def clearTables(self):
+        for i in self.table_dict.values():
+            i.clear()
+            i.hide()
+            i.deleteLater()
+
     # This needs to be fixed because it changes the lineedits that
     # are part of the spinboxes which is not ideal. Need to create
     # a dict to hold the lineedits.
-    def set_width(self):
+    def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if not isinstance(i.parentWidget(), QSpinBox):
@@ -689,9 +689,9 @@ class MiniAnalysisWidget(DragDropWidget):
             i.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             i.adjustSize()
 
-    def inspect_acqs(self):
+    def inspectAcqs(self):
         if not self.acq_view.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         # Creates a separate window to view the loaded acquisitions
@@ -703,16 +703,16 @@ class MiniAnalysisWidget(DragDropWidget):
             self.inspection_widget.close()
             self.inspection_widget.removeFileList()
             self.inspection_widget = None
-            self.inspect_acqs()
+            self.inspectAcqs()
 
-    def del_selection(self):
+    def delSelection(self):
         # Deletes the selected acquisitions from the list
         indices = self.load_widget.selectedIndexes()
         if len(indices) > 0:
             self.load_widget.deleteSelection(indices)
             self.load_widget.clearSelection()
 
-    def tm_psp(self):
+    def tmPsp(self):
         """
         This function create template that can be used for the mini analysis.
 
@@ -740,9 +740,9 @@ class MiniAnalysisWidget(DragDropWidget):
         template[offset:] = y
         return template
 
-    def create_template(self):
+    def createTemplate(self):
         self.template_plot.clear()
-        template = self.tm_psp()
+        template = self.tmPsp()
         s_r_c = self.sample_rate_edit.toInt() / 1000
         self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
         return template
@@ -763,7 +763,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_view_plot.clear()
 
         if not self.load_widget.model().acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
             return None
 
@@ -775,7 +775,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         self.calculate_parameters_2.setEnabled(False)
-        template = self.create_template()
+        template = self.createTemplate()
 
         # Sets the progress bar to 0
         self.pbar.setFormat("Analyzing...")
@@ -826,23 +826,12 @@ class MiniAnalysisWidget(DragDropWidget):
                 baseline_corr=self.baseline_corr_choice.isChecked(),
             )
             self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
-            # if not acq.postsynaptic_events:
-            #     self.deleted_acqs[
-            #         str(self.acquisition_number.text())
-            #     ] = self.acq_dict[str(self.acquisition_number.text())]
-            #     self.recent_reject_acq[
-            #         str(self.acquisition_number.text())
-            #     ] = self.acq_dict[str(self.acquisition_number.text())]
-
-            #     # Remove deleted acquisition from the acquisition dictionary.
-            #     del self.acq_dict[str(self.acquisition_number.text())]
 
             # This part initializes acquisition_number spinbox, sets the min and max.
         acq_number = list(self.acq_dict.keys())
         self.acquisition_number.setMaximum(int(acq_number[-1]))
         self.acquisition_number.setMinimum(int(acq_number[0]))
         self.acquisition_number.setValue(int(acq_number[0]))
-        # self.acq_spinbox(int(acq_number[0]))
 
         # Minis always start from 0 since list indexing in python starts
         # at zero. I choose this because it is easier to reference minis
@@ -858,11 +847,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab_widget.setCurrentIndex(1)
         self.pbar.setFormat("Analysis finished")
 
-    def acq_spinbox(self, h):
+    def acqSpinbox(self, h):
         """This function plots each acquisition and each of its minis."""
 
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         # Plots are cleared first otherwise new data is just appended to
@@ -915,10 +904,10 @@ class MiniAnalysisWidget(DragDropWidget):
             )
 
             # Creates the ability to click on specific points in the main
-            # acquisition plot window. The function acq_plot_clicked stores
+            # acquisition plot window. The function acqPlotClicked stores
             # the point clicked for later use and is used when creating a
             # new mini.
-            acq_plot.sigPointsClicked.connect(self.acq_plot_clicked)
+            acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
 
             # Add the plot item to the plot. Need to do it this way since
             # the ability to the click on specific points is need.
@@ -960,7 +949,7 @@ class MiniAnalysisWidget(DragDropWidget):
                         clickable=True,
                     )
                     # Adds the clicked functionality to the mini plot item.
-                    mini_plot.sigClicked.connect(self.mini_clicked)
+                    mini_plot.sigClicked.connect(self.miniClicked)
                     self.p1.addItem(mini_plot)
 
                     # Minis plotted on p2 do not need any interactivity. You have
@@ -1010,12 +999,10 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_mini_clicked_2 = []
         self.mini_spinbox_list = []
         self.sort_index = []
-        # self.raw_data_table.clear()
         self.stem_plot.clear()
         self.amp_dist.clear()
         self.minis_deleted = 0
         self.acqs_deleted = 0
-        # self.final_table.clear()
         self.ave_mini_plot.clear()
         self.pref_dict = {}
         if self.inspection_widget is not None:
@@ -1029,6 +1016,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.plot_selector.clear()
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
+        self.clearTables()
 
     def update(self):
         """
@@ -1060,7 +1048,7 @@ class MiniAnalysisWidget(DragDropWidget):
             minX, maxX = self.region.getRegion()
             self.region.setRegion([minX + self.modify, maxX + self.modify])
 
-    def acq_plot_clicked(self, item, points):
+    def acqPlotClicked(self, item, points):
         """
         Returns the points clicked in the acquisition plot window.
         """
@@ -1071,7 +1059,7 @@ class MiniAnalysisWidget(DragDropWidget):
         points[0].setSize(size=12)
         self.last_acq_point_clicked = points[0]
 
-    def mini_clicked(self, item):
+    def miniClicked(self, item):
         """
         Set the mini spinbox to the mini that was clicked in the acquisition
         window.
@@ -1085,7 +1073,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1140,7 +1128,7 @@ class MiniAnalysisWidget(DragDropWidget):
         )
 
         # Add clickable functionality to the mini plot item.
-        mini_item.sigPointsClicked.connect(self.mini_plot_clicked)
+        mini_item.sigPointsClicked.connect(self.miniPlotClicked)
 
         # Plot item for the baseline, peak and estimated tau.
         mini_plot_items = pg.PlotDataItem(
@@ -1181,7 +1169,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_rise_rate.setText(str(round_sig(mini.rise_rate, sig=4)))
         self.mini_baseline.setText(str(round_sig(mini.event_start_y, sig=4)))
 
-    def mini_plot_clicked(self, item, points):
+    def miniPlotClicked(self, item, points):
         """
         Function to make the mini in the mini view widget
         clickable.
@@ -1200,7 +1188,7 @@ class MiniAnalysisWidget(DragDropWidget):
         points[0].setPen("m", width=4)
         self.last_mini_point_clicked = points[0]
 
-    def set_point_as_peak(self):
+    def setPointAsPeak(self):
         """
         This will set the mini peak as the point selected on the mini plot and
         update the other two acquisition plots.
@@ -1211,7 +1199,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         if self.last_mini_point_clicked is None:
@@ -1260,7 +1248,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # else:
         #     pass
 
-    def set_point_as_baseline(self):
+    def setPointAsBaseline(self):
         """
         This will set the baseline as the point selected on the mini plot and
         update the other two acquisition plots.
@@ -1271,7 +1259,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         if self.last_mini_point_clicked is None:
@@ -1320,7 +1308,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # else:
         #     pass
 
-    def delete_mini(self):
+    def deleteMini(self):
         """
         This function deletes a mini from the acquisition and removes it from the
         GUI.
@@ -1330,7 +1318,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None
         """
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1380,7 +1368,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_spinbox(int(self.mini_number.text()))
         self.minis_deleted += 1
 
-    def create_mini(self):
+    def createMini(self):
         """
         This function is used to create new mini events. By clicking
         on the main acquisition and clicking create new mini's button
@@ -1388,7 +1376,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1406,7 +1394,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 ].create_new_mini(x)
 
                 if not created:
-                    self.mini_not_created()
+                    self.miniNotCreated()
                     return None
 
                 # Reset the mini_spinbox_list.
@@ -1428,7 +1416,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     name=id_value,
                     clickable=True,
                 )
-                mini_plot.sigClicked.connect(self.mini_clicked)
+                mini_plot.sigClicked.connect(self.miniClicked)
                 self.p1.addItem(mini_plot)
                 self.p2.plot(
                     x=self.acq_object.postsynaptic_events[id_value].mini_plot_x(),
@@ -1447,19 +1435,19 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.last_acq_point_clicked = None
             else:
                 # Raise error if the point is too close to the beginning.
-                self.point_too_close_to_beginning()
+                self.pointTooCloseToBeginning()
                 return None
         else:
             pass
 
-    def delete_acq(self):
+    def deleteAcq(self):
         """
         Deletes the current acquisition when the delete acquisition
         button is clicked.
         """
 
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
@@ -1488,9 +1476,9 @@ class MiniAnalysisWidget(DragDropWidget):
         # acquisition.
         self.acquisition_number.setValue(int(self.acquisition_number.text()) + 1)
 
-    def reset_rejected_acqs(self):
+    def resetRejectedAcqs(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.acq_dict.update(self.deleted_acqs)
@@ -1498,9 +1486,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.recent_reject_acq = {}
         self.acqs_deleted = 0
 
-    def reset_recent_reject_acq(self):
+    def resetRecentRejectedAcq(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
 
         self.acq_dict.update(self.recent_reject_acq)
@@ -1508,11 +1496,15 @@ class MiniAnalysisWidget(DragDropWidget):
         self.recent_reject_acq = {}
         self.acquisition_number.setValue(int(list(self.recent_reject_acq.keys())[0]))
 
-    def final_analysis(self):
+    def runFinalAnalysis(self):
         if not self.acq_dict:
-            self.file_does_not_exist()
+            self.fileDoesNotExist()
             return None
-
+        if self.final_obj is not None:
+            self.final_obj = None
+            self.final_tab_widget.clear()
+            self.clearTables()
+            self.table_dict = {}
         self.need_to_save = True
         if self.final_obj is not None:
             del self.final_obj
@@ -1520,14 +1512,14 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(False)
         self.calc_param_clicked = True
         self.pbar.setFormat("Analyzing...")
-        self.final_obj = FinalMiniAnalysis(
-            self.acq_dict, self.minis_deleted, self.acqs_deleted
-        )
-        self.plot_ave_mini()
-        for i in self.final_obj.df_dict.values():
+        self.final_obj = FinalAnalysis("mini")
+        self.final_obj.analyze(self.acq_dict, self.minis_deleted, self.acqs_deleted)
+        self.plotAveMini()
+        for key, df in self.final_obj.df_dict.items():
             data_table = pg.TableWidget()
-            data_table.setData(i.T.to_dict("dict"))
-            self.data_layout.insertWidget(0, data_table)
+            self.table_dict[key] = data_table
+            data_table.setData(df.T.to_dict("dict"))
+            self.final_tab_widget.addTab(data_table, key)
         plots = [
             "Amplitude (pA)",
             "Est tau (ms)",
@@ -1539,13 +1531,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.plot_selector.addItems(plots)
         self.plot_selector.setMinimumContentsLength(len(max(plots, key=len)))
         if self.plot_selector.currentText() != "IEI (ms)":
-            self.plot_raw_data(self.plot_selector.currentText())
+            self.plotRawData(self.plot_selector.currentText())
         self.pbar.setFormat("Finished analysis")
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(2)
 
-    def plot_ave_mini(self):
+    def plotAveMini(self):
         self.ave_mini_plot.clear()
         self.ave_mini_plot.plot(
             x=self.final_obj.average_mini_x, y=self.final_obj.average_mini
@@ -1554,15 +1546,15 @@ class MiniAnalysisWidget(DragDropWidget):
             x=self.final_obj.decay_x, y=self.final_obj.fit_decay_y, pen="g"
         )
 
-    def plot_raw_data(self, y):
+    def plotRawData(self, y: str):
         if self.final_obj and y != "":
             if y != "IEI (ms)":
-                self.plot_stem_data(y)
+                self.plotStemData(y)
             else:
                 self.stem_plot.clear()
-            self.plot_amp_dist(y)
+            self.plotAmpDist(y)
 
-    def plot_stem_data(self, y):
+    def plotStemData(self, y: str):
         self.stem_plot.clear()
         x_values = self.final_obj.raw_df["Real time"].to_numpy()
         y_values = self.final_obj.raw_df[y].to_numpy()
@@ -1582,7 +1574,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.stem_plot.addItem(head_item)
         self.stem_plot.setLabel(axis="left", text=f"{y}")
 
-    def plot_amp_dist(self, column):
+    def plotAmpDist(self, column):
         self.amp_dist.clear()
         log_y, x = create_kde(self.final_obj.raw_df, column)
         y = self.final_obj.raw_df[column].dropna().to_numpy()
@@ -1599,28 +1591,28 @@ class MiniAnalysisWidget(DragDropWidget):
         stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
         self.amp_dist.addItem(stem_item)
 
-    def file_does_not_exist(self):
+    def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")
         self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
-    def point_to_close_to_beginning(self):
+    def pointTooCloseToBeginning(self):
         self.dlg.setWindowTitle("Information")
         self.dlg.setText(
             ("The selected point is too close" "to the beginning of the acquisition")
         )
         self.dlg.exec()
 
-    def mini_not_created(self):
+    def miniNotCreated(self):
         self.dlg.setWindowTitle("Information")
         self.dlg.setText("Event could not be created")
         self.dlg.exec()
 
-    def open_files(self, directory):
+    def openFiles(self, directory):
         self.reset()
         self.pbar.setFormat("Loading...")
         load_dict = YamlWorker.load_yaml(directory)
-        self.set_preferences(load_dict)
+        self.setPrefences(load_dict)
         self.reset_button.setEnabled(True)
         file_list = list(directory.glob("*.json"))
         if not file_list:
@@ -1643,17 +1635,20 @@ class MiniAnalysisWidget(DragDropWidget):
             self.load_widget.setLoadData(self.acq_dict)
             if load_dict["Final Analysis"]:
                 excel_file = list(directory.glob("*.xlsx"))[0]
-                save_values = pd.read_excel(excel_file, sheet_name=None)
-                self.final_obj = LoadMiniSaveData(save_values)
+                self.final_obj = FinalAnalysis("mini")
+                self.final_obj.load_data(excel_file)
                 self.ave_mini_plot.clear()
                 self.ave_mini_plot.plot(
-                    x=self.final_obj.average_mini_x, y=self.final_obj.average_mini
+                    x=self.final_obj.average_mini_x(), y=self.final_obj.average_mini_y()
                 )
                 self.ave_mini_plot.plot(
-                    x=self.final_obj.decay_x, y=self.final_obj.fit_decay_y, pen="g"
+                    x=self.final_obj.decay_x(), y=self.final_obj.fit_decay_y(), pen="g"
                 )
-                self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict("dict"))
-                self.final_table.setData(self.final_obj.final_df.T.to_dict("dict"))
+            for key, df in self.final_obj.df_dict.items():
+                data_table = pg.TableWidget()
+                self.table_dict[key] = data_table
+                data_table.setData(df.T.to_dict("dict"))
+                self.final_tab_widget.addTab(data_table, key)
             plots = [
                 "Amplitude (pA)",
                 "Est tau (ms)",
@@ -1666,11 +1661,11 @@ class MiniAnalysisWidget(DragDropWidget):
             self.calculate_parameters.setEnabled(True)
             self.pbar.setFormat("Loaded")
 
-    def save_as(self, save_filename):
+    def saveAs(self, save_filename):
         self.reset_button.setEnabled(False)
         self.pbar.setFormat("Saving...")
         self.pbar.setValue(0)
-        self.create_pref_dict()
+        self.createPrefDict()
         self.pref_dict["Final Analysis"] = self.calc_param_clicked
         self.pref_dict["Acq_number"] = self.acquisition_number.value()
         self.pref_dict["Deleted Acqs"] = list(self.deleted_acqs.keys())
@@ -1681,13 +1676,13 @@ class MiniAnalysisWidget(DragDropWidget):
         if self.deleted_acqs:
             self.worker_2 = MiniSaveWorker(save_filename, self.deleted_acqs)
             self.threadpool.start(self.worker_2)
-        self.worker.signals.progress.connect(self.update_save_progress)
-        self.worker.signals.finished.connect(self.progress_finished)
+        self.worker.signals.progress.connect(self.updateSaveProgess)
+        self.worker.signals.finished.connect(self.progressFinished)
         self.threadpool.start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
-    def create_pref_dict(self):
+    def createPrefDict(self):
         self.pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -1724,7 +1719,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 slider_dict[i.objectName()] = i.value()
         self.pref_dict["sliders"] = slider_dict
 
-    def set_preferences(self, pref_dict):
+    def setPrefences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1765,24 +1760,24 @@ class MiniAnalysisWidget(DragDropWidget):
                 except:
                     pass
 
-    def load_preferences(self, file_name):
+    def loadPreferences(self, file_name):
         load_dict = YamlWorker.load_yaml(file_name)
-        self.set_preferences(load_dict)
+        self.setPrefences(load_dict)
 
-    def save_preferences(self, save_filename):
-        self.create_pref_dict()
+    def savePreferences(self, save_filename):
+        self.createPrefDict()
         if self.pref_dict:
             YamlWorker.save_yaml(self.pref_dict, save_filename)
         else:
             pass
 
-    def update_save_progress(self, progress):
+    def updateSaveProgess(self, progress):
         self.pbar.setValue(progress)
 
-    def progress_finished(self, finished):
+    def progressFinished(self, finished):
         self.pbar.setFormat(finished)
 
-    def set_appearance_preferences(self, pref_dict):
+    def setAppearncePrefences(self, pref_dict):
         self.p1.setBackground(pref_dict[0])
         self.p1.getAxis("left").setPen(pref_dict[1])
         self.p1.getAxis("left").setTextPen(pref_dict[1])

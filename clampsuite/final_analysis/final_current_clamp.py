@@ -235,7 +235,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             self.ramp_ap = True
             self.df_dict["Ramp APs"] = ramp_ap_df
 
-    def create_first_aps(self) -> tuple(dict, dict):
+    def create_first_aps(self) -> tuple[dict, dict]:
         pulse_dict = defaultdict(lambda: defaultdict(list))
         ramp_dict = defaultdict(lambda: defaultdict(list))
         for i in self.acq_dict.keys():
@@ -264,7 +264,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             ap_dict[i] = average
         return ap_dict
 
-    def average_aps(self, dict_entry: Union(list, np.ndarray)) -> np.ndarray:
+    def average_aps(self, dict_entry: Union[list, np.ndarray]) -> np.ndarray:
         """
         This function takes a list of a lists/arrays, finds the max values
         and then aligns all the lists/arrays to the max value by adding an

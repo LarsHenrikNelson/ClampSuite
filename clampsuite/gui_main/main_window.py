@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.set_widget("Mini Analysis")
+        self.setWidget("Mini Analysis")
 
     def initUI(self):
         self.setWindowTitle("Electrophysiology Analysis")
@@ -38,27 +38,27 @@ class MainWindow(QMainWindow):
         self.openFile = QAction("Open", self)
         self.openFile.setStatusTip("Open file")
         self.openFile.setShortcut("Ctrl+O")
-        self.openFile.triggered.connect(self.open_files)
+        self.openFile.triggered.connect(self.openFiles)
         self.file_menu.addAction(self.openFile)
 
         self.saveFile = QAction("Save", self)
         self.saveFile.setStatusTip("Save file")
         self.saveFile.setShortcut("Ctrl+S")
-        self.saveFile.triggered.connect(self.save_as)
+        self.saveFile.triggered.connect(self.saveAs)
         self.file_menu.addAction(self.saveFile)
 
         self.loadPref = QAction("Load analysis preferences", self)
         self.loadPref.setStatusTip("Load analysis preferences")
-        self.loadPref.triggered.connect(self.load_preferences)
+        self.loadPref.triggered.connect(self.loadPreferences)
         self.file_menu.addAction(self.loadPref)
 
         self.savePref = QAction("Save analysis preferences", self)
         self.savePref.setStatusTip("Save analysis preferences")
-        self.savePref.triggered.connect(self.save_preferences)
+        self.savePref.triggered.connect(self.savePreferences)
         self.file_menu.addAction(self.savePref)
 
         self.setApplicationPreferences = QAction("Set preferences", self)
-        self.setApplicationPreferences.triggered.connect(self.set_appearance)
+        self.setApplicationPreferences.triggered.connect(self.setAppearance)
         self.preferences_menu.addAction(self.setApplicationPreferences)
 
         self.tool_bar = QToolBar()
@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
         widgets = ["Mini Analysis", "oEPSC", "Current Clamp", "Filtering setup"]
         self.widget_chooser.addItems(widgets)
         self.widget_chooser.setMinimumContentsLength(len(max(widgets, key=len)))
-        self.widget_chooser.currentTextChanged.connect(self.set_widget)
+        self.widget_chooser.currentTextChanged.connect(self.setWidget)
 
         self.save_button = QPushButton()
         style = self.save_button.style()
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
         for i in combo_boxes:
             i.view().setSpacing(1)
 
-    def set_widget(self, text):
+    def setWidget(self, text):
         if text == "Mini Analysis":
             self.central_widget.setCurrentWidget(self.mini_widget)
         elif text == "oEPSC":
@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
 
-    def save_as(self):
+    def saveAs(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
             self,
             directory=self.working_dir,
@@ -123,9 +123,9 @@ class MainWindow(QMainWindow):
         )
         if save_filename:
             self.working_dir = str(Path(PurePath(save_filename).parent))
-            self.central_widget.currentWidget().save_as(save_filename)
+            self.central_widget.currentWidget().saveAs(save_filename)
 
-    def open_files(self):
+    def openFiles(self):
         directory = str(
             QFileDialog.getExistingDirectory(
                 self,
@@ -136,11 +136,11 @@ class MainWindow(QMainWindow):
         if directory:
             path = Path(directory)
             self.working_dir = str(path)
-            self.central_widget.currentWidget().open_files(path)
+            self.central_widget.currentWidget().openFiles(path)
         else:
             pass
 
-    def load_preferences(self):
+    def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, caption="Open file", filter="YAML Files (*.yaml)"
         )
@@ -149,20 +149,20 @@ class MainWindow(QMainWindow):
             # selected
             pass
         else:
-            self.central_widget.currentWidget().load_preferences(file_name)
+            self.central_widget.currentWidget().loadPreferences(file_name)
 
-    def save_preferences(self):
+    def savePreferences(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
             self, "Save preference as...", ""
         )
         if save_filename:
-            self.central_widget.currentWidget().save_preferences(save_filename)
+            self.central_widget.currentWidget().savePreferences(save_filename)
 
-    def set_appearance(self):
+    def setAppearance(self):
         # Creates a separate window to set the appearance of the application
         self.preferences_widget.show()
 
-    def startup_function(self):
+    def startupFunction(self):
         p = Path.home()
         h = "EphysAnalysisProgram"
         file_name = "Preferences.yaml"
@@ -177,5 +177,5 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.central_widget.currentWidget().need_to_save:
-            self.save_as()
+            self.saveAs()
         event.accept()

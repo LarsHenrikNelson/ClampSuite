@@ -7,8 +7,6 @@ from ..functions.filtering_functions import (
     bessel_zero,
     butterworth,
     butterworth_zero,
-    elliptic,
-    elliptic_zero,
     ewma_afilt,
     ewma_filt,
     fir_zero_1,
@@ -35,17 +33,17 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
 
     def analyze(
         self,
-        sample_rate: Union(int, float) = 10000,
-        baseline_start: Union(int, float) = 0,
-        baseline_end: Union(int, float) = 800,
+        sample_rate: Union[int, float] = 10000,
+        baseline_start: Union[int, float] = 0,
+        baseline_end: Union[int, float] = 800,
         filter_type: str = "None",
-        order: Union(None, int) = None,
-        high_pass: Union(int, float, None) = None,
-        high_width: Union(int, float, None) = None,
-        low_pass: Union(int, float, None) = None,
-        low_width: Union(int, float, None) = None,
-        window: Union(str, None) = None,
-        polyorder: Union(int, None) = None,
+        order: Union[None, int] = None,
+        high_pass: Union[int, float, None] = None,
+        high_width: Union[int, float, None] = None,
+        low_pass: Union[int, float, None] = None,
+        low_width: Union[int, float, None] = None,
+        window: Union[str, None] = None,
+        polyorder: Union[int, None] = None,
     ):
         self.sample_rate = sample_rate
         self.baseline_start = baseline_start
