@@ -1,4 +1,4 @@
-from collections import defaultdict
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -19,12 +19,12 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
 
     def analyze(
         self,
-        acq_dict,
-        events_deleted=0,
-        acqs_deleted=0,
-        sample_rate=10000,
-        curve_fit_decay=False,
-        curve_fit_type="db_exp",
+        acq_dict: dict,
+        events_deleted: int = 0,
+        acqs_deleted: int = 0,
+        sample_rate: Union(int, float) = 10000,
+        curve_fit_decay: bool = False,
+        curve_fit_type: str = "db_exp",
     ):
         self.df_dict = {}
         self.events_deleted = events_deleted
@@ -32,7 +32,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         self.sample_rate = sample_rate
         self.compute_data(acq_dict)
 
-    def extract_raw_data(self, acq_dict):
+    def extract_raw_data(self, acq_dict: dict):
         """
         This function compiles the data from each acquisitions and puts it
         into a pandas dataframe. The data that are included are: amplitudes,
@@ -51,7 +51,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         acq_dict = {
             i[0]: i[1] for i in acq_dict.items() if len(i[1].postsynaptic_events) > 0
         }
-        df_list = [i.final_acq_data() for i in acq_dict.values()]
+        df_list = [pd.DataFrame(i.final_acq_data()) for i in acq_dict.values()]
 
         raw_df = pd.concat(df_list, axis=0, ignore_index=True)
 
@@ -61,7 +61,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         raw_df["Real time"] = raw_df["Acq time stamp"] + raw_df["Event time (ms)"]
         self.df_dict["Raw data"] = raw_df
 
-    def extract_final_data(self, acq_dict):
+    def extract_final_data(self, acq_dict: dict):
         columns_for_analysis = [
             "IEI (ms)",
             "Amplitude (pA)",
@@ -120,7 +120,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         final_df.drop(["index"], axis=1, inplace=True)
         self.df_dict["Final data"] = final_df
 
-    def create_average_mini(self, acq_dict):
+    def create_average_mini(self, acq_dict: dict):
         peak_align_values = sum([item.peak_values() for item in acq_dict.values()], [])
         events_list = sum([item.get_event_arrays() for item in acq_dict.values()], [])
         max_min = max(peak_align_values)
@@ -132,7 +132,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         average_mini = np.average(np.array(final_arrays), axis=0)
         return average_mini
 
-    def analyze_average_mini(self, average_mini):
+    def analyze_average_mini(self, average_mini: np.ndarray):
         average_mini = average_mini - np.mean(average_mini[0:10])
         event_peak_x = np.argmin(average_mini)
         event_peak_y = np.min(average_mini)
@@ -158,13 +158,15 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         extra_data = pd.concat(temp_list, axis=1)
         self.df_dict["Extra data"] = extra_data
 
-    def compute_data(self, acq_dict):
+    def compute_data(self, acq_dict: dict):
         average_mini = self.create_average_mini(acq_dict)
         self.analyze_average_mini(average_mini)
         self.extract_raw_data(acq_dict)
         self.extract_final_data(acq_dict)
 
-    def stem_components(self, column):
+    def stem_components(
+        self, column: str
+    ) -> tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray):
         df = self.df_dict.get("Raw data")
         if df is not None:
             array_x = df.get("Real time").to_numpy()
@@ -173,7 +175,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             stems_x = np.stack([array_x, array_x], axis=-1).flatten()
             return array_x, array_y, stems_x, stems_y
 
-    def save_data(self, save_filename):
+    def save_data(self, save_filename: str):
         """
         This function saves the resulting pandas data frames to an excel file.
         The function saves the data to the current directory so all that is
@@ -185,42 +187,42 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             for key, df in self.df_dict.items():
                 df.to_excel(writer, index=False, sheet_name=key)
 
-    def load_data(self, file_path):
+    def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)
 
-    def final_data(self):
+    def final_data(self) -> Union(None, pd.DataFrame):
         return self.df_dict.get("Final data")
 
-    def raw_data(self):
+    def raw_data(self) -> Union(None, pd.DataFrame):
         return self.df_dict.get("Raw data")
 
-    def extra_data(self):
+    def extra_data(self) -> Union(None, pd.DataFrame):
         return self.df_dict.get("Extra data")
 
-    def average_mini_y(self):
+    def average_mini_y(self) -> Union(None, np.ndarray):
         df = self.extra_data()
         if df is not None:
-            return df.get("Extra data")["ave_mini_y"].dropna().to_numpy()
+            return df["ave_mini_y"].dropna().to_numpy()
         else:
             return df
 
-    def average_mini_x(self):
+    def average_mini_x(self) -> Union(None, np.ndarray):
         df = self.extra_data()
         if df is not None:
-            return df.get("Extra data")["ave_mini_x"].dropna().to_numpy()
+            return df["ave_mini_x"].dropna().to_numpy()
         else:
             return df
 
-    def fit_decay_y(self):
+    def fit_decay_y(self) -> Union(None, np.ndarray):
         df = self.extra_data()
         if df is not None:
-            return df.get("Extra data")["fit_decay_y"].dropna().to_numpy()
+            return df["fit_decay_y"].dropna().to_numpy()
         else:
             return df
 
-    def fit_decay_x(self):
+    def fit_decay_x(self) -> Union(bool, np.ndarray):
         df = self.extra_data()
         if df is not None:
-            return df.get("Extra data")["fit_decay_x"].dropna().to_numpy()
+            return df["fit_decay_x"].dropna().to_numpy()
         else:
             return df

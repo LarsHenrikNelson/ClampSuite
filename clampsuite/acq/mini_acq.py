@@ -1,7 +1,8 @@
+from typing import Union
+
 import numpy as np
-import pandas as pd
 from scipy.fft import fft, ifft
-from scipy import signal, stats, interpolate
+from scipy import signal, interpolate
 
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
@@ -301,11 +302,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         event_time = []
 
         # The for loop won't run if there are no events.
-        # So there is no need to catch instances where
+        # So there is no need to catch instances when
         # there are no events.
 
-        # if len(self.events) == 0:
-        #     return None
         for peak in self.events:
             if len(self.final_array) - peak < 20 * self.s_r_c:
                 pass
@@ -331,70 +330,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 else:
                     pass
 
-                # if np.isnan(event.event_peak_x()) or event.event_peak_x() in event_time:
-                #     pass
-                # else:
-                #     if event_number > 0:
-                #         if (
-                #             event.event_peak_x()
-                #             - self.postsynaptic_events[-1].event_peak_x()
-                #             > self.mini_spacing
-                #             and event.amplitude >= self.amp_threshold
-                #             and event.rise_time >= self.min_rise_time
-                #             and event.rise_time <= self.max_rise_time
-                #             and event.final_tau_x >= self.min_decay_time
-                #             and event.final_tau_x >= event.rise_time
-                #         ):
-                #             self.postsynaptic_events += [event]
-                #             self.final_events += [peak]
-                #             event_time += [event.event_peak_x()]
-                #             event_number += 1
-                #         else:
-                #             pass
-                #     else:
-                #         if (
-                #             event.amplitude > self.amp_threshold
-                #             and event.rise_time > self.min_rise_time
-                #             and event.rise_time < self.max_rise_time
-                #             and event.final_tau_x > self.min_decay_time
-                #             and event.final_tau_x > event.rise_time
-                #         ):
-                #             self.postsynaptic_events.append(event)
-                #             self.final_events += [peak]
-                #             event_time += [event.event_peak_x]
-                #             event_number += 1
-                #         else:
-                #             pass
-        # else:
-        #     peak = self.events[0]
-        #     event = MiniEvent()
-        #     event.analyze(
-        #         acq_number=self.acq_number,
-        #         event_pos=peak,
-        #         y_array=self.final_array,
-        #         sample_rate=self.sample_rate,
-        #         curve_fit_decay=self.curve_fit_decay,
-        #         curve_fit_type=self.curve_fit_type,
-        #     )
-        #     event_time += [event.event_peak_x]
-        #     if event.event_peak_x is np.nan or event.event_peak_x in event_time:
-        #         pass
-        #     else:
-        #         if (
-        #             event.amplitude > self.amp_threshold
-        #             and event.rise_time > self.min_rise_time
-        #             and event.final_tau_x > self.min_decay_time
-        #             and event.rise_time < self.max_rise_time
-        #             and event.final_tau_x > event.rise_time
-        #         ):
-        #             self.postsynaptic_events += [event]
-        #             self.final_events += [peak]
-        #             event_time += [event.event_peak_x]
-        #             event_number += 1
-        #         else:
-        #             pass
-
-    def check_event(self, event, events):
+    def check_event(self, event: MiniEvent, events: list) -> bool:
         """The function is used to screen out events based
         on several values set by the experimenter.
 
@@ -435,7 +371,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return True
 
-    def create_new_mini(self, x):
+    def create_new_mini(self, x: Union(int, float)) -> bool:
         """Creates a new mini event based on the time
         of the event passed to the function. The new
         event is not screened like the automatically
@@ -470,7 +406,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return False
 
-    def final_acq_data(self):
+    def final_acq_data(self) -> dict:
         """
         Creates the final data using list comprehension by looping over each
         of the minis in contained in the postsynaptic event list.
@@ -530,17 +466,17 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
             final_dict["IEI (ms)"] = [np.nan]
             self.freq = np.nan
-        return pd.DataFrame(final_dict)
+        return final_dict
 
-    def get_event_arrays(self):
+    def get_event_arrays(self) -> list:
         events = [i.event_array - i.event_start_y for i in self.postsynaptic_events]
         return events
 
-    def peak_values(self):
+    def peak_values(self) -> list:
         peak_align_values = [i.peak_align_value for i in self.postsynaptic_events]
         return peak_align_values
 
-    def total_events(self):
+    def total_events(self) -> list:
         return len([i.amplitude for i in self.postsynaptic_events])
 
     def save_postsynaptic_events(self):
@@ -555,7 +491,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         """
         self.saved_events_dict = []
-        self.array = "saved"
+        # self.array = "saved"
         # self.final_decon_array = "saved"
         self.events = "saved"
         self.x_array = "saved"

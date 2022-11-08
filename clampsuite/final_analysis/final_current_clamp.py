@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ from . import final_analysis
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):
-    def analyze(self, acq_dict, iv_start=1, iv_end=6):
+    def analyze(self, acq_dict: dict, iv_start: int = 1, iv_end: int = 6):
         self.acq_dict = acq_dict
         self.iv_start = iv_start
         self.iv_end = iv_end
@@ -26,7 +27,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         self.deltav_dataframe()
         self.create_first_ap_dfs()
 
-    def load_data(self, file_path):
+    def load_data(self, file_path: str):
         self.df_dict = {}
         self.hertz = False
         self.pulse_ap = False
@@ -234,7 +235,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             self.ramp_ap = True
             self.df_dict["Ramp APs"] = ramp_ap_df
 
-    def create_first_aps(self):
+    def create_first_aps(self) -> tuple(dict, dict):
         pulse_dict = defaultdict(lambda: defaultdict(list))
         ramp_dict = defaultdict(lambda: defaultdict(list))
         for i in self.acq_dict.keys():
@@ -251,7 +252,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                     ].append(self.acq_dict[i].first_ap)
         return pulse_dict, ramp_dict
 
-    def first_ap_dict(self, dictionary):
+    def first_ap_dict(self, dictionary: dict) -> dict:
         ap_dict = {}
         if len(dictionary.keys()) > 1:
             for i in dictionary.keys():
@@ -263,7 +264,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             ap_dict[i] = average
         return ap_dict
 
-    def average_aps(self, dict_entry):
+    def average_aps(self, dict_entry: Union(list, np.ndarray)) -> np.ndarray:
         """
         This function takes a list of a lists/arrays, finds the max values
         and then aligns all the lists/arrays to the max value by adding an
@@ -293,7 +294,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         average = np.average(np.array(arrays), axis=0)
         return average
 
-    def membrane_resistance(self, df):
+    def membrane_resistance(self, df: pd.DataFrame) -> pd.DataFrame:
         df1 = df[df[("Ramp", "")] == 0]
         if df1.empty == True:
             return df
@@ -343,14 +344,14 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         deltav_df["deltav_x"] = self.deltav_x
         self.df_dict["Delta V"] = deltav_df
 
-    def temp_df(self):
+    def temp_df(self) -> pd.DataFrame:
         temp_df = self.df_dict["Final data"].copy()
         mi = temp_df.columns
         ind = pd.Index([e[0] + "_" + str(e[1]) for e in mi.tolist()])
         temp_df.columns = ind
         return temp_df
 
-    def save_data(self, save_filename):
+    def save_data(self, save_filename: str):
         """
         This function saves the resulting pandas data frames to an excel file.
         The function saves the data to the current directory so all that is

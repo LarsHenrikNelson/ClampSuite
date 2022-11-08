@@ -1,10 +1,16 @@
+from typing import Union
+
 import pandas as pd
 
 from . import final_analysis
 
 
 class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
-    def analyze(self, o_acq_dict=None, lfp_acq_dict=None):
+    def analyze(
+        self,
+        o_acq_dict: Union(dict, None) = None,
+        lfp_acq_dict: Union(dict, None) = None,
+    ):
         self.o_acq_dict = o_acq_dict
         self.lfp_acq_dict = lfp_acq_dict
         self.df_dict = {}
@@ -48,7 +54,7 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
             final_df.reset_index(inplace=True)
         self.df_dict["Final data"] = final_df
 
-    def save_data(self, save_filename):
+    def save_data(self, save_filename: str):
         """
         This function saves the resulting pandas data frames to an excel file.
         The function saves the data to the current directory so all that is
@@ -60,5 +66,5 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
             for key, df in self.df_dict.items():
                 df.to_excel(writer, index=False, sheet_name=key)
 
-    def load_data(self, file_path):
+    def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)
