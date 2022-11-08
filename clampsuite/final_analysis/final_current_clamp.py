@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
+from . import final_analysis
 
-class FinalCurrentClampAnalysis:
-    def __init__(self, acq_dict, iv_start=1, iv_end=6):
+
+class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):
+    def analyze(self, acq_dict, iv_start=1, iv_end=6):
         self.acq_dict = acq_dict
         self.iv_start = iv_start
         self.iv_end = iv_end
@@ -14,15 +16,53 @@ class FinalCurrentClampAnalysis:
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
-        self.analyze()
+        self._analyze()
 
-    def analyze(self):
+    def _analyze(self):
         self.create_raw_data()
         self.average_data()
         self.final_data()
         self.iv_curve_dataframe()
         self.deltav_dataframe()
         self.create_first_ap_dfs()
+
+    def load_data(self, file_path):
+        self.df_dict = {}
+        self.hertz = False
+        self.pulse_ap = False
+        self.ramp_ap = False
+
+        with pd.ExcelFile(file_path) as dfs:
+            for i in dfs.sheet_names:
+                if i == "Final data":
+                    self.df_dict[i] = pd.read_excel(
+                        file_path, sheet_name=i, header=[0, 1]
+                    ).drop(labels=0)
+                else:
+                    self.df_dict[i] = pd.read_excel(file_path, sheet_name=i)
+                if i == "Hertz":
+                    self.hertz = True
+                if i == "Pulse APs":
+                    self.pulse_ap = True
+                if i == "Ramp APs":
+                    self.ramp_ap = True
+
+        self.plot_epochs = self.df_dict["IV"].columns.to_list()[:-1]
+        self.plot_epochs = [int(i) for i in self.plot_epochs]
+        self.process_final_data()
+
+    def process_final_data(self):
+        df = self.df_dict["Final data"]
+        df.rename(
+            columns={"Unnamed: 2_level_1": "", "Unnamed: 1_level_1": ""},
+            level=1,
+            inplace=True,
+        )
+        df.rename(columns={"Unnamed: 0_level_0": ""}, level=0, inplace=True)
+        df["Epoch"] = df["Epoch"].astype("int64")
+        df["Ramp"] = df["Ramp"].astype("int64")
+        df[""] = df[""].astype("int64")
+        df.set_index(df[""]["Pulse_amp"], inplace=True)
 
     def create_raw_data(self):
         raw_df = pd.DataFrame(
@@ -324,12 +364,3 @@ class FinalCurrentClampAnalysis:
                     value.to_excel(writer, sheet_name=key)
                 else:
                     value.to_excel(writer, index=False, sheet_name=key)
-            # self.raw_df.to_excel(writer, index=False, sheet_name="Raw data")
-            # self.final_df.to_excel(writer, sheet_name="Final data")
-            # self.iv_df.to_excel(writer, index=False, sheet_name="IV_df")
-            # self.deltav_df.to_excel(writer, index=False, sheet_name="Deltav_df")
-            # self.iei_df.to_excel(writer, index=False, sheet_names="Spike_iei")
-            # if not self.pulse_ap_df.empty:
-            #     self.pulse_ap_df.to_excel(writer, index=False, sheet_name="Pulse APs")
-            # if not self.ramp_ap_df.empty:
-            #     self.ramp_ap_df.to_excel(writer, index=False, sheet_name="Ramp APs")

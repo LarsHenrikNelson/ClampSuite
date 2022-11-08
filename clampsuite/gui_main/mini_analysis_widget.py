@@ -584,20 +584,20 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab3.setLayout(self.table_layout)
         self.data_layout = QHBoxLayout()
         self.table_layout.addLayout(self.data_layout)
-        self.raw_data_table = pg.TableWidget(sortable=False)
-        self.raw_data_table.setMinimumSize(300, 300)
-        self.final_table = pg.TableWidget(sortable=False)
-        self.final_table.setMinimumSize(400, 200)
+        # self.raw_data_table = pg.TableWidget(sortable=False)
+        # self.raw_data_table.setMinimumSize(300, 300)
+        # self.final_table = pg.TableWidget(sortable=False)
+        # self.final_table.setMinimumSize(400, 200)
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.ave_mini_plot.setMinimumSize(400, 300)
         self.ave_mini_plot.setObjectName("Ave mini plot")
-        self.data_layout.addWidget(self.raw_data_table, 0)
-        self.final_data_layout = QVBoxLayout()
-        self.final_data_layout.addWidget(self.final_table, 10)
-        self.final_data_layout.addWidget(self.ave_mini_plot, 10)
-        self.data_layout.addLayout(self.final_data_layout, 10)
+        # self.data_layout.addWidget(self.raw_data_table, 0)
+        # self.final_data_layout = QVBoxLayout()
+        # self.final_data_layout.addWidget(self.final_table, 10)
+        self.data_layout.addWidget(self.ave_mini_plot, 10)
+        # self.data_layout.addLayout(self.final_data_layout, 10)
         # self.mw = MplWidget()
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
         self.stem_plot.setMinimumSize(300, 300)
@@ -1010,13 +1010,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_mini_clicked_2 = []
         self.mini_spinbox_list = []
         self.sort_index = []
-        self.raw_df = {}
-        self.raw_data_table.clear()
+        # self.raw_data_table.clear()
         self.stem_plot.clear()
         self.amp_dist.clear()
         self.minis_deleted = 0
         self.acqs_deleted = 0
-        self.final_table.clear()
+        # self.final_table.clear()
         self.ave_mini_plot.clear()
         self.pref_dict = {}
         if self.inspection_widget is not None:
@@ -1525,8 +1524,10 @@ class MiniAnalysisWidget(DragDropWidget):
             self.acq_dict, self.minis_deleted, self.acqs_deleted
         )
         self.plot_ave_mini()
-        self.raw_data_table.setData(self.final_obj.raw_df.T.to_dict("dict"))
-        self.final_table.setData(self.final_obj.final_df.T.to_dict("dict"))
+        for i in self.final_obj.df_dict.values():
+            data_table = pg.TableWidget()
+            data_table.setData(i.T.to_dict("dict"))
+            self.data_layout.insertWidget(0, data_table)
         plots = [
             "Amplitude (pA)",
             "Est tau (ms)",

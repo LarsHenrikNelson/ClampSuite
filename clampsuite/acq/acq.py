@@ -21,7 +21,7 @@ class Acq:
         obj = object.__new__(subclass)
         obj.analysis = analysis
         obj.path = path
-        obj.version = "0.0.1"
+        obj.version = "0.0.2"
         return obj
 
     def __copy__(self):
