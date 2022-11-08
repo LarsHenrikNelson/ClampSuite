@@ -1,6 +1,7 @@
+from typing import Union
+
 import numpy as np
 from scipy import integrate, optimize
-from scipy import signal
 
 from . import filter_acq
 from ..functions.curve_fit import s_exp_decay, db_exp_decay
@@ -9,26 +10,26 @@ from ..functions.curve_fit import s_exp_decay, db_exp_decay
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def analyze(
         self,
-        sample_rate=10000,
-        baseline_start=800,
-        baseline_end=1000,
-        filter_type="None",
+        sample_rate: int = 10000,
+        baseline_start: Union(int, float) = 800,
+        baseline_end: Union(int, float) = 1000,
+        filter_type: str = "None",
         order=None,
-        high_pass=None,
-        high_width=None,
-        low_pass=None,
-        low_width=None,
-        window=None,
-        polyorder=None,
-        pulse_start=1000,
-        n_window_start=1001,
-        n_window_end=1050,
-        p_window_start=1045,
-        p_window_end=1055,
-        find_ct=False,
-        find_est_decay=False,
-        curve_fit_decay=False,
-        curve_fit_type="s_exp",
+        high_pass: Union(int, float, None) = None,
+        high_width: Union(int, float, None) = None,
+        low_pass: Union(int, float, None) = None,
+        low_width: Union(int, float, None) = None,
+        window: Union(str, None) = None,
+        polyorder: Union(int, None) = None,
+        pulse_start: Union(int, float) = 1000,
+        n_window_start: Union(int, float) = 1001,
+        n_window_end: Union(int, float) = 1050,
+        p_window_start: Union(int, float) = 1045,
+        p_window_end: Union(int, float) = 1055,
+        find_ct: bool = False,
+        find_est_decay: bool = False,
+        curve_fit_decay: bool = False,
+        curve_fit_type: str = "s_exp",
     ):
         # Set all the attributes
         self.sample_rate = sample_rate
@@ -187,13 +188,16 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             self.find_fit_decay()
 
     # Helper functions for plottings x in the correct units
-    def peak_x(self):
+    def peak_x(self) -> Union(float, int):
         return self._peak_x / self.s_r_c
 
-    def est_decay(self):
-        return self.est_tau_x - self.peak_x()
+    def est_decay(self) -> Union(float, int, np.nan):
+        if isinstance(self.est_tau_x, np.nan):
+            return np.nan
+        else:
+            return self.est_tau_x - self.peak_x()
 
-    def plot_x_comps(self):
+    def plot_x_comps(self) -> list:
         if self.find_edecay:
             return [
                 self.peak_x(),
@@ -202,7 +206,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         else:
             return [self.peak_x(), self.est_tau_x]
 
-    def plot_y_comps(self):
+    def plot_y_comps(self) -> list:
         if self.find_edecay:
             return [
                 self.peak_y,
@@ -211,10 +215,10 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         else:
             return [self.peak_y, self.est_tau_x]
 
-    def pulse_start(self):
+    def pulse_start(self) -> list:
         return self._pulse_start / self.s_r_c
 
-    def create_dict(self):
+    def create_dict(self) -> dict:
         oepsc_dict = {
             "Epoch": self.epoch,
             "Acq number": self.acq_number,

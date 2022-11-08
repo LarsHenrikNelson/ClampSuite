@@ -1,5 +1,6 @@
+from typing import Union
+
 import numpy as np
-from scipy import signal
 
 from ..functions.filtering_functions import (
     bessel,
@@ -34,17 +35,17 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
 
     def analyze(
         self,
-        sample_rate=10000,
-        baseline_start=0,
-        baseline_end=800,
-        filter_type="None",
-        order=None,
-        high_pass=None,
-        high_width=None,
-        low_pass=None,
-        low_width=None,
-        window=None,
-        polyorder=None,
+        sample_rate: Union(int, float) = 10000,
+        baseline_start: Union(int, float) = 0,
+        baseline_end: Union(int, float) = 800,
+        filter_type: str = "None",
+        order: Union(None, int) = None,
+        high_pass: Union(int, float, None) = None,
+        high_width: Union(int, float, None) = None,
+        low_pass: Union(int, float, None) = None,
+        low_width: Union(int, float, None) = None,
+        window: Union(str, None) = None,
+        polyorder: Union(int, None) = None,
     ):
         self.sample_rate = sample_rate
         self.baseline_start = baseline_start
@@ -217,5 +218,5 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
                 self.baselined_array, self.order, self.polyorder
             )
 
-    def plot_x_array(self):
+    def plot_x_array(self) -> np.ndarray:
         return np.arange(len(self.filtered_array)) / self.s_r_c

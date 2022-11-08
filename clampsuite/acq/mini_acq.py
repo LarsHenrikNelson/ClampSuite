@@ -11,33 +11,33 @@ from .postsynaptic_event import MiniEvent
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def analyze(
         self,
-        sample_rate=10000,
-        baseline_start=0,
-        baseline_end=80,
-        filter_type="remez_2",
-        order=201,
-        high_pass=None,
-        high_width=None,
-        low_pass=600,
-        low_width=300,
-        window=None,
-        polyorder=None,
-        template=None,
-        rc_check=True,
-        rc_check_start=10000,
-        rc_check_end=10300,
-        sensitivity=3,
-        amp_threshold=4,
-        mini_spacing=2,
-        min_rise_time=0.5,
-        max_rise_time=4,
-        min_decay_time=0.5,
-        decay_rise=True,
-        invert=False,
-        decon_type="wiener",
-        curve_fit_decay=False,
-        curve_fit_type="db_exp",
-        baseline_corr=False,
+        sample_rate: Union(int, float) = 10000,
+        baseline_start: Union(int, float) = 0,
+        baseline_end: Union(int, float) = 80,
+        filter_type: str = "remez_2",
+        order: int = 201,
+        high_pass: Union(int, float) = None,
+        high_width: Union(int, float) = None,
+        low_pass: Union(int, float) = 600,
+        low_width: Union(int, float) = 300,
+        window: Union(str, None) = None,
+        polyorder: Union(str, None) = None,
+        template: Union(list, np.ndarray, None) = None,
+        rc_check: bool = True,
+        rc_check_start: Union(int, float) = 10000,
+        rc_check_end: Union(int, float) = 10300,
+        sensitivity: Union(int, float) = 4,
+        amp_threshold: Union(int, float) = 4,
+        mini_spacing: Union(int, float) = 2,
+        min_rise_time: Union(int, float) = 0.5,
+        max_rise_time: Union(int, float) = 4,
+        min_decay_time: Union(int, float) = 0.5,
+        decay_rise: bool = True,
+        invert: bool = False,
+        decon_type: str = "wiener",
+        curve_fit_decay: bool = False,
+        curve_fit_type: str = "db_exp",
+        baseline_corr: bool = False,
     ):
         # Set the attributes for the acquisition
         self.sample_rate = sample_rate
@@ -83,7 +83,15 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.decon_filt()
         self.create_events()
 
-    def tm_psp(self, amplitude, tau_1, tau_2, risepower, t_psc, spacer=1.5):
+    def tm_psp(
+        self,
+        amplitude: Union(int, float),
+        tau_1: Union(int, float),
+        tau_2: Union(int, float),
+        risepower: Union(int, float),
+        t_psc: Union(int, float),
+        spacer: Union(int, float) = 1.5,
+    ) -> np.ndarray:
         """Creates a template based on several factors.
 
         Args:
@@ -116,7 +124,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         template[offset:] = y
         return template
 
-    def create_template(self, template):
+    def create_template(self, template: np.ndarray):
         """Creates the template use for deconvolution. Only used internally
         if there is not template provided.
 
@@ -181,7 +189,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         baseline = spl(self.x_array)
         self.baselined_array = self.baselined_array - baseline
 
-    def deconvolution(self, lambd=4):
+    def deconvolution(self, lambd: Union(int, float) = 4) -> np.ndarray:
         """The Wiener deconvolution equation can be found on GitHub from pbmanis
         and danstowell. The basic idea behind this function is deconvolution
         or divsion in the frequency domain. I have found that changing lambd
@@ -502,8 +510,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.postsynaptic_events = "saved"
 
     def create_postsynaptic_events(self):
-        """
-        This function is used to create postsynaptic events from a
+        """This function is used to create postsynaptic events from a
         saved JSON file since mini events are load as a dictionary.
         """
         self.postsynaptic_events = []

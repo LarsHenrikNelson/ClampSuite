@@ -1,3 +1,5 @@
+from typing import Union
+
 import bottleneck as bn
 import numpy as np
 from scipy import signal
@@ -9,23 +11,23 @@ from . import filter_acq
 class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def analyze(
         self,
-        sample_rate=10000,
-        baseline_start=0,
-        baseline_end=100,
-        filter_type="None",
-        order=None,
-        high_pass=None,
-        high_width=None,
-        low_pass=None,
-        low_width=None,
-        window=None,
-        polyorder=None,
-        pulse_start=300,
-        pulse_end=1000,
-        ramp_start=300,
-        ramp_end=4000,
-        threshold=-15,
-        min_spikes=2,
+        sample_rate: Union(int, float) = 10000,
+        baseline_start: Union(int, float) = 0,
+        baseline_end: Union(int, float) = 100,
+        filter_type: str = "None",
+        order: Union(None, int) = 201,
+        high_pass: Union(None, int, float) = None,
+        high_width: Union(None, int, float) = None,
+        low_pass: Union(None, int, float) = None,
+        low_width: Union(None, int, float) = None,
+        window: Union(None, int) = None,
+        polyorder: Union(None, int, float) = None,
+        pulse_start: Union(int, float) = 300,
+        pulse_end: Union(int, float) = 1000,
+        ramp_start: Union(int, float) = 300,
+        ramp_end: Union(int, float) = 4000,
+        threshold: Union(int, float) = -15,
+        min_spikes: Union(int, float) = 2,
     ):
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
@@ -432,47 +434,47 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ahp_y = np.nan
 
     # Helper functions that correct x-values for plotting
-    def spike_width(self):
+    def spike_width(self) -> Union(int, float, np.nan):
         if self.width_comp is not None:
             return self.width_comp[0][0] / self.s_r_c
         else:
             return np.nan
 
-    def spike_width_y(self):
+    def spike_width_y(self) -> list:
         if self.width_comp is not None:
             return [self.width_comp[1][0], self.width_comp[1][0]]
 
-    def spike_width_x(self):
+    def spike_width_x(self) -> list:
         return [
             self.width_comp[2][0] / self.s_r_c,
             self.width_comp[3][0] / self.s_r_c,
         ]
 
-    def spike_threshold_time(self):
+    def spike_threshold_time(self) -> Union(int, float):
         if not np.isnan(self.rheo_x):
             return self.rheo_x / self.s_r_c
         else:
             return self.rheo_x
 
-    def spike_x_array(self):
+    def spike_x_array(self) -> list:
         return self.x_array[self.ap_index[0] : self.ap_index[1]]
 
-    def spike_peaks_x(self):
+    def spike_peaks_x(self) -> list:
         if not np.isnan(self.peaks[0]):
             return np.array(self.peaks) / self.s_r_c
         else:
             return []
 
-    def spike_peaks_y(self):
+    def spike_peaks_y(self) -> list:
         if not np.isnan(self.peaks[0]):
             return self.array[self.peaks]
         else:
             return []
 
-    def plot_rheo_x(self):
+    def plot_rheo_x(self) -> list:
         return [self.rheo_x / self.s_r_c]
 
-    def plot_delta_v(self):
+    def plot_delta_v(self) -> tuple(list, list):
         """
         This function creates the elements to plot the delta-v as a vertical
         line in the middle of the pulse. The elements are corrected so that
@@ -491,22 +493,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             plot_y = np.nan
         return plot_x, plot_y
 
-    def plot_ahp_x(self):
+    def plot_ahp_x(self) -> list:
         return [self.ahp_x]
 
-    def first_peak_time(self):
+    def first_peak_time(self) -> list:
         return self.peaks[0] / self.s_r_c
 
-    def create_dict(self):
-        """
-        This create a dictionary of all the values created by the class. This
+    def create_dict(self) -> dict:
+        """This create a dictionary of all the values created by the class. This
         makes it very easy to concentatenate the data from multiple
         acquisitions together.
 
-        Returns
-        -------
-        None.
-
+        Returns:
+            dict: dictionary of acquisition attributes
         """
         current_clamp_dict = {
             "Acquisition": self.acq_number,

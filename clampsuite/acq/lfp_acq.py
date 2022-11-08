@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from scipy.stats import linregress
 from scipy import signal
@@ -13,18 +15,18 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
     def analyze(
         self,
-        sample_rate=10000,
-        baseline_start=0,
-        baseline_end=800,
-        filter_type="remez_2",
-        order=301,
-        high_pass=None,
-        high_width=None,
-        low_pass=300,
-        low_width=100,
-        window=None,
-        polyorder=None,
-        pulse_start=1000,
+        sample_rate: Union(int, float) = 10000,
+        baseline_start: Union(int, float) = 0,
+        baseline_end: Union(int, float) = 800,
+        filter_type: str = "remez_2",
+        order: Union(int, float) = 301,
+        high_pass: Union(int, float, None) = None,
+        high_width: Union(int, float, None) = None,
+        low_pass: Union(int, float) = 300,
+        low_width: Union(int, float) = 100,
+        window: Union(int, None) = None,
+        polyorder: Union(int, None) = None,
+        pulse_start: Union(int, float) = 1000,
     ):
         """
         This function runs all the other functions in one place. This makes
