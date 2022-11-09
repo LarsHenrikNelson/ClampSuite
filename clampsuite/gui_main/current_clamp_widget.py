@@ -20,8 +20,8 @@ from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
-from ..acq.acq import Acq
-from ..final_analysis.final_current_clamp import FinalCurrentClampAnalysis
+from ..acq import Acq
+from ..final_analysis import FinalAnalysis
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
@@ -30,7 +30,6 @@ from ..gui_widgets.qtwidgets import (
     ListView,
     DragDropWidget,
 )
-from ..load_analysis.load_classes import LoadCurrentClampData
 
 
 class currentClampWidget(DragDropWidget):
@@ -533,7 +532,8 @@ class currentClampWidget(DragDropWidget):
             self.plot_dict = {}
             self.table_dict = {}
         self.calc_param_clicked = True
-        self.final_obj = FinalCurrentClampAnalysis(self.acq_dict)
+        self.final_obj = FinalAnalysis("current_clamp")
+        self.final_obj.analyze(self.acq_dict)
         for key, value in self.final_obj.df_dict.items():
             table = pg.TableWidget(sortable=False)
             table.setData(value.T.to_dict())
@@ -677,7 +677,8 @@ class currentClampWidget(DragDropWidget):
             self.acq_view.setLoadData(self.acq_dict)
             if load_dict["Final Analysis"]:
                 excel_file = list(directory.glob("*.xlsx"))[0]
-                self.final_obj = LoadCurrentClampData(excel_file)
+                self.final_obj = FinalAnalysis("current_clamp")
+                self.final_obj.load_data(excel_file)
                 for key, value in self.final_obj.df_dict.items():
                     table = pg.TableWidget(sortable=False)
                     table.setData(value.T.to_dict())
