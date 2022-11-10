@@ -521,7 +521,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Spike_peak_volt": self.peak_volt,
             "Spike_time (ms)": self.first_peak_time(),
             "Hertz": self.hertz_exact,
-            "Spike_iei": self.iei_mean,
+            "IEI": self.iei_mean,
             "Spike_width": self.spike_width(),
             "Max_AP_vel": self.ap_v,
             "Spike_freq_adapt": self.spike_adapt,

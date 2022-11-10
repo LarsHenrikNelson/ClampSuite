@@ -1,3 +1,6 @@
+import datetime
+
+
 class FinalAnalysis:
     """
     This class is used to create any acquisition object type.
@@ -7,6 +10,8 @@ class FinalAnalysis:
     the
     """
 
+    version = "0.0.2"
+    program = "ClampSuite"
     _class_type = {}
 
     def __init_subclass__(cls, analysis, **kwargs):
@@ -17,7 +22,7 @@ class FinalAnalysis:
         subclass = cls._class_type[analysis]
         obj = object.__new__(subclass)
         obj.analysis = analysis
-        obj.version = "0.0.2"
+        obj.tmstp = str(datetime.datetime.now())
         return obj
 
     def save_data(self):
