@@ -138,34 +138,30 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         return average
 
     def membrane_resistance(self, df: pd.DataFrame) -> pd.DataFrame:
-        df1 = df[df["Ramp"] == 0]
-        if df1.empty == True:
-            return None
-        else:
-            df_pivot = self.extract_features(df1, "Delta_v")
-            slopes = []
-            iv_lines = []
-            iv_xs = []
-            iv_ys = []
-            columns = df_pivot.columns.to_list()
-            for i in columns:
-                temp = df_pivot[i].dropna()
-                y = temp.to_numpy()[self.iv_start - 1 : self.iv_end]
-                x = temp.index.to_list()[self.iv_start - 1 : self.iv_end]
-                iv_xs.append(x)
-                iv_ys.append(y)
-                reg = linregress(x=x, y=y)
-                slopes += [reg.slope * 1000]
-                iv_temp = reg.slope * y + reg.intercept
-                iv_lines.append(iv_temp)
-            resistance = pd.DataFrame(
-                data=slopes, index=columns, columns=["Membrane resistance"]
-            )
-            self.create_dataframe(iv_xs, columns, "iv_x")
-            self.create_dataframe(iv_xs, columns, "iv_y")
-            self.create_dataframe(iv_lines, columns, "IV lines")
-            self.df_dict["Delta V"] = df_pivot.reset_index()
-            return resistance
+        df_pivot = self.extract_features(df, "Delta_v")
+        slopes = []
+        iv_lines = []
+        iv_xs = []
+        iv_ys = []
+        columns = df_pivot.columns.to_list()
+        for i in columns:
+            temp = df_pivot[i].dropna()
+            y = temp.to_numpy()[self.iv_start - 1 : self.iv_end]
+            x = temp.index.to_list()[self.iv_start - 1 : self.iv_end]
+            iv_xs.append(x)
+            iv_ys.append(y)
+            reg = linregress(x=x, y=y)
+            slopes += [reg.slope * 1000]
+            iv_temp = reg.slope * y + reg.intercept
+            iv_lines.append(iv_temp)
+        resistance = pd.DataFrame(
+            data=slopes, index=columns, columns=["Membrane resistance"]
+        )
+        self.create_dataframe(iv_xs, columns, "iv_x")
+        self.create_dataframe(iv_xs, columns, "iv_y")
+        self.create_dataframe(iv_lines, columns, "IV lines")
+        self.df_dict["Delta V"] = df_pivot.reset_index()
+        return resistance
 
     def create_dataframe(
         self,
@@ -218,18 +214,24 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
     def final_data_pulse(self):
         raw_df = self.df_dict["Raw data"]
         df_ave_spike = self.pulse_averages(raw_df)
-        resistance = self.membrane_resistance(raw_df)
-        iei = self.extract_features(raw_df, "IEI")
-        self.df_dict["IEI"] = iei
-        hertz = self.extract_features(raw_df, "Hertz")
-        self.df_dict["Hertz"] = hertz
-        self.df_dict
-        df_concat = pd.concat([df_ave_spike, resistance], axis=1).reset_index(
-            names="Epoch"
-        )
-        df_concat.sort_values(by="Epoch")
+        df_pulses = raw_df[raw_df["Ramp"] == 0]
+        if not df_pulses.empty:
+            resistance = self.membrane_resistance(df_pulses)
+            iei = self.extract_features(df_pulses, "IEI").reset_index()
+            self.df_dict["IEI"] = iei
+            hertz = self.extract_features(df_pulses, "Hertz").reset_index()
+            hertz.fillna(0, inplace=True)
+            self.df_dict["Hertz"] = hertz
+            df_concat = pd.concat([df_ave_spike, resistance], axis=1).reset_index(
+                names="Epoch"
+            )
+            df_concat.sort_values(by="Epoch")
 
-        self.df_dict["Final data (pulse)"] = df_concat
+            self.df_dict["Final data (pulse)"] = df_concat
+            self.hertz = False
+            self.pulse_ap = False
+        else:
+            self.df_dict["Final data (pulse)"] = df_ave_spike
 
     def extract_features(self, df: pd.DataFrame, values: str) -> pd.DataFrame:
         df_average = df.groupby(
@@ -240,15 +242,10 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         df_pivot = df_average.pivot(index="Pulse_amp", values=values, columns="Epoch")
         return df_pivot
 
-    def pulse_hertz(self):
-        pass
-
-    def pulse_iei(self):
-        pass
-
     def final_data_ramp(self):
         raw_df = self.df_dict["Raw data"]
         df_ramp = raw_df[raw_df["Ramp"] == 1]
         if not df_ramp.empty:
             final_ramp = df_ramp.groupby(["Epoch"]).mean(numeric_only=True)
             self.df_dict["Final data (ramp)"] = final_ramp
+            self.ramp_ap = True

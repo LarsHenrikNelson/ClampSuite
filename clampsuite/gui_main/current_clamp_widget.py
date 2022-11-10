@@ -553,73 +553,47 @@ class currentClampWidget(DragDropWidget):
         self.plot_dict["iv_curve_plot"] = iv_curve_plot
         self.tabs.addTab(iv_curve_plot, "IV curve")
         deltav_df = self.final_obj.df_dict["Delta V"]
-        iv_df = self.final_obj.df_dict["IV"]
-        if len(self.final_obj.plot_epochs) == 1:
-            iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[self.final_obj.plot_epochs[0]])
-            iv_curve_plot.plot(
-                deltav_df["deltav_x"],
-                deltav_df[self.final_obj.plot_epochs[0]],
-                pen=None,
-                symbol="o",
-                symbolBrush="y",
-                name=f"Epoch {self.final_obj.plot_epochs[0]}",
-            )
-        else:
-            iv_curve_plot.addLegend()
-            for i in self.final_obj.plot_epochs:
-                if iv_df[i].isna().all():
-                    pass
-                else:
-                    pencil = pg.mkPen(color=pg.Color(int(i)))
-                    brush = pg.mkBrush(color=pg.intColor(int(i)))
-                    iv_curve_plot.plot(iv_df["iv_plot_x"], iv_df[i], pen=pencil)
-                    iv_curve_plot.plot(
-                        deltav_df["deltav_x"],
-                        deltav_df[i],
-                        pen=None,
-                        symbol="o",
-                        symbolPen=pencil,
-                        symbolBrush=brush,
-                        name=f"Epoch {i}",
-                    )
+        iv_x = self.final_obj.df_dict["iv_x"]
+        iv_y = self.final_obj.df_dict["iv_y"]
+        iv_curve_plot.addLegend()
+        epochs = iv_y.columns.to_list()
+        for i in epochs:
+            if iv_x[i].isna().all():
+                pass
+            else:
+                pencil = pg.mkPen(color=pg.Color(int(i)))
+                brush = pg.mkBrush(color=pg.intColor(int(i)))
+                iv_curve_plot.plot(iv_x[i].to_numpy(), iv_y[i].to_numpy(), pen=pencil)
+                iv_curve_plot.plot(
+                    deltav_df["Pulse_amp"].to_numpy(),
+                    deltav_df[i].to_numpy(),
+                    pen=None,
+                    symbol="o",
+                    symbolPen=pencil,
+                    symbolBrush=brush,
+                    name=f"Epoch {i}",
+                )
 
-    def plotSpikeFrequency(self, df):
+    def plotSpikeFrequency(self):
         spike_curve_plot = pg.PlotWidget()
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.tabs.addTab(spike_curve_plot, "Spike curve")
-        df1 = df[df["Ramp"] == 0].copy()
+        hertz = self.final_obj.df_dict["Hertz"]
+        pulse_amp = hertz.pop("Pulse_amp").to_numpy()
+        plot_epochs = hertz["Epoch"].to_list()
         spike_curve_plot.addLegend()
-        if df1.empty == True:
-            pass
-        else:
-            plot_epochs = df1["Epoch"].to_list()
-            df2 = df1.drop(columns=["Ramp", "Epoch"])
-            df2.dropna(axis=0, how="all", inplace=True)
-            hertz_x = list(df2.columns.values)
-            hertz_y = df2.to_numpy()
-            if len(hertz_y) == 1:
-                spike_curve_plot.plot(
-                    hertz_x,
-                    hertz_y[0],
-                    symbol="o",
-                    name=f"Epoch {plot_epochs[0]}",
-                )
-            else:
-                for i in range(len(hertz_y)):
-                    if np.isnan(hertz_y).all():
-                        pass
-                    else:
-                        pencil = pg.mkPen(color=pg.intColor(i))
-                        brush = pg.mkBrush(color=pg.intColor(i))
-                        spike_curve_plot.plot(
-                            hertz_x,
-                            hertz_y[i],
-                            symbol="o",
-                            pen=pencil,
-                            name=f"Epoch {plot_epochs[i]}",
-                            symbolPen=pencil,
-                            symbolBrush=brush,
-                        )
+        for i in plot_epochs:
+            pencil = pg.mkPen(color=pg.intColor(i))
+            brush = pg.mkBrush(color=pg.intColor(i))
+            spike_curve_plot.plot(
+                pulse_amp,
+                hertz[i].to_numpy(),
+                symbol="o",
+                pen=pencil,
+                name=f"Epoch {i}",
+                symbolPen=pencil,
+                symbolBrush=brush,
+            )
 
     def plotPulseAP(self, df):
         pulse_ap_plot = pg.PlotWidget()
