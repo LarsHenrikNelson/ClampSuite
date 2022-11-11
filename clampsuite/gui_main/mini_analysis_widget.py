@@ -65,19 +65,17 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1 = QWidget()
         self.tab1_scroll.setWidget(self.tab1)
 
-        self.tab2 = QWidget()
         self.dock_area2 = DockArea()
 
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab3_scroll.setWidgetResizable(True)
-        self.tab3 = QWidget()
-        self.tab3_scroll.setWidget(self.tab3)
+        self.dock_area3 = DockArea()
 
         self.tab_widget.addTab(self.tab1_scroll, "Setup")
         self.tab_widget.addTab(self.dock_area2, "Analysis")
-        self.tab_widget.addTab(self.tab3_scroll, "Final data")
+        self.tab_widget.addTab(self.dock_area3, "Final data")
 
         self.setStyleSheet(
             """QTabWidget::tab-bar
@@ -402,21 +400,17 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dock_area2.addDock(self.d1, "left")
         self.dock_area2.addDock(self.d2, "right")
         self.dock_area2.addDock(self.d3, "bottom")
+        self.acq_scroll = QScrollArea()
+        self.acq_scroll.setContentsMargins(10, 10, 10, 10)
         self.acq_widget = QWidget()
-        self.acq_layout = QHBoxLayout()
-        self.acq_widget.setLayout(self.acq_layout)
-        self.d3.addWidget(self.acq_widget)
-        self.mini_view_widget = QWidget()
-        self.mini_view_layout = QHBoxLayout()
-        self.mini_view_widget.setLayout(self.mini_view_layout)
-        self.d2.addWidget(self.mini_view_widget)
+        self.acq_scroll.setWidget(self.acq_widget)
+        self.acq_scroll.setWidgetResizable(True)
+        self.d3.addWidget(self.acq_scroll, 0, 0)
+        self.d3.layout.setColumnStretch(0, 0)
         self.acq_buttons = QGridLayout()
-        self.acq_buttons.setColumnStretch(1, 1)
-        self.acq_buttons.setColumnStretch(0, 1)
         self.acq_2_buttons = QVBoxLayout()
-        self.mini_layout = QFormLayout()
-        self.acq_layout.addLayout(self.acq_2_buttons, 0)
         self.acq_2_buttons.addLayout(self.acq_buttons, 0)
+        self.acq_widget.setLayout(self.acq_2_buttons)
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
@@ -500,15 +494,14 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.p1.setObjectName("p1")
-        self.p1.setMinimumWidth(500)
-        self.acq_layout.addWidget(self.p1, 10)
+        self.d3.addWidget(self.p1, 0, 1)
+        self.d3.layout.setColumnStretch(1, 10)
 
         self.p2 = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.p2.setObjectName("p2")
         self.d1.addWidget(self.p2)
-        self.p2.setMinimumWidth(600)
 
         self.region = pg.LinearRegionItem()
 
@@ -521,9 +514,20 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setRegion([0, 400])
         self.region.setZValue(10)
 
-        self.acq_layout.addWidget(self.p1, 1)
-
-        self.mini_view_layout.addLayout(self.mini_layout, 0)
+        self.mini_view_widget = QWidget()
+        self.mini_view_widget.setMinimumWidth(200)
+        self.mini_view_widget.setSizePolicy(
+            QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        )
+        self.mini_view_widget.setMinimumWidth(120)
+        self.mini_view_scroll = QScrollArea()
+        self.mini_view_scroll.setContentsMargins(10, 10, 10, 10)
+        self.mini_view_scroll.setWidget(self.mini_view_widget)
+        self.mini_view_scroll.setWidgetResizable(True)
+        self.d2.addWidget(self.mini_view_scroll, 0, 0)
+        self.d2.layout.setColumnStretch(0, 0)
+        self.mini_layout = QFormLayout()
+        self.mini_view_widget.setLayout(self.mini_layout)
         self.mini_number_label = QLabel("Event")
         self.mini_number = QSpinBox()
         self.mini_number.setKeyboardTracking(False)
@@ -575,36 +579,37 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_view_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
-        self.mini_view_plot.setMinimumWidth(300)
+        # self.mini_view_plot.setMinimumWidth(300)
         self.mini_view_plot.setObjectName("Mini view plot")
-        self.mini_view_layout.addWidget(self.mini_view_plot, 1)
+        self.d2.addWidget(self.mini_view_plot, 0, 1)
+        self.d2.layout.setColumnStretch(1, 10)
 
         # Tab 3 layouts and setup
-        self.table_layout = QVBoxLayout()
-        self.tab3.setLayout(self.table_layout)
-        self.data_layout = QHBoxLayout()
-        self.table_layout.addLayout(self.data_layout)
+        self.table_dock = Dock("Table")
+        self.table_dock.hideTitleBar()
+        self.ave_mini_dock = Dock("Mini")
+        self.ave_mini_dock.hideTitleBar()
+        self.data_dock = Dock("Data")
+        self.data_dock.hideTitleBar()
+        self.dock_area3.addDock(self.table_dock, position="left")
+        self.dock_area3.addDock(self.ave_mini_dock, position="right")
+        self.dock_area3.addDock(self.data_dock, position="bottom")
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
-        self.ave_mini_plot.setMinimumSize(400, 300)
+        self.ave_mini_dock.addWidget(self.ave_mini_plot)
         self.ave_mini_plot.setObjectName("Ave mini plot")
         self.final_tab_widget = QTabWidget()
-        self.data_layout.addWidget(self.final_tab_widget)
-        self.data_layout.addWidget(self.ave_mini_plot, 10)
+        self.final_tab_widget.setMinimumHeight(300)
+        self.table_dock.addWidget(self.final_tab_widget)
         self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
-        self.stem_plot.setMinimumSize(300, 300)
         self.amp_dist = pg.PlotWidget()
-        self.amp_dist.setMinimumSize(300, 300)
         self.plot_selector = QComboBox()
         self.plot_selector.setMaximumWidth(100)
         self.plot_selector.currentTextChanged.connect(self.plotRawData)
-
-        self.matplotlib_layout_h = QHBoxLayout()
-        self.matplotlib_layout_h.addWidget(self.plot_selector, 1)
-        self.matplotlib_layout_h.addWidget(self.stem_plot, 2)
-        self.matplotlib_layout_h.addWidget(self.amp_dist, 2)
-        self.table_layout.addLayout(self.matplotlib_layout_h, 2)
+        self.data_dock.addWidget(self.plot_selector, 0, 0)
+        self.data_dock.addWidget(self.stem_plot, 0, 1)
+        self.data_dock.addWidget(self.amp_dist, 0, 2)
 
         self.threadpool = QThreadPool()
 

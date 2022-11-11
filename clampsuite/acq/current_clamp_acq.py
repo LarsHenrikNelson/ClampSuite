@@ -31,7 +31,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     ):
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
-        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
         self.baseline_start = int(baseline_start * (sample_rate / 1000))
         self.baseline_end = int(baseline_end * (sample_rate / 1000))
         self.filter_type = filter_type
@@ -154,7 +153,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
             # Differentiate the array to find the peak dv/dt.
             dv = np.gradient(self.array)
-            dt = np.gradient(np.arange(len(self.x_array)) / 10)
+            # dt = np.gradient(np.arange(len(self.x_array)) / 10)
+            dt = np.gradient(self.x_array)
             peak_dv, _ = signal.find_peaks(dv, height=6)
 
             # Pull out the index of the first peak and find the peak velocity.
