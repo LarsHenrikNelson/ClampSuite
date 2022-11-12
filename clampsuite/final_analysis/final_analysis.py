@@ -23,6 +23,7 @@ class FinalAnalysis:
         obj = object.__new__(subclass)
         obj.analysis = analysis
         obj.tmstp = str(datetime.datetime.now())
+        obj.df_dict = {}
         return obj
 
     def save_data(self):

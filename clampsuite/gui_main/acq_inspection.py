@@ -57,8 +57,8 @@ class AcqInspectionWidget(QWidget):
         self.plot_widget.clear()
         if self.acq_dict.get(f"{number}"):
             self.plot_widget.plot(
-                x=np.arange(len(self.acq_dict[str(number)].array)),
-                y=self.acq_dict[str(number)].array,
+                x=np.arange(len(self.acq_dict[number].array)),
+                y=self.acq_dict[number].array,
             )
         else:
             pass

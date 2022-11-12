@@ -13,7 +13,6 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
     ):
         self.o_acq_dict = o_acq_dict
         self.lfp_acq_dict = lfp_acq_dict
-        self.df_dict = {}
         self.raw_data()
         self.final_data()
 

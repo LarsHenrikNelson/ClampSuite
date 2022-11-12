@@ -26,7 +26,6 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         curve_fit_decay: bool = False,
         curve_fit_type: str = "db_exp",
     ):
-        self.df_dict = {}
         self.events_deleted = events_deleted
         self.acqs_deleted = acqs_deleted
         self.sample_rate = sample_rate

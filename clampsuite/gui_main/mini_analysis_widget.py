@@ -878,12 +878,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setEnabled(False)
 
         # I choose to just show
-        if self.acq_dict.get(str(self.acquisition_number.value())):
+        if self.acq_dict.get(self.acquisition_number.value()):
 
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
             # acquisition dictionary. Makes it more readable.
-            self.acq_object = self.acq_dict.get(str(self.acquisition_number.value()))
+            self.acq_object = self.acq_dict.get(self.acquisition_number.value())
 
             # Set the epoch
             self.epoch_edit.setText(self.acq_object.epoch)
@@ -1335,10 +1335,10 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p2.removeItem(self.p2.listDataItems()[mini_index + 1])
 
         # Deleted the mini from the postsynaptic events and final events.
-        del self.acq_dict[str(self.acquisition_number.text())].postsynaptic_events[
+        del self.acq_dict[self.acquisition_number.text()].postsynaptic_events[
             mini_index
         ]
-        del self.acq_dict[str(self.acquisition_number.text())].final_events[mini_index]
+        del self.acq_dict[self.acquisition_number.text()].final_events[mini_index]
 
         # Recreate the sort_index and mini_spinboxlist
         self.sort_index = list(np.argsort(self.acq_object.final_events))
@@ -1385,9 +1385,9 @@ class MiniAnalysisWidget(DragDropWidget):
             if x > 2:
 
                 # Create the new mini.
-                created = self.acq_dict[
-                    str(self.acquisition_number.text())
-                ].create_new_mini(x)
+                created = self.acq_dict[self.acquisition_number.text()].create_new_mini(
+                    x
+                )
 
                 if not created:
                     self.miniNotCreated()
@@ -1452,15 +1452,15 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Add acquisition to be deleted to the deleted acquisitions
         # and the recent deleted acquistion dictionary.
-        self.deleted_acqs[str(self.acquisition_number.text())] = self.acq_dict[
-            str(self.acquisition_number.text())
+        self.deleted_acqs[self.acquisition_number.text()] = self.acq_dict[
+            self.acquisition_number.text()
         ]
         self.recent_reject_acq[str(self.acquisition_number.text())] = self.acq_dict[
-            str(self.acquisition_number.text())
+            self.acquisition_number.text()
         ]
 
         # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        del self.acq_dict[str(self.acquisition_number.text())]
+        del self.acq_dict[self.acquisition_number.text()]
         self.acqs_deleted += 1
 
         # Clear plots
@@ -1620,7 +1620,7 @@ class MiniAnalysisWidget(DragDropWidget):
             for i in range(len(file_list)):
                 x = Acq(self.analysis_type, file_list[i])
                 x.load_acq()
-                self.acq_dict[str(x.acq_number)] = x
+                self.acq_dict[int(x.acq_number)] = x
                 self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
             if load_dict.get("Deleted Acqs"):
                 for i in load_dict["Deleted Acqs"]:

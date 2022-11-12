@@ -253,7 +253,7 @@ class ListModel(QAbstractListModel):
                 # Add the acquisition to the model dictionary. This
                 # dictionary will be be added to the gui widget when
                 # the analysis is run.
-                self.acq_dict[obj.acq_number] = obj
+                self.acq_dict[int(obj.acq_number)] = obj
                 self.fname_list += [obj.path]
                 self.acq_names += [obj.name]
         self.sortDict()

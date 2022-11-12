@@ -23,7 +23,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         self.create_raw_data(acq_dict)
         self.final_data_pulse()
         self.final_data_ramp()
-        self.create_first_ap_dfs(acq_dict)
+        self.create_first_ap_dfs(acq_dict, self.pulse_indexes, self.ramp_indexes)
 
     def load_data(self, file_path: str):
         self.df_dict = {}
@@ -47,12 +47,17 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df["Pulse_pattern"] = pd.to_numeric(raw_df["Pulse_pattern"])
         raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
+        raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
         self.df_dict["Raw data"] = raw_df
 
-    def create_first_ap_dfs(self, acq_dict: dict):
-        # Creating the final first action potentials and final data. It takes
-        # manipulating to get the data to show up correctly in the TableWidget.
-        pulse_dict, ramp_dict = self.create_first_aps(acq_dict)
+    def create_first_ap_dfs(
+        self,
+        acq_dict: dict,
+        pulse_indexes: Union[list, np.ndarray],
+        ramp_indexes: Union[list, np.ndarray],
+    ):
+        pulse_dict = self.create_first_aps(acq_dict, pulse_indexes)
+        ramp_dict = self.create_first_aps(acq_dict, ramp_indexes)
 
         if pulse_dict:
             pulse_ap = self.first_ap_dict(pulse_dict)
@@ -78,22 +83,14 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             self.ramp_ap = True
             self.df_dict["Ramp APs"] = ramp_ap_df
 
-    def create_first_aps(self, acq_dict: dict) -> tuple[dict, dict]:
-        pulse_dict = defaultdict(lambda: defaultdict(list))
-        ramp_dict = defaultdict(lambda: defaultdict(list))
-        for i in acq_dict.keys():
-            if len(acq_dict[i].first_ap) <= 1:
-                pass
-            else:
-                if acq_dict[i].ramp == "0":
-                    pulse_dict[acq_dict[i].epoch][acq_dict[i].pulse_amp].append(
-                        acq_dict[i].first_ap
-                    )
-                if acq_dict[i].ramp == "1":
-                    ramp_dict[acq_dict[i].epoch][acq_dict[i].pulse_amp].append(
-                        acq_dict[i].first_ap
-                    )
-        return pulse_dict, ramp_dict
+    def create_first_aps(
+        self, acq_dict: dict, indexes: Union[list, np.ndarray]
+    ) -> tuple[dict, dict]:
+        ap_dict = defaultdict(list)
+        for i in indexes:
+            if len(acq_dict[i].first_ap) >= 1:
+                ap_dict[acq_dict[i].epoch].append(acq_dict[i].first_ap)
+        return ap_dict
 
     def first_ap_dict(self, dictionary: dict) -> dict:
         ap_dict = {}
@@ -107,7 +104,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             ap_dict[i] = average
         return ap_dict
 
-    def average_aps(self, dict_entry: Union[list, np.ndarray]) -> np.ndarray:
+    def average_aps(self, ap_list: Union[list, np.ndarray]) -> np.ndarray:
         """
         This function takes a list of a lists/arrays, finds the max values
         and then aligns all the lists/arrays to the max value by adding an
@@ -124,14 +121,10 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         the index of the maximum value.
 
         """
-        first_pulse = min(map(int, list(dict_entry)))
-        ap_max_values = [np.argmax(i) for i in dict_entry[str(first_pulse)]]
+        ap_max_values = [np.argmax(i) for i in ap_list]
         max_ap = max(ap_max_values)
         start_values = [max_ap - i for i in ap_max_values]
-        arrays = [
-            np.append(i * [j[0]], j)
-            for i, j in zip(start_values, dict_entry[str(first_pulse)])
-        ]
+        arrays = [np.append(i * [j[0]], j) for i, j in zip(start_values, ap_list)]
         length = min(map(len, arrays))
         arrays = [i[:length] for i in arrays]
         average = np.average(np.array(arrays), axis=0)
@@ -142,23 +135,20 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         slopes = []
         iv_lines = []
         iv_xs = []
-        iv_ys = []
         columns = df_pivot.columns.to_list()
         for i in columns:
             temp = df_pivot[i].dropna()
             y = temp.to_numpy()[self.iv_start - 1 : self.iv_end]
-            x = temp.index.to_list()[self.iv_start - 1 : self.iv_end]
+            x = temp.index.to_numpy()[self.iv_start - 1 : self.iv_end]
             iv_xs.append(x)
-            iv_ys.append(y)
             reg = linregress(x=x, y=y)
             slopes += [reg.slope * 1000]
-            iv_temp = reg.slope * y + reg.intercept
+            iv_temp = reg.slope * x + reg.intercept
             iv_lines.append(iv_temp)
         resistance = pd.DataFrame(
             data=slopes, index=columns, columns=["Membrane resistance"]
         )
         self.create_dataframe(iv_xs, columns, "iv_x")
-        self.create_dataframe(iv_xs, columns, "iv_y")
         self.create_dataframe(iv_lines, columns, "IV lines")
         self.df_dict["Delta V"] = df_pivot.reset_index()
         return resistance
@@ -202,16 +192,18 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             temp = df_pulse.loc[df_pulse["Epoch"] == i]
             for j in temp["Cycle"].unique():
                 temp_2 = temp.loc[df_pulse["Cycle"] == j]
-                ind = temp_2["Spike_threshold (mV)"].first_valid_index()
+                ind = temp_2["IEI"].first_valid_index()
                 if ind is None:
                     pass
                 else:
                     indexes.append(ind)
         df_spikes = raw_df.iloc[indexes]
+        self.pulse_indexes = raw_df["Acquisition"].iloc[indexes].to_numpy()
         df_ave_spike = df_spikes.groupby(["Epoch"]).mean(numeric_only=True)
         return df_ave_spike
 
     def final_data_pulse(self):
+        self.pulse_indexes = []
         raw_df = self.df_dict["Raw data"]
         df_ave_spike = self.pulse_averages(raw_df)
         df_pulses = raw_df[raw_df["Ramp"] == 0]
@@ -228,8 +220,8 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             df_concat.sort_values(by="Epoch")
 
             self.df_dict["Final data (pulse)"] = df_concat
-            self.hertz = False
-            self.pulse_ap = False
+            self.hertz = True
+            self.pulse_ap = True
         else:
             self.df_dict["Final data (pulse)"] = df_ave_spike
 
@@ -245,7 +237,9 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
     def final_data_ramp(self):
         raw_df = self.df_dict["Raw data"]
         df_ramp = raw_df[raw_df["Ramp"] == 1]
+        self.ramp_indexes = []
         if not df_ramp.empty:
+            self.ramp_indexes = df_ramp["Acquisition"].to_numpy()
             final_ramp = df_ramp.groupby(["Epoch"]).mean(numeric_only=True)
             self.df_dict["Final data (ramp)"] = final_ramp
             self.ramp_ap = True

@@ -292,7 +292,7 @@ class filterWidget(QWidget):
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
                 key = list(self.load_widget.model().acq_dict.keys())[number - 1]
-                h = self.load_widget.model().acq_dict[key]
+                h = self.load_widget.model().acq_dict[int(key)]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],

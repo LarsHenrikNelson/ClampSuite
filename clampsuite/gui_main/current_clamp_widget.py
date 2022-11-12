@@ -4,17 +4,17 @@ from typing import Union
 import numpy as np
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QLabel,
     QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
     QSpinBox,
     QTabWidget,
-    QProgressBar,
-    QMessageBox,
-    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
@@ -60,19 +60,25 @@ class currentClampWidget(DragDropWidget):
         self.signals.path.connect(self.openFiles)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
-        self.tab_widget = QTabWidget()
-        self.main_layout = QHBoxLayout()
+        self.main_widget = QTabWidget()
+        self.main_widget.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
+        self.main_layout.addWidget(self.main_widget)
+        self.tab_1 = QWidget()
+        self.main_widget.addTab(self.tab_1, "Setup")
+        self.tab_2 = QWidget()
+        self.main_widget.addTab(self.tab_2, "Analysis")
+        self.setup_layout = QHBoxLayout()
+        self.h_layout = QHBoxLayout()
+        self.tab_1.setLayout(self.setup_layout)
+        self.tab_2.setLayout(self.h_layout)
         self.input_layout = QFormLayout()
-        self.v_layout = QVBoxLayout()
-        self.analysis_layout = QVBoxLayout()
+        self.acq_layout = QVBoxLayout()
+        self.setup_layout.addLayout(self.acq_layout, 0)
+        self.setup_layout.addLayout(self.input_layout, 0)
+        self.setup_layout.addStretch(1)
         self.plot_layout = QHBoxLayout()
         self.analysis_buttons = QFormLayout()
-
-        self.setLayout(self.main_layout)
-        self.v_layout.addLayout(self.input_layout, 0)
-        self.main_layout.addLayout(self.v_layout, 0)
-        self.main_layout.addLayout(self.analysis_layout, 0)
-        self.analysis_layout.addLayout(self.plot_layout, 0)
+        self.h_layout.addLayout(self.plot_layout)
         self.plot_layout.addLayout(self.analysis_buttons, 1)
 
         # Analysis layout setup
@@ -139,27 +145,21 @@ class currentClampWidget(DragDropWidget):
         self.spike_plot.setMinimumWidth(300)
         self.plot_layout.addWidget(self.spike_plot)
 
-        self.tabs = QTabWidget()
-        self.tabs.setUsesScrollButtons(True)
-        self.analysis_layout.addWidget(self.tabs, 1)
-
-        self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
-
         # Input widgets and labels
         self.load_acq_label = QLabel("Acquisition(s)")
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
         self.analysis_type = "current_clamp"
         self.acq_view.setAnalysisType(self.analysis_type)
-        self.input_layout.addRow(self.acq_view)
+        self.acq_layout.addWidget(self.acq_view)
 
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
-        self.input_layout.addRow(self.inspect_acqs_button)
+        self.acq_layout.addWidget(self.inspect_acqs_button)
         self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
 
         self.del_selection_button = QPushButton("Delete selection")
         self.del_selection_button.clicked.connect(self.deleteSelection)
-        self.input_layout.addRow(self.del_selection_button)
+        self.acq_layout.addWidget(self.del_selection_button)
 
         self.b_start_label = QLabel("Baseline start (ms)")
         self.b_start_edit = LineEdit()
@@ -253,9 +253,15 @@ class currentClampWidget(DragDropWidget):
         self.reset_button.clicked.connect(self.reset)
         self.reset_button.setObjectName("reset_button")
 
+        # Tab 2 layout
+        self.tabs = QTabWidget()
+        self.tabs.setUsesScrollButtons(True)
+        self.main_widget.addTab(self.tabs, "Final data")
+        self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
+
         self.pbar = QProgressBar(self)
         self.pbar.setValue(0)
-        self.v_layout.addWidget(self.pbar, 0)
+        self.main_layout.addWidget(self.pbar, 0)
 
         self.dlg = QMessageBox(self)
 
@@ -381,8 +387,8 @@ class currentClampWidget(DragDropWidget):
         self.need_to_save = True
         self.plot_widget.clear()
         self.spike_plot.clear()
-        if self.acq_dict.get(str(self.acquisition_number.text())):
-            acq_object = self.acq_dict[str(self.acquisition_number.text())]
+        if self.acq_dict.get(self.acquisition_number.value()):
+            acq_object = self.acq_dict[self.acquisition_number.value()]
             self.epoch_number.setText(acq_object.epoch)
             self.baseline_mean_edit.setText(
                 str(round_sig(acq_object.baseline_mean, sig=4))
@@ -492,13 +498,13 @@ class currentClampWidget(DragDropWidget):
 
         self.need_to_save = False
         self.recent_reject_acq = {}
-        self.deleted_acqs[str(self.acquisition_number.text())] = self.acq_dict[
-            str(self.acquisition_number.text())
+        self.deleted_acqs[self.acquisition_number.value()] = self.acq_dict[
+            self.acquisition_number.value()
         ]
-        self.recent_reject_acq[str(self.acquisition_number.text())] = self.acq_dict[
-            str(self.acquisition_number.text())
+        self.recent_reject_acq[self.acquisition_number.value()] = self.acq_dict[
+            self.acquisition_number.value()
         ]
-        del self.acq_dict[str(self.acquisition_number.text())]
+        del self.acq_dict[self.acquisition_number.value()]
         self.plot_widget.clear()
 
     def resetRejectedAcqs(self):
@@ -556,7 +562,7 @@ class currentClampWidget(DragDropWidget):
         self.tabs.addTab(iv_curve_plot, "IV curve")
         deltav_df = self.final_obj.df_dict["Delta V"]
         iv_x = self.final_obj.df_dict["iv_x"]
-        iv_y = self.final_obj.df_dict["iv_y"]
+        iv_y = self.final_obj.df_dict["IV lines"]
         iv_curve_plot.addLegend()
         epochs = iv_y.columns.to_list()
         for i in epochs:
@@ -576,13 +582,12 @@ class currentClampWidget(DragDropWidget):
                     name=f"Epoch {i}",
                 )
 
-    def plotSpikeFrequency(self):
+    def plotSpikeFrequency(self, hertz):
         spike_curve_plot = pg.PlotWidget()
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.tabs.addTab(spike_curve_plot, "Spike curve")
-        hertz = self.final_obj.df_dict["Hertz"]
         pulse_amp = hertz.pop("Pulse_amp").to_numpy()
-        plot_epochs = hertz["Epoch"].to_list()
+        plot_epochs = hertz.columns.to_list()
         spike_curve_plot.addLegend()
         for i in plot_epochs:
             pencil = pg.mkPen(color=pg.intColor(i))
@@ -644,7 +649,7 @@ class currentClampWidget(DragDropWidget):
             for i, filepath in enumerate(file_list):
                 x = Acq(self.analysis_type, filepath)
                 x.load_acq()
-                self.acq_dict[str(x.acq_number)] = x
+                self.acq_dict[int(x.acq_number)] = x
                 self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
             if load_dict.get("Deleted Acqs"):
                 for i in load_dict["Deleted Acqs"]:
