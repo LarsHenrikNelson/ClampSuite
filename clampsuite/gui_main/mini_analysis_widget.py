@@ -379,6 +379,7 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.template_plot.setObjectName("Template plot")
+        self.template_plot.setMinimumHeight(300)
         self.extra_layout.addWidget(self.template_plot, 10)
 
         # Setup for the drag and drop load layout
@@ -401,12 +402,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dock_area2.addDock(self.d2, "right")
         self.dock_area2.addDock(self.d3, "bottom")
         self.acq_scroll = QScrollArea()
-        self.acq_scroll.setContentsMargins(10, 10, 10, 10)
+        self.acq_scroll.setContentsMargins(20, 20, 20, 20)
         self.acq_widget = QWidget()
+        self.acq_widget.setFixedWidth(250)
         self.acq_scroll.setWidget(self.acq_widget)
         self.acq_scroll.setWidgetResizable(True)
         self.d3.addWidget(self.acq_scroll, 0, 0)
-        self.d3.layout.setColumnStretch(0, 0)
+        # self.d3.layout.setColumnStretch(0, 0)
         self.acq_buttons = QGridLayout()
         self.acq_2_buttons = QVBoxLayout()
         self.acq_2_buttons.addLayout(self.acq_buttons, 0)
@@ -415,7 +417,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
+            QSizePolicy.Minimum, QSizePolicy.Minimum
         )
         self.acq_buttons.addWidget(self.acquisition_number_label, 0, 0)
         self.acquisition_number = QSpinBox()
@@ -425,38 +427,31 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
 
         self.epoch_label = QLabel("Epoch")
-        self.epoch_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
-        )
+        self.epoch_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.acq_buttons.addWidget(self.epoch_label, 1, 0)
         self.epoch_edit = QLineEdit()
         self.acq_buttons.addWidget(self.epoch_edit, 1, 1)
 
         self.baseline_mean_label = QLabel("Baseline mean")
-        self.baseline_mean_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.MinimumExpanding
-        )
+        self.baseline_mean_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.acq_buttons.addWidget(self.baseline_mean_label, 2, 0)
         self.baseline_mean_edit = QLineEdit()
         self.acq_buttons.addWidget(self.baseline_mean_edit, 2, 1)
 
         self.left_button = QToolButton()
-        self.left_button.setSizePolicy(
-            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
-        )
+        self.left_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.left_button.pressed.connect(self.leftbutton)
         self.left_button.setArrowType(Qt.LeftArrow)
         self.left_button.setAutoRepeat(True)
-        self.left_button.setAutoRepeatInterval(10)
+        self.left_button.setAutoRepeatInterval(50)
         self.acq_buttons.addWidget(self.left_button, 3, 0)
+
         self.right_button = QToolButton()
-        self.right_button.setSizePolicy(
-            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
-        )
+        self.right_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.right_button.pressed.connect(self.rightbutton)
         self.right_button.setArrowType(Qt.RightArrow)
         self.right_button.setAutoRepeat(True)
-        self.right_button.setAutoRepeatInterval(10)
+        self.right_button.setAutoRepeatInterval(50)
         self.acq_buttons.addWidget(self.right_button, 3, 1)
 
         self.slider_sensitivity = QSlider()
@@ -515,11 +510,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setZValue(10)
 
         self.mini_view_widget = QWidget()
-        self.mini_view_widget.setMinimumWidth(200)
-        self.mini_view_widget.setSizePolicy(
-            QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        )
-        self.mini_view_widget.setMinimumWidth(120)
+        self.mini_view_widget.setFixedWidth(250)
         self.mini_view_scroll = QScrollArea()
         self.mini_view_scroll.setContentsMargins(10, 10, 10, 10)
         self.mini_view_scroll.setWidget(self.mini_view_widget)
@@ -1545,10 +1536,10 @@ class MiniAnalysisWidget(DragDropWidget):
     def plotAveMini(self):
         self.ave_mini_plot.clear()
         self.ave_mini_plot.plot(
-            x=self.final_obj.average_mini_x, y=self.final_obj.average_mini
+            x=self.final_obj.average_mini_x(), y=self.final_obj.average_mini_y()
         )
         self.ave_mini_plot.plot(
-            x=self.final_obj.decay_x, y=self.final_obj.fit_decay_y, pen="g"
+            x=self.final_obj.fit_decay_x(), y=self.final_obj.fit_decay_y(), pen="g"
         )
 
     def plotRawData(self, y: str):
@@ -1559,10 +1550,10 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.stem_plot.clear()
             self.plotAmpDist(y)
 
-    def plotStemData(self, y: str):
+    def plotStemData(self, column: str):
         self.stem_plot.clear()
-        x_values = self.final_obj.raw_df["Real time"].to_numpy()
-        y_values = self.final_obj.raw_df[y].to_numpy()
+        x_values = self.final_obj.timestamp_array()
+        y_values = self.final_obj.get_raw_data(column)
         y_stems = np.insert(y_values, np.arange(y_values.size), 0)
         x_stems = np.repeat(x_values, 2)
         stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
@@ -1577,19 +1568,21 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         self.stem_plot.addItem(stem_item)
         self.stem_plot.addItem(head_item)
-        self.stem_plot.setLabel(axis="left", text=f"{y}")
+        self.stem_plot.setLabel(axis="left", text=f"{column}")
 
-    def plotAmpDist(self, column):
+    def plotAmpDist(self, column: str):
         self.amp_dist.clear()
-        log_y, x = create_kde(self.final_obj.raw_df, column)
-        y = self.final_obj.raw_df[column].dropna().to_numpy()
+        log_y, x = create_kde(self.final_obj.df_dict["Raw data"], column)
+        y = self.final_obj.get_raw_data(column)
         dist_item = pg.PlotDataItem(
-            x=x, y=log_y, fillLevel=0, fillOutline=True, fillBrush="m"
+            x=x,
+            y=log_y,
+            fillLevel=0,
+            fillOutline=True,
+            fillBrush=pg.mkBrush("#bf00bf50"),
         )
         self.amp_dist.addItem(dist_item)
-        self.amp_dist.setXRange(
-            self.final_obj.raw_df[column].min(), self.final_obj.raw_df[column].max()
-        )
+        self.amp_dist.setXRange(np.min(y), np.max(y))
         y_values = np.full(y.shape, max(log_y) * 0.05)
         y_stems = np.insert(y_values, np.arange(y_values.size), 0)
         x_stems = np.repeat(y, 2)

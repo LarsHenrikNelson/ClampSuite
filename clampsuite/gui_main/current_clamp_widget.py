@@ -58,7 +58,9 @@ class currentClampWidget(DragDropWidget):
 
         self.signals.dictionary.connect(self.setPrefences)
         self.signals.path.connect(self.openFiles)
-        self.main_widget = QScrollArea()
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+        self.tab_widget = QTabWidget()
         self.main_layout = QHBoxLayout()
         self.input_layout = QFormLayout()
         self.v_layout = QVBoxLayout()

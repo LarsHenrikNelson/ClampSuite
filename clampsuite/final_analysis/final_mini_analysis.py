@@ -146,13 +146,13 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         bounds = [lower_bound, upper_bound]
         popt, _ = curve_fit(s_exp_decay, decay_x, decay_y, p0=init_param, bounds=bounds)
         fit_amp, self.fit_tau_x = popt
-        self.fit_decay_y = s_exp_decay(decay_x, fit_amp, self.fit_tau_x)
+        fit_decay_y = s_exp_decay(decay_x, fit_amp, self.fit_tau_x)
         decay_x = decay_x + event_peak_x / 10
         average_mini_x = np.arange(average_mini.shape[0]) / (self.sample_rate / 1000)
         temp_list = [
             pd.Series(average_mini, name="ave_mini_y"),
             pd.Series(average_mini_x, name="ave_mini_x"),
-            pd.Series(self.fit_decay_y, name="fit_decay_y"),
+            pd.Series(fit_decay_y, name="fit_decay_y"),
             pd.Series(decay_x, name="fit_decay_x"),
         ]
         extra_data = pd.concat(temp_list, axis=1)
@@ -199,30 +199,36 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
     def extra_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Extra data")
 
-    def average_mini_y(self) -> Union[None, np.ndarray]:
+    def average_mini_y(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_y"].dropna().to_numpy()
         else:
-            return df
+            return np.array([])
 
-    def average_mini_x(self) -> Union[None, np.ndarray]:
+    def average_mini_x(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_x"].dropna().to_numpy()
         else:
-            return df
+            return np.array([])
 
-    def fit_decay_y(self) -> Union[None, np.ndarray]:
+    def fit_decay_y(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["fit_decay_y"].dropna().to_numpy()
         else:
-            return df
+            return np.array([])
 
-    def fit_decay_x(self) -> Union[bool, np.ndarray]:
+    def fit_decay_x(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["fit_decay_x"].dropna().to_numpy()
         else:
-            return df
+            return np.array([])
+
+    def timestamp_array(self) -> np.ndarray:
+        return self.df_dict["Raw data"]["Real time"].to_numpy()
+
+    def get_raw_data(self, column) -> np.ndarray:
+        return self.df_dict["Raw data"][column].to_numpy()
