@@ -147,7 +147,7 @@ class filterWidget(QWidget):
         windows = [
             "hann",
             "hamming",
-            "blackmmaharris",
+            "blackmanharris",
             "barthann",
             "nuttall",
             "blackman",

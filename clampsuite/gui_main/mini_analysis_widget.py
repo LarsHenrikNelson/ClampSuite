@@ -210,7 +210,7 @@ class MiniAnalysisWidget(DragDropWidget):
         windows = [
             "hann",
             "hamming",
-            "blackmmaharris",
+            "blackmanharris",
             "barthann",
             "nuttall",
             "blackman",

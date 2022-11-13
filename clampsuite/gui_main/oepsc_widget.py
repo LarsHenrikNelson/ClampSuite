@@ -209,7 +209,7 @@ class oEPSCWidget(DragDropWidget):
         windows = [
             "hann",
             "hamming",
-            "blackmmaharris",
+            "blackmanharris",
             "barthann",
             "nuttall",
             "blackman",

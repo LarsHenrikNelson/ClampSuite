@@ -4,7 +4,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Search - ClampSuite 0.0.2 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Filtering tutorial &#8212; ClampSuite 0.0.2 documentation</title>
   <script>
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
@@ -36,12 +38,10 @@
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-<script src="_static/searchtools.js"></script>
-<script src="_static/language_data.js"></script>
-<script src="searchindex.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'filtering';</script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Basic GUI usage" href="gui.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -62,7 +62,7 @@
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
       
-<form class="bd-search d-flex align-items-center" action="#" method="get">
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
@@ -120,6 +120,13 @@
                 <li class="nav-item">
                     <a class="nav-link" href="gui.html">
                         Basic GUI usage
+                    </a>
+                </li>
+                
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="#">
+                        Filtering tutorial
                     </a>
                 </li>
                 
@@ -202,6 +209,13 @@
                     </a>
                 </li>
                 
+
+                <li class="nav-item current active">
+                    <a class="nav-link" href="#">
+                        Filtering tutorial
+                    </a>
+                </li>
+                
     </ul>
 </nav>
       </div>
@@ -250,43 +264,97 @@
             </div>
             
             
-<div class="bd-search-container">
-  <h1>Search</h1>
+            <article class="bd-article" role="main">
+              
+  <section id="filtering-tutorial">
+<h1>Filtering tutorial<a class="headerlink" href="#filtering-tutorial" title="Permalink to this heading">#</a></h1>
+<p>Filtering is one of the most important steps and is usually the first step
+in analyzing a time-based signal. ClampSuite includes FIR filters, minimal-phase
+filters (Bessel), and other filters such as the exponentially weighted moving
+average (EWMA), Savgol and median filter. All these filters are based off of SciPy
+filters.</p>
+<p>ClampSuite filters signals by first removing the mean from the selected baseline.
+This removes any DC offset for the signal and usually provides enough of a high pass
+filter that one is not need when implementing future filtering. Then the signal is filtered
+using one of the selected filters.</p>
+<p>For filters that need to have a low-pass and high-pass specified (fir, bessel, remez)
+leave the input field black if you don’t want to implement either or low pass or high pass.
+I recommend implementing a loww pass around 500-600. A high pass is technically not need
+since the DC offset if removed. If you choose to implement a high pass filter I would
+recommend a cutoff no higher than 0.1. High pass filtering is usually used in situations where
+you want to recover a high frequency signal such as getting spikes from the wideband signal
+in recorded extracellularly. However for patch clamp ephys high pass filtering can introduce
+artifacts or degrade your signal. For further explanation see this webpage.</p>
+<section id="fir-filters">
+<h2>FIR filters<a class="headerlink" href="#fir-filters" title="Permalink to this heading">#</a></h2>
+<p>Finite impulse response (FIR) filters are the filter I would recommend using. The FIR filters
+included in ClampSuite are fir_zero_1, fir_zero_2, remez_1, and remez_2. All of these
+filters are (mostly) zerophase filters which means that they will not cause a shift in the timing
+of the signal that they are filtering however they achieve zerophase filtering through
+different means. Fir_zero_1 and remez_1 filter the signal in the forward and backwards
+direction to achieve a zerophase filter. This also has the effect of increasing the
+magnitude (effectiveness/degree) of the filtering. Fir_zero_2 and remez_2 implement a trick
+that allows for filtering in one direction while acheiving zerophase. If you implement an even
+ordered filter then the signal will be shifted forward by one sample due to the method used to
+achieve the zerophase response. See this Matlab discussion for more imformation: website.</p>
+<p>To implement the fir_zero_1 and fir_zero_2 filters you will need to make sure the following
+information is input in the GUI: order, high pass, high width, low pass, low width, window type,
+and beta/sigma. The window types included are: hann, hamming, blackmanharris, barthann, nuttal,
+blackman, tukey, kaiser, gaussian, parzen and exponential. I would recommend using the hann or
+hamming window. If you select the kaiser or gaussian window you will need to supply a beta/sigma
+value.</p>
+<p>To implement the remez_1 and remez_2 filters you will need to make sure the following
+information is input in the GUI: order, high pass, high width, low pass, low width.
+The Remez filter is a non-windowed FIR filter. I have noticed that the Remez filter
+cannot implement sharp cutoffs for low or high pass filters.</p>
+<p>The order of the filter depends on the how small the low width and high width are. A good
+starting order is 151 for a width of 600 and 251 for a width of 300.</p>
+<p>The FIR filters also need a width specified if the high pass or low pass is specified.
+Low width and high width specify the width of the filters cutoff for the gain to go from
+one to zero. The frequency at which the gain will be zero is low pass - low width or
+high pass + high width. I implemented the filters this way because this is how SciPy
+does so in their tutorials.</p>
+</section>
+<section id="minimal-phase-filters">
+<h2>Minimal-phase filters<a class="headerlink" href="#minimal-phase-filters" title="Permalink to this heading">#</a></h2>
+<p>Minimal-phase filters are the digital version of the classic Bessel and Butterworth filters
+Clampsuite has implementations of bessel, butterworth, bessel_zero, and butterworth_zero.
+The bessel and butterworth filters will affect the phase of you signal depending
+on the frequency present. Bessel_zero and butterworth_zero are zerophase implementations
+of the bessel and butterworth filters. The zero phase filters filter in both directions
+and will filter your signal with double the magnitude.</p>
+<p>To implement these filters you need to make sure the following information is input in
+the GUI: order, high pass and low pass. The order needs to be an even value and specificies
+the steepneess of the filter cutoff where 2 is less steep than 4.</p>
+</section>
+<section id="other-filters">
+<h2>Other filters<a class="headerlink" href="#other-filters" title="Permalink to this heading">#</a></h2>
+<p>The other filters are primarily moving window filters that are not frequency based like
+the FIR and minimal-phase filters. The median filter only needs the orderinput, and the ewma,
+ewma_a, and savgol filters needs both the order and polyorder/sum proportion specified.
+For these filters the larger the order the more the signal is filtered and the more potential
+for artifacts. And order of 10-15 is usually sufficient. The order is the number of samples
+included in the window.</p>
+<p>The median filter just finds the median from a window the size specified by the order input.
+The median filter repeats this step</p>
+</section>
+</section>
 
-  <noscript>
-    <div class="admonition error">
-      <p class="admonition-title">Error</p>
-      <p>
-        Please activate JavaScript to enable the search functionality.
-      </p>
-    </div>
-  </noscript>
 
-  
-<form class="bd-search d-flex align-items-center" action="#" method="get">
-  <i class="fa-solid fa-magnifying-glass"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-
-  <div id="search-results"></div>
-</div>
-
-<script>
-// Activate the search field on page load
-let searchInput = document.querySelector("form.bd-search input");
-if (searchInput) {
-  searchInput.focus();
-  searchInput.select();
-  console.log("[PST]: Set focus on search field.");
-}
-</script>
-
+            </article>
+            
             
             
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
+  <a class='left-prev' id="prev-link" href="gui.html" title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+          <p class="prev-next-subtitle">previous</p>
+          <p class="prev-next-title">Basic GUI usage</p>
+      </div>
+  </a>
 </div>
             </footer>
             
@@ -298,6 +366,33 @@ if (searchInput) {
               
 <div class="toc-item">
   
+<div class="tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+</div>
+<nav id="bd-toc-nav" class="page-toc">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#fir-filters">
+   FIR filters
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#minimal-phase-filters">
+   Minimal-phase filters
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#other-filters">
+   Other filters
+  </a>
+ </li>
+</ul>
+
+</nav>
+</div>
+
+<div class="toc-item">
+  
 <div id="searchbox"></div>
 </div>
 
@@ -307,6 +402,12 @@ if (searchInput) {
 
 <div class="toc-item">
   
+<div class="tocsection sourcelink">
+    <a href="_sources/filtering.rst.txt">
+        <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+</div>
+
 </div>
 
             </div>
@@ -343,7 +444,7 @@ if (searchInput) {
   <div class="footer-item">
     
 <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.3.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br>
 </p>
 
   </div>

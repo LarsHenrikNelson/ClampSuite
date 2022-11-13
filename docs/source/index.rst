@@ -22,3 +22,4 @@ scripts for creating figures.
 
    installation
    gui
+   filtering
