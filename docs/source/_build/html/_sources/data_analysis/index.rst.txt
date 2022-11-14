@@ -1,0 +1,9 @@
+.. _analysis_methods_ref:
+
+Analysis methods
+=====================
+
+.. toctree::
+    :maxdepth: 1
+
+    filtering

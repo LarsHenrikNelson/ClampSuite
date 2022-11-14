@@ -31,3 +31,10 @@ Data that has been previously analyzed can be load back into the program by drag
 ClampSuite. The folder can be dropped anywhere but the Acquisitions area where acquisitions are loaded.
 
 .. image:: _static/dd_folder.png
+
+Selecting display preferences
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Currently none of the display preferences are saved. This is a work in progress. The colors
+for the plots were chosen because they are colorblind friendly and stick out enough from both
+the dark and light settings. You can checkout a program called Color Oracle to see what the program
+looks like in when simulating different colorblindnesses.

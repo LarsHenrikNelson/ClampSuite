@@ -361,7 +361,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.temp_length_edit.setObjectName("temp_length_edit")
         self.temp_length_edit.setEnabled(True)
         self.temp_length_edit.setText("30")
-        self.template_form.addRow("Template length", self.temp_length_edit)
+        self.template_form.addRow("Template length (ms)", self.temp_length_edit)
 
         self.spacer_edit = LineEdit()
         self.spacer_edit.setObjectName("spacer_edit")
@@ -539,7 +539,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_amplitude.setReadOnly(True)
         self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
 
-        self.mini_tau_label = QLabel("Tau (ms)")
+        self.mini_tau_label = QLabel("Est tau (ms)")
         self.mini_tau = QLineEdit()
         self.mini_tau.setReadOnly(True)
         self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
@@ -636,6 +636,12 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.create_mini_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
         self.create_mini_shortcut.activated.connect(self.createMini)
+
+        self.set_baseline = QShortcut(QKeySequence("Ctrl + B"), self)
+        self.set_baseline.activated.connect(self.setPointAsBaseline)
+
+        self.set_peak = QShortcut(QKeySequence("Ctrl + P"), self)
+        self.set_peak.activated.connect(self.setPointAsPeak)
 
         self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
@@ -908,6 +914,11 @@ class MiniAnalysisWidget(DragDropWidget):
             # Add the plot item to the plot. Need to do it this way since
             # the ability to the click on specific points is need.
             self.p1.addItem(acq_plot)
+            self.p1.setYRange(
+                min(self.acq_object.final_array),
+                max(self.acq_object.final_array),
+                padding=0.1,
+            )
 
             # Add the draggable region to p2.
             self.p2.addItem(self.region, ignoreBounds=True)

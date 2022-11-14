@@ -80,7 +80,7 @@ Other filters
 ~~~~~~~~~~~~~~~~
 The other filters are primarily moving window filters that are not frequency based like
 the FIR and minimal-phase filters. These filters tend distort the signal when filtering the 
-signal heavily. I included these filters mainly to compare to the other filers. The
+signal heavily. I included these filters mainly to compare to the other filters. The
 median filter only needs the order input, and the ewma, ewma_a, and savgol filters needs 
 both the order and polyorder/sum proportion specified. For these filters the larger the 
 order the more the signal is filtered and the more potentialfor artifacts. And order of

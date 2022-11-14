@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Filtering tutorial &#8212; ClampSuite 0.0.2 documentation</title>
+    <title>Filtering tutorial &#8212; ClampSuite 0.0.3 documentation</title>
   <script>
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
@@ -27,6 +27,7 @@
     href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2">
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
     <link rel="stylesheet" type="text/css" href="_static/custom.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -38,28 +39,10 @@
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
+    <script src="_static/design-tabs.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'filtering';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Basic GUI usage" href="gui.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -111,7 +94,7 @@
 
   
   
-    <p class="title logo__title">ClampSuite 0.0.2 documentation</p>
+    <p class="title logo__title">ClampSuite 0.0.3 documentation</p>
   
 </a>
     
@@ -129,22 +112,15 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                 <li class="nav-item">
-                    <a class="nav-link" href="installation.html">
-                        Installation
+                    <a class="nav-link" href="getting_started/index.html">
+                        <no title>
                     </a>
                 </li>
                 
 
                 <li class="nav-item">
-                    <a class="nav-link" href="gui.html">
-                        Basic GUI usage
-                    </a>
-                </li>
-                
-
-                <li class="nav-item current active">
-                    <a class="nav-link" href="#">
-                        Filtering tutorial
+                    <a class="nav-link" href="modules/index.html">
+                        <no title>
                     </a>
                 </li>
                 
@@ -215,22 +191,15 @@
     <ul id="navbar-main-elements" class="navbar-nav">
         
                 <li class="nav-item">
-                    <a class="nav-link" href="installation.html">
-                        Installation
+                    <a class="nav-link" href="getting_started/index.html">
+                        <no title>
                     </a>
                 </li>
                 
 
                 <li class="nav-item">
-                    <a class="nav-link" href="gui.html">
-                        Basic GUI usage
-                    </a>
-                </li>
-                
-
-                <li class="nav-item current active">
-                    <a class="nav-link" href="#">
-                        Filtering tutorial
+                    <a class="nav-link" href="modules/index.html">
+                        <no title>
                     </a>
                 </li>
                 
@@ -357,7 +326,7 @@ the steepneess of the filter cutoff where 2 is less steep than 4.</p>
 <h2>Other filters<a class="headerlink" href="#other-filters" title="Permalink to this heading">#</a></h2>
 <p>The other filters are primarily moving window filters that are not frequency based like
 the FIR and minimal-phase filters. These filters tend distort the signal when filtering the
-signal heavily. I included these filters mainly to compare to the other filers. The
+signal heavily. I included these filters mainly to compare to the other filters. The
 median filter only needs the order input, and the ewma, ewma_a, and savgol filters needs
 both the order and polyorder/sum proportion specified. For these filters the larger the
 order the more the signal is filtered and the more potentialfor artifacts. And order of
@@ -382,13 +351,6 @@ and <a class="reference external" href="https://en.wikipedia.org/wiki/Moving_ave
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-  <a class='left-prev' id="prev-link" href="gui.html" title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-          <p class="prev-next-subtitle">previous</p>
-          <p class="prev-next-title">Basic GUI usage</p>
-      </div>
-  </a>
 </div>
             </footer>
             
