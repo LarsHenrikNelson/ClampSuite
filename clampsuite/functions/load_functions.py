@@ -1,11 +1,13 @@
 import json
-from math import floor, log10, nan
-from pathlib import PurePath, PurePosixPath, PureWindowsPath
+from math import nan
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import re
-from typing import Tuple
+from typing import Union
 
 import numpy as np
 from scipy.io import loadmat, matlab
+
+from ..acq import Acquisition
 
 
 """
@@ -74,32 +76,67 @@ def load_mat(filename: str) -> dict:
 
 def load_scanimage_file(
     path: PurePath,
-) -> Tuple[np.array, str, str, str, str, str, str]:
+) -> dict:
     """
     This function takes pathlib.PurePath object as the input.
     """
+    acq_dict = {}
     name = path.stem
-    acq_number = name.split("_")[-1]
+    acq_dict["name"] = name
+    acq_dict["acq_number"] = name.split("_")[-1]
     matfile1 = load_mat(path)
-    array = matfile1[name]["data"]
+    acq_dict["array"] = matfile1[name]["data"]
     data_string = matfile1[name]["UserData"]["headerString"]
-    epoch = re.findall("epoch=(\D?\d*)", data_string)[0]
+    acq_dict["epoch"] = re.findall("epoch=(\D?\d*)", data_string)[0]
     analog_input = matfile1[name]["UserData"]["ai"]
-    time_stamp = matfile1[name]["timeStamp"]
+    acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
     if analog_input == 0:
         r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
-        pulse_pattern = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
     elif analog_input == 1:
         r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
-        pulse_pattern = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
     ramp = re.findall(r"ramp=(\D?\d*);", r[0])
     if ramp:
-        ramp = ramp[0]
-        pulse_amp = re.findall("amplitude=(\D?\d*)", r[0])[0]
+        acq_dict["ramp"] = ramp[0]
+        acq_dict["pulse_amp"] = re.findall("amplitude=(\D?\d*)", r[0])[0]
     else:
-        ramp = "0"
-        pulse_amp = "0"
-    return (name, acq_number, array, epoch, pulse_pattern, ramp, pulse_amp, time_stamp)
+        acq_dict["ramp"] = "0"
+        acq_dict["pulse_amp"] = "0"
+    return acq_dict
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """
+    Special json encoder for numpy types. Numpy types are not accepted by the
+    json encoder and need to be converted to python types.
+    """
+
+    def default(self, obj):
+        if isinstance(
+            obj,
+            (
+                np.int_,
+                np.intc,
+                np.intp,
+                np.int8,
+                np.int16,
+                np.int32,
+                np.int64,
+                np.uint8,
+                np.uint16,
+                np.uint32,
+                np.uint64,
+            ),
+        ):
+            return int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+            return float(obj)
+        elif isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 class NumpyDecoder(json.JSONDecoder):
@@ -122,7 +159,7 @@ class NumpyDecoder(json.JSONDecoder):
         return json.JSONDecoder.default(self, obj)
 
 
-def load_json_file(obj, path: PurePath or str):
+def load_json_file(path: Union[PurePath, str]) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
@@ -130,30 +167,69 @@ def load_json_file(obj, path: PurePath or str):
     that all of our saved files can be loaded.
     """
     with open(path) as file:
-        data = json.load(file, cls=NumpyDecoder)
-        obj.sample_rate_correction = None
+        with open(path, "r") as rf:
+            data = json.load(rf, cls=NumpyDecoder)
         if data["analysis"] == "oepsc":
-            obj.find_ct = False
-            obj.find_est_decay = False
-            obj.curve_fit_decay = False
+            if not data.get("find_ct"):
+                data["find_ct"] = False
+            if not data.get("find_est_deay"):
+                data["find_est_deay"] = False
+            if not data.get("find_ct"):
+                data["curve_fit_decay"] = False
+        altered_keys = {"fv_x", "fp_x", "pulse_start", "slope", "slope_x"}
         for key in data:
-            x = data[key]
-            if key in ("fv_x", "fp_x", "pulse_start"):
-                key = "_" + key
+            if key in altered_keys:
+                new_key = "_" + key
+                data[new_key] = data.pop(key)
             if key == "peak_x":
-                key = "_" + key
-                x = x * 10
-            if key == "slope" or key == "slope_x":
-                key = "_" + key
+                new_key = "_" + key
+                data[key] = data[key] * 10
+                data[new_key] = data.pop(key)
             if isinstance(x, list):
                 if key not in ["postsynaptic_events", "final_events"]:
                     x = np.array(x)
-            setattr(obj, key, x)
-    if obj.sample_rate_correction is not None:
-        obj.s_r_c = obj.sample_rate_correction
-    if obj.analysis == "mini":
-        obj.create_postsynaptic_events()
-        obj.x_array = np.arange(len(obj.final_array)) / obj.s_r_c
-        obj.event_arrays = [
-            i.event_array - i.event_start_y for i in obj.postsynaptic_events
-        ]
+    if data.get("sample_rate_correction"):
+        data["s_r_c"] = data.get("sample_rate_correction")
+        return data
+
+def load_file(analysis: str, path: Union[tuple, str, Path, PurePath]) -> dict:
+    acq_dict = {}
+    path_obj = PurePath(path)
+    if path_obj.suffix == ".mat":
+        acq_comp = load_scanimage_file(path)
+    elif path_obj.suffix == ".json":
+        acq_comp = load_json_file(path_obj)
+    else:
+        print("File type not recognized!")
+        return None
+    obj = Acquisition(analysis)
+    obj.load_data(acq_comp)
+    acq_dict[int(obj.acq_number)]
+    return acq_dict
+
+
+def load_files(analysis: str, paths: Union[list, tuple]) -> dict:
+    acq_dict = {}
+    for i in paths:
+        path_obj = PurePath(i)
+        if path_obj.suffix == ".mat":
+            acq_comp = load_scanimage_file(i)
+        elif path_obj.suffix == ".json":
+            acq_comp = load_json_file(path_obj)
+        else:
+            print("File type not recognized!")
+            return None
+        obj = Acquisition(analysis)
+        obj.load_data(acq_comp)
+        acq_dict[int(obj.acq_number)] = obj
+    return acq_dict
+
+def load_acqs(analysis: str, file: Union[list, tuple, str, Path, PurePath], ) -> dict:
+    if isinstance(file, (list, tuple)):
+        acq_dict = load_files(file, analysis)
+    else:
+        acq_dict = load_file(file, analysis)
+    return acq_dict
+
+if __name__ == "__main__":
+    load_acqs()

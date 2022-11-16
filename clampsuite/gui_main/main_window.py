@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QFileDialog,
     QMainWindow,
+    QMenu,
     QPushButton,
     QStackedWidget,
     QToolBar,
@@ -35,11 +36,20 @@ class MainWindow(QMainWindow):
         self.file_menu = self.bar.addMenu("File")
         self.preferences_menu = self.bar.addMenu("Preferences")
 
-        self.openFile = QAction("Open", self)
-        self.openFile.setStatusTip("Open file")
-        self.openFile.setShortcut("Ctrl+O")
-        self.openFile.triggered.connect(self.openFiles)
-        self.file_menu.addAction(self.openFile)
+        self.load_data = QMenu("Load data")
+        self.file_menu.addMenu(self.load_data)
+
+        self.open_analyzed_data = QAction("Load analyzed data", self)
+        self.open_analyzed_data.setStatusTip("Open file")
+        self.open_analyzed_data.setShortcut("Ctrl+O")
+        self.open_analyzed_data.triggered.connect(self.openFiles)
+        self.load_data.addAction(self.open_analyzed_data)
+
+        self.open_new_file = QAction("Load new data", self)
+        self.open_new_file.setStatusTip("Open file")
+        self.open_new_file.setShortcut("Ctrl+O")
+        self.open_new_file.triggered.connect(self.openFiles)
+        self.load_data.addAction(self.open_new_file)
 
         self.saveFile = QAction("Save", self)
         self.saveFile.setStatusTip("Save file")

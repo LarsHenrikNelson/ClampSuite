@@ -10,7 +10,7 @@ class FinalAnalysis:
     the
     """
 
-    version = "0.0.2"
+    version = "0.0.3"
     program = "ClampSuite"
     _class_type = {}
 
@@ -18,7 +18,7 @@ class FinalAnalysis:
         super().__init_subclass__(**kwargs)
         cls._class_type[analysis] = cls
 
-    def __new__(cls, analysis: str, *args):
+    def __new__(cls, analysis: str):
         subclass = cls._class_type[analysis]
         obj = object.__new__(subclass)
         obj.analysis = analysis

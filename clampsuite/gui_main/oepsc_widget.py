@@ -1163,7 +1163,6 @@ class oEPSCWidget(DragDropWidget):
         if not self.oepsc_acq_dict and not self.lfp_acq_dict:
             self.fileDoesNotExist()
             return None
-
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
         self.createPrefDict()

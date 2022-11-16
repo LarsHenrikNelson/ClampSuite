@@ -19,7 +19,7 @@ from PyQt5.QtCore import (
 )
 
 from .utility_classes import NumpyEncoder, YamlWorker
-from ..acq import Acq
+from ..acq import Acquisition
 
 
 class LineEdit(QLineEdit):
@@ -247,7 +247,7 @@ class ListModel(QAbstractListModel):
         for url in urls:
             fname = PurePath(str(url.toLocalFile()))
             if fname not in self.fname_list and not Path(fname).is_dir():
-                obj = Acq(self.analysis_type, fname)
+                obj = Acquisition(self.analysis_type, fname)
                 obj.load_acq()
 
                 # Add the acquisition to the model dictionary. This

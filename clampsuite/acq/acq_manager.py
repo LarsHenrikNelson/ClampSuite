@@ -1,26 +1,54 @@
-from .acq import Acq
-from ..functions.load_functions import load_scanimage_file, load_json_file
+from glob import glob
+from pathlib import PurePath, Path
+from typing import Union
+
+import yaml
+
+from ..functions.load_functions import load_acqs
+from ..final_analysis import FinalAnalysis
 
 
-class AcqManager:
-    """
-    This class creates new acquisition objects and final analysis objects.
-    It is a convience class to keep all the data for an analysis session
-    organized. This class also makes it easier to deal with ephys files that
-    contain several arrays and files that contain only a single array that need
-    to be analyzed since each array needs to be analyzed separately.
-    """
+class ExpManager:
+    def __init__(self):
+        self.exp_dict = {}
+        self.prefs_dict = {}
+        self.final_analysis = None
+        self.ui_prefs = {}
 
-    def __init__(self, analysis):
-        self.analysis = analysis
-        self.acq_dict = {}
+    def save_data(self, path, file_prefix=None):
+        pass
 
-    def load_file(self):
-        path_obj = PurePath(self.path)
-        if path_obj.suffix == ".mat":
-            acq_components = utilities.load_scanimage_file(path_obj)
-        elif path_obj.suffix == ".json":
-            with open(path) as file:
-                load_json_file(self, path_obj)
+    def create_exp(self, analysis: str, file: Union[list, tuple, str, Path, PurePath]):
+        acq_dict = load_acqs(analysis, file)
+        self.exp_dict[analysis] = acq_dict
+
+    def analyze_exp(self, exp: str, **kwargs):
+        acq_dict = self.exp_dict[exp]
+        for i in acq_dict.values():
+            i.analyze(**kwargs)
+
+    def run_final_analysis(self, **kwargs):
+        analysis = list(self.exp_dict.keys())
+        final_analysis = FinalAnalysis(analysis)
+        if len(analysis) == 1:
+            final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
         else:
-            print("File type not recognized!")
+            lfp = self.exp_dict.get("lfp")
+            oepsc = self.exp_dict.get("oepsc")
+            final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
+
+    def load_ui_pref(path=None):
+        if path is None:
+            file_name = glob("*.yaml")[0]
+        elif PurePath(path).suffix == ".yaml":
+            file_name = PurePath(path)
+        else:
+            directory = Path(path)
+            file_name = list(directory.glob("*.yaml"))[0]
+        with open(file_name, "r") as file:
+            yaml_file = yaml.safe_load(file)
+        return yaml_file
+
+    def save_ui_pref(dictionary, save_filename):
+        with open(f"{save_filename}.yaml", "w") as file:
+            yaml.dump(dictionary, file)
