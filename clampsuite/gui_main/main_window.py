@@ -19,7 +19,6 @@ from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
-from ..gui_widgets.utility_classes import YamlWorker
 
 
 class MainWindow(QMainWindow):
@@ -171,19 +170,6 @@ class MainWindow(QMainWindow):
     def setAppearance(self):
         # Creates a separate window to set the appearance of the application
         self.preferences_widget.show()
-
-    def startupFunction(self):
-        p = Path.home()
-        h = "EphysAnalysisProgram"
-        file_name = "Preferences.yaml"
-
-        if Path(p / h).exists():
-            if Path(p / h / file_name).exists():
-                pref_dict = YamlWorker.load_yaml(p / h / file_name)
-            else:
-                pass
-        else:
-            Path(p / h).mkdir()
 
     def closeEvent(self, event):
         if self.central_widget.currentWidget().need_to_save:

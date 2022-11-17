@@ -18,9 +18,6 @@ from PyQt5.QtCore import (
     QAbstractListModel,
 )
 
-from .utility_classes import NumpyEncoder, YamlWorker
-from ..acq import Acquisition
-
 
 class LineEdit(QLineEdit):
     """
@@ -60,52 +57,17 @@ class SaveWorker(QRunnable):
     main GUI. This prevents that GUI from freezing during saving.
     """
 
-    def __init__(self, save_filename, dictionary):
+    def __init__(self, save_filename, exp_manager):
         super().__init__()
 
         self.save_filename = save_filename
-        self.dictionary = dictionary
+        self.exp_manager = exp_manager
         self.signals = WorkerSignals()
 
     @pyqtSlot()
     def run(self):
-        for i, key in enumerate(self.dictionary.keys()):
-            x = self.dictionary[key]
-            with open(f"{self.save_filename}_{x.name}.json", "w") as write_file:
-                json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-            self.signals.progress.emit(
-                int((100 * (i + 1) / len(self.dictionary.keys())))
-            )
-        self.signals.finished.emit("Saved")
-
-
-class MiniSaveWorker(QRunnable):
-    """
-    This class is used to create a 'runner' in a different thread than the
-    main GUI. This prevents that GUI from freezing during saving. This is a
-    variant of the SaveWorker class used for the MiniAnalysisWidgit since a
-    specific function needs to be run on the mini-dictionary to prevent it
-    from taking up a lot of space in the json file.
-    """
-
-    def __init__(self, save_filename, dictionary):
-        super().__init__()
-
-        self.save_filename = save_filename
-        self.dictionary = dictionary
-        self.signals = WorkerSignals()
-
-    @pyqtSlot()
-    def run(self):
-        for i, key in enumerate(self.dictionary.keys()):
-            x = deepcopy(self.dictionary[key])
-            x.save_postsynaptic_events()
-            with open(f"{self.save_filename}_{x.name}.json", "w") as write_file:
-                json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-            self.signals.progress.emit(
-                int((100 * (i + 1) / len(self.dictionary.keys())))
-            )
-        self.signals.finished.emit("Saved")
+        self.exp_manager.callback_func(self.signals.finsished.emit)
+        self.exp_manager.save_data()
 
 
 class WorkerSignals(QObject):

@@ -4,7 +4,7 @@ from . import acq
 from ..functions.load_functions import load_scanimage_file, load_json_file
 
 
-class BaseAcq(acq.Acq, analysis="base"):
+class BaseAcq(acq.Acquisition, analysis="base"):
     def load_acq(self):
         path_obj = PurePath(self.path)
         if path_obj.suffix == ".mat":

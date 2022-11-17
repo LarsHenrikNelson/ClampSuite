@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 from math import nan
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
@@ -166,70 +167,92 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
     things that I have changed over the course of the program so
     that all of our saved files can be loaded.
     """
-    with open(path) as file:
-        with open(path, "r") as rf:
-            data = json.load(rf, cls=NumpyDecoder)
-        if data["analysis"] == "oepsc":
-            if not data.get("find_ct"):
-                data["find_ct"] = False
-            if not data.get("find_est_deay"):
-                data["find_est_deay"] = False
-            if not data.get("find_ct"):
-                data["curve_fit_decay"] = False
-        altered_keys = {"fv_x", "fp_x", "pulse_start", "slope", "slope_x"}
-        for key in data:
-            if key in altered_keys:
-                new_key = "_" + key
-                data[new_key] = data.pop(key)
-            if key == "peak_x":
-                new_key = "_" + key
-                data[key] = data[key] * 10
-                data[new_key] = data.pop(key)
-            if isinstance(x, list):
-                if key not in ["postsynaptic_events", "final_events"]:
-                    x = np.array(x)
-    if data.get("sample_rate_correction"):
+    with open(path, "r") as rf:
+        data = json.load(rf, cls=NumpyDecoder)
+    if data["analysis"] == "oepsc":
+        if not data.get("find_ct"):
+            data["find_ct"] = False
+        if not data.get("find_est_deay"):
+            data["find_est_deay"] = False
+        if not data.get("find_ct"):
+            data["curve_fit_decay"] = False
+    altered_keys = {"fv_x", "fp_x", "pulse_start", "slope", "slope_x"}
+    for key in data:
+        if key in altered_keys:
+            new_key = "_" + key
+            data[new_key] = data.pop(key)
+        if key == "peak_x":
+            new_key = "_" + key
+            data[key] = data[key] * 10
+            data[new_key] = data.pop(key)
+        if isinstance(data[key], list):
+            if key not in ["postsynaptic_events", "final_events"]:
+                data[key] = np.array(data[key])
+    if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
         data["s_r_c"] = data.get("sample_rate_correction")
-        return data
+    return data
 
-def load_file(analysis: str, path: Union[tuple, str, Path, PurePath]) -> dict:
-    acq_dict = {}
+
+def load_acq(
+    analysis: Union[str, None], path: Union[str, Path, PurePath]
+) -> Acquisition:
     path_obj = PurePath(path)
+    if not Path(path_obj).exists():
+        return None
     if path_obj.suffix == ".mat":
-        acq_comp = load_scanimage_file(path)
+        acq_comp = load_scanimage_file(path_obj)
     elif path_obj.suffix == ".json":
         acq_comp = load_json_file(path_obj)
     else:
         print("File type not recognized!")
         return None
-    obj = Acquisition(analysis)
-    obj.load_data(acq_comp)
-    acq_dict[int(obj.acq_number)]
-    return acq_dict
-
-
-def load_files(analysis: str, paths: Union[list, tuple]) -> dict:
-    acq_dict = {}
-    for i in paths:
-        path_obj = PurePath(i)
-        if path_obj.suffix == ".mat":
-            acq_comp = load_scanimage_file(i)
-        elif path_obj.suffix == ".json":
-            acq_comp = load_json_file(path_obj)
-        else:
-            print("File type not recognized!")
-            return None
+    if acq_comp.get("analysis"):
+        obj = Acquisition(acq_comp.get("analysis"))
+    elif isinstance(analysis, str):
         obj = Acquisition(analysis)
-        obj.load_data(acq_comp)
-        acq_dict[int(obj.acq_number)] = obj
+    else:
+        print("No analysis specified!")
+        return None
+    obj.load_data(acq_comp)
+    return obj
+
+
+def load_acqs(
+    analysis: str,
+    file_path: Union[list, tuple, str, Path, PurePath],
+) -> dict:
+    if isinstance(file_path, (str, Path, PurePath)):
+        file_path = list(file_path)
+    for i in file_path:
+        print("Loading acquisitions")
+        acq_dict = {}
+        acq = load_acq(analysis, i)
+        if acq is not None:
+            acq_dict[int(acq.acq_number)] = acq
     return acq_dict
 
-def load_acqs(analysis: str, file: Union[list, tuple, str, Path, PurePath], ) -> dict:
-    if isinstance(file, (list, tuple)):
-        acq_dict = load_files(file, analysis)
+
+def load_file(file_path: str, extension: str):
+    if file_path is None:
+        p = Path()
+        file_name = list(p.glob("*.yaml"))[0]
+    elif PurePath(file_path).suffix == extension:
+        file_name = PurePath(file_path)
     else:
-        acq_dict = load_file(file, analysis)
-    return acq_dict
+        directory = Path(file_path)
+        file_name = list(directory.glob("*.yaml"))[0]
+    return file_name
+
+
+def save_acq(acq, save_filename):
+    x = deepcopy(acq)
+    if x.analysis == "mini":
+        x.save_postsynaptic_events()
+    with open(f"{save_filename}_{x.name}.json", "w") as write_file:
+        json.dump(x.__dict__, write_file, cls=NumpyEncoder)
+
 
 if __name__ == "__main__":
+    load_acq()
     load_acqs()
+    load_file()

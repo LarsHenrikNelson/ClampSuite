@@ -1,14 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jan 23 14:09:32 2022
-
-@author: Lars
-"""
-
 import numpy as np
-from scipy import signal
 import patsy
+from scipy import signal
 from sklearn.linear_model import LinearRegression
 
 

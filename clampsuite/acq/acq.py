@@ -18,11 +18,13 @@ class Acquisition:
         super().__init_subclass__(**kwargs)
         cls._class_type[analysis] = cls
 
-    def __new__(cls, analysis: str, path: str, *args):
+    def __new__(cls, analysis: str, **kwargs):
         subclass = cls._class_type[analysis]
         obj = object.__new__(subclass)
         obj.analysis = analysis
         obj.version = "0.0.3"
+        for key, value in kwargs.items():
+            setattr(obj, key, value)
         return obj
 
     def __copy__(self):
@@ -33,9 +35,7 @@ class Acquisition:
         Seems to work. Needs more testing. __deepcopy__ needs to work if
         someone wants to pickle a file.
         """
-        new_acq = Acquisition(
-            copy.deepcopy(self.analysis, memo), copy.deepcopy(self.path, memo)
-        )
+        new_acq = Acquisition(copy.deepcopy(self.analysis, memo))
         new_acq.__dict__.update(copy.deepcopy(self.__dict__, memo))
         return new_acq
 
@@ -50,12 +50,13 @@ class Acquisition:
     def load_data(self, data: dict):
         for key, item in data.items():
             setattr(self, key, item)
-        if data.get("saved_events_dict"):
+        if "saved_events_dict" in data:
             self.create_postsynaptic_events()
             self.x_array = np.arange(len(self.final_array)) / self.s_r_c
             self.event_arrays = [
                 i.event_array - i.event_start_y for i in self.postsynaptic_events
             ]
+
 
 if __name__ == "__main__":
     Acquisition()
