@@ -18,13 +18,6 @@ class ExpManager:
         self.num_of_acqs = 0
         self.callback_func = print
 
-    def save_data(self, save_filename: Union[Path, PurePath, str]):
-
-        self.save_ui_pref(save_filename)
-        if self.final_analysis is not None:
-            self.save_final_analysis(save_filename)
-        self.save_acqs(save_filename)
-
     def create_exp(
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
     ):
@@ -39,30 +32,19 @@ class ExpManager:
     def run_final_analysis(self, **kwargs):
         analysis = list(self.exp_dict.keys())
         if len(analysis) == 1:
-            final_analysis = FinalAnalysis(analysis)
-            final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
+            self.final_analysis = FinalAnalysis(analysis[0])
+            self.final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
         else:
-            final_analysis = FinalAnalysis("oepsc")
+            self.final_analysis = FinalAnalysis("oepsc")
             lfp = self.exp_dict.get("lfp")
             oepsc = self.exp_dict.get("oepsc")
-            final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
+            self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
-    def load_ui_pref(self, file_path: Union[None, str] = None):
-        file_name = load_file(file_path, extension=".yaml")
-        with open(file_name, "r") as file:
-            self.ui_prefs = yaml.safe_load(file)
-
-    def save_ui_pref(self, save_filename: Union[PurePath, str]):
-        with open(f"{save_filename}.yaml", "w") as file:
-            yaml.dump(self.ui_prefs, file)
-
-    def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
-        file_name = load_file(file_path, extension=".xlsx")
-        self.final_analysis = FinalAnalysis(analysis)
-        self.final_analysis.load_data(file_name)
-
-    def save_final_analysis(self, save_filename: Union[PurePath, str]):
-        self.final_analysis(save_filename)
+    def save_data(self, save_filename: Union[Path, PurePath, str]):
+        self.save_ui_pref(save_filename)
+        if self.final_analysis is not None:
+            self.save_final_analysis(save_filename)
+        self.save_acqs(save_filename)
 
     def save_acqs(self, save_filename: Union[PurePath, str]):
         for i in self.exp_dict.values():
@@ -70,6 +52,32 @@ class ExpManager:
                 save_acq(acq, save_filename)
                 self.callback_func(int((100 * (i + 1) / self.num_of_acqs)))
         self.callback_func("Saved")
+
+    def save_ui_pref(self, save_filename: Union[PurePath, str]):
+        with open(f"{save_filename}.yaml", "w") as file:
+            yaml.dump(self.ui_prefs, file)
+
+    def save_analysis_pref(self, save_filename: Union[PurePath, str]):
+        with open(f"{save_filename}.yaml", "w") as file:
+            yaml.dump(self.analysis_prefs, file)
+
+    def save_final_analysis(self, save_filename: Union[PurePath, str]):
+        self.final_analysis.save_data(save_filename)
+
+    def load_ui_pref(self, file_path: Union[None, str] = None):
+        file_name = load_file(file_path, extension=".yaml")
+        with open(file_name, "r") as file:
+            self.ui_prefs = yaml.safe_load(file)
+
+    def load_analysis_pref(self, file_path: Union[None, str] = None):
+        file_name = load_file(file_path, extension=".yaml")
+        with open(file_name, "r") as file:
+            self.analysis_prefs = yaml.safe_load(file)
+
+    def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
+        file_name = load_file(file_path, extension=".xlsx")
+        self.final_analysis = FinalAnalysis(analysis)
+        self.final_analysis.load_data(file_name)
 
     def _load_data(self, analysis: str, file_path: Union[str, list, tuple]):
         if isinstance(file_path, str):
