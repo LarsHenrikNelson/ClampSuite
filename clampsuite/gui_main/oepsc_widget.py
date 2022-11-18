@@ -30,12 +30,10 @@ from ..final_analysis import FinalAnalysis
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
-    SaveWorker,
-    YamlWorker,
     ListView,
     DragDropWidget,
 )
-from ..acq.acq import Acq
+from ..acq.acq import Acquisition
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 

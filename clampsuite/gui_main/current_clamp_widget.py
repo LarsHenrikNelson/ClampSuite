@@ -20,13 +20,11 @@ from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
-from ..acq import Acq
+from ..acq import Acquisition
 from ..final_analysis import FinalAnalysis
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
-    SaveWorker,
-    YamlWorker,
     ListView,
     DragDropWidget,
 )

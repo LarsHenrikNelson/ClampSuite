@@ -38,16 +38,16 @@ class MainWindow(QMainWindow):
         self.load_data = QMenu("Load data")
         self.file_menu.addMenu(self.load_data)
 
-        self.open_analyzed_data = QAction("Load analyzed data", self)
-        self.open_analyzed_data.setStatusTip("Open file")
-        self.open_analyzed_data.setShortcut("Ctrl+O")
-        self.open_analyzed_data.triggered.connect(self.openFiles)
-        self.load_data.addAction(self.open_analyzed_data)
+        self.load_exp = QAction("Load experiment", self)
+        self.load_exp.setStatusTip("Load experiment")
+        self.load_exp.setShortcut("Ctrl+O")
+        self.load_exp.triggered.connect(self.loadExperiment)
+        self.load_data.addAction(self.load_exp)
 
-        self.open_new_file = QAction("Load new data", self)
-        self.open_new_file.setStatusTip("Open file")
+        self.open_new_file = QAction("Create experiment", self)
+        self.open_new_file.setStatusTip("Create experiment")
         self.open_new_file.setShortcut("Ctrl+O")
-        self.open_new_file.triggered.connect(self.openFiles)
+        self.open_new_file.triggered.connect(self.createExperiment)
         self.load_data.addAction(self.open_new_file)
 
         self.saveFile = QAction("Save", self)
@@ -134,7 +134,7 @@ class MainWindow(QMainWindow):
             self.working_dir = str(Path(PurePath(save_filename).parent))
             self.central_widget.currentWidget().saveAs(save_filename)
 
-    def openFiles(self):
+    def loadExperiment(self):
         directory = str(
             QFileDialog.getExistingDirectory(
                 self,
@@ -145,9 +145,12 @@ class MainWindow(QMainWindow):
         if directory:
             path = Path(directory)
             self.working_dir = str(path)
-            self.central_widget.currentWidget().openFiles(path)
+            self.central_widget.currentWidget().loadExperiment(path)
         else:
             pass
+
+    def createExperiment(self):
+        pass
 
     def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(

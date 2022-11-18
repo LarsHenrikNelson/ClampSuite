@@ -218,29 +218,32 @@ def load_acq(
 
 
 def load_acqs(
-    analysis: str,
-    file_path: Union[list, tuple, str, Path, PurePath],
+    analysis: str, file_path: Union[list, tuple, str, Path, PurePath], callback_func
 ) -> dict:
     if isinstance(file_path, (str, Path, PurePath)):
         file_path = list(file_path)
-    for i in file_path:
+    for count, i in enumerate(file_path):
         print("Loading acquisitions")
         acq_dict = {}
-        acq = load_acq(analysis, i)
-        if acq is not None:
-            acq_dict[int(acq.acq_number)] = acq
+        if PurePath(i).suffix == (".mat", ".json"):
+            acq = load_acq(analysis, i)
+            if acq is None:
+                pass
+            else:
+                acq_dict[int(acq.acq_number)] = acq
+                callback_func(int((100 * (count + 1) / len(file_path))))
     return acq_dict
 
 
 def load_file(file_path: str, extension: str):
     if file_path is None:
         p = Path()
-        file_name = list(p.glob("*.yaml"))[0]
+        file_name = list(p.glob(extension))[0]
     elif PurePath(file_path).suffix == extension:
         file_name = PurePath(file_path)
     else:
         directory = Path(file_path)
-        file_name = list(directory.glob("*.yaml"))[0]
+        file_name = list(directory.glob(extension))[0]
     return file_name
 
 

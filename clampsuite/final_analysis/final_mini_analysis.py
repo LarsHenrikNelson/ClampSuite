@@ -185,9 +185,20 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         ) as writer:
             for key, df in self.df_dict.items():
                 df.to_excel(writer, index=False, sheet_name=key)
+            pd.DataFrame(self.program_data).to_excel(
+                writer, index=False, sheet_name="Program data"
+            )
 
     def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)
+        if "Final data" in self.df_dict:
+            self.load_final_data()
+
+    def load_final_data(self, df):
+        df = self.df_dict["Final data"]
+        self.events_deleted = df["Events deleted"].to_numpy()[0]
+        self.acqs_deleted = df["Acqs deleted"].to_numpy()[0]
+        self.events_deleted = df["Events deleted"].to_numpy()[0]
 
     def final_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Final data")

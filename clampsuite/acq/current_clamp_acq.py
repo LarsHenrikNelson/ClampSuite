@@ -27,7 +27,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ramp_start: Union[int, float] = 300,
         ramp_end: Union[int, float] = 4000,
         threshold: Union[int, float] = -15,
-        min_spikes: Union[int, float] = 2,
+        min_spikes: int = 2,
     ):
         self.sample_rate = sample_rate
         self.s_r_c = sample_rate / 1000
@@ -65,16 +65,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.calculate_sfa_divisor()
 
     def get_delta_v(self):
-        """
-        This function finds the delta-v for a pulse. It simply takes the mean
+        """This function finds the delta-v for a pulse. It simply takes the mean
         value from the pulse start to end for pulses without spikes. For
         pulses with spikes it takes the mode of the moving mean.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
         """
         if self.ramp == "0":
             self.baseline_mean = np.mean(
@@ -107,21 +100,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         return self.delta_v
 
     def find_spike_parameters(self):
-        """
-        This function returns the spike parameters of a pulse or ramp that
+        """This function returns the spike parameters of a pulse or ramp that
         spikes. A separate function characterizes the first spike in a train
         of spikes. This function is to determine whether spikes exist.
-
-        Returns
-        -------
-        self.rheo_x
-            The x position in an array of the spike threshold. Also used to
-            calculate the rheobase for a ramp.
-        self.spike_threshold
-            The threshold at which the first spike occurs.
-        self.peaks
-            The x_position of the action potential peaks. This is used to
-            calculate the self.hertz_exact and self.iei
         """
         # Find the peaks of the spikes. The prominence is set to avoid picking
         # peaks that are just noise.
@@ -219,24 +200,18 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                     (self.ramp_end - self.rheo_x) / self.sample_rate
                 )
 
-    def find_spk_thresh(self, array):
+    def find_spk_thresh(self, array: np.ndarray) -> tuple[int, int]:
         dv = np.gradient(array)
         ddv = np.gradient(dv)
         dddv = np.gradient(ddv)
         peaks, _ = signal.find_peaks(dddv, prominence=2)
-        rheo_x = peaks[0]
-        sec_spike = peaks[2]
+        rheo_x = peaks[0] - 1
+        sec_spike = peaks[2] - 1
         return rheo_x, sec_spike
 
     def first_spike_parameters(self):
-        """
-        This function analyzes the parameter of the first action potential in
+        """This function analyzes the parameter of the first action potential in
         a pulse that contains at least one action potential.
-
-        Returns
-        -------
-        None.
-
         """
         if np.isnan(self.peaks[0]):
             # If there are no peaks fill in values with np.nan. This helps with

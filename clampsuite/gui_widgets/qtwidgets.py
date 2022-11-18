@@ -51,23 +51,29 @@ class LineEdit(QLineEdit):
         return x
 
 
-class SaveWorker(QRunnable):
+class ThreadWorker(QRunnable):
     """
     This class is used to create a 'runner' in a different thread than the
     main GUI. This prevents that GUI from freezing during saving.
     """
 
-    def __init__(self, save_filename, exp_manager):
+    def __init__(self, exp_manager, function: str, **kwargs):
         super().__init__()
 
-        self.save_filename = save_filename
         self.exp_manager = exp_manager
         self.signals = WorkerSignals()
+        self.function = function
+        self.kwargs = kwargs
 
     @pyqtSlot()
     def run(self):
-        self.exp_manager.callback_func(self.signals.finsished.emit)
-        self.exp_manager.save_data()
+        self.exp_manager.callback_func(self.signals.progress.emit)
+        if self.function == "save":
+            self.exp_manager.save_data(**self.kwargs)
+        elif self.function == "analyze":
+            self.exp_manager.analyze(**self.kwargs)
+        elif self.function == "load":
+            self.exp_manager._load_data(**self.kwargs)
 
 
 class WorkerSignals(QObject):
@@ -78,7 +84,7 @@ class WorkerSignals(QObject):
     """
 
     dictionary = pyqtSignal(dict)
-    progress = pyqtSignal(int)
+    progress = pyqtSignal(object)
     finished = pyqtSignal(str)
     path = pyqtSignal(object)
 
@@ -124,7 +130,7 @@ class ListView(QListView):
         if e.mimeData().hasUrls:
             e.setDropAction(Qt.CopyAction)
             e.accept()
-            self.model().addAcq(e.mimeData().urls())
+            self.model().addData(e.mimeData().urls())
         else:
             e.ignore()
 
@@ -147,8 +153,8 @@ class ListView(QListView):
     def setAnalysisType(self, analysis):
         self.model().setAnalysisType(analysis)
 
-    def setLoadData(self, acq_dict):
-        self.model().setLoadData(acq_dict)
+    def setData(self, exp_manager):
+        self.model().setLoadData(exp_manager)
 
 
 class ListModel(QAbstractListModel):
@@ -160,14 +166,9 @@ class ListModel(QAbstractListModel):
     controller which in Qt is often built into the models.
     """
 
-    def __init__(
-        self,
-        acq_dict=None,
-        fname_list=None,
-    ):
+    def __init__(self, acq_dict=None):
         super().__init__()
         self.acq_dict = acq_dict or {}
-        self.fname_list = fname_list or []
         self.acq_names = []
 
     def data(self, index, role):
@@ -196,7 +197,6 @@ class ListModel(QAbstractListModel):
             self.removeRow(index)
             key = keys[index]
             del self.acq_dict[key]
-            del self.fname_list[index]
             self.layoutChanged.emit()
             self.acq_names = [i.name for i in self.acq_dict.values()]
 
@@ -204,20 +204,12 @@ class ListModel(QAbstractListModel):
         self.acq_dict = {}
         self.fname_list = []
         self.acq_names = []
+        self.exp_manager = None
 
-    def addAcq(self, urls):
-        for url in urls:
-            fname = PurePath(str(url.toLocalFile()))
-            if fname not in self.fname_list and not Path(fname).is_dir():
-                obj = Acquisition(self.analysis_type, fname)
-                obj.load_acq()
-
-                # Add the acquisition to the model dictionary. This
-                # dictionary will be be added to the gui widget when
-                # the analysis is run.
-                self.acq_dict[int(obj.acq_number)] = obj
-                self.fname_list += [obj.path]
-                self.acq_names += [obj.name]
+    def addData(self, urls):
+        urls = [str(url.toLocalFile()) for url in urls]
+        self.exp_manager.create_exp(self.analysis_type, urls)
+        self.acq_dict = self.exp_manager.exp_dict[self.analysis_type]
         self.sortDict()
         self.layoutChanged.emit()
 
@@ -226,12 +218,9 @@ class ListModel(QAbstractListModel):
         acq_list.sort(key=lambda x: int(x))
         self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
         self.acq_names = [i.name for i in self.acq_dict.values()]
-        self.fname_list.sort(key=lambda x: int(x.stem.split("_")[1]))
 
-    def setLoadData(self, acq_dict):
-        self.acq_dict = acq_dict
-        self.acq_names = [i.name for i in acq_dict.values()]
-        self.layoutChanged.emit()
+    def setLoadData(self, exp_manager):
+        self.exp_manager = exp_manager
 
 
 class StringBox(QSpinBox):
@@ -290,8 +279,7 @@ class DragDropWidget(QWidget):
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
             if fname.suffix == ".yaml":
-                pref_dict = YamlWorker.load_yaml(fname)
-                self.signals.dictionary.emit(pref_dict)
+                self.signals.dictionary.emit(fname)
             elif Path(fname).is_dir():
                 self.signals.path.emit(Path(fname))
             else:

@@ -10,8 +10,6 @@ class FinalAnalysis:
     the
     """
 
-    version = "0.0.3"
-    program = "ClampSuite"
     _class_type = {}
 
     def __init_subclass__(cls, analysis, **kwargs):
@@ -22,8 +20,13 @@ class FinalAnalysis:
         subclass = cls._class_type[analysis]
         obj = object.__new__(subclass)
         obj.analysis = analysis
-        obj.tmstp = str(datetime.datetime.now())
         obj.df_dict = {}
+        obj.program_data = {
+            "Program": "ClampSuite",
+            "Version": "0.0.3",
+            "Time stamp": str(datetime.datetime.now()),
+            "Analysis": analysis,
+        }
         return obj
 
     def save_data(self):
@@ -31,3 +34,14 @@ class FinalAnalysis:
 
     def load_data(self):
         raise NotImplementedError
+
+    def create_program_df(self):
+        self.program_data = {
+            "Program": self.program,
+            "Version": self.version,
+            "Time stamp": self.tmstp,
+            "Analysis": self.analysis,
+        }
+
+    def set_program_data(self, df):
+        self.program_data = df.to_dict()

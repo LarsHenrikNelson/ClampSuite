@@ -57,6 +57,15 @@ class Acquisition:
                 i.event_array - i.event_start_y for i in self.postsynaptic_events
             ]
 
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def set_pulse_amp(self, pulse_amp):
+        self.pulse_amp = pulse_amp
+
+    def set_ramp(self, ramp):
+        self.ramp = ramp
+
 
 if __name__ == "__main__":
     Acquisition()

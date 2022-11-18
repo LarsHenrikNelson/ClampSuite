@@ -518,3 +518,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             h = MiniEvent()
             h.load_mini(event_dict=i, final_array=self.final_array)
             self.postsynaptic_events += [h]
+
+    def del_postsynaptic_event(self, index):
+        del self.postsynaptic_events[index]
+        del self.final_events[index]
+
+    def sort_index(self):
+        return list(np.argsort(self.final_events))
+
+    def list_of_events(self):
+        return list(range(len(self.postsynaptic_events)))
