@@ -22,10 +22,10 @@ class FinalAnalysis:
         obj.analysis = analysis
         obj.df_dict = {}
         obj.program_data = {
-            "Program": "ClampSuite",
-            "Version": "0.0.3",
-            "Time stamp": str(datetime.datetime.now()),
-            "Analysis": analysis,
+            "Program": ["ClampSuite"],
+            "Version": ["0.0.3"],
+            "Time stamp": [str(datetime.datetime.now())],
+            "Analysis": [analysis],
         }
         return obj
 

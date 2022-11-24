@@ -44,19 +44,19 @@ class AcqInspectionWidget(QWidget):
 
         self.epoch = QLineEdit()
         self.epoch.editingFinished.connect(
-            lambda value: self.edit_attr("epoch", self.epoch.text())
+            lambda: self.editAttr("epoch", self.epoch.text())
         )
         self.props_layout.addRow("Epoch", self.epoch)
 
         self.pulse_amp = QLineEdit()
         self.pulse_amp.editingFinished.connect(
-            lambda value: self.edit_attr("pulse_amp", self.pulse_amp.text())
+            lambda: self.editAttr("pulse_amp", self.pulse_amp.text())
         )
         self.props_layout.addRow("Pulse amp", self.pulse_amp)
 
         self.ramp = QLineEdit()
         self.ramp.editingFinished.connect(
-            lambda value: self.edit_attr("ramp", self.ramp.text())
+            lambda: self.editAttr("ramp", self.ramp.text())
         )
         self.props_layout.addRow("Ramp", self.ramp)
 
@@ -75,7 +75,7 @@ class AcqInspectionWidget(QWidget):
         print(getattr(self.acq_dict[self.acq_number.value()], line_edit))
         setattr(self.acq_dict[self.acq_number.value()], line_edit, value)
         print(getattr(self.acq_dict[self.acq_number.value()], line_edit))
-        return value
+        return True
 
     def spinbox(self, number):
         self.plot_widget.clear()
@@ -84,6 +84,10 @@ class AcqInspectionWidget(QWidget):
                 x=np.arange(len(self.acq_dict[number].array)),
                 y=self.acq_dict[number].array,
             )
+            self.ramp.setText(self.acq_dict[number].ramp)
+            self.pulse_amp.setText(self.acq_dict[number].pulse_amp)
+            self.epoch.setText(self.acq_dict[number].epoch)
+
         else:
             pass
 

@@ -71,6 +71,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.curve_fit_decay = curve_fit_decay
         self.decon_type = decon_type
         self.curve_fit_type = curve_fit_type
+        self.deleted_events = 0
 
         # Runs the functions to analyze the acquisition
         self.create_template(template)
@@ -522,6 +523,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def del_postsynaptic_event(self, index):
         del self.postsynaptic_events[index]
         del self.final_events[index]
+        self.deleted_events += 1
 
     def sort_index(self):
         return list(np.argsort(self.final_events))

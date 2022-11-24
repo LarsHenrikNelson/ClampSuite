@@ -617,7 +617,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_spinbox_list = []
         self.minis_deleted = 0
         self.calc_param_clicked = False
-        pre_dict = {}
         self.table_dict = {}
         self.need_to_save = False
         self.modify = 20
@@ -660,10 +659,11 @@ class MiniAnalysisWidget(DragDropWidget):
             self.polyorder_label.setText("Polyorder")
 
     def clearTables(self):
-        for i in self.table_dict.values():
-            i.clear()
-            i.hide()
-            i.deleteLater()
+        if self.table_dict:
+            for i in self.table_dict.values():
+                i.clear()
+                i.hide()
+                i.deleteLater()
 
     # This needs to be fixed because it changes the lineedits that
     # are part of the spinboxes which is not ideal. Need to create
@@ -777,8 +777,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # I need to just put all the settings into a dictionary,
         # so the functions are not called for every acquisition
         self.exp_manager.set_callback(self.updateProgess)
-        self.exp_manager.analyze(
-            "mini",
+        self.exp_manager.analyze_exp(
+            self.analysis_type,
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
@@ -922,7 +922,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 ].sort_index()
                 self.mini_spinbox_list = self.exp_manager.exp_dict["mini"][
                     self.acquisition_number.value()
-                ].num_of_events()
+                ].list_of_events()
 
                 # Plot each mini. Since the postsynaptic events are stored in
                 # a list you can iterate through the list even if there is just
@@ -997,6 +997,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
         self.exp_manager = ExpManager()
+        self.load_widget.setData(self.exp_manager)
         self.clearTables()
 
     def update(self):
@@ -1474,15 +1475,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(False)
         self.calc_param_clicked = True
         self.pbar.setFormat("Analyzing...")
-        self.exp_manager.run_final_analysis(
-            self.minis_deleted, self.exp_manager.num_of_del_acqs()
-        )
+        self.exp_manager.run_final_analysis(acqs_deleted=self.exp_manager.acqs_deleted)
         fa = self.exp_manager.final_analysis
         self.plotAveMini(
             fa.average_mini_x(), fa.average_mini_y(), fa.fit_decay_x(), fa.fit_decay_y()
         )
         for key, df in fa.df_dict.items():
-            data_table = pg.TableWidget()
+            data_table = pg.TableWidget(sortable=False)
             self.table_dict[key] = data_table
             data_table.setData(df.T.to_dict("dict"))
             self.final_tab_widget.addTab(data_table, key)
@@ -1509,7 +1508,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.ave_mini_plot.plot(x=decay_x, y=decay_y, pen="g")
 
     def plotRawData(self, y: str):
-        if self.final_obj and y != "":
+        if self.exp_manager.final_analysis is not None and y != "":
             if y != "IEI (ms)":
                 self.plotStemData(y)
             else:
@@ -1579,11 +1578,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.ave_mini_plot.clear()
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
-        self.exp_manager.set_callback(self.updateProgress)
-        worker = ThreadWorker(
+        self.worker = ThreadWorker(
             self.exp_manager, function="load", analysis="mini", file_path=directory
         )
-        self.threadpool.start(worker)
+        self.worker.signals.progress.connect(self.updateProgess)
+        self.threadpool.start(self.worker)
         if self.exp_manager.final_analysis is not None:
             fa = self.exp_manager.final_analysis
             self.plotAveMini(
@@ -1616,7 +1615,6 @@ class MiniAnalysisWidget(DragDropWidget):
         pref_dict = self.createPrefDict()
         pref_dict["Final Analysis"] = self.calc_param_clicked
         pref_dict["Acq_number"] = self.acquisition_number.value()
-        pref_dict["Deleted Acqs"] = list(self.deleted_acqs.keys())
         self.exp_manager.set_ui_pref(pref_dict)
         self.worker = ThreadWorker(
             self.exp_manager, "save", save_filename=save_filename

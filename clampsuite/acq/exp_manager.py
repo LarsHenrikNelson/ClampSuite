@@ -11,13 +11,13 @@ from ..final_analysis import FinalAnalysis
 class ExpManager:
     def __init__(self):
         self.exp_dict = {}
-        self.prefs_dict = {}
         self.final_analysis = None
-        self.ui_prefs = {}
+        self.ui_prefs = None
         self.analysis_prefs = {}
         self.num_of_acqs = 0
         self.callback_func = print
         self.deleted_acqs = {}
+        self.acqs_deleted = 0
 
     def create_exp(
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
@@ -41,6 +41,7 @@ class ExpManager:
     def run_final_analysis(self, **kwargs):
         analysis = list(self.exp_dict.keys())
         if len(analysis) == 1:
+            print(analysis[0])
             self.final_analysis = FinalAnalysis(analysis[0])
             self.final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
         else:
@@ -50,7 +51,8 @@ class ExpManager:
             self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
     def save_data(self, save_filename: Union[Path, PurePath, str]):
-        self.save_ui_pref(save_filename)
+        if self.save_ui_pref is not None:
+            self.save_ui_pref(save_filename)
         if self.final_analysis is not None:
             self.save_final_analysis(save_filename)
         self.save_acqs(save_filename)
@@ -62,13 +64,22 @@ class ExpManager:
             count += len(self.exp_dict[i].keys())
         for i in self.deleted_acqs.keys():
             count += len(self.deleted_acqs.keys())
+        saved = 0
         for i in self.exp_dict.values():
-            for i, acq in enumerate(i.values()):
+            for acq in i.values():
                 save_acq(acq, save_filename)
-                self.callback_func(int((100 * (i + 1) / count)))
+                saved += 1
+                self.callback_func(int((100 * (saved) / count)))
+        for i in self.deleted_acqs.values():
+            for acq in i.values():
+                save_acq(acq, save_filename)
+                saved += 1
+                self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
 
     def save_ui_pref(self, save_filename: Union[PurePath, str]):
+        for key, data in self.deleted_acqs.items():
+            self.ui_prefs[f"Deleted {key} acqs"] = list(data.items())
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(self.ui_prefs, file)
         self.callback_func("Saved preferences")
@@ -76,6 +87,7 @@ class ExpManager:
     def save_analysis_pref(self, save_filename: Union[PurePath, str]):
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(self.analysis_prefs, file)
+        self.callback_func("Saved user preferences")
 
     def save_final_analysis(self, save_filename: Union[PurePath, str]):
         self.final_analysis.save_data(save_filename)
@@ -96,11 +108,16 @@ class ExpManager:
         self.final_analysis = FinalAnalysis(analysis)
         self.final_analysis.load_data(file_name)
 
-    def _load_data(self, analysis: str, file_path: Union[str, list, tuple]):
-        if isinstance(file_path, str):
+    def _load_data(
+        self, analysis: str, file_path: Union[str, list, tuple, PurePath, Path]
+    ):
+        if isinstance(file_path, (str, PurePath)):
             temp_path = Path(file_path)
             if temp_path.is_dir():
                 file_paths = list(temp_path.glob("*.*"))
+        elif isinstance(file_path, Path):
+            if file_path.is_dir():
+                file_paths = list(file_path.glob("*.*"))
         else:
             file_paths = [PurePath(i) for i in file_path]
         file_paths = [i for i in file_paths if i.name[0] != "."]
@@ -145,12 +162,10 @@ class ExpManager:
             self.exp_dict[acq.analysis][int(acq.acq_number)] = acq
 
     def _set_deleted_acqs(self):
-        for i in self.exp_dict:
-            for j in i.values():
-                if j.name in self.ui_prefs["Deleted Acqs"]:
-                    self.deleted_acqs[j.analysis][int(j.acq_number)] = self.exp_dict[
-                        j.analysis
-                    ].pop(int(j.acq_number))
+        for exp in self.exp_dict:
+            acqs = self.ui_prefs[f"Deleted {exp} acqs"]
+            for acq in acqs:
+                self.delete_acq(exp, acq)
 
     def set_callback(self, func):
         self.callback_func = func
@@ -165,16 +180,20 @@ class ExpManager:
         else:
             self.deleted_acqs[exp] = OrderedDict()
             self.deleted_acqs[exp][acq] = item
+        self.acqs_deleted += 1
 
     def reset_deleted_acqs(self, exp):
-        del_dict = dict(self.deleted_acqs)
-        self.exp_dict[exp].update(del_dict)
-        self.deleted_acqs = {}
+        if self.deleted_acqs[exp]:
+            del_dict = dict(self.deleted_acqs)[exp]
+            self.exp_dict[exp].update(del_dict)
+            self.deleted_acqs = {}
+            self.acqs_deleted = 0
 
     def reset_recent_deleted_acq(self, exp):
-        item = self.deleted_acqs[exp].popitem()
-        self.exp_dict[exp][item[0]] = item[1]
-        return item(0)
+        if self.deleted_acqs[exp]:
+            item = self.deleted_acqs[exp].popitem()
+            self.exp_dict[exp][item[0]] = item[1]
+            self.acqs_deleted -= 1
 
     def acqs_exist(self):
         if self.exp_dict:

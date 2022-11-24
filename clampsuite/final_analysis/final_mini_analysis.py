@@ -20,13 +20,11 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
     def analyze(
         self,
         acq_dict: dict,
-        events_deleted: int = 0,
         acqs_deleted: int = 0,
         sample_rate: Union[int, float] = 10000,
         curve_fit_decay: bool = False,
         curve_fit_type: str = "db_exp",
     ):
-        self.events_deleted = events_deleted
         self.acqs_deleted = acqs_deleted
         self.sample_rate = sample_rate
         self.compute_data(acq_dict)
@@ -59,6 +57,8 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         ) * 1000
         raw_df["Real time"] = raw_df["Acq time stamp"] + raw_df["Event time (ms)"]
         self.df_dict["Raw data"] = raw_df
+
+        self.events_deleted = np.sum([i.deleted_events for i in acq_dict.values()])
 
     def extract_final_data(self, acq_dict: dict):
         columns_for_analysis = [
@@ -180,14 +180,13 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         The function saves the data to the current directory so all that is
         needed is a name for the excel file.
         """
+        prog_data = pd.DataFrame(self.program_data, index=None)
         with pd.ExcelWriter(
             f"{save_filename}.xlsx", mode="w", engine="openpyxl"
         ) as writer:
             for key, df in self.df_dict.items():
                 df.to_excel(writer, index=False, sheet_name=key)
-            pd.DataFrame(self.program_data).to_excel(
-                writer, index=False, sheet_name="Program data"
-            )
+            prog_data.to_excel(writer, index=False, sheet_name="Program data")
 
     def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)

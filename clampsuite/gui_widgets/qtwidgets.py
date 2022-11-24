@@ -67,7 +67,7 @@ class ThreadWorker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        self.exp_manager.callback_func(self.signals.progress.emit)
+        self.exp_manager.set_callback(self.signals.progress.emit)
         if self.function == "save":
             self.exp_manager.save_data(**self.kwargs)
         elif self.function == "analyze":
