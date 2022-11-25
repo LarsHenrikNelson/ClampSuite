@@ -35,20 +35,17 @@ class MainWindow(QMainWindow):
         self.file_menu = self.bar.addMenu("File")
         self.preferences_menu = self.bar.addMenu("Preferences")
 
-        self.load_data = QMenu("Load data")
-        self.file_menu.addMenu(self.load_data)
+        self.open_new_file = QAction("Create experiment", self)
+        self.open_new_file.setStatusTip("Create experiment")
+        self.open_new_file.setShortcut("Ctrl+E")
+        self.open_new_file.triggered.connect(self.createExperiment)
+        self.file_menu.addAction(self.open_new_file)
 
         self.load_exp = QAction("Load experiment", self)
         self.load_exp.setStatusTip("Load experiment")
         self.load_exp.setShortcut("Ctrl+O")
         self.load_exp.triggered.connect(self.loadExperiment)
-        self.load_data.addAction(self.load_exp)
-
-        self.open_new_file = QAction("Create experiment", self)
-        self.open_new_file.setStatusTip("Create experiment")
-        self.open_new_file.setShortcut("Ctrl+O")
-        self.open_new_file.triggered.connect(self.createExperiment)
-        self.load_data.addAction(self.open_new_file)
+        self.file_menu.addAction(self.load_exp)
 
         self.saveFile = QAction("Save", self)
         self.saveFile.setStatusTip("Save file")
@@ -139,7 +136,7 @@ class MainWindow(QMainWindow):
             QFileDialog.getExistingDirectory(
                 self,
                 directory=self.working_dir,
-                caption="Open files...",
+                caption="Open folder...",
             )
         )
         if directory:
@@ -150,7 +147,19 @@ class MainWindow(QMainWindow):
             pass
 
     def createExperiment(self):
-        pass
+        directory = str(
+            QFileDialog.getOpenFileNames(
+                self,
+                directory=self.working_dir,
+                caption="Open files...",
+            )
+        )
+        if directory:
+            path = Path(directory)
+            self.working_dir = str(path)
+            self.central_widget.currentWidget().createExperiment(path)
+        else:
+            pass
 
     def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(

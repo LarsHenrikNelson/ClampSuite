@@ -167,9 +167,8 @@ class ListModel(QAbstractListModel):
     controller which in Qt is often built into the models.
     """
 
-    def __init__(self, acq_dict=None):
+    def __init__(self):
         super().__init__()
-        self.acq_dict = acq_dict or {}
         self.acq_names = []
 
     def data(self, index, role):
@@ -178,7 +177,7 @@ class ListModel(QAbstractListModel):
             return x
 
     def rowCount(self, index):
-        return len(self.acq_dict)
+        return len(self.acq_names)
 
     def setAnalysisType(self, analysis):
         """
@@ -188,7 +187,8 @@ class ListModel(QAbstractListModel):
         self.analysis_type = analysis
 
     def deleteSelection(self, index):
-        keys = list(self.acq_dict.keys())
+        keys = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        keys.sort()
 
         # Need to catch cases where the index does not exist anymore.
         # I cannot figure out why Qt keeps returning the extra index.
@@ -197,28 +197,27 @@ class ListModel(QAbstractListModel):
         else:
             self.removeRow(index)
             key = keys[index]
-            del self.acq_dict[key]
+            del self.exp_manager.exp_dict[self.analysis_type][key]
             self.layoutChanged.emit()
-            self.acq_names = [i.name for i in self.acq_dict.values()]
+            self.sortNames()
 
     def clearData(self):
         self.acq_dict = {}
-        self.fname_list = []
         self.acq_names = []
         self.exp_manager = None
 
     def addData(self, urls):
         urls = [str(url.toLocalFile()) for url in urls]
         self.exp_manager.create_exp(self.analysis_type, urls)
-        self.acq_dict = self.exp_manager.exp_dict[self.analysis_type]
-        self.sortDict()
+        self.sortNames()
         self.layoutChanged.emit()
 
-    def sortDict(self):
-        acq_list = list(self.acq_dict.keys())
-        acq_list.sort(key=lambda x: int(x))
-        self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
-        self.acq_names = [i.name for i in self.acq_dict.values()]
+    def sortNames(self):
+        acq_list = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        acq_list.sort()
+        self.acq_names = [
+            self.exp_manager.exp_dict[self.analysis_type][i].name for i in acq_list
+        ]
 
     def setLoadData(self, exp_manager):
         self.exp_manager = exp_manager

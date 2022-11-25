@@ -216,5 +216,8 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
                 self.baselined_array, self.order, self.polyorder
             )
 
-    def plot_x_array(self) -> np.ndarray:
+    def plot_acq_x(self) -> np.ndarray:
         return np.arange(len(self.filtered_array)) / self.s_r_c
+
+    def plot_acq_y(self) -> np.ndarray:
+        return self.filtered_array

@@ -12,7 +12,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
-
+from ..acq import ExpManager
 from ..gui_widgets.qtwidgets import LineEdit, ListView
 
 
@@ -183,6 +183,8 @@ class filterWidget(QWidget):
         self.clear_plot.setMaximumSize(QSize(300, 25))
         self.filt_layout.addRow(self.clear_plot)
 
+        self.exp_manager = ExpManager()
+        self.load_widget.setData(self.exp_manager)
         self.plot_list = 0
         self.pencil_list = []
         self.counter = 0
@@ -210,8 +212,7 @@ class filterWidget(QWidget):
             self.polyorder_label.setText("Polyorder")
 
     def setAcqSpinbox(self):
-        x = len(self.load_widget.model().acq_dict)
-        self.acq_number.setMaximum(x)
+        self.acq_number.setMaximum(self.exp_manager.end_acq)
 
     def delSelection(self):
         # Deletes the selected acquisitions from the list
@@ -242,10 +243,10 @@ class filterWidget(QWidget):
             window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
             window = self.window_edit.currentText()
-        key = list(self.load_widget.model().acq_dict.keys())[
+        key = list(self.exp_manager.exp_dict["filter"].keys())[
             self.acq_number.value() - 1
         ]
-        h = self.load_widget.model().acq_dict[key].deep_copy()
+        h = self.exp_manager.exp_dict["filter"][key]
         h.analyze(
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
@@ -275,8 +276,8 @@ class filterWidget(QWidget):
         self.filter_list += [filter_dict]
         pencil = pg.mkPen(color=pg.intColor(self.counter))
         plot_item = self.p1.plot(
-            x=h.plot_x_array(),
-            y=h.filtered_array,
+            x=h.plot_acq_x(),
+            y=h.plot_acq_y(),
             pen=pencil,
             name=(self.filter_selection.currentText() + "_" + str(self.counter)),
         )
@@ -291,8 +292,8 @@ class filterWidget(QWidget):
         if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                key = list(self.load_widget.model().acq_dict.keys())[number - 1]
-                h = self.load_widget.model().acq_dict[int(key)]
+                key = list(self.self.exp_manager.exp_dict["filter"].keys())[number - 1]
+                h = self.self.exp_manager.exp_dict["filter"][key]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],
@@ -306,7 +307,7 @@ class filterWidget(QWidget):
                     window=i["window"],
                     polyorder=i["polyorder"],
                 )
-                self.p1.plot(x=h.plot_x_array(), y=h.filtered_array, pen=j)
+                self.p1.plot(x=h.plot_acq_x(), y=h.plot_acq_y(), pen=j)
         else:
             pass
 

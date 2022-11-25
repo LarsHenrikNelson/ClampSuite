@@ -25,6 +25,7 @@ class ExpManager:
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
     ):
         self._load_acqs(analysis, file)
+        self._set_start_end_acq()
 
     def analyze_exp(self, exp: str, **kwargs):
         total = 0
@@ -35,7 +36,6 @@ class ExpManager:
         for count, i in enumerate(acq_dict.values()):
             i.analyze(**kwargs)
             self.callback_func(int((100 * (count + 1) / total)))
-        self._set_start_end_acq()
         self.callback_func("Analyed acquisitions")
 
     def set_ui_pref(self, pref_dict: dict):

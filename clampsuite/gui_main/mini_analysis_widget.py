@@ -961,7 +961,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.acquisition_number.setEnabled(True)
         else:
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
-            text.setFont(QFont("Ariel", 20))
+            text.setFont(QFont("Helvetica", 20))
             self.p2.setRange(xRange=(-30, 30), yRange=(-30, 30))
             self.p2.addItem(text)
             self.acquisition_number.setEnabled(True)
@@ -1627,6 +1627,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.threadpool.start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
+
+    def createExperiment(self):
+        pass
 
     def createPrefDict(self):
         pref_dict = {}

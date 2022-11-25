@@ -43,7 +43,7 @@ class Acquisition:
         return f"({self.analysis}, {self.name})"
 
     def deep_copy(self):
-        new_acq = Acquisition(copy.deepcopy(self.analysis), copy.deepcopy(self.path))
+        new_acq = Acquisition(copy.deepcopy(self.analysis))
         new_acq.__dict__.update(copy.deepcopy(self.__dict__))
         return new_acq
 
