@@ -73,7 +73,8 @@ class ThreadWorker(QRunnable):
         elif self.function == "analyze":
             self.exp_manager.analyze(**self.kwargs)
         elif self.function == "load":
-            self.exp_manager._load_data(**self.kwargs)
+            self.exp_manager.load_exp(**self.kwargs)
+            self.signals.finished.emit("Finished")
 
 
 class WorkerSignals(QObject):

@@ -18,6 +18,8 @@ class ExpManager:
         self.callback_func = print
         self.deleted_acqs = {}
         self.acqs_deleted = 0
+        self.start_acq = None
+        self.end_acq = None
 
     def create_exp(
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
@@ -33,7 +35,8 @@ class ExpManager:
         for count, i in enumerate(acq_dict.values()):
             i.analyze(**kwargs)
             self.callback_func(int((100 * (count + 1) / total)))
-        self.callback_func("Loaded acquisitions")
+        self._set_start_end_acq()
+        self.callback_func("Analyed acquisitions")
 
     def set_ui_pref(self, pref_dict: dict):
         self.ui_prefs = pref_dict
@@ -41,7 +44,6 @@ class ExpManager:
     def run_final_analysis(self, **kwargs):
         analysis = list(self.exp_dict.keys())
         if len(analysis) == 1:
-            print(analysis[0])
             self.final_analysis = FinalAnalysis(analysis[0])
             self.final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
         else:
@@ -59,6 +61,7 @@ class ExpManager:
         self.callback_func("Finished saving")
 
     def save_acqs(self, save_filename: Union[PurePath, str]):
+        self.callback_func("Saving acquisitions")
         count = 0
         for i in self.exp_dict.keys():
             count += len(self.exp_dict[i].keys())
@@ -78,8 +81,9 @@ class ExpManager:
         self.callback_func("Saved acqs")
 
     def save_ui_pref(self, save_filename: Union[PurePath, str]):
+        self.callback_func("Saving preferences")
         for key, data in self.deleted_acqs.items():
-            self.ui_prefs[f"Deleted {key} acqs"] = list(data.items())
+            self.ui_prefs[f"Deleted {key} acqs"] = list(data.keys())
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(self.ui_prefs, file)
         self.callback_func("Saved preferences")
@@ -90,6 +94,7 @@ class ExpManager:
         self.callback_func("Saved user preferences")
 
     def save_final_analysis(self, save_filename: Union[PurePath, str]):
+        self.callback_func("Saving final analysis")
         self.final_analysis.save_data(save_filename)
         self.callback_func("Saved final analysis")
 
@@ -108,7 +113,7 @@ class ExpManager:
         self.final_analysis = FinalAnalysis(analysis)
         self.final_analysis.load_data(file_name)
 
-    def _load_data(
+    def load_exp(
         self, analysis: str, file_path: Union[str, list, tuple, PurePath, Path]
     ):
         if isinstance(file_path, (str, PurePath)):
@@ -120,20 +125,18 @@ class ExpManager:
                 file_paths = list(file_path.glob("*.*"))
         else:
             file_paths = [PurePath(i) for i in file_path]
-        file_paths = [i for i in file_paths if i.name[0] != "."]
-        for index, i in enumerate(file_paths):
-            if i.suffix == ".yaml":
-                yaml_file = file_paths.pop(index)
-                self.load_ui_pref(yaml_file)
+        file_paths_edit = [i for i in file_paths if i.name[0] != "."]
+        for path in file_paths_edit:
+            if path.suffix == ".yaml":
+                self.load_ui_pref(path)
                 can_load_data = True
                 self.callback_func("Loaded settings")
-
-            elif i.suffix == ".xlsx":
-                xlsx_file = file_paths.pop(index)
-                self.load_final_analysis(analysis, xlsx_file)
+            elif path.suffix == ".xlsx":
+                self.load_final_analysis(analysis, path)
                 self.callback_func("Loaded final data")
         if can_load_data:
-            self._load_acqs(analysis=None, file_path=file_paths)
+            self._load_acqs(analysis=None, file_path=file_paths_edit)
+            self._set_start_end_acq()
             self._set_deleted_acqs()
         else:
             self.callback_func("No YAML file, cannot load data!")
@@ -160,6 +163,16 @@ class ExpManager:
         else:
             self.exp_dict[acq.analysis] = {}
             self.exp_dict[acq.analysis][int(acq.acq_number)] = acq
+
+    def _set_start_end_acq(self):
+        start_acq = []
+        end_acq = []
+        for i in self.exp_dict.values():
+            temp = list(i.keys())
+            start_acq.append(min(temp))
+            end_acq.append(max(temp))
+        self.start_acq = min(start_acq)
+        self.end_acq = max(end_acq)
 
     def _set_deleted_acqs(self):
         for exp in self.exp_dict:

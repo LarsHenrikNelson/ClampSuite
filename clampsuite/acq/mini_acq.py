@@ -530,3 +530,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
     def list_of_events(self):
         return list(range(len(self.postsynaptic_events)))
+
+    def plot_acq_y(self):
+        return self.final_array
+
+    def plot_acq_x(self):
+        return np.arange(0, len(self.final_array)) / self.s_r_c

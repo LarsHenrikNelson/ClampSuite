@@ -66,6 +66,12 @@ class Acquisition:
     def set_ramp(self, ramp):
         self.ramp = ramp
 
+    def plot_acq_y(self):
+        raise NotImplementedError
+
+    def plot_acq_x(self):
+        raise NotImplementedError
+
 
 if __name__ == "__main__":
     Acquisition()

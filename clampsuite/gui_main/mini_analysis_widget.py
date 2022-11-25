@@ -664,6 +664,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 i.clear()
                 i.hide()
                 i.deleteLater()
+            self.table_dict = {}
 
     # This needs to be fixed because it changes the lineedits that
     # are part of the spinboxes which is not ideal. Need to create
@@ -875,8 +876,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Create the acquisitions plot item for the main acquisition plot
             acq_plot = pg.PlotDataItem(
-                x=self.acq_object.x_array,
-                y=self.acq_object.final_array,
+                x=self.acq_object.plot_acq_x(),
+                y=self.acq_object.plot_acq_y(),
                 name=str(self.acquisition_number.text()),
                 symbol="o",
                 symbolSize=8,
@@ -905,7 +906,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # Create the plot with the draggable region. Since there is
             # no interactivity with this plot there is no need to create
             # a plot item.
-            self.p2.plot(x=self.acq_object.x_array, y=self.acq_object.final_array)
+            self.p2.plot(x=self.acq_object.plot_acq_x(), y=self.acq_object.plot_acq_y())
 
             # Enabled the acquisition number since it was disabled earlier.
             self.acquisition_number.setEnabled(True)
@@ -979,8 +980,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_object = None
         self.last_mini_point_clicked = None
         self.last_acq_point_clicked = None
-        self.deleted_acqs = {}
-        self.recent_reject_acq = {}
         self.last_mini_clicked_1 = []
         self.last_mini_clicked_2 = []
         self.mini_spinbox_list = []
@@ -1304,7 +1303,6 @@ class MiniAnalysisWidget(DragDropWidget):
         if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
-        acq_dict
         self.need_to_save = True
 
         # self.last_mini_deleted = \
@@ -1332,7 +1330,7 @@ class MiniAnalysisWidget(DragDropWidget):
         ].sort_index()
         self.mini_spinbox_list = self.exp_manager.exp_dict["mini"][
             self.acquisition_number.value()
-        ].num_of_events()
+        ].list_of_events()
 
         # Rename the plotted mini's
         for num, i, j in zip(
@@ -1582,7 +1580,10 @@ class MiniAnalysisWidget(DragDropWidget):
             self.exp_manager, function="load", analysis="mini", file_path=directory
         )
         self.worker.signals.progress.connect(self.updateProgess)
+        self.worker.signals.finished.connect(self.setLoadData)
         self.threadpool.start(self.worker)
+
+    def setLoadData(self):
         if self.exp_manager.final_analysis is not None:
             fa = self.exp_manager.final_analysis
             self.plotAveMini(
@@ -1607,6 +1608,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
         self.pbar.setFormat("Loaded")
+        self.acquisition_number.setMaximum(self.exp_manager.start_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        self.acquisition_number.setValue(self.exp_manager.ui_prefs["Acq_number"])
 
     def saveAs(self, save_filename):
         self.reset_button.setEnabled(False)
@@ -1718,9 +1722,6 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setValue(value)
         elif isinstance(value, str):
             self.pbar.setFormat(value)
-
-    def progressFinished(self, finished):
-        self.pbar.setFormat(finished)
 
     def setAppearncePrefences(self, pref_dict):
         self.p1.setBackground(pref_dict[0])
