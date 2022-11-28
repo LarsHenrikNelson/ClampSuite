@@ -1716,9 +1716,11 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def savePreferences(self, save_filename):
         pref_dict = self.createPrefDict()
-        if not self.exp_manager.ui_prefs:
-            self.exp_manager.set_ui_pref(pref_dict)
-        self.exp_manager.save_ui_pref(save_filename)
+        pref_dict = self.createPrefDict()
+        if pref_dict:
+            self.exp_manager.save_ui_pref(save_filename, pref_dict)
+        else:
+            pass
 
     def updateProgess(self, value):
         if isinstance(value, (int, float)):

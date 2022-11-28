@@ -53,8 +53,10 @@ class ExpManager:
             self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
     def save_data(self, save_filename: Union[Path, PurePath, str]):
-        if self.save_ui_pref is not None:
-            self.save_ui_pref(save_filename)
+        if self.ui_pref is not None:
+            for key, data in self.deleted_acqs.items():
+                self.ui_prefs[f"Deleted acqs"] = {key: list(data.keys())}
+            self.save_ui_pref(save_filename, self.ui_pref)
         if self.final_analysis is not None:
             self.save_final_analysis(save_filename)
         self.save_acqs(save_filename)
@@ -80,12 +82,10 @@ class ExpManager:
                 self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
 
-    def save_ui_pref(self, save_filename: Union[PurePath, str]):
+    def save_ui_pref(self, save_filename: Union[PurePath, str], ui_prefs):
         self.callback_func("Saving preferences")
-        for key, data in self.deleted_acqs.items():
-            self.ui_prefs[f"Deleted {key} acqs"] = list(data.keys())
         with open(f"{save_filename}.yaml", "w") as file:
-            yaml.dump(self.ui_prefs, file)
+            yaml.dump(ui_prefs, file)
         self.callback_func("Saved preferences")
 
     def save_analysis_pref(self, save_filename: Union[PurePath, str]):
@@ -101,12 +101,14 @@ class ExpManager:
     def load_ui_pref(self, file_path: Union[None, str] = None):
         file_name = load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
-            self.ui_prefs = yaml.safe_load(file)
+            ui_prefs = yaml.safe_load(file)
+            return ui_prefs
 
     def load_analysis_pref(self, file_path: Union[None, str] = None):
         file_name = load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
-            self.analysis_prefs = yaml.safe_load(file)
+            analysis_prefs = yaml.safe_load(file)
+        return analysis_prefs
 
     def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
         file_name = load_file(file_path, extension=".xlsx")
@@ -128,7 +130,7 @@ class ExpManager:
         file_paths_edit = [i for i in file_paths if i.name[0] != "."]
         for path in file_paths_edit:
             if path.suffix == ".yaml":
-                self.load_ui_pref(path)
+                self.ui_pref = self.load_ui_pref(path)
                 can_load_data = True
                 self.callback_func("Loaded settings")
             elif path.suffix == ".xlsx":
@@ -176,7 +178,7 @@ class ExpManager:
 
     def _set_deleted_acqs(self):
         for exp in self.exp_dict:
-            acqs = self.ui_prefs[f"Deleted {exp} acqs"]
+            acqs = self.ui_prefs[f"Deleted acqs"][exp]
             for acq in acqs:
                 self.delete_acq(exp, acq)
 

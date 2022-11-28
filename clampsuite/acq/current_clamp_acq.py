@@ -484,6 +484,12 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def first_peak_time(self) -> list:
         return self.peaks[0] / self.s_r_c
 
+    def plot_acq_y(self):
+        return self.array
+
+    def plot_acq_x(self):
+        return np.arange(0, len(self.array)) / self.s_r_c
+
     def create_dict(self) -> dict:
         """This create a dictionary of all the values created by the class. This
         makes it very easy to concentatenate the data from multiple

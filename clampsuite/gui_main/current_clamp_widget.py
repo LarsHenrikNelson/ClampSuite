@@ -20,13 +20,13 @@ from PyQt5.QtCore import QThreadPool
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
-from ..acq import Acquisition
-from ..final_analysis import FinalAnalysis
+from ..acq import ExpManager
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     LineEdit,
     ListView,
     DragDropWidget,
+    ThreadWorker,
 )
 
 
@@ -52,7 +52,7 @@ class currentClampWidget(DragDropWidget):
         self.final_obj = None
         self.plot_dict = {}
         self.table_dict = {}
-        self.inspection_widget = None
+        self.inspection_widget = AcqInspectionWidget()
 
         self.signals.dictionary.connect(self.setPrefences)
         self.signals.path.connect(self.openFiles)
@@ -89,9 +89,11 @@ class currentClampWidget(DragDropWidget):
             self.acquisition_number_label, self.acquisition_number
         )
 
-        self.epoch_label = QLabel("Epoch")
         self.epoch_number = QLineEdit()
-        self.analysis_buttons.addRow(self.epoch_label, self.epoch_number)
+        self.analysis_buttons.addRow("Epoch", self.epoch_number)
+
+        self.pulse_amp_num = QLineEdit()
+        self.analysis_buttons.addRow("Pulse amp", self.pulse_amp_num)
 
         self.baseline_mean_label = QLabel("Baseline mean (mV)")
         self.baseline_mean_edit = QLineEdit()
@@ -265,6 +267,8 @@ class currentClampWidget(DragDropWidget):
 
         self.threadpool = QThreadPool()
 
+        self.exp_manager = ExpManager()
+        self.pbar.setFormat("Ready to analyze")
         self.setWidth()
 
     def setWidth(self):
@@ -278,23 +282,15 @@ class currentClampWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspectAcqs(self):
-        if not self.acq_view.model().acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
-
-        # Creates a separate window to view the loaded acquisitions
-        if self.inspection_widget is None:
-            self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(self.acq_view.model().acq_dict)
-            self.inspection_widget.show()
-        else:
-            self.inspection_widget.close()
-            self.inspection_widget.removeFileList()
-            self.inspection_widget = None
-            self.inspectAcqs()
+        self.inspection_widget.clearData()
+        self.inspection_widget.setData(self.analysis_type, self.exp_manager)
+        self.inspection_widget.show()
 
     def deleteSelection(self):
-        if not self.acq_view.model().acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
 
@@ -308,35 +304,31 @@ class currentClampWidget(DragDropWidget):
     def analyze(self):
         self.need_to_save = True
         self.analyze_acq_button.setEnabled(False)
-        if self.acq_dict:
-            self.acq_dict = {}
-        self.acq_dict = self.acq_view.model().acq_dict
-        if not self.acq_view.model().acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
         else:
 
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            for count, acq in enumerate(self.acq_dict.values()):
-                acq.analyze(
-                    sample_rate=self.sample_rate_edit.toInt(),
-                    baseline_start=self.b_start_edit.toInt(),
-                    baseline_end=self.b_end_edit.toInt(),
-                    filter_type="None",
-                    pulse_start=self.pulse_start_edit.toInt(),
-                    pulse_end=self.pulse_end_edit.toInt(),
-                    ramp_start=self.ramp_start_edit.toInt(),
-                    ramp_end=self.ramp_end_edit.toInt(),
-                    threshold=self.min_spike_threshold_edit.toInt(),
-                    min_spikes=self.min_spikes_edit.toInt(),
-                )
-                self.pbar.setValue(int(((count + 1) / len(self.acq_dict.keys())) * 100))
-            analysis_list = [int(i) for i in self.acq_dict]
-            self.acquisition_number.setMaximum(analysis_list[-1])
-            self.acquisition_number.setMinimum(analysis_list[0])
-            self.acquisition_number.setValue(analysis_list[0])
-            self.spinbox(int(analysis_list[0]))
+            self.exp_manager.set_callback(self.updateProgess)
+            self.exp_manager.analyze_exp(
+                "current_clamp",
+                sample_rate=self.sample_rate_edit.toInt(),
+                baseline_start=self.b_start_edit.toInt(),
+                baseline_end=self.b_end_edit.toInt(),
+                filter_type="None",
+                pulse_start=self.pulse_start_edit.toInt(),
+                pulse_end=self.pulse_end_edit.toInt(),
+                ramp_start=self.ramp_start_edit.toInt(),
+                ramp_end=self.ramp_end_edit.toInt(),
+                threshold=self.min_spike_threshold_edit.toInt(),
+                min_spikes=self.min_spikes_edit.toInt(),
+            )
+            self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+            self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+            self.acquisition_number.setValue(self.exp_manager.start_acq)
+            self.spinbox(self.exp_manager.start_acq)
             self.analyze_acq_button.setEnabled(True)
             self.pbar.setFormat("Analysis finished")
 
@@ -351,17 +343,15 @@ class currentClampWidget(DragDropWidget):
         self.pref_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
-        self.final_obj = None
         self.tabs.clear()
         self.clearPlots()
         self.clearTables()
         self.plot_dict = {}
         self.table_dict = {}
-        if self.inspection_widget is not None:
-            self.inspection_widget.removeFileList()
-            self.inpspection_widget = None
+        self.inspection_widget.clearData()
         self.plot_widget.clear()
         self.spike_plot.clear()
+        self.exp_manager = ExpManager()
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
 
@@ -378,7 +368,7 @@ class currentClampWidget(DragDropWidget):
             i.deleteLater()
 
     def spinbox(self, h):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
 
@@ -388,6 +378,7 @@ class currentClampWidget(DragDropWidget):
         if self.acq_dict.get(self.acquisition_number.value()):
             acq_object = self.acq_dict[self.acquisition_number.value()]
             self.epoch_number.setText(acq_object.epoch)
+            self.pulse_amp_num.setText(acq_object.pulse_amp)
             self.baseline_mean_edit.setText(
                 str(round_sig(acq_object.baseline_mean, sig=4))
             )
@@ -401,7 +392,9 @@ class currentClampWidget(DragDropWidget):
                 str(round_sig(acq_object.baseline_stability, sig=4))
             )
             if acq_object.ramp == "0":
-                self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
+                self.plot_widget.plot(
+                    x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
+                )
                 self.plot_widget.plot(
                     x=acq_object.plot_delta_v()[0],
                     y=acq_object.plot_delta_v()[1],
@@ -538,29 +531,30 @@ class currentClampWidget(DragDropWidget):
             self.plot_dict = {}
             self.table_dict = {}
         self.calc_param_clicked = True
-        self.final_obj = FinalAnalysis("current_clamp")
-        self.final_obj.analyze(self.acq_dict)
-        for key, value in self.final_obj.df_dict.items():
+        self.exp_manager.run_final_analysis(self.acq_dict)
+        fi_an = self.exp_manager.final_analysis
+        for key, value in fi_an.df_dict.items():
             table = pg.TableWidget(sortable=False)
             table.setData(value.T.to_dict())
             self.table_dict["key"] = table
             self.tabs.addTab(table, key)
         self.plotIVCurve()
-        if self.final_obj.hertz:
-            self.plotSpikeFrequency(self.final_obj.df_dict["Hertz"])
-        if self.final_obj.pulse_ap:
-            self.plotPulseAP(self.final_obj.df_dict["Pulse APs"])
-        if self.final_obj.ramp_ap:
-            self.plotRampAP(self.final_obj.df_dict["Ramp APs"])
+        if fi_an.hertz:
+            self.plotSpikeFrequency(fi_an.df_dict["Hertz"])
+        if fi_an.pulse_ap:
+            self.plotPulseAP(fi_an.df_dict["Pulse APs"])
+        if fi_an.ramp_ap:
+            self.plotRampAP(fi_an.df_dict["Ramp APs"])
         self.calculate_parameters.setEnabled(True)
 
     def plotIVCurve(self):
         iv_curve_plot = pg.PlotWidget()
         self.plot_dict["iv_curve_plot"] = iv_curve_plot
         self.tabs.addTab(iv_curve_plot, "IV curve")
-        deltav_df = self.final_obj.df_dict["Delta V"]
-        iv_x = self.final_obj.df_dict["iv_x"]
-        iv_y = self.final_obj.df_dict["IV lines"]
+        fa = self.exp_manager.final_analysis
+        deltav_df = fa.df_dict["Delta V"]
+        iv_x = fa.df_dict["iv_x"]
+        iv_y = fa.df_dict["IV lines"]
         iv_curve_plot.addLegend()
         epochs = iv_y.columns.to_list()
         for i in epochs:
@@ -634,51 +628,39 @@ class currentClampWidget(DragDropWidget):
             array = df[i]
             ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
-    def openFiles(self, directory: Union[str, PurePath]):
+    def loadExperiment(self, directory: Union[str, PurePath]):
+        self.reset()
+        self.pbar.setFormat("Loading...")
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
-        load_dict = YamlWorker.load_yaml(directory)
-        self.setPrefences(load_dict)
-        self.pbar.setFormat("Loading...")
-        file_list = list(directory.glob("*.json"))
-        if len(file_list) == 0:
-            pass
-        else:
-            for i, filepath in enumerate(file_list):
-                x = Acq(self.analysis_type, filepath)
-                x.load_acq()
-                self.acq_dict[int(x.acq_number)] = x
-                self.pbar.setValue(int(((i + 1) / len(file_list)) * 100))
-            if load_dict.get("Deleted Acqs"):
-                for i in load_dict["Deleted Acqs"]:
-                    self.deleted_acqs[i] = self.acq_dict[i]
-                    del self.acq_dict[i]
-            self.acq_view.setLoadData(self.acq_dict)
-            if load_dict["Final Analysis"]:
-                excel_file = list(directory.glob("*.xlsx"))[0]
-                self.final_obj = FinalAnalysis("current_clamp")
-                self.final_obj.load_data(excel_file)
-                for key, value in self.final_obj.df_dict.items():
-                    table = pg.TableWidget(sortable=False)
-                    table.setData(value.T.to_dict())
-                    self.table_dict["key"] = table
-                    self.tabs.addTab(table, key)
-                self.plotIVCurve()
-                if self.final_obj.hertz:
-                    self.plotSpikeFrequency(self.final_obj.df_dict["Hertz"])
-                if self.final_obj.pulse_ap:
-                    self.plotPulseAP(self.final_obj.df_dict["Pulse APs"])
-                if self.final_obj.ramp_ap:
-                    self.plotRampAP(self.final_obj.df_dict["Ramp APs"])
+        self.exp_manger = ExpManager()
+        self.worker = ThreadWorker(
+            self.exp_manager, function="load", analysis="mini", file_path=directory
+        )
+        self.worker.signals.progress.connect(self.updateProgess)
+        self.worker.signals.finished.connect(self.setLoadData)
+        self.threadpool.start(self.worker)
+
+    def setLoadData(self):
+        if self.exp_manager.final_analysis is not None:
+            fa = self.exp_manager.final_analysis
+            for key, value in fa.df_dict.items():
+                table = pg.TableWidget(sortable=False)
+                table.setData(value.T.to_dict())
+                self.table_dict["key"] = table
+                self.tabs.addTab(table, key)
+            self.plotIVCurve()
+            if fa.hertz:
+                self.plotSpikeFrequency(fa.df_dict["Hertz"])
+            if fa.pulse_ap:
+                self.plotPulseAP(fa.df_dict["Pulse APs"])
+            if fa.ramp_ap:
+                self.plotRampAP(fa.df_dict["Ramp APs"])
             self.pbar.setFormat("Loaded")
-            self.acquisition_number.setMaximum(int(list(self.acq_dict.keys())[-1]))
-            self.acquisition_number.setMinimum(int(list(self.acq_dict.keys())[0]))
-            analysis_list = np.arange(
-                int(list(self.acq_dict.keys())[0]),
-                int(list(self.acq_dict.keys())[-1]) + 1,
-            ).tolist()
-            self.acquisition_number.setValue(int(list(self.acq_dict.keys())[0]))
-            self.spinbox(analysis_list[0])
+            self.acquisition_number.setMaximum(self.exp_manager.start_acq)
+            self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+            self.acquisition_number.setValue(self.exp_manager.start_acq)
+            self.spinbox(self.exp_manager.start_acq)
             self.calculate_parameters.setEnabled(True)
             self.analyze_acq_button.setEnabled(True)
 
@@ -689,12 +671,14 @@ class currentClampWidget(DragDropWidget):
                 i.setText(pref_dict["line_edits"][i.objectName()])
 
     def createPrefDict(self):
+        pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
         for i in line_edits:
             if i.objectName() != "":
                 line_edit_dict[i.objectName()] = i.text()
-        self.pref_dict["line_edits"] = line_edit_dict
+        pref_dict["line_edits"] = line_edit_dict
+        return pref_dict
 
     def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")
@@ -702,44 +686,42 @@ class currentClampWidget(DragDropWidget):
         self.dlg.exec()
 
     def saveAs(self, save_filename: Union[str, PurePath]):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
 
         self.reset_button.setEnabled(False)
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
-        self.createPrefDict()
-        self.pref_dict["Final Analysis"] = self.calc_param_clicked
-        self.pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.pref_dict["Deleted Acqs"] = list(self.deleted_acqs.keys())
-        YamlWorker.save_yaml(self.pref_dict, save_filename)
-        if self.pref_dict["Final Analysis"]:
-            self.final_obj.save_data(save_filename)
-        self.worker = SaveWorker(save_filename, self.acq_dict)
-        self.worker.signals.progress.connect(self.updateSaveProgress)
-        self.worker.signals.finished.connect(self.progressFinished)
+        pref_dict = self.createPrefDict()
+        pref_dict["Final Analysis"] = self.calc_param_clicked
+        pref_dict["Acq_number"] = self.acquisition_number.value()
+        self.exp_manager.set_ui_pref(pref_dict)
+        self.worker = ThreadWorker(
+            self.exp_manager, "save", save_filename=save_filename
+        )
+        self.worker.signals.progress.connect(self.updateProgress)
         self.threadpool.start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
     def loadPrefences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True
-        load_dict = YamlWorker.load_yaml(file_name)
+        load_dict = self.exp_manager.load_ui_pref(file_name)
         self.setPrefences(load_dict)
 
     def savePrefences(self, save_filename: Union[str, PurePath]):
-        self.createPrefDict()
-        if self.pref_dict:
-            YamlWorker.save_yaml(self.pref_dict, save_filename)
+        pref_dict = self.createPrefDict()
+        if pref_dict:
+            self.exp_manager.save_ui_pref(save_filename, pref_dict)
         else:
             pass
 
-    def updateSaveProgress(self, progress):
-        self.pbar.setValue(progress)
-
-    def progressFinished(self, finished):
-        self.pbar.setFormat(finished)
+    def updateProgress(self, value):
+        if isinstance(value, (int, float)):
+            self.pbar.setValue(value)
+        elif isinstance(value, str):
+            self.pbar.setFormat(value)
 
 
 if __name__ == "__main__":
