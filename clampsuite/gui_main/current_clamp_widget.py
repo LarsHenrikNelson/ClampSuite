@@ -268,6 +268,7 @@ class currentClampWidget(DragDropWidget):
         self.threadpool = QThreadPool()
 
         self.exp_manager = ExpManager()
+        self.acq_view.setData(self.exp_manager)
         self.pbar.setFormat("Ready to analyze")
         self.setWidth()
 
@@ -531,7 +532,9 @@ class currentClampWidget(DragDropWidget):
             self.plot_dict = {}
             self.table_dict = {}
         self.calc_param_clicked = True
-        self.exp_manager.run_final_analysis(self.acq_dict)
+        self.exp_manager.run_final_analysis(
+            iv_start=self.iv_start_edit.toInt(), iv_end=self.iv_end_edit.toInt()
+        )
         fi_an = self.exp_manager.final_analysis
         for key, value in fi_an.df_dict.items():
             table = pg.TableWidget(sortable=False)
@@ -637,11 +640,12 @@ class currentClampWidget(DragDropWidget):
         self.worker = ThreadWorker(
             self.exp_manager, function="load", analysis="mini", file_path=directory
         )
-        self.worker.signals.progress.connect(self.updateProgess)
+        self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
         self.threadpool.start(self.worker)
 
     def setLoadData(self):
+        self.acq_view.setData(self.exp_manager)
         if self.exp_manager.final_analysis is not None:
             fa = self.exp_manager.final_analysis
             for key, value in fa.df_dict.items():
@@ -664,7 +668,7 @@ class currentClampWidget(DragDropWidget):
             self.calculate_parameters.setEnabled(True)
             self.analyze_acq_button.setEnabled(True)
 
-    def setPrefences(self, pref_dict: dict):
+    def setPreferences(self, pref_dict: dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -705,12 +709,12 @@ class currentClampWidget(DragDropWidget):
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
-    def loadPrefences(self, file_name: Union[str, PurePath]):
+    def loadPreferences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True
         load_dict = self.exp_manager.load_ui_pref(file_name)
-        self.setPrefences(load_dict)
+        self.setPreferences(load_dict)
 
-    def savePrefences(self, save_filename: Union[str, PurePath]):
+    def savePreferences(self, save_filename: Union[str, PurePath]):
         pref_dict = self.createPrefDict()
         if pref_dict:
             self.exp_manager.save_ui_pref(save_filename, pref_dict)

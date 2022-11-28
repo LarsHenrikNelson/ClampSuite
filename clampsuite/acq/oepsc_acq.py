@@ -218,6 +218,12 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def pulse_start(self) -> list:
         return self._pulse_start / self.s_r_c
 
+    def plot_acq_x(self) -> np.ndarray:
+        return np.arange(0, len(self.filtered_array)) / self.s_r_c
+
+    def plot_acq_y(self) -> np.ndarray:
+        return self.filtered_array
+
     def create_dict(self) -> dict:
         oepsc_dict = {
             "Epoch": self.epoch,

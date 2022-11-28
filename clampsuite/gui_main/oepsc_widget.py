@@ -3,22 +3,22 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 from PyQt5.QtWidgets import (
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QWidget,
-    QLabel,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGridLayout,
-    QComboBox,
-    QSpinBox,
-    QCheckBox,
-    QProgressBar,
+    QHBoxLayout,
+    QLineEdit,
+    QLabel,
     QMessageBox,
-    QTabWidget,
+    QProgressBar,
+    QPushButton,
     QScrollArea,
-    QDoubleSpinBox,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtCore import QThreadPool
@@ -26,14 +26,14 @@ from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 
 from .acq_inspection import AcqInspectionWidget
-from ..final_analysis import FinalAnalysis
+from ..acq import ExpManager
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
+    DragDropWidget,
     LineEdit,
     ListView,
-    DragDropWidget,
+    ThreadWorker,
 )
-from ..acq.acq import Acquisition
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
@@ -88,7 +88,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_1.addWidget(self.oepsc_view)
         self.inspect_oepsc_acqs = QPushButton("Inspect acquistions")
         self.inspect_oepsc_acqs.clicked.connect(
-            lambda checked: self.inspectAcqs(self.oepsc_view)
+            lambda checked: self.inspectAcqs("oepsc")
         )
         self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
         self.del_oepsc_sel = QPushButton("Delete selection")
@@ -106,9 +106,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_2.addWidget(self.acq_label_2)
         self.view_layout_2.addWidget(self.lfp_view)
         self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
-        self.inspect_lfp_acqs.clicked.connect(
-            lambda checked: self.inspectAcqs(self.lfp_view)
-        )
+        self.inspect_lfp_acqs.clicked.connect(lambda checked: self.inspectAcqs("lfp"))
         self.view_layout_2.addWidget(self.inspect_lfp_acqs)
         self.del_lfp_sel = QPushButton("Delete selection")
         self.del_lfp_sel.clicked.connect(
@@ -571,17 +569,14 @@ class oEPSCWidget(DragDropWidget):
         self.setWidth()
 
         # Lists
+        self.exp_manager = ExpManager()
+        self.oepsc_view.setData(self.exp_manager)
+        self.lfp_view.setData(self.exp_manager)
+        self.inspection_widget = AcqInspectionWidget()
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
-        self.oepsc_acq_dict = {}
-        self.lfp_acq_dict = {}
         self.last_lfp_point_clicked = []
         self.last_oepsc_point_clicked = []
-        self.oepsc_acqs_deleted = 0
-        self.lfp_acqs_deleted = 0
-        self.pref_dict = {}
-        self.deleted_lfp_acqs = {}
-        self.deleted_opesc_acqs = {}
         self.calc_param_clicked = False
         self.final_data = None
         self.inspection_widget = None
@@ -598,22 +593,16 @@ class oEPSCWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    def inspectAcqs(self, list_view):
-        if not list_view.model().acq_dict:
+    def inspectAcqs(self, analysis_type):
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
             return None
 
         # Creates a separate window to view the loaded acquisitions
-        if self.inspection_widget is None:
-            self.inspection_widget = AcqInspectionWidget()
-            self.inspection_widget.setFileList(list_view.model().acq_dict)
-            self.inspection_widget.show()
-        else:
-            self.inspection_widget.close()
-            self.inspection_widget.removeFileList()
-            self.inspection_widget = None
-            self.inspectAcqs(list_view)
+        self.inspection_widget.clearData()
+        self.inspection_widget.setData(analysis_type, self.exp_manager)
+        self.inspection_widget.show()
 
     def oWindowChanged(self, text):
         if text == "Gaussian":
@@ -676,8 +665,8 @@ class oEPSCWidget(DragDropWidget):
                 pass
 
     def setOPlotX(self, x):
-        peak_dir = self.oepsc_acq_dict[
-            str(self.acquisition_number.text())
+        peak_dir = self.exp_manager.exp_dict["oepsc"][
+            self.acquisition_number.value()
         ].peak_direction
         if peak_dir == "positive":
             self.op_x_axis = XAxisCoord(x[0], x[1])
@@ -688,7 +677,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_x_axis = XAxisCoord(x[0], x[1])
 
     def analyze(self):
-        if not self.oepsc_view.model().acq_dict and not self.lfp_view.model().acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
 
@@ -696,9 +685,6 @@ class oEPSCWidget(DragDropWidget):
         op_x_set = False
         lfp_x_set = False
         self.need_to_save = True
-        if self.oepsc_acq_dict or self.lfp_acq_dict:
-            self.oepsc_acq_dict = {}
-            self.lfp_acq_dict = {}
         if (
             self.o_window_edit.currentText() == "gaussian"
             or self.o_window_edit.currentText() == "kaiser"
@@ -716,51 +702,30 @@ class oEPSCWidget(DragDropWidget):
             )
         else:
             lfp_window = self.lfp_window_edit.currentText()
-
-        self.pbar_number = len(self.oepsc_view.model().acq_dict) + len(
-            self.lfp_view.model().acq_dict
+        self.pbar.setFormat("Analyzing...")
+        self.exp_manager.analyze_exp(
+            "oepsc",
+            sample_rate=self.o_sample_rate_edit.toInt(),
+            baseline_start=self.o_b_start_edit.toFloat(),
+            baseline_end=self.o_b_end_edit.toFloat(),
+            filter_type=self.o_filter_selection.currentText(),
+            order=self.o_order_edit.toInt(),
+            high_pass=self.o_high_pass_edit.toInt(),
+            high_width=self.o_high_width_edit.toInt(),
+            low_pass=self.o_low_pass_edit.toInt(),
+            low_width=self.o_low_width_edit.toInt(),
+            window=o_window,
+            polyorder=self.o_polyorder_edit.toFloat(),
+            pulse_start=self.o_pulse_start_edit.toInt(),
+            n_window_start=self.o_neg_start_edit.toFloat(),
+            n_window_end=self.o_neg_end_edit.toFloat(),
+            p_window_start=self.o_pos_start_edit.toFloat(),
+            p_window_end=self.o_pos_end_edit.toFloat(),
+            find_ct=self.charge_transfer_edit.isChecked(),
+            find_est_decay=self.est_decay_edit.isChecked(),
+            curve_fit_decay=self.curve_fit_decay.isChecked(),
+            curve_fit_type=self.curve_fit_type_edit.currentText(),
         )
-        self.pbar_count = 0
-        if self.oepsc_view.model().acq_dict:
-            self.set_peak_button.setEnabled(True)
-            self.delete_oepsc_button.setEnabled(True)
-            self.oepsc_acq_dict = self.oepsc_view.model().acq_dict
-            for o_acq in self.oepsc_acq_dict.values():
-                o_acq.analyze(
-                    sample_rate=self.o_sample_rate_edit.toInt(),
-                    baseline_start=self.o_b_start_edit.toFloat(),
-                    baseline_end=self.o_b_end_edit.toFloat(),
-                    filter_type=self.o_filter_selection.currentText(),
-                    order=self.o_order_edit.toInt(),
-                    high_pass=self.o_high_pass_edit.toInt(),
-                    high_width=self.o_high_width_edit.toInt(),
-                    low_pass=self.o_low_pass_edit.toInt(),
-                    low_width=self.o_low_width_edit.toInt(),
-                    window=o_window,
-                    polyorder=self.o_polyorder_edit.toFloat(),
-                    pulse_start=self.o_pulse_start_edit.toInt(),
-                    n_window_start=self.o_neg_start_edit.toFloat(),
-                    n_window_end=self.o_neg_end_edit.toFloat(),
-                    p_window_start=self.o_pos_start_edit.toFloat(),
-                    p_window_end=self.o_pos_end_edit.toFloat(),
-                    find_ct=self.charge_transfer_edit.isChecked(),
-                    find_est_decay=self.est_decay_edit.isChecked(),
-                    curve_fit_decay=self.curve_fit_decay.isChecked(),
-                    curve_fit_type=self.curve_fit_type_edit.currentText(),
-                )
-                self.updatePbarProgress("return")
-                if not on_x_set and o_acq.peak_direction == "negative":
-                    self.on_x_axis = XAxisCoord(
-                        self.o_pulse_start_edit.toInt() - 100,
-                        self.o_pulse_start_edit.toInt() + 450,
-                    )
-                    on_x_set = True
-                elif not op_x_set and o_acq.peak_direction == "positive":
-                    self.op_x_axis = XAxisCoord(
-                        self.o_pulse_start_edit.toInt() - 100,
-                        o_acq.x_array[-1],
-                    )
-                    op_x_set = True
         if self.lfp_view.model().acq_dict:
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
@@ -802,22 +767,40 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button.setEnabled(True)
         self.pbar.setFormat("Analysis finished")
 
-    def acqSpinbox(self, h):
-        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
-            self.fileDoesNotExist()
-            return None
+    def setOEPSCLimits(self):
+        if not on_x_set:
+            self.on_x_axis = XAxisCoord(
+                self.o_pulse_start_edit.toInt() - 100,
+                self.o_pulse_start_edit.toInt() + 450,
+            )
+            on_x_set = True
+        elif not op_x_set:
+            self.op_x_axis = XAxisCoord(
+                self.o_pulse_start_edit.toInt() - 100,
+                self.oepsc_object.x_array[-1],
+            )
+            op_x_set = True
 
-        self.need_to_save = True
-        self.acquisition_number.setDisabled(True)
+    def acqSpinbox(self, h):
+        self.oepsc_object = None
+        self.lfp_object = None
         self.oepsc_plot.clear()
         self.lfp_plot.clear()
+        if not self.exp_manager.acqs_exist():
+            self.fileDoesNotExist()
+            return None
+        self.need_to_save = True
+        self.acquisition_number.setDisabled(True)
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
-        if self.oepsc_acq_dict.get(str(h)):
-            self.oepsc_object = self.oepsc_acq_dict[str(self.acquisition_number.text())]
+        if self.exp_manager.exp_dict["oepsc"].get(self.acquisition_number.value()):
+            self.oepsc_object = self.exp_manager.exp_dict["oepsc"][
+                self.acquisition_number.value()
+            ]
+            self.setOEPSCLimits()
             self.oepsc_acq_plot = pg.PlotDataItem(
-                x=self.oepsc_object.x_array,
-                y=self.oepsc_object.filtered_array,
+                x=self.oepsc_object.plot_acq_x(),
+                y=self.oepsc_object.plot_acq_y(),
                 name=str("oepsc_" + self.acquisition_number.text()),
                 symbol="o",
                 symbolSize=8,
@@ -856,11 +839,13 @@ class oEPSCWidget(DragDropWidget):
                 )
         else:
             pass
-        if self.lfp_acq_dict.get(str(h)):
-            self.lfp_object = self.lfp_acq_dict[str(self.acquisition_number.text())]
+        if self.exp_manager.exp_dict["lfp"].get(self.acquisition_number.value()):
+            self.lfp_object = self.exp_manager.exp_dict["lfp"][
+                self.acquisition_number.value()
+            ]
             self.lfp_acq_plot = pg.PlotDataItem(
-                x=self.lfp_object.x_array,
-                y=self.lfp_object.filtered_array,
+                x=self.lfp_object.plot_acq_x(),
+                y=self.lfp_object.plot_acq_y(),
                 name=str("lfp_" + self.acquisition_number.text()),
                 symbol="o",
                 symbolSize=10,
@@ -898,9 +883,9 @@ class oEPSCWidget(DragDropWidget):
             self.lfp_plot.setAutoVisible(y=True)
         else:
             pass
-        if self.oepsc_acq_dict.get(str(h)):
+        if self.oepsc_object is not None:
             self.epoch_number.setText(self.oepsc_object.epoch)
-        elif self.lfp_acq_dict.get(str(h)):
+        elif self.lfp_object is not None:
             self.epoch_number.setText(self.lfp_object.epoch)
         else:
             pass
@@ -911,18 +896,9 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_plot.clear()
         self.tab3.clear()
         self.clearTables()
-        self.oepsc_acq_dict = {}
-        self.lfp_acq_dict = {}
-        del self.final_data
-        self.oepsc_acqs_deleted = 0
-        self.lfp_acqs_deleted = 0
-        self.deleted_lfp_acqs = {}
-        self.deleted_opesc_acqs = {}
         self.calc_param_clicked = False
-        self.final_data = None
-        if self.inspection_widget is not None:
-            self.inspection_widget.removeFileList()
-            self.inpspection_widget = None
+        self.inspection_widget.removeFileList()
+        self.ExpManager = None
         self.oepsc_view.clearData()
         self.lfp_view.clearData()
         self.need_to_save = False
@@ -965,7 +941,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.lfp_acq_dict:
+        if not self.exp_manager.exp_dict.get("lfp"):
             self.fileDoesNotExist()
             return None
 
@@ -1007,7 +983,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.lfp_acq_dict:
+        if not self.exp_manager.exp_dict.get("lfp"):
             self.fileDoesNotExist()
             return None
 
@@ -1048,7 +1024,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.lfp_acq_dict:
+        if not self.exp_manager.exp_dict.get("lfp"):
             self.fileDoesNotExist()
             return None
 
@@ -1080,7 +1056,7 @@ class oEPSCWidget(DragDropWidget):
         self.last_lfp_point_clicked = []
 
     def setoEPSCPeak(self):
-        if not self.oepsc_acq_dict:
+        if not self.exp_manager.exp_dict.get["oepsc"]:
             self.fileDoesNotExist()
             return None
 
@@ -1104,53 +1080,33 @@ class oEPSCWidget(DragDropWidget):
         self.last_oepsc_point_clicked = []
 
     def deleteoEPSC(self):
-        if not self.oepsc_acq_dict:
+        if not self.exp_manager.exp_dict.get["oepsc"]:
             self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
         self.oepsc_plot.clear()
-        self.deleted_opesc_acqs[
-            str(self.acquisition_number.text())
-        ] = self.oepsc_acq_dict[str(self.acquisition_number.text())]
-
-        # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        del self.oepsc_acq_dict[str(self.acquisition_number.text())]
-        self.oepsc_acqs_deleted += 1
+        self.exp_manager.delete_acq("oepsc", self.acquisition_number.value())
 
     def deleteLFP(self):
-        if not self.lfp_acq_dict:
+        if not self.exp_manager.exp_dict.get["oepsc"]:
             self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
         self.lfp_plot.clear()
-        self.deleted_lfp_acqs[str(self.acquisition_number.text())] = self.lfp_acq_dict[
-            str(self.acquisition_number.text())
-        ]
-
-        # Remove deleted acquisition from the acquisition dictionary and the acquisition list.
-        del self.lfp_acq_dict[str(self.acquisition_number.text())]
-        self.lfp_acqs_deleted += 1
+        self.exp_manager.delete_acq("lfp", self.acquisition_number.value())
 
     def runFinalAnalysis(self):
-        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
-
         self.need_to_save = True
-        if self.final_data is not None:
-            del self.final_data
         self.final_analysis_button.setEnabled(False)
         self.calc_param_clicked = True
-        self.final_data = FinalAnalysis("oepsc")
-        if self.oepsc_acq_dict and self.lfp_acq_dict:
-            self.final_data.analyze(self.oepsc_acq_dict, self.lfp_acq_dict)
-        elif self.oepsc_acq_dict and not self.lfp_acq_dict:
-            self.final_data.analyze(self.oepsc_acq_dict)
-        else:
-            self.final_data.analyze(o_acq_dict=None, lfp_acq_dict=self.lfp_acq_dict)
-        for key, df in self.final_data.df_dict.items():
+        self.exp_manager.run_final_analysis()
+        fa = self.exp_manager.final_analysis
+        for key, df in fa.df_dict.items():
             table = pg.TableWidget()
             self.table_dict[key] = table
             self.tab3.addTab(table)
@@ -1158,91 +1114,50 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button.setEnabled(True)
 
     def saveAs(self, save_filename):
-        if not self.oepsc_acq_dict and not self.lfp_acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
-        self.createPrefDict()
-        self.pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.pref_dict["Final Analysis"] = self.calc_param_clicked
-        if self.lfp_acq_dict:
-            self.pref_dict["LFP name"] = self.lfp_acq_dict[
-                list(self.lfp_acq_dict.keys())[0]
-            ].name.split("_")[0]
-        else:
-            self.pref_dict["LFP name"] = None
-        if self.oepsc_acq_dict:
-            self.pref_dict["oEPSC name"] = self.oepsc_acq_dict[
-                list(self.oepsc_acq_dict.keys())[0]
-            ].name.split("_")[0]
-        else:
-            self.pref_dict["oEPSC name"] = None
-        YamlWorker.save_yaml(self.pref_dict, save_filename)
-        if self.final_data is not None:
-            self.final_data.save_data(save_filename)
-        self.pbar_number = len(self.oepsc_acq_dict) + len(self.lfp_acq_dict)
+        pref_dict = self.createPrefDict()
+        pref_dict["Acq_number"] = self.acquisition_number.value()
+
+        pref_dict["Final Analysis"] = self.calc_param_clicked
+        self.exp_manager.set_ui_pref(pref_dict)
         self.pbar_count = 0
         self.pbar.setFormat("Saving files...")
-        if self.oepsc_acq_dict:
-            worker1 = SaveWorker(save_filename, self.oepsc_acq_dict)
-            worker1.signals.progress.connect(self.updatePbarProgress)
-            self.threadpool.start(worker1)
-        if self.lfp_acq_dict:
-            worker2 = SaveWorker(save_filename, self.lfp_acq_dict)
-            worker2.signals.progress.connect(self.updatePbarProgress)
-            self.threadpool.start(worker2)
+        self.worker = ThreadWorker(
+            self.exp_manager, "save", save_filename=save_filename
+        )
+        self.worker.signals.progress.connect(self.updateProgress)
+        self.threadpool.start(self.worker)
         self.pbar.setFormat("Data saved")
         self.need_to_save = False
 
-    def openFiles(self, directory):
+    def loadExperiment(self, directory):
         self.reset()
         self.pbar.setFormat("Loading...")
         self.pbar.setValue(0)
-        load_dict = YamlWorker.load_yaml(directory)
-        self.setPrefrences(load_dict)
-        file_list = list(directory.glob("*.json"))
-        count = 0
-        if not file_list:
-            self.file_list = None
-        else:
-            for i in file_list:
-                if i.name.split("_")[-2] == load_dict["oEPSC name"]:
-                    x = Acq("oepsc", i)
-                    x.load_acq()
-                    self.oepsc_acq_dict[x.acq_number] = x
-                    count += 1
-                    self.pbar.setValue(int(count / len(file_list) * 100))
-                else:
-                    x = Acq("lfp", i)
-                    x.load_acq()
-                    self.lfp_acq_dict[x.acq_number] = x
-                    count += 1
-                    self.pbar.setValue(int(count / len(file_list) * 100))
-        if self.oepsc_acq_dict:
-            self.acquisition_number.setMaximum(
-                int(list(self.oepsc_acq_dict.keys())[-1])
-            )
-            self.acquisition_number.setMinimum(int(list(self.oepsc_acq_dict.keys())[0]))
-        elif self.lfp_acq_dict:
-            self.acquisition_number.setMaximum(int(list(self.lfp_acq_dict.keys())[-1]))
-            self.acquisition_number.setMinimum(int(list(self.lfp_acq_dict.keys())[0]))
-        else:
-            pass
-        if self.oepsc_acq_dict:
-            self.oepsc_view.setLoadData(self.oepsc_acq_dict)
+        self.exp_manager = ExpManager()
+        self.worker = ThreadWorker(
+            self.exp_manager, function="load", analysis="oepsc", file_path=directory
+        )
+        self.worker.signals.progress.connect(self.updateProgress)
+        self.worker.signals.finished.connect(self.setLoadData)
+        self.threadpool.start(self.worker)
+
+    def setLoadData(self):
+        if self.exp_manager.acqs_exist():
+            self.acquisition_number.setMaximum(self.exp_manager.start_acq)
+            self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        if self.exp_manager.ui_pref:
+            self.setPreferences(self.exp_manager.ui_pref)
+        if self.exp_manager.exp_dict.get("oepsc"):
+            self.oepsc_view.setData(self.exp_manager)
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
-            self.on_x_axis = XAxisCoord(
-                self.o_pulse_start_edit.toInt() - 100,
-                self.o_pulse_start_edit.toInt() + 450,
-            )
-            self.op_x_axis = XAxisCoord(
-                self.o_pulse_start_edit.toInt() - 100,
-                self.o_pulse_start_edit.toInt() + 450,
-            )
-        if self.lfp_acq_dict:
-            self.lfp_view.setLoadData(self.lfp_acq_dict)
+        if self.exp_manager.exp_dict.get("lfp"):
+            self.lfp_view.setData(self.exp_manager)
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
@@ -1250,13 +1165,11 @@ class oEPSCWidget(DragDropWidget):
                 self.lfp_pulse_start_edit.toInt() - 10,
                 self.lfp_b_start_edit.toInt() + 250,
             )
-        self.acquisition_number.setValue(load_dict["Acq_number"])
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
         self.acquisition_number.setEnabled(True)
-        if load_dict["Final Analysis"]:
-            excel_path = list(directory.glob("*.xlsx"))[0]
-            self.final_data = FinalAnalysis("oepsc")
-            self.final_data.load_data(excel_path)
-            for key, df in self.final_data.df_dict.items():
+        fa = self.exp_manager.final_analysis
+        if fa is not None:
+            for key, df in fa.df_dict.items():
                 table = pg.TableWidget()
                 self.table_dict[key] = table
                 self.tab3.addTab(table)
@@ -1268,42 +1181,44 @@ class oEPSCWidget(DragDropWidget):
         self.final_analysis_button.setEnabled(True)
 
     def createPrefDict(self):
+        pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
         for i in line_edits:
             if i.objectName() != "":
                 line_edit_dict[i.objectName()] = i.text()
-        self.pref_dict["line_edits"] = line_edit_dict
+        pref_dict["line_edits"] = line_edit_dict
 
         combo_box_dict = {}
         combo_boxes = self.findChildren(QComboBox)
         for i in combo_boxes:
             if i.objectName() != "":
                 combo_box_dict[i.objectName()] = i.currentText()
-        self.pref_dict["combo_boxes"] = combo_box_dict
+        pref_dict["combo_boxes"] = combo_box_dict
 
         check_box_dict = {}
         check_boxes = self.findChildren(QCheckBox)
         for i in check_boxes:
             if i.objectName() != "":
                 check_box_dict[i.objectName()] = i.isChecked()
-        self.pref_dict["check_boxes"] = check_box_dict
+        pref_dict["check_boxes"] = check_box_dict
 
         buttons_dict = {}
         buttons = self.findChildren(QPushButton)
         for i in buttons:
             if i.objectName() != "":
                 buttons_dict[i.objectName()] = i.isEnabled()
-        self.pref_dict["buttons"] = buttons_dict
+        pref_dict["buttons"] = buttons_dict
 
         dspinbox_dict = {}
         dspinboxes = self.findChildren(QDoubleSpinBox)
         for i in dspinboxes:
             if i.objectName() != "":
                 dspinbox_dict[i.objectName()] = i.text()
-        self.pref_dict["double_spinboxes"] = dspinbox_dict
+        pref_dict["double_spinboxes"] = dspinbox_dict
+        return pref_dict
 
-    def setPrefrences(self, pref_dict):
+    def setPreferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1344,23 +1259,23 @@ class oEPSCWidget(DragDropWidget):
                 except:
                     pass
 
-    def loadPrefences(self, file_name: str):
-        load_dict = YamlWorker.load_yaml(file_name)
-        self.setPrefrences(load_dict)
+    def loadPreferences(self, file_name: str):
+        self.need_to_save = True
+        load_dict = self.exp_manager.load_ui_pref(file_name)
+        self.setPreferences(load_dict)
 
-    def savePreferences(self, save_filename: str):
-        self.createPrefDict()
-        if self.pref_dict:
-            YamlWorker.save_yaml(self.pref_dict, save_filename)
+    def savePrefences(self, save_filename):
+        pref_dict = self.createPrefDict()
+        if pref_dict:
+            self.exp_manager.save_ui_pref(save_filename, pref_dict)
         else:
             pass
 
-    def updatePbarProgress(self, progress):
-        self.pbar_count += 1
-        self.pbar.setValue(int(100 * self.pbar_count / self.pbar_number))
-
-    def progressFinished(self, finished):
-        self.pbar.setFormat(finished)
+    def updateProgress(self, value):
+        if isinstance(value, (int, float)):
+            self.pbar.setValue(value)
+        elif isinstance(value, str):
+            self.pbar.setFormat(value)
 
     def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")

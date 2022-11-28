@@ -278,6 +278,12 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         else:
             return self._slope
 
+    def plot_acq_x(self) -> np.ndarray:
+        return np.arange(0, len(self.filtered_array)) / self.s_r_c
+
+    def plot_acq_y(self) -> np.ndarray:
+        return self.filtered_array
+
     def create_dict(self) -> dict:
         """
         This function returns a dictionary of all the values you will need to

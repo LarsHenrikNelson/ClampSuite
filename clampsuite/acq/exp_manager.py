@@ -62,7 +62,7 @@ class ExpManager:
         self.save_acqs(save_filename)
         self.callback_func("Finished saving")
 
-    def save_acqs(self, save_filename: Union[PurePath, str]):
+    def save_acqs(self, save_filename: Union[PurePath, Path, str]):
         self.callback_func("Saving acquisitions")
         count = 0
         for i in self.exp_dict.keys():
@@ -82,29 +82,31 @@ class ExpManager:
                 self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
 
-    def save_ui_pref(self, save_filename: Union[PurePath, str], ui_prefs):
+    def save_ui_pref(self, save_filename: Union[PurePath, Path, str], ui_prefs):
         self.callback_func("Saving preferences")
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(ui_prefs, file)
         self.callback_func("Saved preferences")
 
-    def save_analysis_pref(self, save_filename: Union[PurePath, str]):
+    def save_analysis_pref(self, save_filename: Union[PurePath, Path, str]):
         with open(f"{save_filename}.yaml", "w") as file:
             yaml.dump(self.analysis_prefs, file)
         self.callback_func("Saved user preferences")
 
-    def save_final_analysis(self, save_filename: Union[PurePath, str]):
+    def save_final_analysis(self, save_filename: Union[PurePath, Path, str]):
         self.callback_func("Saving final analysis")
         self.final_analysis.save_data(save_filename)
         self.callback_func("Saved final analysis")
 
-    def load_ui_pref(self, file_path: Union[None, str] = None):
+    def load_ui_pref(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
         file_name = load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
             ui_prefs = yaml.safe_load(file)
             return ui_prefs
 
-    def load_analysis_pref(self, file_path: Union[None, str] = None):
+    def load_analysis_pref(
+        self, file_path: Union[None, str, Path, PurePath] = None
+    ) -> dict:
         file_name = load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
             analysis_prefs = yaml.safe_load(file)
