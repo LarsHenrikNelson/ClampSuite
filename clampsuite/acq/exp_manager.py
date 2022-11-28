@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from pathlib import PurePath, Path
-from typing import Union
+from typing import Callable, Union
 
 import yaml
 
@@ -28,15 +28,14 @@ class ExpManager:
         self._set_start_end_acq()
 
     def analyze_exp(self, exp: str, **kwargs):
-        total = 0
-        acq_dict = self.exp_dict[exp]
-        self.analysis_prefs = kwargs
-        for i in self.exp_dict:
-            total += len(i)
-        for count, i in enumerate(acq_dict.values()):
-            i.analyze(**kwargs)
-            self.callback_func(int((100 * (count + 1) / total)))
-        self.callback_func("Analyed acquisitions")
+        if self.exp_dict.get(exp):
+            acq_dict = self.exp_dict[exp]
+            self.analysis_prefs = kwargs
+            total = len(acq_dict)
+            for count, i in enumerate(acq_dict.values()):
+                i.analyze(**kwargs)
+                self.callback_func(int((100 * (count + 1) / total)))
+            self.callback_func(f"Analyed {exp} acquisitions")
 
     def set_ui_pref(self, pref_dict: dict):
         self.ui_prefs = pref_dict
@@ -184,13 +183,13 @@ class ExpManager:
             for acq in acqs:
                 self.delete_acq(exp, acq)
 
-    def set_callback(self, func):
+    def set_callback(self, func: Callable[[int, str], None]):
         self.callback_func = func
 
-    def get_acqs(self, exp):
+    def get_acqs(self, exp: str) -> list:
         return [i.name for i in self.exp_dict[exp].values()]
 
-    def delete_acq(self, exp, acq):
+    def delete_acq(self, exp: str, acq: int):
         item = self.exp_dict[exp].pop(acq)
         if exp in self.deleted_acqs:
             self.deleted_acqs[exp][acq] = item
@@ -199,20 +198,20 @@ class ExpManager:
             self.deleted_acqs[exp][acq] = item
         self.acqs_deleted += 1
 
-    def reset_deleted_acqs(self, exp):
+    def reset_deleted_acqs(self, exp: str):
         if self.deleted_acqs[exp]:
             del_dict = dict(self.deleted_acqs)[exp]
             self.exp_dict[exp].update(del_dict)
             self.deleted_acqs = {}
             self.acqs_deleted = 0
 
-    def reset_recent_deleted_acq(self, exp):
+    def reset_recent_deleted_acq(self, exp: str):
         if self.deleted_acqs[exp]:
             item = self.deleted_acqs[exp].popitem()
             self.exp_dict[exp][item[0]] = item[1]
             self.acqs_deleted -= 1
 
-    def acqs_exist(self):
+    def acqs_exist(self) -> bool:
         if self.exp_dict:
             return True
         else:
@@ -227,8 +226,8 @@ class ExpManager:
     def set_current_acq(self):
         return self.ui_prefs["Acq_number"]
 
-    def get_final_analysis_data(self):
+    def get_final_analysis_data(self) -> dict:
         if self.final_analysis is not None:
             return self.final_analysis.df_dict
         else:
-            return None
+            return {}

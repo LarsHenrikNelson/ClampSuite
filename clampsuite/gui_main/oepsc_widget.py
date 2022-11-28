@@ -680,9 +680,6 @@ class oEPSCWidget(DragDropWidget):
         if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
-
-        on_x_set = False
-        op_x_set = False
         lfp_x_set = False
         self.need_to_save = True
         if (
@@ -703,64 +700,60 @@ class oEPSCWidget(DragDropWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         self.pbar.setFormat("Analyzing...")
-        self.exp_manager.analyze_exp(
-            "oepsc",
-            sample_rate=self.o_sample_rate_edit.toInt(),
-            baseline_start=self.o_b_start_edit.toFloat(),
-            baseline_end=self.o_b_end_edit.toFloat(),
-            filter_type=self.o_filter_selection.currentText(),
-            order=self.o_order_edit.toInt(),
-            high_pass=self.o_high_pass_edit.toInt(),
-            high_width=self.o_high_width_edit.toInt(),
-            low_pass=self.o_low_pass_edit.toInt(),
-            low_width=self.o_low_width_edit.toInt(),
-            window=o_window,
-            polyorder=self.o_polyorder_edit.toFloat(),
-            pulse_start=self.o_pulse_start_edit.toInt(),
-            n_window_start=self.o_neg_start_edit.toFloat(),
-            n_window_end=self.o_neg_end_edit.toFloat(),
-            p_window_start=self.o_pos_start_edit.toFloat(),
-            p_window_end=self.o_pos_end_edit.toFloat(),
-            find_ct=self.charge_transfer_edit.isChecked(),
-            find_est_decay=self.est_decay_edit.isChecked(),
-            curve_fit_decay=self.curve_fit_decay.isChecked(),
-            curve_fit_type=self.curve_fit_type_edit.currentText(),
-        )
-        if self.lfp_view.model().acq_dict:
+        self.exp_manager.set_callback(self.updateProgress)
+        if self.exp_manager.exp_dict.get("oepsc"):
+            self.exp_manager.analyze_exp(
+                "oepsc",
+                sample_rate=self.o_sample_rate_edit.toInt(),
+                baseline_start=self.o_b_start_edit.toFloat(),
+                baseline_end=self.o_b_end_edit.toFloat(),
+                filter_type=self.o_filter_selection.currentText(),
+                order=self.o_order_edit.toInt(),
+                high_pass=self.o_high_pass_edit.toInt(),
+                high_width=self.o_high_width_edit.toInt(),
+                low_pass=self.o_low_pass_edit.toInt(),
+                low_width=self.o_low_width_edit.toInt(),
+                window=o_window,
+                polyorder=self.o_polyorder_edit.toFloat(),
+                pulse_start=self.o_pulse_start_edit.toInt(),
+                n_window_start=self.o_neg_start_edit.toFloat(),
+                n_window_end=self.o_neg_end_edit.toFloat(),
+                p_window_start=self.o_pos_start_edit.toFloat(),
+                p_window_end=self.o_pos_end_edit.toFloat(),
+                find_ct=self.charge_transfer_edit.isChecked(),
+                find_est_decay=self.est_decay_edit.isChecked(),
+                curve_fit_decay=self.curve_fit_decay.isChecked(),
+                curve_fit_type=self.curve_fit_type_edit.currentText(),
+            )
+        if self.exp_manager.exp_dict.get("lfp"):
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)
             self.set_slope_start_btn.setEnabled(True)
-            self.lfp_acq_dict = self.lfp_view.model().acq_dict
-            for lfp_acq in self.lfp_acq_dict.values():
-                lfp_acq.analyze(
-                    sample_rate=self.lfp_sample_rate_edit.toInt(),
-                    baseline_start=self.lfp_b_start_edit.toFloat(),
-                    baseline_end=self.lfp_b_end_edit.toFloat(),
-                    filter_type=self.lfp_filter_selection.currentText(),
-                    order=self.lfp_order_edit.toInt(),
-                    high_pass=self.lfp_high_pass_edit.toInt(),
-                    high_width=self.lfp_high_width_edit.toInt(),
-                    low_pass=self.lfp_low_pass_edit.toInt(),
-                    low_width=self.lfp_low_width_edit.toInt(),
-                    window=lfp_window,
-                    polyorder=self.lfp_polyorder_edit.toFloat(),
-                    pulse_start=self.lfp_pulse_start_edit.toFloat(),
+            self.exp_manager.analyze_exp(
+                "lfp",
+                sample_rate=self.lfp_sample_rate_edit.toInt(),
+                baseline_start=self.lfp_b_start_edit.toFloat(),
+                baseline_end=self.lfp_b_end_edit.toFloat(),
+                filter_type=self.lfp_filter_selection.currentText(),
+                order=self.lfp_order_edit.toInt(),
+                high_pass=self.lfp_high_pass_edit.toInt(),
+                high_width=self.lfp_high_width_edit.toInt(),
+                low_pass=self.lfp_low_pass_edit.toInt(),
+                low_width=self.lfp_low_width_edit.toInt(),
+                window=lfp_window,
+                polyorder=self.lfp_polyorder_edit.toFloat(),
+                pulse_start=self.lfp_pulse_start_edit.toFloat(),
+            )
+            if not lfp_x_set:
+                self.lfp_x_axis = XAxisCoord(
+                    self.lfp_pulse_start_edit.toInt() - 10,
+                    self.lfp_b_start_edit.toInt() + 250,
                 )
-                if not lfp_x_set:
-                    self.lfp_x_axis = XAxisCoord(
-                        self.lfp_pulse_start_edit.toInt() - 10,
-                        self.lfp_b_start_edit.toInt() + 250,
-                    )
-                self.updatePbarProgress("return")
-        if self.oepsc_acq_dict:
-            acq_number = list(self.oepsc_acq_dict.keys())
-        else:
-            acq_number = list(self.lfp_acq_dict.keys())
-        self.acquisition_number.setMaximum(int(acq_number[-1]))
-        self.acquisition_number.setMinimum(int(acq_number[0]))
-        self.acquisition_number.setValue(int(acq_number[0]))
-        self.acqSpinbox(int(acq_number[0]))
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.acqSpinbox(self.exp_manager.start_acq)
         self.analyze_acq_button.setEnabled(True)
         self.reset_button.setEnabled(True)
         self.acquisition_number.setEnabled(True)
