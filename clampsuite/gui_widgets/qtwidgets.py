@@ -1,7 +1,6 @@
 from copy import deepcopy
 from glob import glob
-import json
-from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
+from pathlib import PurePath, Path
 
 from PyQt5.QtWidgets import (
     QLineEdit,
@@ -10,12 +9,13 @@ from PyQt5.QtWidgets import (
     QSpinBox,
 )
 from PyQt5.QtCore import (
-    QRunnable,
     pyqtSlot,
-    QObject,
     pyqtSignal,
-    Qt,
     QAbstractListModel,
+    QMutex,
+    QObject,
+    QRunnable,
+    Qt,
 )
 
 
@@ -64,9 +64,11 @@ class ThreadWorker(QRunnable):
         self.signals = WorkerSignals()
         self.function = function
         self.kwargs = kwargs
+        self.mutex = QMutex()
 
     @pyqtSlot()
     def run(self):
+        self.mutex.lock()
         self.exp_manager.set_callback(self.signals.progress.emit)
         if self.function == "save":
             self.exp_manager.save_data(**self.kwargs)
@@ -74,7 +76,8 @@ class ThreadWorker(QRunnable):
             self.exp_manager.analyze(**self.kwargs)
         elif self.function == "load":
             self.exp_manager.load_exp(**self.kwargs)
-            self.signals.finished.emit("Finished")
+        self.signals.finished.emit("Finished")
+        self.mutex.unlock()
 
 
 class WorkerSignals(QObject):
