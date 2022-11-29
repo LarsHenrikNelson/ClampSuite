@@ -54,8 +54,8 @@ class currentClampWidget(DragDropWidget):
         self.table_dict = {}
         self.inspection_widget = AcqInspectionWidget()
 
-        self.signals.dictionary.connect(self.setPrefences)
-        self.signals.path.connect(self.openFiles)
+        self.signals.dictionary.connect(self.setPreferences)
+        self.signals.path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.main_widget = QTabWidget()
@@ -312,9 +312,10 @@ class currentClampWidget(DragDropWidget):
 
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            self.exp_manager.set_callback(self.updateProgess)
-            self.exp_manager.analyze_exp(
-                "current_clamp",
+            self.worker = ThreadWorker(
+                self.exp_manager,
+                "analyze",
+                exp="current_clamp",
                 sample_rate=self.sample_rate_edit.toInt(),
                 baseline_start=self.b_start_edit.toInt(),
                 baseline_end=self.b_end_edit.toInt(),
@@ -326,12 +327,17 @@ class currentClampWidget(DragDropWidget):
                 threshold=self.min_spike_threshold_edit.toInt(),
                 min_spikes=self.min_spikes_edit.toInt(),
             )
-            self.acquisition_number.setMaximum(self.exp_manager.end_acq)
-            self.acquisition_number.setMinimum(self.exp_manager.start_acq)
-            self.acquisition_number.setValue(self.exp_manager.start_acq)
-            self.spinbox(self.exp_manager.start_acq)
-            self.analyze_acq_button.setEnabled(True)
-            self.pbar.setFormat("Analysis finished")
+            self.worker.signals.progress.connect(self.updateProgress)
+            self.worker.signals.finished.connect(self.setAcquisition)
+            self.threadpool.start(self.worker)
+
+    def setAcquisition(self):
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.spinbox(self.exp_manager.start_acq)
+        self.analyze_acq_button.setEnabled(True)
+        self.pbar.setFormat("Analysis finished")
 
     def reset(self):
         self.need_to_save = False

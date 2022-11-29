@@ -46,8 +46,8 @@ class oEPSCWidget(DragDropWidget):
         self.initUI()
 
     def initUI(self):
-        self.signals.dictionary.connect(self.setPrefrences)
-        self.signals.path.connect(self.openFiles)
+        self.signals.dictionary.connect(self.setPreferences)
+        self.signals.path.connect(self.loadExperiment)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
         self.parent_layout.addLayout(self.main_layout)
@@ -700,10 +700,11 @@ class oEPSCWidget(DragDropWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         self.pbar.setFormat("Analyzing...")
-        self.exp_manager.set_callback(self.updateProgress)
         if self.exp_manager.exp_dict.get("oepsc"):
-            self.exp_manager.analyze_exp(
-                "oepsc",
+            worker_1 = ThreadWorker(
+                self.exp_manager,
+                "analyze",
+                exp="oepsc",
                 sample_rate=self.o_sample_rate_edit.toInt(),
                 baseline_start=self.o_b_start_edit.toFloat(),
                 baseline_end=self.o_b_end_edit.toFloat(),
@@ -725,13 +726,13 @@ class oEPSCWidget(DragDropWidget):
                 curve_fit_decay=self.curve_fit_decay.isChecked(),
                 curve_fit_type=self.curve_fit_type_edit.currentText(),
             )
+            worker_1.signals.progress.connect(self.updateProgress)
+            self.threadpool.start(worker_1)
         if self.exp_manager.exp_dict.get("lfp"):
-            self.delete_lfp_button.setEnabled(True)
-            self.set_fv_button.setEnabled(True)
-            self.set_fp_button.setEnabled(True)
-            self.set_slope_start_btn.setEnabled(True)
-            self.exp_manager.analyze_exp(
-                "lfp",
+            worker_2 = ThreadWorker(
+                self.exp_manager,
+                "analyze",
+                exp="lfp",
                 sample_rate=self.lfp_sample_rate_edit.toInt(),
                 baseline_start=self.lfp_b_start_edit.toFloat(),
                 baseline_end=self.lfp_b_end_edit.toFloat(),
@@ -745,6 +746,8 @@ class oEPSCWidget(DragDropWidget):
                 polyorder=self.lfp_polyorder_edit.toFloat(),
                 pulse_start=self.lfp_pulse_start_edit.toFloat(),
             )
+            worker_2.signals.progress.connect(self.updateProgress)
+            self.threadpool.start(worker_2)
             if not lfp_x_set:
                 self.lfp_x_axis = XAxisCoord(
                     self.lfp_pulse_start_edit.toInt() - 10,
@@ -754,10 +757,6 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
         self.acqSpinbox(self.exp_manager.start_acq)
-        self.analyze_acq_button.setEnabled(True)
-        self.reset_button.setEnabled(True)
-        self.acquisition_number.setEnabled(True)
-        self.final_analysis_button.setEnabled(True)
         self.pbar.setFormat("Analysis finished")
 
     def setOEPSCLimits(self):

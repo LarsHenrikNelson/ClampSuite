@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
     QShortcut,
     QSizePolicy,
     QSlider,
+    QSpacerItem,
     QSpinBox,
     QTabWidget,
     QToolButton,
@@ -49,7 +50,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def init_UI(self):
 
         # Create tabs for part of the analysis program
-        self.signals.dictionary.connect(self.setPrefences)
+        self.signals.dictionary.connect(self.setPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -402,25 +403,26 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_scroll = QScrollArea()
         self.acq_scroll.setContentsMargins(20, 20, 20, 20)
         self.acq_widget = QWidget()
-        self.acq_widget.setFixedWidth(250)
+        # self.acq_scroll.setMinimumWidth(250)
         self.acq_scroll.setWidget(self.acq_widget)
         self.acq_scroll.setWidgetResizable(True)
         self.d3.addWidget(self.acq_scroll, 0, 0)
         # self.d3.layout.setColumnStretch(0, 0)
         self.acq_buttons = QGridLayout()
-        self.acq_2_buttons = QVBoxLayout()
-        self.acq_2_buttons.addLayout(self.acq_buttons, 0)
-        self.acq_widget.setLayout(self.acq_2_buttons)
+        self.acq_widget.setLayout(self.acq_buttons)
 
         # Tab2 acq_buttons layout
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number_label.setSizePolicy(
             QSizePolicy.Minimum, QSizePolicy.Minimum
         )
+        self.acquisition_number_label.setMaximumWidth(70)
+
         self.acq_buttons.addWidget(self.acquisition_number_label, 0, 0)
         self.acquisition_number = QSpinBox()
         self.acquisition_number.setKeyboardTracking(False)
         self.acquisition_number.setMinimumWidth(70)
+        self.acquisition_number.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.acquisition_number, 0, 1)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
 
@@ -428,12 +430,14 @@ class MiniAnalysisWidget(DragDropWidget):
         self.epoch_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.acq_buttons.addWidget(self.epoch_label, 1, 0)
         self.epoch_edit = QLineEdit()
+        self.epoch_edit.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.epoch_edit, 1, 1)
 
         self.baseline_mean_label = QLabel("Baseline mean")
         self.baseline_mean_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.acq_buttons.addWidget(self.baseline_mean_label, 2, 0)
         self.baseline_mean_edit = QLineEdit()
+        self.baseline_mean_edit.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.baseline_mean_edit, 2, 1)
 
         self.left_button = QToolButton()
@@ -442,6 +446,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.left_button.setArrowType(Qt.LeftArrow)
         self.left_button.setAutoRepeat(True)
         self.left_button.setAutoRepeatInterval(50)
+        self.left_button.setMinimumWidth(70)
+        self.left_button.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.left_button, 3, 0)
 
         self.right_button = QToolButton()
@@ -450,6 +456,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.right_button.setArrowType(Qt.RightArrow)
         self.right_button.setAutoRepeat(True)
         self.right_button.setAutoRepeatInterval(50)
+        self.right_button.setMinimumWidth(70)
+        self.right_button.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.right_button, 3, 1)
 
         self.slider_sensitivity = QSlider()
@@ -475,12 +483,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
         self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
 
-        self.acq_2_buttons.addStretch(0)
+        self.acq_buttons.setRowStretch(9, 10)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
-        self.acq_2_buttons.addWidget(self.calculate_parameters_2)
+        self.acq_buttons.addWidget(self.calculate_parameters_2)
         self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
-        self.calculate_parameters_2.setEnabled(True)
+        self.acq_buttons.addWidget(self.calculate_parameters_2, 10, 0, 1, 2)
 
         # Filling the plot layout.
         self.p1 = pg.PlotWidget(
@@ -508,17 +516,19 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setZValue(10)
 
         self.mini_view_widget = QWidget()
-        self.mini_view_widget.setFixedWidth(250)
         self.mini_view_scroll = QScrollArea()
-        self.mini_view_scroll.setContentsMargins(10, 10, 10, 10)
+        # self.mini_view_scroll.setMinimumWidth(200)
+        self.mini_view_scroll.setContentsMargins(20, 20, 20, 20)
         self.mini_view_scroll.setWidget(self.mini_view_widget)
         self.mini_view_scroll.setWidgetResizable(True)
         self.d2.addWidget(self.mini_view_scroll, 0, 0)
         self.d2.layout.setColumnStretch(0, 0)
         self.mini_layout = QFormLayout()
         self.mini_view_widget.setLayout(self.mini_layout)
+
         self.mini_number_label = QLabel("Event")
         self.mini_number = QSpinBox()
+        self.mini_number.setMaximumWidth(70)
         self.mini_number.setKeyboardTracking(False)
         self.mini_layout.addRow(self.mini_number_label, self.mini_number)
         self.mini_number.setEnabled(True)
@@ -528,28 +538,33 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_baseline_label = QLabel("Baseline (pA)")
         self.mini_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
         self.mini_baseline = QLineEdit()
+        self.mini_baseline.setMaximumWidth(70)
         self.mini_baseline.setReadOnly(True)
         self.mini_layout.addRow(self.mini_baseline_label, self.mini_baseline)
 
         self.mini_amplitude_label = QLabel("Amplitude (pA)")
         self.mini_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
         self.mini_amplitude = QLineEdit()
+        self.mini_amplitude.setMaximumWidth(70)
         self.mini_amplitude.setReadOnly(True)
         self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
 
         self.mini_tau_label = QLabel("Est tau (ms)")
         self.mini_tau = QLineEdit()
+        self.mini_tau.setMaximumWidth(70)
         self.mini_tau.setReadOnly(True)
         self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
         self.mini_layout.addRow(self.mini_tau_label, self.mini_tau)
 
         self.mini_rise_time_label = QLabel("Rise time (ms)")
         self.mini_rise_time = QLineEdit()
+        self.mini_rise_time.setMaximumWidth(70)
         self.mini_rise_time.setReadOnly(True)
         self.mini_layout.addRow(self.mini_rise_time_label, self.mini_rise_time)
 
         self.mini_rise_rate_label = QLabel("Rise rate (pA/ms)")
         self.mini_rise_rate = QLineEdit()
+        self.mini_rise_rate.setMaximumWidth(70)
         self.mini_rise_rate.setReadOnly(True)
         self.mini_layout.addRow(self.mini_rise_rate_label, self.mini_rise_rate)
 
@@ -677,7 +692,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
-            i.setMinimumWidth(100)
+            i.setMinimumWidth(80)
 
         combo_boxes = self.findChildren(QComboBox)
         for i in combo_boxes:
@@ -1577,7 +1592,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
         self.worker = ThreadWorker(
-            self.exp_manager, function="load", analysis="mini", file_path=directory
+            self.exp_manager, "load", exp="mini", save_filename=directory
         )
         self.worker.signals.progress.connect(self.updateProgess)
         self.worker.signals.finished.connect(self.setLoadData)
@@ -1669,7 +1684,7 @@ class MiniAnalysisWidget(DragDropWidget):
         pref_dict["sliders"] = slider_dict
         return pref_dict
 
-    def setPrefences(self, pref_dict):
+    def setPreferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1712,7 +1727,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def loadPreferences(self, file_name):
         self.exp_manager.load_ui_pref(file_name)
-        self.setPrefences(self.exp_manager.ui_prefs)
+        self.setPreferences(self.exp_manager.ui_prefs)
 
     def savePreferences(self, save_filename):
         pref_dict = self.createPrefDict()
@@ -1728,7 +1743,7 @@ class MiniAnalysisWidget(DragDropWidget):
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 
-    def setAppearncePrefences(self, pref_dict):
+    def setAppearncePreferences(self, pref_dict):
         self.p1.setBackground(pref_dict[0])
         self.p1.getAxis("left").setPen(pref_dict[1])
         self.p1.getAxis("left").setTextPen(pref_dict[1])
