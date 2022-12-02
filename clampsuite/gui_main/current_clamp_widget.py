@@ -149,6 +149,7 @@ class currentClampWidget(DragDropWidget):
         self.load_acq_label = QLabel("Acquisition(s)")
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
+        self.acq_view.model().signals.progress.connect(self.updateProgress)
         self.analysis_type = "current_clamp"
         self.acq_view.setAnalysisType(self.analysis_type)
         self.acq_layout.addWidget(self.acq_view)
@@ -265,8 +266,6 @@ class currentClampWidget(DragDropWidget):
 
         self.dlg = QMessageBox(self)
 
-        self.threadpool = QThreadPool()
-
         self.exp_manager = ExpManager()
         self.acq_view.setData(self.exp_manager)
         self.pbar.setFormat("Ready to analyze")
@@ -329,7 +328,7 @@ class currentClampWidget(DragDropWidget):
             )
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.setAcquisition)
-            self.threadpool.start(self.worker)
+            QThreadPool.globalInstance().start(self.worker)
 
     def setAcquisition(self):
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
@@ -375,15 +374,19 @@ class currentClampWidget(DragDropWidget):
             i.deleteLater()
 
     def spinbox(self, h):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.analyzed:
             self.fileDoesNotExist()
             return None
 
         self.need_to_save = True
         self.plot_widget.clear()
         self.spike_plot.clear()
-        if self.acq_dict.get(self.acquisition_number.value()):
-            acq_object = self.acq_dict[self.acquisition_number.value()]
+        if self.exp_manager.exp_dict["current_clamp"].get(
+            self.acquisition_number.value()
+        ):
+            acq_object = self.exp_manager.exp_dict["current_clamp"][
+                self.acquisition_number.value()
+            ]
             self.epoch_number.setText(acq_object.epoch)
             self.pulse_amp_num.setText(acq_object.pulse_amp)
             self.baseline_mean_edit.setText(
@@ -403,8 +406,8 @@ class currentClampWidget(DragDropWidget):
                     x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
                 )
                 self.plot_widget.plot(
-                    x=acq_object.plot_delta_v()[0],
-                    y=acq_object.plot_delta_v()[1],
+                    x=acq_object.plot_deltav_x(),
+                    y=acq_object.plot_deltav_y(),
                     pen="r",
                 )
                 if not np.isnan(acq_object.peaks[0]):
@@ -416,8 +419,8 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="y",
                     )
                     self.plot_widget.plot(
-                        x=acq_object.plot_rheo_x(),
-                        y=[acq_object.spike_threshold],
+                        x=acq_object.plot_sp_x(),
+                        y=acq_object.plot_sp_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
@@ -433,15 +436,15 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_rheo_x(),
-                        y=[acq_object.spike_threshold],
+                        x=acq_object.plot_sp_x(),
+                        y=acq_object.plot_sp_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
                     )
                     self.spike_plot.plot(
                         x=acq_object.plot_ahp_x(),
-                        y=[acq_object.ahp_y],
+                        y=acq_object.plot_ahp_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="m",
@@ -524,7 +527,7 @@ class currentClampWidget(DragDropWidget):
         self.acq_dict.update(self.recent_reject_acq)
 
     def runFinalAnalysis(self):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
 
@@ -648,7 +651,7 @@ class currentClampWidget(DragDropWidget):
         )
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
-        self.threadpool.start(self.worker)
+        QThreadPool.globalInstance().start(self.worker)
 
     def setLoadData(self):
         self.acq_view.setData(self.exp_manager)
@@ -711,7 +714,7 @@ class currentClampWidget(DragDropWidget):
             self.exp_manager, "save", save_filename=save_filename
         )
         self.worker.signals.progress.connect(self.updateProgress)
-        self.threadpool.start(self.worker)
+        QThreadPool.globalInstance().start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 

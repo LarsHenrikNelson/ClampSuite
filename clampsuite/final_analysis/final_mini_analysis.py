@@ -48,7 +48,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         acq_dict = {
             i[0]: i[1] for i in acq_dict.items() if len(i[1].postsynaptic_events) > 0
         }
-        df_list = [pd.DataFrame(i.final_acq_data()) for i in acq_dict.values()]
+        df_list = [pd.DataFrame(i.acq_data()) for i in acq_dict.values()]
 
         raw_df = pd.concat(df_list, axis=0, ignore_index=True)
 

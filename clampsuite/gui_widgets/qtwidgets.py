@@ -1,5 +1,3 @@
-from copy import deepcopy
-from glob import glob
 from pathlib import PurePath, Path
 
 from PyQt5.QtWidgets import (
@@ -16,6 +14,7 @@ from PyQt5.QtCore import (
     QObject,
     QRunnable,
     Qt,
+    QThreadPool,
 )
 
 
@@ -73,9 +72,11 @@ class ThreadWorker(QRunnable):
         if self.function == "save":
             self.exp_manager.save_data(**self.kwargs)
         elif self.function == "analyze":
-            self.exp_manager.analyze(**self.kwargs)
+            self.exp_manager.analyze_exp(**self.kwargs)
         elif self.function == "load":
             self.exp_manager.load_exp(**self.kwargs)
+        elif self.function == "create_exp":
+            self.exp_manager.create_exp(**self.kwargs)
         self.signals.finished.emit("Finished")
         self.mutex.unlock()
 
@@ -151,7 +152,7 @@ class ListView(QListView):
             self.clearSelection()
 
     def addAcq(self, urls):
-        self.model().addAcq(urls)
+        self.model().addData(urls)
         self.model().layoutChanged.emit()
 
     def setAnalysisType(self, analysis):
@@ -173,6 +174,7 @@ class ListModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
         self.acq_names = []
+        self.signals = WorkerSignals()
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
@@ -211,9 +213,19 @@ class ListModel(QAbstractListModel):
 
     def addData(self, urls):
         urls = [str(url.toLocalFile()) for url in urls]
-        self.exp_manager.create_exp(self.analysis_type, urls)
+        worker = ThreadWorker(
+            self.exp_manager, "create_exp", analysis=self.analysis_type, file=urls
+        )
+        worker.signals.progress.connect(self.updateProgress)
+        worker.signals.finished.connect(self.acqsAdded)
+        QThreadPool.globalInstance().start(worker)
+
+    def acqsAdded(self, value):
         self.sortNames()
         self.layoutChanged.emit()
+
+    def updateProgress(self, value):
+        self.signals.progress.emit(value)
 
     def sortNames(self):
         acq_list = list(self.exp_manager.exp_dict[self.analysis_type].keys())

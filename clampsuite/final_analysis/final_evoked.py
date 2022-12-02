@@ -19,11 +19,11 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
     def raw_data(self):
         if self.o_acq_dict is not None:
             o_raw_df = pd.DataFrame(
-                [self.o_acq_dict[i].create_dict() for i in self.o_acq_dict.keys()]
+                [self.o_acq_dict[i].acq_data() for i in self.o_acq_dict.keys()]
             )
         if self.lfp_acq_dict is not None:
             lfp_raw_df = pd.DataFrame(
-                [self.lfp_acq_dict[i].create_dict() for i in self.lfp_acq_dict.keys()]
+                [self.lfp_acq_dict[i].acq_data() for i in self.lfp_acq_dict.keys()]
             )
         if self.lfp_acq_dict is not None and self.o_acq_dict is not None:
             raw_df = pd.merge(

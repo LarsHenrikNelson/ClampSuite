@@ -111,6 +111,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_acq_label = QLabel("Acquisition(s)")
         self.load_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
+        self.load_widget.model().signals.progress.connect(self.updateProgress)
         self.load_widget.setAnalysisType(self.analysis_type)
         self.load_layout.addWidget(self.load_widget)
 
@@ -615,8 +616,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.data_dock.addWidget(self.stem_plot, 0, 1)
         self.data_dock.addWidget(self.amp_dist, 0, 2)
 
-        self.threadpool = QThreadPool()
-
         self.exp_manager = ExpManager()
         self.load_widget.setData(self.exp_manager)
         self.acq_object = None
@@ -702,10 +701,10 @@ class MiniAnalysisWidget(DragDropWidget):
     def inspectAcqs(self):
         if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
-            return None
-        self.inspection_widget.clearData()
-        self.inspection_widget.setData(self.analysis_type, self.exp_manager)
-        self.inspection_widget.show()
+        else:
+            self.inspection_widget.clearData()
+            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
+            self.inspection_widget.show()
 
     def delSelection(self):
         # Deletes the selected acquisitions from the list
@@ -792,9 +791,10 @@ class MiniAnalysisWidget(DragDropWidget):
             window = self.window_edit.currentText()
         # I need to just put all the settings into a dictionary,
         # so the functions are not called for every acquisition
-        self.exp_manager.set_callback(self.updateProgess)
-        self.exp_manager.analyze_exp(
-            self.analysis_type,
+        self.worker = ThreadWorker(
+            self.exp_manager,
+            "analyze",
+            exp=self.analysis_type,
             sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
@@ -823,7 +823,10 @@ class MiniAnalysisWidget(DragDropWidget):
             curve_fit_type=self.curve_fit_edit.currentText(),
             baseline_corr=self.baseline_corr_choice.isChecked(),
         )
-        # This part initializes acquisition_number spinbox, sets the min and max.
+        self.worker.signals.progress.connect(self.updateProgress)
+        self.worker.signals.finished.connect(self.setAcquisition)
+
+    def setAcquisition(self):
         acq_number = list(self.exp_manager.exp_dict["mini"].keys())
         self.acquisition_number.setMaximum(int(acq_number[-1]))
         self.acquisition_number.setMinimum(int(acq_number[0]))
@@ -846,7 +849,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def acqSpinbox(self, h):
         """This function plots each acquisition and each of its minis."""
 
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.analyzed:
             self.fileDoesNotExist()
             return None
 
@@ -1594,9 +1597,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.worker = ThreadWorker(
             self.exp_manager, "load", exp="mini", save_filename=directory
         )
-        self.worker.signals.progress.connect(self.updateProgess)
+        self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
-        self.threadpool.start(self.worker)
+        QThreadPool.globalInstance().start(self.worker)
 
     def setLoadData(self):
         if self.exp_manager.final_analysis is not None:
@@ -1638,8 +1641,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.worker = ThreadWorker(
             self.exp_manager, "save", save_filename=save_filename
         )
-        self.worker.signals.progress.connect(self.updateProgess)
-        self.threadpool.start(self.worker)
+        self.worker.signals.progress.connect(self.updateProgress)
+        QThreadPool.globalInstance().start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
@@ -1737,7 +1740,7 @@ class MiniAnalysisWidget(DragDropWidget):
         else:
             pass
 
-    def updateProgess(self, value):
+    def updateProgress(self, value):
         if isinstance(value, (int, float)):
             self.pbar.setValue(value)
         elif isinstance(value, str):

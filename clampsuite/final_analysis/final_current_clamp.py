@@ -42,7 +42,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                     self.ramp_ap = True
 
     def create_raw_data(self, acq_dict):
-        raw_df = pd.DataFrame([acq_dict[i].create_dict() for i in acq_dict.keys()])
+        raw_df = pd.DataFrame([acq_dict[i].acq_data() for i in acq_dict.keys()])
         raw_df["Epoch"] = pd.to_numeric(raw_df["Epoch"])
         raw_df["Pulse_pattern"] = pd.to_numeric(raw_df["Pulse_pattern"])
         raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])

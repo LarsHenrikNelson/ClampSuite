@@ -97,7 +97,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.baseline_mean = np.mean(
                 self.array[self.baseline_start : self.baseline_end]
             )
-        return self.delta_v
 
     def find_spike_parameters(self):
         """This function returns the spike parameters of a pulse or ramp that
@@ -435,7 +434,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.width_comp[3][0] / self.s_r_c,
         ]
 
-    def spike_threshold_time(self) -> Union[int, float]:
+    def spike_threshold_x(self) -> Union[int, float]:
         if not np.isnan(self.rheo_x):
             return self.rheo_x / self.s_r_c
         else:
@@ -456,10 +455,16 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             return []
 
-    def plot_rheo_x(self) -> list:
+    def plot_sp_x(self) -> list:
         return [self.rheo_x / self.s_r_c]
 
-    def plot_delta_v(self) -> tuple[list, list]:
+    def plot_sp_y(self) -> list:
+        return [self.spike_threshold]
+
+    def plot_ahp_y(self) -> list:
+        return [self.ahp_y]
+
+    def plot_deltav_x(self) -> list:
         """
         This function creates the elements to plot the delta-v as a vertical
         line in the middle of the pulse. The elements are corrected so that
@@ -470,13 +475,18 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 int(((self.pulse_end - self._pulse_start) / 2) + self._pulse_start)
                 / self.s_r_c
             )
-            voltage_response = self.delta_v + self.baseline_mean
             plot_x = [x, x]
+        elif self.ramp == "1":
+            plot_x = [np.nan]
+        return plot_x
+
+    def plot_deltav_y(self):
+        if self.ramp == "0":
+            voltage_response = self.delta_v + self.baseline_mean
             plot_y = [self.baseline_mean, voltage_response]
         elif self.ramp == "1":
-            plot_x = np.nan
-            plot_y = np.nan
-        return plot_x, plot_y
+            plot_y = [np.nan]
+        return plot_y
 
     def plot_ahp_x(self) -> list:
         return [self.ahp_x]
@@ -490,7 +500,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def plot_acq_x(self):
         return np.arange(0, len(self.array)) / self.s_r_c
 
-    def create_dict(self) -> dict:
+    def acq_data(self) -> dict:
         """This create a dictionary of all the values created by the class. This
         makes it very easy to concentatenate the data from multiple
         acquisitions together.
@@ -508,7 +518,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Pulse_start": self._pulse_start / self.s_r_c,
             "Delta_v": self.delta_v,
             "Spike_threshold (mV)": self.spike_threshold,
-            "Spike_threshold_time (ms)": self.spike_threshold_time(),
+            "Spike_threshold_time (ms)": self.spike_threshold_x(),
             "Spike_peak_volt": self.peak_volt,
             "Spike_time (ms)": self.first_peak_time(),
             "Hertz": self.hertz_exact,

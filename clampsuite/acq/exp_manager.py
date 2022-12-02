@@ -20,6 +20,7 @@ class ExpManager:
         self.acqs_deleted = 0
         self.start_acq = None
         self.end_acq = None
+        self.analyzed = False
 
     def create_exp(
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
@@ -35,6 +36,7 @@ class ExpManager:
             for count, i in enumerate(acq_dict.values()):
                 i.analyze(**kwargs)
                 self.callback_func(int((100 * (count + 1) / total)))
+            self.analyzed = True
             self.callback_func(f"Analyed {exp} acquisitions")
 
     def set_ui_pref(self, pref_dict: dict):
@@ -133,6 +135,7 @@ class ExpManager:
             if path.suffix == ".yaml":
                 self.ui_pref = self.load_ui_pref(path)
                 can_load_data = True
+                self.analyzed = True
                 self.callback_func("Loaded settings")
             elif path.suffix == ".xlsx":
                 self.load_final_analysis(analysis, path)
@@ -151,11 +154,11 @@ class ExpManager:
     ):
         if isinstance(file_path, (str, Path, PurePath)):
             file_path = list(file_path)
-        self.num_of_acqs += len(file_path)
+        num_of_acqs = len(file_path)
         for count, i in enumerate(file_path):
             acq = load_acq(analysis, i)
             self._set_acq(acq)
-            self.callback_func(int((100 * (count + 1) / self.num_of_acqs)))
+            self.callback_func(int((100 * (count + 1) / num_of_acqs)))
         self.callback_func("Loaded acquisitions")
 
     def _set_acq(self, acq):

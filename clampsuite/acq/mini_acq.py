@@ -415,7 +415,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return False
 
-    def final_acq_data(self) -> dict:
+    def acq_data(self) -> dict:
         """
         Creates the final data using list comprehension by looping over each
         of the minis in contained in the postsynaptic event list.

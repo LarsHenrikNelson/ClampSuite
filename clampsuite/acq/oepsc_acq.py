@@ -224,7 +224,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def plot_acq_y(self) -> np.ndarray:
         return self.filtered_array
 
-    def create_dict(self) -> dict:
+    def acq_data(self) -> dict:
         oepsc_dict = {
             "Epoch": self.epoch,
             "Acq number": self.acq_number,

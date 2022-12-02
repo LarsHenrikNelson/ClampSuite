@@ -284,7 +284,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     def plot_acq_y(self) -> np.ndarray:
         return self.filtered_array
 
-    def create_dict(self) -> dict:
+    def acq_data(self) -> dict:
         """
         This function returns a dictionary of all the values you will need to
         analyze the lfp. The dictionary is not an attribute of the class to
