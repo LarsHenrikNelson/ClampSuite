@@ -714,6 +714,7 @@ class currentClampWidget(DragDropWidget):
             self.exp_manager, "save", save_filename=save_filename
         )
         self.worker.signals.progress.connect(self.updateProgress)
+        self.worker.signals.progress.connect(self.updateProgress)
         QThreadPool.globalInstance().start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False

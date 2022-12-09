@@ -236,7 +236,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             return np.array([])
 
     def timestamp_array(self) -> np.ndarray:
-        return self.df_dict["Raw data"]["Real time"].to_numpy()
+        return self.df_dict["Raw data"]["Real time"].to_numpy().flatten()
 
     def get_raw_data(self, column) -> np.ndarray:
-        return self.df_dict["Raw data"][column].to_numpy()
+        return self.df_dict["Raw data"][column].to_numpy().flatten()

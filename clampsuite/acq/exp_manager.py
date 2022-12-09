@@ -100,7 +100,7 @@ class ExpManager:
         self.callback_func("Saved final analysis")
 
     def load_ui_pref(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
-        file_name = load_file(file_path, extension=".yaml")
+        file_name = load_file(file_path, extension="*.yaml")
         with open(file_name, "r") as file:
             ui_prefs = yaml.safe_load(file)
             return ui_prefs
@@ -108,13 +108,13 @@ class ExpManager:
     def load_analysis_pref(
         self, file_path: Union[None, str, Path, PurePath] = None
     ) -> dict:
-        file_name = load_file(file_path, extension=".yaml")
+        file_name = load_file(file_path, extension="*.yaml")
         with open(file_name, "r") as file:
             analysis_prefs = yaml.safe_load(file)
         return analysis_prefs
 
     def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
-        file_name = load_file(file_path, extension=".xlsx")
+        file_name = load_file(file_path, extension="*.xlsx")
         self.final_analysis = FinalAnalysis(analysis)
         self.final_analysis.load_data(file_name)
 

@@ -465,6 +465,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             final_dict["Acquisition"] = [np.nan]
             final_dict["Amplitude (pA)"] = [np.nan]
+            final_dict["Log amplitude (pA)"] = [np.nan]
             final_dict["Est tau (ms)"] = [np.nan]
             final_dict["Event time (ms)"] = [np.nan]
             final_dict["Acq time stamp"] = [np.nan]
@@ -474,6 +475,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 final_dict["Curve fit tau (ms)"] = [np.nan]
 
             final_dict["IEI (ms)"] = [np.nan]
+            final_dict["Log IEI (ms)"] = [np.nan]
             self.freq = np.nan
         return final_dict
 

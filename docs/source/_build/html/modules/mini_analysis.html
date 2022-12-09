@@ -307,26 +307,26 @@ to keep the filtering settings the same for each experiment.</p>
 <p>There are several criteria that need to be specified find and determine whether a mini event
 is good or not.</p>
 <ul class="simple">
-<li><p>Deconvolution threshold: This threshold is adapative and should adjust fairly well to /
+<li><p><strong>Deconvolution threshold</strong>: This threshold is adapative and should adjust fairly well to /
 acquisitions with a lot of events or large amplitude events. The threshold is used to /
 initially identify events for further analysis.</p></li>
-<li><p>Amplitude threshold: This is the minimum amplitude of mini event you want to analyze.</p></li>
-<li><p>Min mini spacing (ms): The minimum time between events</p></li>
-<li><p>Min rise time (ms): The minimum rise time of an event. Setting this lower than 0.5 may /
+<li><p><strong>Amplitude threshold</strong>: This is the minimum amplitude of mini event you want to analyze.</p></li>
+<li><p><strong>Min mini spacing (ms)</strong>: The minimum time between events</p></li>
+<li><p><strong>Min rise time (ms)</strong>: The minimum rise time of an event. Setting this lower than 0.5 may /
 result in more noise being considered an event.</p></li>
-<li><p>Max rise time (ms): The maximum rise time of an event. This screen out events that are /
+<li><p><strong>Max rise time (ms)</strong>: The maximum rise time of an event. This screen out events that are /
 typically disrupted by noise so may be a low quality event.</p></li>
-<li><p>Min decay time (ms): The minimum decay time of an event. Setting this higher than 0.5 ms /
+<li><p><strong>Min decay time (ms)</strong>: The minimum decay time of an event. Setting this higher than 0.5 ms /
 can help reduce the amount of false positives if you cell has a slower tau.</p></li>
-<li><p>Decay slower than rise: Selecting this means your events should have a decay that is slower /
+<li><p><strong>Decay slower than rise</strong>: Selecting this means your events should have a decay that is slower /
 the rise time. Similar to max rise time (ms) this can reduce the number of poor quality events. /
 We have found that for cells with a fast tau this needs to be turned off.</p></li>
-<li><p>Curve fit tau: Select this is you want to curve fit tau. Currently the curve fitting is /
+<li><p><strong>Curve fit tau</strong>: Select this is you want to curve fit tau. Currently the curve fitting is /
 fully impemented. Curve fitting individual minis is not very useful. The program automatically /
 calculates the estimated tau which should give very similar results to the curve fit tau.</p></li>
-<li><p>Deconvolution type: Wiener and FFT deconvolution are very similar. Wiener deconvolution is /
+<li><p><strong>Deconvolution type</strong>: Wiener and FFT deconvolution are very similar. Wiener deconvolution is /
 supposed to have a better signal to noise ratio. FFT is the original deconvolution method.</p></li>
-<li><p>Baseline correction: This is experimental so I don’t suggest using it. This is supposed to /
+<li><p><strong>Baseline correction</strong>: This is very experimental so I don’t suggest using it. This is supposed to /
 correct for a baseline that is wavy or unstable but it does not work very well yet.</p></li>
 </ul>
 </section>
@@ -337,12 +337,12 @@ is not very important. Mini analysis using a deconvolution based method rather t
 template matching which is kind of the inverse of deconvolution. The stock template settings
 should work pretty well for almost any type of mini analysis.</p>
 <ul class="simple">
-<li><p>Rise tau (ms): The rise tau of the template. Rise tau is similar to decay tau.</p></li>
-<li><p>Decay tau (ms): The decay tau of the template.</p></li>
-<li><p>Risepower: The is similar to the rise tau but has a much larger effect on the rise time /
+<li><p><strong>Rise tau (ms)</strong>: The rise tau of the template. Rise tau is similar to decay tau.</p></li>
+<li><p><strong>Decay tau (ms)</strong>: The decay tau of the template.</p></li>
+<li><p><strong>Risepower</strong>: The is similar to the rise tau but has a much larger effect on the rise time /
 than rise tau does.</p></li>
-<li><p>Template length: the length of the template excluding the baseline.</p></li>
-<li><p>Spacer (ms): The spacer is probably the most important part of the template design. /
+<li><p><strong>Template length</strong>: the length of the template excluding the baseline.</p></li>
+<li><p><strong>Spacer (ms)</strong>: The spacer is probably the most important part of the template design. /
 The spacer setting changes where the deconvolution “finds” the mini. To current setting /
 should work for analyzing most minis.</p></li>
 </ul>
@@ -350,11 +350,11 @@ should work for analyzing most minis.</p></li>
 <section id="buttons">
 <h3>Buttons<a class="headerlink" href="#buttons" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
-<li><p>Analyze acquisition(s): Starts the analysis. Once the data is finished analyzing the /
+<li><p><strong>Analyze acquisition(s)</strong>: Starts the analysis. Once the data is finished analyzing the /
 the Analysis tab will be automatically opened.</p></li>
-<li><p>Final analysis: Runs the final analysis. There is also a final analysis button on the /
+<li><p><strong>Final analysis</strong>: Runs the final analysis. There is also a final analysis button on the /
 Analysis tab. They both compile and show the final data in the Final Data tab.</p></li>
-<li><p>Reset analysis: This resets the analysis and removes the acquisitions but keeps the /
+<li><p><strong>Reset analysis</strong>: This resets the analysis and removes the acquisitions but keeps the /
 settings.</p></li>
 </ul>
 </section>
@@ -384,20 +384,20 @@ you want to create a new mini.</p>
 </dd>
 </dl>
 <ul class="simple">
-<li><p>Acquisition: This spinbox is used to select the acquisition you want to view. Values /
+<li><p><strong>Acquisition</strong>: This spinbox is used to select the acquisition you want to view. Values /
 can be changed using the arrow buttons or by inputing a number and hitting enter.</p></li>
-<li><p>Epoch: Shows the epoch of the aquisition. Epoch is using by ScanImage to define when /
+<li><p><strong>Epoch</strong>: Shows the epoch of the aquisition. Epoch is using by ScanImage to define when /
 what cell your are recording. For other files types this will likely just be zero.</p></li>
-<li><p>Big arrow buttons: This can be used to scroll the plot back and forth as an alternative /
+<li><p><strong>Big arrow buttons</strong>: This can be used to scroll the plot back and forth as an alternative /
 to drag the blue bar in the upper right plot.</p></li>
-<li><p>Slider: This sets how fast the plot scrolls with the buttons.</p></li>
-<li><p>Create new mini: This creates a new mini event at the point selected on the plot. /
+<li><p><strong>Slider</strong>: This sets how fast the plot scrolls with the buttons.</p></li>
+<li><p><strong>Create new mini</strong>: This creates a new mini event at the point selected on the plot. /
 Unlike the automated analysis this will create a new event no matter what the properties /
 of the mini are.</p></li>
-<li><p>Delete acquisition: This will delete the current acquisition.</p></li>
-<li><p>Reset recent deleted acq: This will reset the most recently deleted acquisition</p></li>
-<li><p>Reset deleted acqs: This will reset all the deleted acquisitions.</p></li>
-<li><p>Final analysis: This compiles the data and opens the Final data tab.</p></li>
+<li><p><strong>Delete acquisition</strong>: This will delete the current acquisition.</p></li>
+<li><p><strong>Reset recent deleted acq</strong>: This will reset the most recently deleted acquisition</p></li>
+<li><p><strong>Reset deleted acqs</strong>: This will reset all the deleted acquisitions.</p></li>
+<li><p><strong>Final analysis</strong>: This compiles the data and opens the Final data tab.</p></li>
 </ul>
 </section>
 <section id="mini-window-top-right">
@@ -411,16 +411,22 @@ top left and bottom plot so you can see where each mini is in the acquisition. T
 the baseline or peak you can click on a point to highlight it then click on /
 one of the respective buttons.</p>
 <ul class="simple">
-<li><p>Delete event: This button deletes the currently selected event. The keyboard shorcut is /
+<li><p><strong>Delete event</strong>: This button deletes the currently selected event. The keyboard shorcut is /
 Crtl/Cmd + D. The shortcut is not currently modifiable but will be in the near future.</p></li>
-<li><p>Set point as peak: This sets the currently selected point in the mini plot as the peak. /
+<li><p><strong>Set point as peak</strong>: This sets the currently selected point in the mini plot as the peak. /
 The shortcut for this button is Ctrl/Cmd + P. The shortcut is not currently modifiable /
 but will be in the near future.</p></li>
-<li><p>Set point as baseline: This sets the currently selected point in the mini plot as the /
+<li><p><strong>Set point as baseline</strong>: This sets the currently selected point in the mini plot as the /
 baseline. The shortcut for this button is Ctrl/Cmd + B. The shortcut is not currently /
 modifiable but will be in the near future.</p></li>
 </ul>
 </section>
+</section>
+<section id="final-data">
+<h2>Final Data<a class="headerlink" href="#final-data" title="Permalink to this heading">#</a></h2>
+<p>The Final Data tab has four different windows. The top left window holds the data, the top
+right window shows the averaged mini with a curve fit for the tau, the bottom window consists
+of a drop down menu to display the values of the raw data over time and in a distribution.</p>
 </section>
 </section>
 
@@ -510,6 +516,11 @@ modifiable but will be in the near future.</p></li>
     </a>
    </li>
   </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#final-data">
+   Final Data
+  </a>
  </li>
 </ul>
 

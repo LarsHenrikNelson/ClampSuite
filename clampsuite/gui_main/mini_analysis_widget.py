@@ -791,7 +791,7 @@ class MiniAnalysisWidget(DragDropWidget):
             window = self.window_edit.currentText()
         # I need to just put all the settings into a dictionary,
         # so the functions are not called for every acquisition
-        self.worker = ThreadWorker(
+        worker = ThreadWorker(
             self.exp_manager,
             "analyze",
             exp=self.analysis_type,
@@ -823,8 +823,9 @@ class MiniAnalysisWidget(DragDropWidget):
             curve_fit_type=self.curve_fit_edit.currentText(),
             baseline_corr=self.baseline_corr_choice.isChecked(),
         )
-        self.worker.signals.progress.connect(self.updateProgress)
-        self.worker.signals.finished.connect(self.setAcquisition)
+        worker.signals.progress.connect(self.updateProgress)
+        worker.signals.finished.connect(self.setAcquisition)
+        QThreadPool.globalInstance().start(worker)
 
     def setAcquisition(self):
         acq_number = list(self.exp_manager.exp_dict["mini"].keys())
@@ -1555,8 +1556,11 @@ class MiniAnalysisWidget(DragDropWidget):
     def plotAmpDist(self, column: str):
         self.amp_dist.clear()
         fa = self.exp_manager.final_analysis
-        log_y, x = create_kde(fa.df_dict["Raw data"], column)
-        y = fa.get_raw_data(column)
+        log_y, x = create_kde(
+            fa.df_dict["Raw data"],
+            self.plot_selector.currentText(),
+        )
+        y = fa.get_raw_data(self.plot_selector.currentText())
         dist_item = pg.PlotDataItem(
             x=x,
             y=log_y,
@@ -1565,7 +1569,7 @@ class MiniAnalysisWidget(DragDropWidget):
             fillBrush=pg.mkBrush("#bf00bf50"),
         )
         self.amp_dist.addItem(dist_item)
-        self.amp_dist.setXRange(np.min(y), np.max(y))
+        self.amp_dist.setXRange(np.nanmin(y), np.nanmax(y))
         y_values = np.full(y.shape, max(log_y) * 0.05)
         y_stems = np.insert(y_values, np.arange(y_values.size), 0)
         x_stems = np.repeat(y, 2)
