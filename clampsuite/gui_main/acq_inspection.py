@@ -72,9 +72,7 @@ class AcqInspectionWidget(QWidget):
         self.acq_dict = {}
 
     def editAttr(self, line_edit, value):
-        print(getattr(self.acq_dict[self.acq_number.value()], line_edit))
         setattr(self.acq_dict[self.acq_number.value()], line_edit, value)
-        print(getattr(self.acq_dict[self.acq_number.value()], line_edit))
         return True
 
     def spinbox(self, number):

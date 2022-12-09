@@ -77,73 +77,7 @@ class currentClampWidget(DragDropWidget):
         self.plot_layout = QHBoxLayout()
         self.analysis_buttons = QFormLayout()
         self.h_layout.addLayout(self.plot_layout)
-        self.plot_layout.addLayout(self.analysis_buttons, 1)
-
-        # Analysis layout setup
-        self.acquisition_number_label = QLabel("Acq number")
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
-        self.acquisition_number.valueChanged.connect(self.spinbox)
-        self.analysis_buttons.addRow(
-            self.acquisition_number_label, self.acquisition_number
-        )
-
-        self.epoch_number = QLineEdit()
-        self.analysis_buttons.addRow("Epoch", self.epoch_number)
-
-        self.pulse_amp_num = QLineEdit()
-        self.analysis_buttons.addRow("Pulse amp", self.pulse_amp_num)
-
-        self.baseline_mean_label = QLabel("Baseline mean (mV)")
-        self.baseline_mean_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
-
-        self.delta_v_label = QLabel("Delta V (mV)")
-        self.delta_v_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.delta_v_label, self.delta_v_edit)
-
-        self.spike_threshold_label = QLabel("Spike threshold (mV)")
-        self.spike_threshold_edit = QLineEdit()
-        self.analysis_buttons.addRow(
-            self.spike_threshold_label, self.spike_threshold_edit
-        )
-
-        self.spike_rate_label = QLabel("Spike rate")
-        self.spike_rate_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.spike_rate_label, self.spike_rate_edit)
-
-        self.ahp_label = QLabel("AHP (mv)")
-        self.ahp_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.ahp_label, self.ahp_edit)
-
-        self.baseline_stability_label = QLabel("Baseline stability")
-        self.baseline_stability_edit = QLineEdit()
-        self.analysis_buttons.addRow(
-            self.baseline_stability_label, self.baseline_stability_edit
-        )
-
-        self.delete_event_button = QPushButton("Delete acquisition")
-        self.delete_event_button.clicked.connect(self.deleteAcq)
-        self.analysis_buttons.addRow(self.delete_event_button)
-
-        self.reset_recent_reject_button = QPushButton(
-            "Reset recent rejected acquisition"
-        )
-        self.reset_recent_reject_button.clicked.connect(self.resetRecentRejectAcq)
-        self.analysis_buttons.addRow(self.reset_recent_reject_button)
-
-        self.reset_rejected_acqs_button = QPushButton("Reset rejected acquistions")
-        self.reset_rejected_acqs_button.clicked.connect(self.resetRejectedAcqs)
-        self.analysis_buttons.addRow(self.reset_rejected_acqs_button)
-
-        self.plot_widget = pg.PlotWidget()
-        self.plot_widget.setMinimumWidth(300)
-        self.plot_layout.addWidget(self.plot_widget)
-
-        self.spike_plot = pg.PlotWidget()
-        self.spike_plot.setMinimumWidth(300)
-        self.plot_layout.addWidget(self.spike_plot)
+        self.plot_layout.addLayout(self.analysis_buttons, 0)
 
         # Input widgets and labels
         self.load_acq_label = QLabel("Acquisition(s)")
@@ -183,7 +117,7 @@ class currentClampWidget(DragDropWidget):
         self.sample_rate_edit.setText("10000")
         self.input_layout.addRow(self.sample_rate_label, self.sample_rate_edit)
 
-        self.pulse_start_label = QLabel("Pulse start(ms)")
+        self.pulse_start_label = QLabel("Pulse start (ms)")
         self.pulse_start_edit = LineEdit()
         self.pulse_start_edit.setObjectName("pulse_start_edit")
         self.pulse_start_edit.setEnabled(True)
@@ -260,6 +194,86 @@ class currentClampWidget(DragDropWidget):
         self.main_widget.addTab(self.tabs, "Final data")
         self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
 
+        # Analysis layout setup
+        self.acquisition_number_label = QLabel("Acq number")
+        self.acquisition_number = QSpinBox()
+        self.acquisition_number.setKeyboardTracking(False)
+        self.acquisition_number.setMinimumWidth(70)
+        self.acquisition_number.valueChanged.connect(self.spinbox)
+        self.analysis_buttons.addRow(
+            self.acquisition_number_label, self.acquisition_number
+        )
+
+        self.epoch_number = QLineEdit()
+        self.analysis_buttons.addRow("Epoch", self.epoch_number)
+        self.epoch_number.editingFinished.connect(
+            lambda: self.editAttr("epoch", self.epoch_number.text())
+        )
+
+        self.pulse_amp_num = QLineEdit()
+        self.analysis_buttons.addRow("Pulse amp", self.pulse_amp_num)
+        self.pulse_amp_num.editingFinished.connect(
+            lambda: self.editAttr("pulse_amp", self.pulse_amp_num.text())
+        )
+
+        self.baseline_mean_label = QLabel("Baseline mean (mV)")
+        self.baseline_mean_edit = QLineEdit()
+        self.analysis_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
+
+        self.delta_v_label = QLabel("Delta V (mV)")
+        self.delta_v_edit = QLineEdit()
+        self.analysis_buttons.addRow(self.delta_v_label, self.delta_v_edit)
+
+        self.spike_threshold_label = QLabel("Spike threshold (mV)")
+        self.spike_threshold_edit = QLineEdit()
+        self.analysis_buttons.addRow(
+            self.spike_threshold_label, self.spike_threshold_edit
+        )
+
+        self.half_width_edit = QLineEdit()
+        self.analysis_buttons.addRow("Half-width (ms)", self.half_width_edit)
+
+        self.spike_rate_label = QLabel("Spike rate")
+        self.spike_rate_edit = QLineEdit()
+        self.analysis_buttons.addRow(self.spike_rate_label, self.spike_rate_edit)
+
+        self.ahp_label = QLabel("AHP (mv)")
+        self.ahp_edit = QLineEdit()
+        self.analysis_buttons.addRow(self.ahp_label, self.ahp_edit)
+
+        self.baseline_stability_label = QLabel("Baseline stability")
+        self.baseline_stability_edit = QLineEdit()
+        self.analysis_buttons.addRow(
+            self.baseline_stability_label, self.baseline_stability_edit
+        )
+
+        self.delete_event_button = QPushButton("Delete acquisition")
+        self.delete_event_button.clicked.connect(self.deleteAcq)
+        self.analysis_buttons.addRow(self.delete_event_button)
+
+        self.reset_recent_reject_button = QPushButton(
+            "Reset recent rejected acquisition"
+        )
+        self.reset_recent_reject_button.clicked.connect(self.resetRecentRejectAcq)
+        self.analysis_buttons.addRow(self.reset_recent_reject_button)
+
+        self.reset_rejected_acqs_button = QPushButton("Reset rejected acquistions")
+        self.reset_rejected_acqs_button.clicked.connect(self.resetRejectedAcqs)
+        self.analysis_buttons.addRow(self.reset_rejected_acqs_button)
+
+        self.calculate_params_2 = QPushButton("Final analysis")
+        self.calculate_params_2.setObjectName("calculate_params_2")
+        self.input_layout.addRow(self.calculate_params_2)
+        self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
+
+        self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setMinimumWidth(300)
+        self.plot_layout.addWidget(self.plot_widget)
+
+        self.spike_plot = pg.PlotWidget()
+        self.spike_plot.setMinimumWidth(300)
+        self.plot_layout.addWidget(self.spike_plot)
+
         self.pbar = QProgressBar(self)
         self.pbar.setValue(0)
         self.main_layout.addWidget(self.pbar, 0)
@@ -270,6 +284,13 @@ class currentClampWidget(DragDropWidget):
         self.acq_view.setData(self.exp_manager)
         self.pbar.setFormat("Ready to analyze")
         self.setWidth()
+
+    def editAttr(self, line_edit, value):
+        acq = self.exp_manager.exp_dict["current_clamp"][
+            self.acquisition_number.value()
+        ]
+        setattr(acq, line_edit, value)
+        return True
 
     def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
@@ -396,7 +417,10 @@ class currentClampWidget(DragDropWidget):
             self.spike_threshold_edit.setText(
                 str(round_sig(acq_object.spike_threshold, sig=4))
             )
-            self.spike_rate_edit.setText(str(round_sig(acq_object.hertz_exact, sig=4)))
+            self.spike_rate_edit.setText(
+                str(round_sig(acq_object.hertz_exact(), sig=4))
+            )
+            self.half_width_edit.setText(str(round_sig(acq_object.spike_width())))
             self.ahp_edit.setText(str(round_sig(acq_object.ahp_y, sig=4)))
             self.baseline_stability_edit.setText(
                 str(round_sig(acq_object.baseline_stability, sig=4))
@@ -417,13 +441,6 @@ class currentClampWidget(DragDropWidget):
                         pen=None,
                         symbol="o",
                         symbolBrush="y",
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_sp_x(),
-                        y=acq_object.plot_sp_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
                     )
 
                     self.spike_plot.plot(

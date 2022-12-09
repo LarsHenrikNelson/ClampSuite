@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.setWidget("Mini Analysis")
+        self.setWidget("Mini analysis")
 
     def initUI(self):
         self.setWindowTitle("Electrophysiology Analysis")
@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
 
         self.widget_chooser = QComboBox()
         self.tool_bar.addWidget(self.widget_chooser)
-        widgets = ["Mini Analysis", "oEPSC", "Current Clamp", "Filtering setup"]
+        widgets = ["Mini analysis", "oEPSC/LFP", "Current clamp", "Filtering setup"]
         self.widget_chooser.addItems(widgets)
         self.widget_chooser.setMinimumContentsLength(len(max(widgets, key=len)))
         self.widget_chooser.currentTextChanged.connect(self.setWidget)
@@ -112,11 +112,11 @@ class MainWindow(QMainWindow):
             i.view().setSpacing(1)
 
     def setWidget(self, text):
-        if text == "Mini Analysis":
+        if text == "Mini analysis":
             self.central_widget.setCurrentWidget(self.mini_widget)
-        elif text == "oEPSC":
+        elif text == "oEPSC/LFP":
             self.central_widget.setCurrentWidget(self.oepsc_widget)
-        elif text == "Current Clamp":
+        elif text == "Current clamp":
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)

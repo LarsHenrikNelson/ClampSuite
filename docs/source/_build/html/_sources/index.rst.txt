@@ -19,6 +19,7 @@ can be used to analyze data through the GUI and import previously analyzed data 
    getting_started/index
    modules/index
    analysis_methods/index
+   script_usage/index
 
 .. grid:: 2
 
@@ -69,6 +70,23 @@ can be used to analyze data through the GUI and import previously analyzed data 
             :click-parent:
 
             To the analysis methods guides
+   
+   .. grid-item-card::
+
+      Script usage
+      ^^^^^^^^^^^^^^^^^^^
+
+      In-depth explanation of how to use ClampSuite in scripts.
+
+      +++
+
+      .. button-ref:: script_usage_ref
+            :expand:
+            :color: success
+            :click-parent:
+
+            To the analysis methods guides
+
 
 
 

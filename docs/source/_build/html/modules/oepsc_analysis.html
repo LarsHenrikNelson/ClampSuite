@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Mini analysis &#8212; ClampSuite 0.0.3 documentation</title>
+    <title>oEPSC/LFP &#8212; ClampSuite 0.0.3 documentation</title>
   <script>
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
@@ -90,25 +90,11 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'search';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'modules/mini_analysis';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'modules/oepsc_analysis';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="oEPSC/LFP" href="oepsc_analysis.html" />
-    <link rel="prev" title="Modules" href="index.html" />
+    <link rel="next" title="Current clamp" href="current_clamp.html" />
+    <link rel="prev" title="Mini analysis" href="mini_analysis.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -319,8 +305,8 @@
   </p>
   <div class="bd-toc-item navbar-nav">
     <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Mini analysis</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oepsc_analysis.html">oEPSC/LFP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mini_analysis.html">Mini analysis</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">oEPSC/LFP</a></li>
 <li class="toctree-l1"><a class="reference internal" href="current_clamp.html">Current clamp</a></li>
 </ul>
 
@@ -350,139 +336,111 @@
             
             <article class="bd-article" role="main">
               
-  <section id="mini-analysis">
-<h1>Mini analysis<a class="headerlink" href="#mini-analysis" title="Permalink to this heading">#</a></h1>
-<p>The mini analysis module is designed to analyzed spontaneous postsynaptic currents
-(mEPSCs, sEPSCs, mIPSCs, sIPSCs). Both outward (positive) and inward currents can be
-analyzed. Currently, outward currents inverted when analyzed. Mini analysis has
-three steps; Setup, Analysis, and Final Data.</p>
+  <section id="oepsc-lfp">
+<h1>oEPSC/LFP<a class="headerlink" href="#oepsc-lfp" title="Permalink to this heading">#</a></h1>
+<p>The oEPSC/LFP module is designed to analyzed either evoked PSCs or LFPs or both.
+Both outward (positive) and inward currents can be automatically analyzed for evoked
+PSCs. The program does not currently support analyzing multiple peaks for evoked PSCs.
+oEPSC/LFP has three steps: Setup, Analysis, and Final data.</p>
 <section id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Permalink to this heading">#</a></h2>
-<p>To begin analyzing data just drap and drop your files into into the GUI. For analyzing
-minis you will need to specify the filtering, the criteria for selecting minis and
-creating a temp. The default settings should work for most cells that have a decay tau
-around 5 ms.</p>
+<p>To begin analyzing data just drap and drop your files into into the acquistion part of
+the GUI.</p>
 <section id="filtering">
 <h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this heading">#</a></h3>
 <p>For an in-depth discussion of filtering see the <a class="reference external" href="/filtering">filtering documentation</a>.
 Filtering can change the amplitude, rise rate/time and tau of the events so it is important
 to keep the filtering settings the same for each experiment.</p>
 </section>
-<section id="mini-criteria">
-<h3>Mini criteria<a class="headerlink" href="#mini-criteria" title="Permalink to this heading">#</a></h3>
-<p>There are several criteria that need to be specified find and determine whether a mini event
-is good or not.</p>
+<section id="oepsc-setttings">
+<h3>oEPSC setttings<a class="headerlink" href="#oepsc-setttings" title="Permalink to this heading">#</a></h3>
+<p>There are several settings for evoked PSC. The reason the module uses windows is for measuring
+NMDAR currents when there are contaminating AMPAR currents. If NMDAR currents are recorded at
++40 mV with a standard interenl (low K+) and AMPA receptors are not blocked, AMPAR currents make
+up the first portion of the positive currents. The NMDAR currents have a slow onset so the peak
+can be measured after the AMPAR currents begin to decrease which is around 45 ms after the start
+of the pulse.</p>
 <ul class="simple">
-<li><p><strong>Deconvolution threshold</strong>: This threshold is adapative and should adjust fairly well to /
-acquisitions with a lot of events or large amplitude events. The threshold is used to /
-initially identify events for further analysis.</p></li>
-<li><p><strong>Amplitude threshold</strong>: This is the minimum amplitude of mini event you want to analyze.</p></li>
-<li><p><strong>Min mini spacing (ms)</strong>: The minimum time between events</p></li>
-<li><p><strong>Min rise time (ms)</strong>: The minimum rise time of an event. Setting this lower than 0.5 may /
-result in more noise being considered an event.</p></li>
-<li><p><strong>Max rise time (ms)</strong>: The maximum rise time of an event. This screen out events that are /
-typically disrupted by noise so may be a low quality event.</p></li>
-<li><p><strong>Min decay time (ms)</strong>: The minimum decay time of an event. Setting this higher than 0.5 ms /
-can help reduce the amount of false positives if you cell has a slower tau.</p></li>
-<li><p><strong>Decay slower than rise</strong>: Selecting this means your events should have a decay that is slower /
-the rise time. Similar to max rise time (ms) this can reduce the number of poor quality events. /
-We have found that for cells with a fast tau this needs to be turned off.</p></li>
-<li><p><strong>Curve fit tau</strong>: Select this is you want to curve fit tau. Currently the curve fitting is /
-fully impemented. Curve fitting individual minis is not very useful. The program automatically /
-calculates the estimated tau which should give very similar results to the curve fit tau.</p></li>
-<li><p><strong>Deconvolution type</strong>: Wiener and FFT deconvolution are very similar. Wiener deconvolution is /
-supposed to have a better signal to noise ratio. FFT is the original deconvolution method.</p></li>
-<li><p><strong>Baseline correction</strong>: This is very experimental so I don’t suggest using it. This is supposed to /
-correct for a baseline that is wavy or unstable but it does not work very well yet.</p></li>
+<li><p><strong>Pulse start</strong>: The pulse start is the when the electrical or optical stimulation occurs /
+you need to specify this so that the baseline and charge transfer can be measured.</p></li>
+<li><p><strong>Negative window start</strong>: The negative window start sets when to start looking for the peak /
+negative current.</p></li>
+<li><p><strong>Negative window end</strong>: The negative window end sets when to stop looking for the peak /
+negative current.</p></li>
+<li><p><strong>Positive window start</strong>: The positive window start sets when to start looking for the peak /
+positive current.</p></li>
+<li><p><strong>Positive window end</strong>: The positive window end sets when to stop looking for the peak /
+positive current.</p></li>
+<li><p><strong>Charge transfer</strong>: Check the box to measure the charge transfer. The charge transfer is the /
+just the area under the curve so it measures the total current.</p></li>
+<li><p><strong>Est decay</strong>: Check the box to measure the estimated decay. The estimated decay is about 2/3 /
+of the peak amplitude found by using this equation: peak * (1 / exp(1)).</p></li>
+<li><p><strong>Curve fit decay</strong>: Check the box to curve fit the decay. If your currents are large (&gt; 200 pA) /
+curve fitting will likely give the exact same answer as estimating the decay.</p></li>
+<li><p><strong>Curve fit type</strong>: Select the curve fit type: s_exp is a single exponential decay fit by minimizing /
+this equation: peak * exp((-x_array) / tau). db_exp is a double exponential decay fit by /
+minimizing this equation: (amp_1 * exp((-x_array) / tau_1)) + (amp_2 * exp((-x_array) / tau_2)).</p></li>
 </ul>
 </section>
-<section id="template-criteria">
-<h3>Template criteria<a class="headerlink" href="#template-criteria" title="Permalink to this heading">#</a></h3>
-<p>While mini analysis is a technically a template based mini finding algorithm, the template shape
-is not very important. Mini analysis using a deconvolution based method rather than the tradional
-template matching which is kind of the inverse of deconvolution. The stock template settings
-should work pretty well for almost any type of mini analysis.</p>
+<section id="lfp-setttings">
+<h3>LFP setttings<a class="headerlink" href="#lfp-setttings" title="Permalink to this heading">#</a></h3>
+<p>LFPs only need filtering (see <a class="reference external" href="/filtering">filtering documentation</a>) and the pulse start specified.</p>
+</section>
+<section id="buttons">
+<h3>Buttons<a class="headerlink" href="#buttons" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
-<li><p><strong>Rise tau (ms)</strong>: The rise tau of the template. Rise tau is similar to decay tau.</p></li>
-<li><p><strong>Decay tau (ms)</strong>: The decay tau of the template.</p></li>
-<li><p><strong>Risepower</strong>: The is similar to the rise tau but has a much larger effect on the rise time /
-than rise tau does.</p></li>
-<li><p><strong>Template length</strong>: the length of the template excluding the baseline.</p></li>
-<li><p><strong>Spacer (ms)</strong>: The spacer is probably the most important part of the template design. /
-The spacer setting changes where the deconvolution “finds” the mini. To current setting /
-should work for analyzing most minis.</p></li>
+<li><p><strong>Analyze acquisition(s)</strong>: Starts the analysis. Once the data is finished analyzing the /
+the Analysis tab will be automatically opened.</p></li>
+<li><p><strong>Final analysis</strong>: Runs the final analysis. There is also a final analysis button on the /
+Analysis tab. They both compile and show the final data in the Final Data tab.</p></li>
+<li><p><strong>Reset analysis</strong>: This resets the analysis and removes the acquisitions but keeps the /
+settings.</p></li>
 </ul>
 </section>
 </section>
 <section id="analysis">
 <h2>Analysis<a class="headerlink" href="#analysis" title="Permalink to this heading">#</a></h2>
-<p>The Analysis tab has three different windows. Each of the windows can be resized but not /
-moved around. You can hide a window by dragging it in on direction. Note that the two /
-top windows will both be hidden even if you drag just one window up.</p>
-<section id="overview-window-top-left">
-<h3>Overview window (top left)<a class="headerlink" href="#overview-window-top-left" title="Permalink to this heading">#</a></h3>
-<p>The top left window is general overview window. The event are highlighted in green. /
-The green line for each event goes from the baseline to the peak of the event. The /
-purple event is the event displayed in the top right plot. There is /
-a blue bar that can be dragged back and forth. This will scroll the plot in the bottom /
-window. The x coordinates of each side of the blue bar correspond to the x-range in the /
-bottom plot.</p>
-</section>
-<section id="acquisition-window-bottom-window">
-<h3>Acquisition window (bottom window)<a class="headerlink" href="#acquisition-window-bottom-window" title="Permalink to this heading">#</a></h3>
-<dl class="simple">
-<dt>The bottom window is the view that you can get a closer look at the events. If you click</dt><dd><p>on the green line that is over an event is will select that event and display it in the /
-top right window. If the line is magenta that means the event is being displayed in the /
-top right window. This window will can be scrolled by grabbing the blue bar in the top /
-left window and dragging it back and forth. You can also select individual points when /
-you want to create a new mini.</p>
-</dd>
-</dl>
+<p>The analysis tab has two main windows. The left window is for evoked PSCs and the right window
+is for LFPs. Both windows share the <strong>Acquisition</strong> spinbox</p>
 <ul class="simple">
 <li><p><strong>Acquisition</strong>: This spinbox is used to select the acquisition you want to view. Values /
 can be changed using the arrow buttons or by inputing a number and hitting enter.</p></li>
 <li><p><strong>Epoch</strong>: Shows the epoch of the aquisition. Epoch is using by ScanImage to define when /
-what cell your are recording. For other files types this will likely just be zero.</p></li>
-<li><p><strong>Big arrow buttons</strong>: This can be used to scroll the plot back and forth as an alternative /
-to drag the blue bar in the upper right plot.</p></li>
-<li><p><strong>Slider</strong>: This sets how fast the plot scrolls with the buttons.</p></li>
-<li><p><strong>Create new mini</strong>: This creates a new mini event at the point selected on the plot. /
-Unlike the automated analysis this will create a new event no matter what the properties /
-of the mini are.</p></li>
-<li><p><strong>Delete acquisition</strong>: This will delete the current acquisition.</p></li>
-<li><p><strong>Reset recent deleted acq</strong>: This will reset the most recently deleted acquisition</p></li>
-<li><p><strong>Reset deleted acqs</strong>: This will reset all the deleted acquisitions.</p></li>
-<li><p><strong>Final analysis</strong>: This compiles the data and opens the Final data tab.</p></li>
+what cell your are recording. For file types that include many acquisitions each file will be/
+assigned an epoch. For file types that contain a single acquisition and do not specify epoch /
+you can edit the epoch by typing in the epoch number and hitting enter.</p></li>
+<li><p><strong>Final analysis</strong>: Click the button to run the final analysis.</p></li>
+</ul>
+<section id="oepsc">
+<h3>oEPSC<a class="headerlink" href="#oepsc" title="Permalink to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Amplitude (pA)</strong>: The amplitude of the evoked PSC.</p></li>
+<li><p><strong>Charge transfer</strong>: The charge transfer of the evoked PSC.</p></li>
+<li><p><strong>Est decay (ms)</strong>: The estimated decay of the evoked PSC.</p></li>
+<li><p><strong>Fit decay (ms)</strong>: The fit decay of the evoked PSC.</p></li>
+<li><p><strong>Set point as peak</strong>: Select a point on the PSC plot and click the button to set the point /
+as the peak.</p></li>
+<li><p><strong>Delete oEPSC</strong>: Click the button to delete the current oEPSC.</p></li>
 </ul>
 </section>
-<section id="mini-window-top-right">
-<h3>Mini window (top right)<a class="headerlink" href="#mini-window-top-right" title="Permalink to this heading">#</a></h3>
-<p>The top right window displays the individual events. The baseline, peak, and est tau /
-are shown. If the estimated tau is not shown that is because it was not able to be calculated. /
-To scroll through the minis identified on the acquisition just click on the scroll box arrows /
-or put in a number and hit enter. The current mini displayed will also be highlighted in top /
-left plot and bottom plot as a magenta line. Scrolling through the minis will also update the
-top left and bottom plot so you can see where each mini is in the acquisition. To change /
-the baseline or peak you can click on a point to highlight it then click on /
-one of the respective buttons.</p>
+<section id="lfp">
+<h3>LFP<a class="headerlink" href="#lfp" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
-<li><p><strong>Delete event</strong>: This button deletes the currently selected event. The keyboard shorcut is /
-Crtl/Cmd + D. The shortcut is not currently modifiable but will be in the near future.</p></li>
-<li><p><strong>Set point as peak</strong>: This sets the currently selected point in the mini plot as the peak. /
-The shortcut for this button is Ctrl/Cmd + P. The shortcut is not currently modifiable /
-but will be in the near future.</p></li>
-<li><p><strong>Set point as baseline</strong>: This sets the currently selected point in the mini plot as the /
-baseline. The shortcut for this button is Ctrl/Cmd + B. The shortcut is not currently /
-modifiable but will be in the near future.</p></li>
+<li><p><strong>Fiber volley (mV)</strong>: Amplitude of the fiber volley in millivolts.</p></li>
+<li><p><strong>Field potential (mV)</strong>: Amplitude of the field potential in millivolts.</p></li>
+<li><p><strong>Set point as fiber volley</strong>: Select a point on the LFP plot and click the button to set the /
+point as the fiber volley.</p></li>
+<li><p><strong>Set point as field potential</strong>: Select a point on the LFP plot and click the button to set the /
+point as the field potential.</p></li>
+<li><p><strong>Set point as slope start</strong>: Select a point on the LFP plot and click teh button to set the /
+point as the start of the fiber volley to field potential slope.</p></li>
+<li><p><strong>Delete LFP</strong>: Click the button to delete the current LFP.</p></li>
 </ul>
 </section>
 </section>
 <section id="final-data">
-<h2>Final Data<a class="headerlink" href="#final-data" title="Permalink to this heading">#</a></h2>
-<p>The Final Data tab has four different windows. The top left window holds the data, the top
-right window shows the averaged mini with a curve fit for the tau, the bottom window consists
-of a drop down menu to display the values of the raw data over time (except for IEI) and in
-a smoothed distribution.</p>
+<h2>Final data<a class="headerlink" href="#final-data" title="Permalink to this heading">#</a></h2>
+<p>The Final data tab contains the raw and final data.</p>
 </section>
 </section>
 
@@ -494,17 +452,17 @@ a smoothed distribution.</p>
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-  <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+  <a class='left-prev' id="prev-link" href="mini_analysis.html" title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
           <p class="prev-next-subtitle">previous</p>
-          <p class="prev-next-title">Modules</p>
+          <p class="prev-next-title">Mini analysis</p>
       </div>
   </a>
-  <a class='right-next' id="next-link" href="oepsc_analysis.html" title="next page">
+  <a class='right-next' id="next-link" href="current_clamp.html" title="next page">
   <div class="prev-next-info">
       <p class="prev-next-subtitle">next</p>
-      <p class="prev-next-title">oEPSC/LFP</p>
+      <p class="prev-next-title">Current clamp</p>
   </div>
   <i class="fa-solid fa-angle-right"></i>
   </a>
@@ -535,13 +493,18 @@ a smoothed distribution.</p>
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#mini-criteria">
-     Mini criteria
+    <a class="reference internal nav-link" href="#oepsc-setttings">
+     oEPSC setttings
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#template-criteria">
-     Template criteria
+    <a class="reference internal nav-link" href="#lfp-setttings">
+     LFP setttings
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#buttons">
+     Buttons
     </a>
    </li>
   </ul>
@@ -552,25 +515,20 @@ a smoothed distribution.</p>
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#overview-window-top-left">
-     Overview window (top left)
+    <a class="reference internal nav-link" href="#oepsc">
+     oEPSC
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#acquisition-window-bottom-window">
-     Acquisition window (bottom window)
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#mini-window-top-right">
-     Mini window (top right)
+    <a class="reference internal nav-link" href="#lfp">
+     LFP
     </a>
    </li>
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#final-data">
-   Final Data
+   Final data
   </a>
  </li>
 </ul>
@@ -590,7 +548,7 @@ a smoothed distribution.</p>
 <div class="toc-item">
   
 <div class="tocsection sourcelink">
-    <a href="../_sources/modules/mini_analysis.rst.txt">
+    <a href="../_sources/modules/oepsc_analysis.rst.txt">
         <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
 </div>

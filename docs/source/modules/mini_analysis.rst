@@ -62,16 +62,6 @@ should work pretty well for almost any type of mini analysis.
   The spacer setting changes where the deconvolution "finds" the mini. To current setting /
   should work for analyzing most minis.
 
-Buttons
---------
-* **Analyze acquisition(s)**: Starts the analysis. Once the data is finished analyzing the / 
-  the Analysis tab will be automatically opened.
-* **Final analysis**: Runs the final analysis. There is also a final analysis button on the /
-  Analysis tab. They both compile and show the final data in the Final Data tab.
-* **Reset analysis**: This resets the analysis and removes the acquisitions but keeps the /
-  settings.
-
-
 Analysis
 ~~~~~~~~~~
 The Analysis tab has three different windows. Each of the windows can be resized but not /
@@ -137,4 +127,5 @@ Final Data
 ~~~~~~~~~~
 The Final Data tab has four different windows. The top left window holds the data, the top 
 right window shows the averaged mini with a curve fit for the tau, the bottom window consists
-of a drop down menu to display the values of the raw data over time and in a distribution.
+of a drop down menu to display the values of the raw data over time (except for IEI) and in
+a smoothed distribution.

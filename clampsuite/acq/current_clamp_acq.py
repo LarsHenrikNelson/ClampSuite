@@ -178,14 +178,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # Find the spike_threshold using the timing found above
                 self.spike_threshold = self.array[self.rheo_x]
 
-                # Calculates the exact hertz by dividing the number peaks by
-                # length of the pulse. If there is only one spike the hertz
-                # returns an impossibly fast number is you take only divide by
-                # the start of the spike_threshold to the end of the pulse.
-                self.hertz_exact = len(self.peaks) / (
-                    (self.pulse_end - self._pulse_start) / self.sample_rate
-                )
-
             elif self.ramp == "1":
                 # This takes the last value of an array of values that are
                 # less than the threshold. It was the most robust way to find
@@ -195,9 +187,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                     + self._pulse_start
                 )[-1][0]
                 self.spike_threshold = self.array[self.rheo_x]
-                self.hertz_exact = len(self.peaks) / (
-                    (self.ramp_end - self.rheo_x) / self.sample_rate
-                )
 
     def find_spk_thresh(self, array: np.ndarray) -> tuple[int, int]:
         dv = np.gradient(array)
@@ -423,6 +412,18 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             return self.width_comp[0][0] / self.s_r_c
         else:
             return np.nan
+
+    def hertz_exact(self):
+        if self.ramp == "0":
+            # Calculates the exact hertz by dividing the number peaks by
+            # length of the pulse. If there is only one spike the hertz
+            # returns an impossibly fast number is you take only divide by
+            # the start of the spike_threshold to the end of the pulse.
+            return len(self.peaks) / (
+                (self.pulse_end - self._pulse_start) / self.sample_rate
+            )
+        elif self.ramp == "1":
+            return len(self.peaks) / ((self.ramp_end - self.rheo_x) / self.sample_rate)
 
     def spike_width_y(self) -> list:
         if self.width_comp is not None:

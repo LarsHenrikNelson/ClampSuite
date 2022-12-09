@@ -7,6 +7,8 @@ Choosing the module
 ~~~~~~~~~~~~~~~~~~~~~~
 The GUI consists of four different modules: Mini analysis, oEPSC, current clamp and filtering. 
 The specific module can be choosen by using the drop-down menu in the top left corner of the interface.
+Each module has a Setup, Analysis, and Final data tab. All of the modules make use of "Docks" that
+make it easy to resize the nested windows to your choosing.
 
 .. image:: _static/widget_chooser_edit.png
 
@@ -17,11 +19,15 @@ and drag and drop onto the acquisition area of within each module.
 
 .. image:: _static/drag_and_drop.png
 
-Each module has three main buttons: Analyze acquisition(s), Final analysis and Reset analysis. Analyze acquisitions
-analyzes the acquisition(s) after which you can go through and remove or modified specific parameters. The final analysis
-button pulls all the data from each acquisition and puts into a table as well as averages data across epochs (1 cells
-worth of data). Reset analysis clears all plots, data tables and acquisitions from the interface however settings are
-not reset so one can quickly analyze several cells or even days worth of data at a time using the same settings.
+Each module has three main buttons: Analyze acquisition(s), Final analysis and Reset analysis. 
+
+* **Analyze acquisition(s)**: Starts the analysis. Once the data is finished analyzing the / 
+  the Analysis tab will be automatically opened. If you want to restart the analysis just /
+  click on the button and all the analysis will be cleared and rerun.
+* **Final analysis**: Runs the final analysis. There is final analysis button on the /
+  Setup and Analysis tabs. They both compile and show the final data in the Final Data tab.
+* **Reset analysis**: This resets the analysis and removes the acquisitions but keeps the /
+  settings. All plots and data are cleared.
 
 The acquisition data is saved into JSON files since these files are portable and can be opened in most programming languages. The settings
 are saved as YAML files. The final data in the tables are saved to excel files. It is recommended that you save each

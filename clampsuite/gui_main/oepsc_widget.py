@@ -24,6 +24,8 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtCore import QThreadPool
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
 
 from .acq_inspection import AcqInspectionWidget
 from ..acq import ExpManager
@@ -238,15 +240,15 @@ class oEPSCWidget(DragDropWidget):
         self.o_polyorder_edit.setText("3")
         self.input_layout_1.addRow(self.o_polyorder_label, self.o_polyorder_edit)
 
+        self.input_layout_3.addRow(QLabel(""), QLabel(""))
+
         self.o_pulse_start = QLabel("Pulse start")
         self.o_pulse_start_edit = LineEdit()
         self.o_pulse_start_edit.setValidator(QDoubleValidator())
         self.o_pulse_start_edit.setEnabled(True)
         self.o_pulse_start_edit.setObjectName("o_pulse_start_edit")
         self.o_pulse_start_edit.setText("1000")
-        self.input_layout_1.addRow(self.o_pulse_start, self.o_pulse_start_edit)
-
-        self.input_layout_3.addRow(QLabel(""), QLabel(""))
+        self.input_layout_3.addRow(self.o_pulse_start, self.o_pulse_start_edit)
 
         self.o_neg_window_start = QLabel("Negative window start")
         self.o_neg_start_edit = LineEdit()
@@ -431,12 +433,14 @@ class oEPSCWidget(DragDropWidget):
         self.tab2_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.tab2_scroll.setWidgetResizable(True)
         self.tab2 = QWidget()
+        self.tab2_layout = QHBoxLayout()
+        self.tab2.setLayout(self.tab2_layout)
         self.tabs.addTab(self.tab2_scroll, "Analysis")
         self.tab2_scroll.setWidget(self.tab2)
-        self.tab2_layout = QHBoxLayout()
-        self.analysis_buttons_layout = QFormLayout()
-        self.tab2_layout.addLayout(self.analysis_buttons_layout)
-        self.tab2.setLayout(self.tab2_layout)
+        # self.tab2_layout = QHBoxLayout()
+        # self.analysis_buttons_layout = QFormLayout()
+        # self.tab2_layout.addLayout(self.analysis_buttons_layout)
+        # self.tab2.setLayout(self.tab2_layout)
 
         # Plots
         self.oepsc_plot = pg.PlotWidget(
@@ -455,54 +459,81 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_plot.setAutoVisible(y=True)
         self.lfp_plot.sigXRangeChanged.connect(lambda: self.getXRange("lfp_plot"))
 
+        self.acq_button_dock = QGridLayout()
+        self.tab2_layout.addLayout(self.acq_button_dock)
+
+        self.tab2_dock = DockArea()
+        self.tab2_layout.addWidget(self.tab2_dock)
+        self.oepsc_dock = Dock("")
+        self.oepsc_dock.hideTitleBar()
+        self.tab2_dock.addDock(self.oepsc_dock, "left")
+        self.lfp_dock = Dock("")
+        self.oepsc_dock.hideTitleBar()
+        self.tab2_dock.addDock(self.lfp_dock, "right")
         self.oepsc_plot_layout = QHBoxLayout()
+        self.oepsc_plot_widget = QWidget()
+        self.oepsc_dock.addWidget(self.oepsc_plot_widget, 0, 0)
+        self.oepsc_plot_widget.setLayout(self.oepsc_plot_layout)
         self.lfp_plot_layout = QHBoxLayout()
+        self.lfp_plot_widget = QWidget()
+        self.lfp_dock.addWidget(self.lfp_plot_widget, 0, 0)
+        self.lfp_plot_widget.setLayout(self.lfp_plot_layout)
         self.o_info_layout = QGridLayout()
         self.lfp_info_layout = QFormLayout()
-        self.plot_layout = QHBoxLayout()
         self.oepsc_plot_layout.addLayout(self.o_info_layout, 0)
         self.oepsc_plot_layout.addWidget(self.oepsc_plot, 1)
         self.lfp_plot_layout.addLayout(self.lfp_info_layout, 0)
         self.lfp_plot_layout.addWidget(self.lfp_plot, 1)
-        self.plot_layout.addLayout(self.oepsc_plot_layout, 1)
-        self.plot_layout.addLayout(self.lfp_plot_layout, 1)
-        self.tab2_layout.addLayout(self.plot_layout, 1)
 
         # Analysis layout
-        self.acquisition_number_label = QLabel("Acq number")
-        self.o_info_layout.addWidget(self.acquisition_number_label, 0, 0)
+        self.acquisition_number_label = QLabel("Acquisition")
+        self.acq_button_dock.addWidget(self.acquisition_number_label, 0, 0)
         self.acquisition_number = QSpinBox()
         self.acquisition_number.setKeyboardTracking(False)
         self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
-        self.o_info_layout.addWidget(self.acquisition_number, 0, 1)
+        self.acq_button_dock.addWidget(self.acquisition_number, 0, 1)
         self.acquisition_number.setEnabled(True)
 
         self.epoch_label = QLabel("Epoch")
-        self.o_info_layout.addWidget(self.epoch_label, 1, 0)
+        self.acq_button_dock.addWidget(self.epoch_label, 1, 0)
         self.epoch_number = QLineEdit()
-        self.epoch_number.setReadOnly(True)
-        self.o_info_layout.addWidget(self.epoch_number, 1, 1)
+        self.epoch_number.editingFinished.connect(
+            lambda: self.editAttr("epoch", self.epoch_number.text())
+        )
+        self.acq_button_dock.addWidget(self.epoch_number, 1, 1)
 
-        self.oepsc_amp_label = QLabel("Amplitude")
-        self.o_info_layout.addWidget(self.oepsc_amp_label, 2, 0)
+        self.final_analysis_button = QPushButton("Final analysis")
+        self.acq_button_dock.addWidget(self.final_analysis_button, 2, 0, 1, 2)
+        self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
+        self.final_analysis_button.setEnabled(True)
+
+        self.acq_button_dock.setRowStretch(3, 10)
+        self.acq_button_dock.setColumnStretch(1, 0)
+        self.acq_button_dock.setColumnStretch(0, 0)
+
+        self.oepsc_label = QLabel("oEPSC")
+        self.o_info_layout.addWidget(self.oepsc_label, 0, 0, 1, 2)
+
+        self.oepsc_amp_label = QLabel("Amplitude (pA)")
+        self.o_info_layout.addWidget(self.oepsc_amp_label, 1, 0)
         self.oepsc_amp_edit = QLineEdit()
         self.oepsc_amp_edit.setReadOnly(True)
-        self.o_info_layout.addWidget(self.oepsc_amp_edit, 2, 1)
+        self.o_info_layout.addWidget(self.oepsc_amp_edit, 1, 1)
 
         self.oepsc_charge_label = QLabel("Charge transfer")
-        self.o_info_layout.addWidget(self.oepsc_charge_label, 3, 0)
+        self.o_info_layout.addWidget(self.oepsc_charge_label, 2, 0)
         self.oepsc_charge_edit = QLineEdit()
         self.oepsc_charge_edit.setReadOnly(True)
-        self.o_info_layout.addWidget(self.oepsc_charge_edit, 3, 1)
+        self.o_info_layout.addWidget(self.oepsc_charge_edit, 2, 1)
 
-        self.oepsc_edecay_label = QLabel("Est decay")
-        self.o_info_layout.addWidget(self.oepsc_edecay_label, 4, 0)
+        self.oepsc_edecay_label = QLabel("Est decay (ms)")
+        self.o_info_layout.addWidget(self.oepsc_edecay_label, 3, 0)
         self.oepsc_edecay_edit = QLineEdit()
         self.oepsc_edecay_edit.setReadOnly(True)
-        self.o_info_layout.addWidget(self.oepsc_edecay_label, 4, 1)
+        self.o_info_layout.addWidget(self.oepsc_edecay_edit, 3, 1)
 
-        self.oepsc_fdecay_label = QLabel("Fit decay")
+        self.oepsc_fdecay_label = QLabel("Fit decay (ms)")
         self.o_info_layout.addWidget(self.oepsc_fdecay_label, 4, 0)
         self.oepsc_fdecay_edit = QLineEdit()
         self.oepsc_fdecay_edit.setReadOnly(True)
@@ -520,17 +551,15 @@ class oEPSCWidget(DragDropWidget):
 
         self.o_info_layout.setRowStretch(7, 10)
 
-        self.final_analysis_button = QPushButton("Final analysis")
-        self.o_info_layout.addWidget(self.final_analysis_button, 8, 0, 1, 2)
-        self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
-        self.final_analysis_button.setEnabled(True)
+        self.lfp_label = QLabel("LFP")
+        self.lfp_info_layout.addRow(self.lfp_label)
 
-        self.lfp_fv_label = QLabel("Fiber volley")
+        self.lfp_fv_label = QLabel("Fiber volley (mV)")
         self.lfp_fv_edit = QLineEdit()
         self.lfp_fv_edit.setReadOnly(True)
         self.lfp_info_layout.addRow(self.lfp_fv_label, self.lfp_fv_edit)
 
-        self.lfp_fp_label = QLabel("Field potential")
+        self.lfp_fp_label = QLabel("Field potential (mV)")
         self.lfp_fp_edit = QLineEdit()
         self.lfp_fp_edit.setReadOnly(True)
         self.lfp_info_layout.addRow(self.lfp_fp_label, self.lfp_fp_edit)
@@ -545,15 +574,15 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_info_layout.addRow(self.set_fv_button)
         self.set_fv_button.setEnabled(True)
 
-        self.set_slope_start_btn = QPushButton("Set point as slope start")
-        self.set_slope_start_btn.clicked.connect(self.setPointAsSlopeStart)
-        self.lfp_info_layout.addRow(self.set_slope_start_btn)
-        self.set_slope_start_btn.setEnabled(True)
-
         self.set_fp_button = QPushButton("Set point as field potential")
         self.set_fp_button.clicked.connect(self.setPointAsFP)
         self.lfp_info_layout.addRow(self.set_fp_button)
         self.set_fp_button.setEnabled(True)
+
+        self.set_slope_start_btn = QPushButton("Set point as slope start")
+        self.set_slope_start_btn.clicked.connect(self.setPointAsSlopeStart)
+        self.lfp_info_layout.addRow(self.set_slope_start_btn)
+        self.set_slope_start_btn.setEnabled(True)
 
         self.delete_lfp_button = QPushButton("Delete LFP")
         self.delete_lfp_button.clicked.connect(self.deleteLFP)
@@ -562,7 +591,7 @@ class oEPSCWidget(DragDropWidget):
 
         # Tab 3 Layout
         self.tab3 = QTabWidget()
-        self.tabs.addTab(self.tab3, "Final Data")
+        self.tabs.addTab(self.tab3, "Final data")
 
         self.dlg = QMessageBox(self)
 
@@ -671,6 +700,15 @@ class oEPSCWidget(DragDropWidget):
 
     def setLFPPlotX(self, x):
         self.lfp_x_axis = XAxisCoord(x[0], x[1])
+
+    def editAttr(self, line_edit, value):
+        for i in self.exp_manager.exp_dict.values():
+            setattr(
+                i[self.acq_number.value()],
+                line_edit,
+                value,
+            )
+        return True
 
     def analyze(self):
         if not self.exp_manager.acqs_exist():

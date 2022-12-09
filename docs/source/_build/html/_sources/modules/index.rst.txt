@@ -8,3 +8,5 @@ This guide goes through each module in the GUI.
     :maxdepth: 1
 
     mini_analysis
+    oepsc_analysis
+    current_clamp
