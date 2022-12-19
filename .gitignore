@@ -5,4 +5,4 @@ dev_env.yml
 dist/
 clampsuite.egg-info/
 .vscode/settings.json
-sources/_build/
+docs/sources/_build/
