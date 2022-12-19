@@ -15,7 +15,7 @@ around 5 ms.
 
 Filtering
 ----------
-For an in-depth discussion of filtering see the :ref: `filtering documentation <filtering_tutorial_>`_.
+For an in-depth discussion of filtering see :ref:`filtering_tutorial`.
 Filtering can change the amplitude, rise rate/time and tau of the events so it is important
 to keep the filtering settings the same for each experiment.
 
