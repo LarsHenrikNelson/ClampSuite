@@ -1,3 +1,5 @@
+.. _filtering_tutorial:
+
 Filtering tutorial
 --------------------
 
