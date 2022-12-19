@@ -1,4 +1,4 @@
-.._script_usage_ref:
+.. _script_usage_ref:
 
 Script usage
 ===============
