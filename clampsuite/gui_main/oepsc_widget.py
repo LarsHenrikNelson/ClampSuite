@@ -48,7 +48,7 @@ class oEPSCWidget(DragDropWidget):
         self.initUI()
 
     def initUI(self):
-        self.signals.dictionary.connect(self.setPreferences)
+        self.signals.file.connect(self.setPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()

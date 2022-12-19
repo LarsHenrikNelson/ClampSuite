@@ -88,7 +88,7 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    dictionary = pyqtSignal(dict)
+    file = pyqtSignal(object)
     progress = pyqtSignal(object)
     finished = pyqtSignal(str)
     path = pyqtSignal(object)
@@ -294,7 +294,7 @@ class DragDropWidget(QWidget):
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
             if fname.suffix == ".yaml":
-                self.signals.dictionary.emit(fname)
+                self.signals.file.emit(fname)
             elif Path(fname).is_dir():
                 self.signals.path.emit(Path(fname))
             else:

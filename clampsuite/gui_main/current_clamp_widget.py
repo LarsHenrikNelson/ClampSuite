@@ -54,7 +54,7 @@ class currentClampWidget(DragDropWidget):
         self.table_dict = {}
         self.inspection_widget = AcqInspectionWidget()
 
-        self.signals.dictionary.connect(self.setPreferences)
+        self.signals.file.connect(self.setPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)

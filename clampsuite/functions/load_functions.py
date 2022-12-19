@@ -236,11 +236,12 @@ def load_acqs(
 
 
 def load_file(file_path: str, extension: str):
+    file_path = PurePath(file_path)
     if file_path is None:
         p = Path()
-        file_name = list(p.glob(extension))[0]
-    elif PurePath(file_path).suffix == extension:
-        file_name = PurePath(file_path)
+        file_name = list(p.glob(f"*{extension}"))[0]
+    elif file_path.suffix == extension:
+        file_name = file_path
     else:
         directory = Path(file_path)
         file_name = list(directory.glob(extension))[0]

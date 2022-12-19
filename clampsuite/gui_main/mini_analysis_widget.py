@@ -50,7 +50,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def init_UI(self):
 
         # Create tabs for part of the analysis program
-        self.signals.dictionary.connect(self.setPreferences)
+        self.signals.file.connect(self.setPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -828,10 +828,9 @@ class MiniAnalysisWidget(DragDropWidget):
         QThreadPool.globalInstance().start(worker)
 
     def setAcquisition(self):
-        acq_number = list(self.exp_manager.exp_dict["mini"].keys())
-        self.acquisition_number.setMaximum(int(acq_number[-1]))
-        self.acquisition_number.setMinimum(int(acq_number[0]))
-        self.acquisition_number.setValue(int(acq_number[0]))
+        self.acquisition_number.setMaximum(self.exp_manager.start_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
 
         # Minis always start from 0 since list indexing in python starts
         # at zero. I choose this because it is easier to reference minis
@@ -1691,7 +1690,8 @@ class MiniAnalysisWidget(DragDropWidget):
         pref_dict["sliders"] = slider_dict
         return pref_dict
 
-    def setPreferences(self, pref_dict):
+    def setPreferences(self, file):
+        pref_dict = self.exp_manager.load_ui_pref(file)
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
