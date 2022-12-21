@@ -155,9 +155,8 @@ class MainWindow(QMainWindow):
             )
         )
         if directory:
-            path = Path(directory)
-            self.working_dir = str(path)
-            self.central_widget.currentWidget().createExperiment(path)
+            self.working_dir = str(PurePath(directory[0]).parent)
+            self.central_widget.currentWidget().createExperiment(directory)
         else:
             pass
 

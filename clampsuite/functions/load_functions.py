@@ -3,7 +3,7 @@ import json
 from math import nan
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import re
-from typing import Union
+from typing import Union, Literal
 
 import numpy as np
 from scipy.io import loadmat, matlab
@@ -194,7 +194,8 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
 
 
 def load_acq(
-    analysis: Union[str, None], path: Union[str, Path, PurePath]
+    analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
+    path: Union[str, Path, PurePath],
 ) -> Acquisition:
     path_obj = PurePath(path)
     if not Path(path_obj).exists():
@@ -218,7 +219,9 @@ def load_acq(
 
 
 def load_acqs(
-    analysis: str, file_path: Union[list, tuple, str, Path, PurePath], callback_func
+    analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
+    file_path: Union[list, tuple, str, Path, PurePath],
+    callback_func=print,
 ) -> dict:
     if isinstance(file_path, (str, Path, PurePath)):
         file_path = list(file_path)

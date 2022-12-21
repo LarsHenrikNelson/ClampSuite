@@ -1,7 +1,7 @@
 .. _filtering_tutorial:
 
 Filtering tutorial
---------------------
+================
 
 Filtering is one of the most important steps and is usually the first step
 in analyzing a time-based signal. ClampSuite includes FIR filters, minimal-phase

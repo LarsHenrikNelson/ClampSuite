@@ -39,8 +39,9 @@ class ExpManager:
             self.analyzed = True
             self.callback_func(f"Analyed {exp} acquisitions")
 
-    def set_ui_pref(self, pref_dict: dict):
+    def set_ui_prefs(self, pref_dict: dict):
         self.ui_prefs = pref_dict
+        self.ui_prefs["Deleted acqs"] = {}
 
     def run_final_analysis(self, **kwargs):
         analysis = list(self.exp_dict.keys())
@@ -53,17 +54,17 @@ class ExpManager:
             oepsc = self.exp_dict.get("oepsc")
             self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
-    def save_data(self, save_filename: Union[Path, PurePath, str]):
-        if self.ui_pref is not None:
+    def save_data(self, file_path: Union[Path, PurePath, str]):
+        if self.ui_prefs is not None:
             for key, data in self.deleted_acqs.items():
-                self.ui_prefs[f"Deleted acqs"] = {key: list(data.keys())}
-            self.save_ui_pref(save_filename, self.ui_pref)
+                self.ui_prefs["Deleted acqs"] = {key: list(data.keys())}
+            self.save_ui_prefs(file_path, self.ui_prefs)
         if self.final_analysis is not None:
-            self.save_final_analysis(save_filename)
-        self.save_acqs(save_filename)
+            self.save_final_analysis(file_path)
+        self.save_acqs(file_path)
         self.callback_func("Finished saving")
 
-    def save_acqs(self, save_filename: Union[PurePath, Path, str]):
+    def save_acqs(self, file_path: Union[PurePath, Path, str]):
         self.callback_func("Saving acquisitions")
         count = 0
         for i in self.exp_dict.keys():
@@ -73,39 +74,39 @@ class ExpManager:
         saved = 0
         for i in self.exp_dict.values():
             for acq in i.values():
-                save_acq(acq, save_filename)
+                save_acq(acq, file_path)
                 saved += 1
                 self.callback_func(int((100 * (saved) / count)))
         for i in self.deleted_acqs.values():
             for acq in i.values():
-                save_acq(acq, save_filename)
+                save_acq(acq, file_path)
                 saved += 1
                 self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
 
-    def save_ui_pref(self, save_filename: Union[PurePath, Path, str], ui_prefs):
+    def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs):
         self.callback_func("Saving preferences")
-        with open(f"{save_filename}.yaml", "w") as file:
+        with open(f"{file_path}.yaml", "w") as file:
             yaml.dump(ui_prefs, file)
         self.callback_func("Saved preferences")
 
-    def save_analysis_pref(self, save_filename: Union[PurePath, Path, str]):
-        with open(f"{save_filename}.yaml", "w") as file:
+    def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]):
+        with open(f"{file_path}.yaml", "w") as file:
             yaml.dump(self.analysis_prefs, file)
         self.callback_func("Saved user preferences")
 
-    def save_final_analysis(self, save_filename: Union[PurePath, Path, str]):
+    def save_final_analysis(self, file_path: Union[PurePath, Path, str]):
         self.callback_func("Saving final analysis")
-        self.final_analysis.save_data(save_filename)
+        self.final_analysis.save_data(file_path)
         self.callback_func("Saved final analysis")
 
-    def load_ui_pref(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
+    def load_ui_prefs(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
         file_name = load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
             ui_prefs = yaml.safe_load(file)
             return ui_prefs
 
-    def load_analysis_pref(
+    def load_analysis_prefs(
         self, file_path: Union[None, str, Path, PurePath] = None
     ) -> dict:
         file_name = load_file(file_path, extension=".yaml")
@@ -133,7 +134,7 @@ class ExpManager:
         file_paths_edit = [i for i in file_paths if i.name[0] != "."]
         for path in file_paths_edit:
             if path.suffix == ".yaml":
-                self.ui_pref = self.load_ui_pref(path)
+                self.ui_prefs = self.load_ui_prefs(path)
                 can_load_data = True
                 self.analyzed = True
                 self.callback_func("Loaded settings")
@@ -182,9 +183,10 @@ class ExpManager:
 
     def _set_deleted_acqs(self):
         for exp in self.exp_dict:
-            acqs = self.ui_prefs[f"Deleted acqs"][exp]
-            for acq in acqs:
-                self.delete_acq(exp, acq)
+            acqs = self.ui_prefs["Deleted acqs"].get(exp)
+            if acqs:
+                for acq in acqs:
+                    self.delete_acq(exp, acq)
 
     def set_callback(self, func: Callable[[int, str], None]):
         self.callback_func = func

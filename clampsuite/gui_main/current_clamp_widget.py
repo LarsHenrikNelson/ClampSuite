@@ -715,7 +715,7 @@ class currentClampWidget(DragDropWidget):
         self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
-    def saveAs(self, save_filename: Union[str, PurePath]):
+    def saveAs(self, file_path: Union[str, PurePath]):
         if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
             return None
@@ -726,10 +726,8 @@ class currentClampWidget(DragDropWidget):
         pref_dict = self.createPrefDict()
         pref_dict["Final Analysis"] = self.calc_param_clicked
         pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.exp_manager.set_ui_pref(pref_dict)
-        self.worker = ThreadWorker(
-            self.exp_manager, "save", save_filename=save_filename
-        )
+        self.exp_manager.set_ui_prefs(pref_dict)
+        self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.progress.connect(self.updateProgress)
         QThreadPool.globalInstance().start(self.worker)
@@ -738,13 +736,13 @@ class currentClampWidget(DragDropWidget):
 
     def loadPreferences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True
-        load_dict = self.exp_manager.load_ui_pref(file_name)
+        load_dict = self.exp_manager.load_ui_prefs(file_name)
         self.setPreferences(load_dict)
 
-    def savePreferences(self, save_filename: Union[str, PurePath]):
+    def savePreferences(self, fle_path: Union[str, PurePath]):
         pref_dict = self.createPrefDict()
         if pref_dict:
-            self.exp_manager.save_ui_pref(save_filename, pref_dict)
+            self.exp_manager.save_ui_prefs(fle_path, pref_dict)
         else:
             pass
 

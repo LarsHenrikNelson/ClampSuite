@@ -188,7 +188,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 )[-1][0]
                 self.spike_threshold = self.array[self.rheo_x]
 
-    def find_spk_thresh(self, array: np.ndarray) -> tuple[int, int]:
+    def find_spk_thresh(self, array: np.ndarray) -> "tuple[int, int]":
         dv = np.gradient(array)
         ddv = np.gradient(dv)
         dddv = np.gradient(ddv)

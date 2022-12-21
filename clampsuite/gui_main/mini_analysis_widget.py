@@ -33,6 +33,7 @@ from ..acq import ExpManager
 from .acq_inspection import AcqInspectionWidget
 from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
+from ..functions.template_psp import create_template
 from ..gui_widgets.qtwidgets import (
     DragDropWidget,
     LineEdit,
@@ -713,40 +714,25 @@ class MiniAnalysisWidget(DragDropWidget):
             self.load_widget.deleteSelection(indices)
             self.load_widget.clearSelection()
 
-    def tmPsp(self):
-        """
-        This function create template that can be used for the mini analysis.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
-        """
-        s_r_c = self.sample_rate_edit.toInt() / 1000
-        amplitude = self.amplitude_edit.toFloat()
-        tau_1 = self.tau_1_edit.toFloat() * s_r_c
-        tau_2 = self.tau_2_edit.toFloat() * s_r_c
-        risepower = self.risepower_edit.toFloat()
-        t_psc = np.arange(0, int(self.temp_length_edit.toFloat() * s_r_c))
-        spacer = int(self.spacer_edit.toFloat() * s_r_c)
-        template = np.zeros(len(t_psc) + spacer)
-        offset = len(template) - len(t_psc)
-        Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
-        y = (
-            amplitude
-            / Aprime
-            * ((1 - (np.exp(-t_psc / tau_1))) ** risepower * np.exp((-t_psc / tau_2)))
-        )
-        template[offset:] = y
-        return template
-
     def createTemplate(self):
         self.template_plot.clear()
-        template = self.tmPsp()
+        amplitude = self.amplitude_edit.toFloat()
+        tau_1 = self.tau_1_edit.toFloat()
+        tau_2 = self.tau_2_edit.toFloat()
+        risepower = self.risepower_edit.toFloat()
+        length = self.temp_length_edit.toFloat()
+        spacer = self.spacer_edit.toFloat()
+        template = create_template(
+            amplitude,
+            tau_1,
+            tau_2,
+            risepower,
+            length,
+            spacer,
+            self.sample_rate_edit.toInt(),
+        )
         s_r_c = self.sample_rate_edit.toInt() / 1000
         self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
-        return template
 
     def analyze(self):
         """
@@ -773,7 +759,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         self.calculate_parameters_2.setEnabled(False)
-        template = self.createTemplate()
 
         # Sets the progress bar to 0
         self.pbar.setFormat("Analyzing...")
@@ -806,7 +791,6 @@ class MiniAnalysisWidget(DragDropWidget):
             low_width=self.low_width_edit.toFloat(),
             window=window,
             polyorder=self.polyorder_edit.toInt(),
-            template=template,
             rc_check=self.rc_checkbox.isChecked(),
             rc_check_start=self.rc_check_start_edit.toFloat(),
             rc_check_end=self.rc_check_end_edit.toFloat(),
@@ -822,6 +806,12 @@ class MiniAnalysisWidget(DragDropWidget):
             curve_fit_decay=self.curve_fit_decay.isChecked(),
             curve_fit_type=self.curve_fit_edit.currentText(),
             baseline_corr=self.baseline_corr_choice.isChecked(),
+            tmp_amplitude=self.amplitude_edit.toFloat(),
+            tmp_tau_1=self.tau_1_edit.toFloat(),
+            tmp_tau_2=self.tau_2_edit.toFloat(),
+            tmp_risepower=self.risepower_edit.toFloat(),
+            tmp_length=self.temp_length_edit.toFloat(),
+            tmp_spacer=self.spacer_edit.toFloat(),
         )
         worker.signals.progress.connect(self.updateProgress)
         worker.signals.finished.connect(self.setAcquisition)
@@ -1598,7 +1588,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
         self.worker = ThreadWorker(
-            self.exp_manager, "load", exp="mini", save_filename=directory
+            self.exp_manager, "load", analysis="mini", file_path=directory
         )
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
@@ -1629,8 +1619,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
         self.pbar.setFormat("Loaded")
-        self.acquisition_number.setMaximum(self.exp_manager.start_acq)
-        self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.ui_prefs["Acq_number"])
 
     def saveAs(self, save_filename):
@@ -1640,17 +1630,15 @@ class MiniAnalysisWidget(DragDropWidget):
         pref_dict = self.createPrefDict()
         pref_dict["Final Analysis"] = self.calc_param_clicked
         pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.exp_manager.set_ui_pref(pref_dict)
-        self.worker = ThreadWorker(
-            self.exp_manager, "save", save_filename=save_filename
-        )
+        self.exp_manager.set_ui_prefs(pref_dict)
+        self.worker = ThreadWorker(self.exp_manager, "save", file_path=save_filename)
         self.worker.signals.progress.connect(self.updateProgress)
         QThreadPool.globalInstance().start(self.worker)
         self.reset_button.setEnabled(True)
         self.need_to_save = False
 
-    def createExperiment(self):
-        pass
+    def createExperiment(self, urls):
+        self.load_widget.model().addData(urls)
 
     def createPrefDict(self):
         pref_dict = {}
@@ -1691,7 +1679,7 @@ class MiniAnalysisWidget(DragDropWidget):
         return pref_dict
 
     def setPreferences(self, file):
-        pref_dict = self.exp_manager.load_ui_pref(file)
+        pref_dict = self.exp_manager.load_ui_prefs(file)
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1733,14 +1721,14 @@ class MiniAnalysisWidget(DragDropWidget):
                     pass
 
     def loadPreferences(self, file_name):
-        self.exp_manager.load_ui_pref(file_name)
+        self.exp_manager.load_ui_prefs(file_name)
         self.setPreferences(self.exp_manager.ui_prefs)
 
     def savePreferences(self, save_filename):
         pref_dict = self.createPrefDict()
         pref_dict = self.createPrefDict()
         if pref_dict:
-            self.exp_manager.save_ui_pref(save_filename, pref_dict)
+            self.exp_manager.save_ui_prefs(save_filename, pref_dict)
         else:
             pass
 

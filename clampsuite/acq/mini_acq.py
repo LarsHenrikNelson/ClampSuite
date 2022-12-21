@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Literal
 
 import numpy as np
 from scipy.fft import fft, ifft
@@ -6,6 +6,8 @@ from scipy import signal, interpolate
 
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
+from ..functions.template_psp import create_template
+from ..functions.filtering_functions import fir_zero_1
 
 
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
@@ -14,15 +16,40 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         sample_rate: Union[int, float] = 10000,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 80,
-        filter_type: str = "remez_2",
+        filter_type: Literal[
+            "remez_2",
+            "remez_1",
+            "fir_zero_2",
+            "fir_zero_1",
+            "ewma",
+            "ewma_a",
+            "savgol",
+            "median",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
+            "None",
+        ] = "fir_zero_2",
         order: int = 201,
         high_pass: Union[int, float] = None,
         high_width: Union[int, float] = None,
         low_pass: Union[int, float] = 600,
         low_width: Union[int, float] = 300,
-        window: Union[str, None] = None,
+        window: Literal[
+            "hann",
+            "hamming",
+            "blackmanharris",
+            "barthann",
+            "nuttall",
+            "blackman",
+            "tukey",
+            "kaiser",
+            "gaussian",
+            "parzen",
+            "exponential",
+        ] = "hann",
         polyorder: Union[str, None] = None,
-        template: Union[list, np.ndarray, None] = None,
         rc_check: bool = True,
         rc_check_start: Union[int, float] = 10000,
         rc_check_end: Union[int, float] = 10300,
@@ -34,10 +61,16 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         min_decay_time: Union[int, float] = 0.5,
         decay_rise: bool = True,
         invert: bool = False,
-        decon_type: str = "wiener",
+        decon_type: Literal["fft", "wiener"] = "wiener",
         curve_fit_decay: bool = False,
-        curve_fit_type: str = "db_exp",
+        curve_fit_type: str = Literal["s_exp", "db_exp"],
         baseline_corr: bool = False,
+        tmp_amplitude: Union[int, float] = -20,
+        tmp_tau_1: Union[int, float] = 0.3,
+        tmp_tau_2: Union[int, float] = 5,
+        tmp_risepower: Union[int, float] = 0.5,
+        tmp_length: Union[int, float] = 30,
+        tmp_spacer: Union[int, float] = 1.5,
     ):
         # Set the attributes for the acquisition
         self.sample_rate = sample_rate
@@ -71,79 +104,22 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.curve_fit_decay = curve_fit_decay
         self.decon_type = decon_type
         self.curve_fit_type = curve_fit_type
+        self.tmp_amplitude = tmp_amplitude
+        self.tmp_tau_1 = tmp_tau_1
+        self.tmp_tau_2 = tmp_tau_2
+        self.tmp_risepower = tmp_risepower
+        self.tmp_length = tmp_length
+        self.tmp_spacer = tmp_spacer
         self.deleted_events = 0
 
         # Runs the functions to analyze the acquisition
-        self.create_template(template)
         self.create_mespc_array()
         if self.baseline_corr:
             self.baseline_correction()
         self.filter_array()
         self.set_array()
         self.set_sign()
-        self.decon_filt()
         self.create_events()
-
-    def tm_psp(
-        self,
-        amplitude: Union[int, float],
-        tau_1: Union[int, float],
-        tau_2: Union[int, float],
-        risepower: Union[int, float],
-        t_psc: Union[int, float],
-        spacer: Union[int, float] = 1.5,
-    ) -> np.ndarray:
-        """Creates a template based on several factors.
-
-        Args:
-            amplitude (float): Amplitude of template
-            tau_1 (float): Rise tau (ms) of template
-            tau_2 (float): Decay tau (ms) of template
-            risepower (float): Risepower of template
-            t_psc (float): Length of time (ms) for template
-            spacer (int, optional): Delay (ms) until template starts. Defaults to 1.5.
-
-        Returns:
-            np.array: Numpy array of the template.
-        """
-        tau_1 = int(tau_1 * self.s_r_c)
-        tau_2 = int(tau_2 * self.s_r_c)
-        t_psc = int(t_psc * self.s_r_c)
-        spacer = int(spacer * self.s_r_c)
-        template = np.zeros(t_psc + spacer)
-        t_length = np.arange(0, t_psc)
-        offset = len(template) - t_psc
-        Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
-        y = (
-            amplitude
-            / Aprime
-            * (
-                (1 - (np.exp(-t_length / tau_1))) ** risepower
-                * np.exp((-t_length / tau_2))
-            )
-        )
-        template[offset:] = y
-        return template
-
-    def create_template(self, template: np.ndarray):
-        """Creates the template use for deconvolution. Only used internally
-        if there is not template provided.
-
-        Args:
-            template (np.array): Previously created template.
-        """
-        if template is None:
-            tau_1 = 0.3
-            tau_2 = 5
-            amplitude = -20
-            risepower = 0.5
-            t_psc = 30
-            spacer = 1.5
-            self.template = self.tm_psp(
-                amplitude, tau_1, tau_2, risepower, t_psc, spacer=spacer
-            )
-        else:
-            self.template = template
 
     def create_mespc_array(self):
         """The function creates the mEPSC array by removing the RC
@@ -190,7 +166,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         baseline = spl(self.x_array)
         self.baselined_array = self.baselined_array - baseline
 
-    def deconvolution(self, lambd: Union[int, float] = 4) -> np.ndarray:
+    def deconvolve_array(self, lambd: Union[int, float] = 4) -> np.ndarray:
         """The Wiener deconvolution equation can be found on GitHub from pbmanis
         and danstowell. The basic idea behind this function is deconvolution
         or divsion in the frequency domain. I have found that changing lambd
@@ -221,9 +197,17 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         """
         # The kernel needs to be the same length as the array that is being
         # deconvolved.
-        kernel = np.hstack(
-            (self.template, np.zeros(len(self.final_array) - len(self.template)))
+        template = create_template(
+            amplitude=self.tmp_amplitude,
+            tau_1=self.tmp_tau_1,
+            tau_2=self.tmp_tau_2,
+            risepower=self.tmp_risepower,
+            length=self.tmp_length,
+            spacer=self.tmp_spacer,
+            sample_rate=self.sample_rate,
         )
+
+        kernel = np.hstack((template, np.zeros(len(self.final_array) - len(template))))
         H = fft(kernel)
 
         # Choose the method for finding minis. FFT and Wiener are almost identical.
@@ -235,52 +219,42 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
             )
         elif self.decon_type == "convolution":
-            deconvolved_array = signal.convolve(
-                self.final_array, self.template, mode="same"
-            )
+            deconvolved_array = signal.convolve(self.final_array, template, mode="same")
         return deconvolved_array
 
-    def decon_filt(self):
-        """This function takes the deconvolved array, filters it and finds the
-        peaks which are where mini events are located.
-        """
-
-        # Get the deconvolved array and baseline it.
-        deconvolved_array = self.deconvolution()
-        baselined_decon_array = deconvolved_array - np.mean(deconvolved_array[0:800])
-
-        # Filter the deconvolved array if fft or wiener method is used.
-        # The filter settings are fixed since there seems to be a small
-        # window for an acceptable filter.
+    def create_deconvolved_array(self):
+        deconvolved_array = self.deconvolve_array()
         if self.decon_type == "fft" or self.decon_type == "wiener":
-            filt = signal.firwin2(
-                351,
-                freq=[0, 300, 400, self.sample_rate / 2],
-                gain=[1, 1, 0, 0],
+            filtered_decon_array = fir_zero_1(
+                array=deconvolved_array,
+                sample_rate=self.sample_rate,
+                order=351,
+                high_pass=None,
+                high_width=None,
+                low_pass=300,
+                low_width=100,
                 window="hann",
-                fs=self.sample_rate,
             )
-            y = signal.filtfilt(filt, 1.0, baselined_decon_array)
-            self.final_decon_array = y
+            return filtered_decon_array
         else:
-            # If convolution is used there is no need to filter.
-            self.final_decon_array = deconvolved_array
+            return deconvolved_array
 
+    def find_events(self):
         # This is not the method from the original paper but it works a
         # lot better. The original paper used 4*std of the deconvolved array.
         # The problem with that method is that interneurons needs a
         # different sensitivity setting. I wanted to keep the settings as
         # consistent as possible between different cell types.
 
+        deconvolved_array = self.create_deconvolved_array()
+
         # Get the top and bottom 2.5% cutoff.
-        bottom, top = np.percentile(self.final_decon_array, [2.5, 97.5])
+        bottom, top = np.percentile(deconvolved_array, [2.5, 97.5])
 
         # Return the middle values.
         middle = np.hstack(
-            self.final_decon_array[
-                np.argwhere(
-                    (self.final_decon_array > bottom) & (self.final_decon_array < top)
-                )
+            deconvolved_array[
+                np.argwhere((deconvolved_array > bottom) & (deconvolved_array < top))
             ]
         )
         # Calculate the mean and rms.
@@ -289,14 +263,15 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         # Find the events.
         peaks, _ = signal.find_peaks(
-            self.final_decon_array - mu,
+            deconvolved_array - mu,
             height=self.sensitivity * (rms),
             distance=self.mini_spacing * self.s_r_c,
         )
 
         # There was an issue with the peaks list being a numpy array
         # so it is converted to a python list.
-        self.events = peaks.tolist()
+        events = peaks.tolist()
+        return events
 
     def create_events(self):
         """This functions creates the events based on the list of peaks found
@@ -310,11 +285,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         event_number = 0
         event_time = []
 
+        events = self.find_events()
+
         # The for loop won't run if there are no events.
         # So there is no need to catch instances when
         # there are no events.
 
-        for peak in self.events:
+        for peak in events:
             if len(self.final_array) - peak < 20 * self.s_r_c:
                 pass
             else:
@@ -502,9 +479,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         """
         self.saved_events_dict = []
-        # self.array = "saved"
-        # self.final_decon_array = "saved"
-        self.events = "saved"
         self.x_array = "saved"
         for i in self.postsynaptic_events:
             i.x_array = "saved"

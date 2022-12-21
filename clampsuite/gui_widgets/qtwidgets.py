@@ -212,7 +212,8 @@ class ListModel(QAbstractListModel):
         self.exp_manager = None
 
     def addData(self, urls):
-        urls = [str(url.toLocalFile()) for url in urls]
+        if not isinstance(urls[0], str):
+            urls = [str(url.toLocalFile()) for url in urls]
         worker = ThreadWorker(
             self.exp_manager, "create_exp", analysis=self.analysis_type, file=urls
         )

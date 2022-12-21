@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 from scipy import signal, optimize
@@ -26,7 +26,7 @@ class MiniEvent:
         y_array: Union[np.ndarray, list],
         sample_rate: int,
         curve_fit_decay: bool = False,
-        curve_fit_type: str = "db_exp",
+        curve_fit_type: Literal["s_exp", "db_exp",] = "dp_exp",
     ):
         self.acq_number = acq_number
         self.event_pos = int(event_pos)
@@ -74,9 +74,7 @@ class MiniEvent:
 
     def peak_corr(self, peak_1: int):
         peaks_2 = signal.argrelextrema(
-            self.event_array[:peak_1],
-            comparator=np.less,
-            order=int(0.4 * self.s_r_c),
+            self.event_array[:peak_1], comparator=np.less, order=int(0.4 * self.s_r_c),
         )[0]
         peaks_2 = peaks_2[peaks_2 > peak_1 - 4 * self.s_r_c]
         if len(peaks_2) == 0:
@@ -358,12 +356,7 @@ class MiniEvent:
                 value = item
             if key in {"event_tau_x", "event_peak_x", "event_start_x"}:
                 key = "_" + key
-            if key not in (
-                "mini_plot_x",
-                "mini_plot_y",
-                "mini_comp_y",
-                "mini_comp_x",
-            ):
+            if key not in ("mini_plot_x", "mini_plot_y", "mini_comp_y", "mini_comp_x",):
                 setattr(self, key, value)
 
         if self.sample_rate_correction is not None:

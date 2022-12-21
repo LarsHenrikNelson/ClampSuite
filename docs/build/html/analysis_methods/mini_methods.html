@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Filtering tutorial &#8212; ClampSuite 0.0.3 documentation</title>
+    <title>Mini methods &#8212; ClampSuite 0.0.3 documentation</title>
   
   
   
@@ -41,11 +41,11 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/design-tabs.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'analysis_methods/filtering';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'analysis_methods/mini_methods';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Mini methods" href="mini_methods.html" />
-    <link rel="prev" title="Analysis methods" href="index.html" />
+    <link rel="next" title="Script usage" href="../script_usage/index.html" />
+    <link rel="prev" title="Filtering tutorial" href="filtering.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="docsearch:language" content="en">
   </head>
@@ -278,8 +278,8 @@
   </p>
   <div class="bd-toc-item navbar-nav">
     <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Filtering tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mini_methods.html">Mini methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering.html">Filtering tutorial</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Mini methods</a></li>
 </ul>
 
   </div>
@@ -311,93 +311,29 @@
             
             <article class="bd-article" role="main">
               
-  <section id="filtering-tutorial">
-<span id="id1"></span><h1>Filtering tutorial<a class="headerlink" href="#filtering-tutorial" title="Permalink to this heading">#</a></h1>
-<p>Filtering is one of the most important steps and is usually the first step
-in analyzing a time-based signal. ClampSuite includes FIR filters, minimal-phase
-filters (Bessel), and other filters such as the exponentially weighted moving
-average (EWMA), Savgol and median filter. All these filters are based off of SciPy
-filters. The best way to test any of the filters is using the Filter module.
-You can test how different filters change your signal. Ideally you want to choose
-a filter the reduces the noise will leaving the signal of interest untouched.</p>
-<p>ClampSuite filters signals by first removing the mean from the selected baseline.
-This removes any DC offset for the signal and usually provides enough of a high pass
-filter that one is not need when implementing future filtering. Then the signal is filtered
-using one of the selected filters.</p>
-<p>For filters that need to have a low pass and high pass specified (fir, bessel, remez)
-leave the input field black if you don’t want to implement either a low pass or high pass filter.
-I recommend implementing a low pass filter around 500-600. A high pass is technically not needed
-since the DC offset is already removed by subtracting the mean from a choosen baseline.
-If you choose to implement a high pass filter I would recommend a cutoff no higher than 0.1.
-High pass filtering is usually used in situations where you want to recover a high frequency
-signal such as getting spikes from the wideband signal in recorded extracellularly. However
-for patch clamp ephys high pass filtering can introduce artifacts or degrade your signal.
-See good explanation about setting high and low pass filters
-<a class="reference external" href="https://predictablynoisy.com/mne-python/auto_tutorials/plot_background_filtering.html#id25">here</a>.</p>
-<section id="fir-filters">
-<h2>FIR filters<a class="headerlink" href="#fir-filters" title="Permalink to this heading">#</a></h2>
-<p>Finite impulse response (FIR) filters are the filter I would recommend using. The FIR filters
-included in ClampSuite are fir_zero_1, fir_zero_2, remez_1, and remez_2. All of these
-filters are (mostly) zerophase filters which means that they will not cause a shift in the timing
-of the signal that they are filtering however they achieve zerophase filtering through
-different means. Fir_zero_1 and remez_1 filter the signal in the forward and backwards
-direction to achieve a zerophase filter. This also has the effect of increasing the
-magnitude (effectiveness/degree) of the filtering. Fir_zero_2 and remez_2 implement a trick
-that allows for filtering in one direction while acheiving zerophase. If you implement an even
-ordered filter then the signal will be shifted forward by one sample due to the method used to
-achieve the zerophase response.
-See this <a class="reference external" href="https://www.mathworks.com/help/signal/ug/practical-introduction-to-digital-filtering.html">Matlab discussion</a>
-for more imformation.</p>
-<p>To implement the fir_zero_1 and fir_zero_2 filters you will need to make sure the following
-information is input in the GUI: order, high pass, high width, low pass, low width, window type,
-and beta/sigma. The window types included are: hann, hamming, blackmanharris, barthann, nuttal,
-blackman, tukey, kaiser, gaussian, parzen and exponential. I would recommend using the hann or
-hamming window. If you select the kaiser or gaussian window you will need to supply a beta/sigma
-value.</p>
-<p>To implement the remez_1 and remez_2 filters you will need to make sure the following
-information is input in the GUI: order, high pass, high width, low pass, low width.
-The Remez filter is a non-windowed FIR filter. I have noticed that the Remez filter
-cannot implement sharp cutoffs for low or high pass filters.</p>
-<p>The order of the filter depends on the how small the low width and high width are. A good
-starting order is 151 for a width of 600 and 251 for a width of 300. For a good rule of thumb
-and further discussion about setting the order of a filter see this
-<a class="reference external" href="https://dsp.stackexchange.com/questions/37646/filter-order-rule-of-thumb">discusion</a> on the signal processing StackExchange.</p>
-<p>The FIR filters also need a width specified if the high pass or low pass is specified.
-Low width and high width specify the width of the filters cutoff for the gain to go from
-one to zero. The frequency at which the gain will be zero is low pass - low width or
-high pass + high width. I implemented the filters this way because this is how SciPy
-does so in their tutorials.</p>
+  <section id="mini-methods">
+<span id="id1"></span><h1>Mini methods<a class="headerlink" href="#mini-methods" title="Permalink to this heading">#</a></h1>
+<p>This section describes how mini or spontaneous postsynaptic events are found in the Mini
+analysis module of ClampSuite to make the program less of a black box.</p>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading">#</a></h2>
+<p>Automatic identification mini or spontaneous postsynaptic events is a somewhat challenging
+analysis. Many programs use template matching. This essentially slides a template mini along
+a signal and finds areas where of that highly overlap the template. Template matching works
+well except if events have a large variance in amplitude and decay tau. There is a better
+method. The method was first published in the paper Pernia-Andrade et al., 2012 from Peter
+Jonas’ lab. The Pernia-Andrade method uses FFT deconvolution to find mini events.</p>
 </section>
-<section id="minimal-phase-filters">
-<h2>Minimal-phase filters<a class="headerlink" href="#minimal-phase-filters" title="Permalink to this heading">#</a></h2>
-<p>Minimal-phase filters are the digital version of the classic Bessel and Butterworth filters
-Clampsuite has implementations of bessel, butterworth, bessel_zero, and butterworth_zero.
-The bessel and butterworth filters will affect the phase of you signal depending
-on the frequency present. Bessel_zero and butterworth_zero are zerophase implementations
-of the bessel and butterworth filters. The zero phase filters filter in both directions
-and will filter your signal with double the magnitude.</p>
-<p>To implement these filters you need to make sure the following information is input in
-the GUI: order, high pass and low pass. The order needs to be an even value and specificies
-the steepneess of the filter cutoff where 2 is less steep than 4.</p>
-</section>
-<section id="other-filters">
-<h2>Other filters<a class="headerlink" href="#other-filters" title="Permalink to this heading">#</a></h2>
-<p>The other filters are primarily moving window filters that are not frequency based like
-the FIR and minimal-phase filters. These filters tend distort the signal when filtering the
-signal heavily. I included these filters mainly to compare to the other filters. The
-median filter only needs the order input, and the ewma, ewma_a, and savgol filters needs
-both the order and polyorder/sum proportion specified. For these filters the larger the
-order the more the signal is filtered and the more potentialfor artifacts. And order of
-10-15 is usually sufficient. The order is the number of samples included in the window.</p>
-<p>The median filter just finds the median from a window the size specified by the order input.
-The median filter repeats this step by sliding window along the array.</p>
-<p>The exponentially weighted moving average (EWMA) is a filter commonly used on time-series
-data like stock price or time-series data this is not sampled at high frequencies. I
-implemented this filter for some non-electrophysiology analysis and included it mostly
-for comparing to other filters. ewma is regulare EWMA filter and ewma_a is an adjusted filter.
-The window is the size of the sliding window and the sum-proportion define how much the
-previvous values weight the current value. See the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.ewm.html">Pandas implementation</a>
-and <a class="reference external" href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Wikipedia</a> for more information.</p>
+<section id="fft-deconvolution">
+<h2>FFT deconvolution<a class="headerlink" href="#fft-deconvolution" title="Permalink to this heading">#</a></h2>
+<p>The FFTj deconvolution method is pretty good method to find postsynaptic events. Deconvolution
+is used to recover the original signal that has passed through some filter. Ideally you know
+what the filter is and in the case of a postsynaptic event we know an equation to describe a
+postsynaptic event.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Aprime</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau_2</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">/</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">-</span> <span class="n">tau_2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">Aprime</span> <span class="o">*</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)))</span> <span class="o">**</span> <span class="n">risepower</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_2</span><span class="p">))))</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -409,17 +345,17 @@ and <a class="reference external" href="https://en.wikipedia.org/wiki/Moving_ave
             <footer class="bd-footer-article">
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-  <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+  <a class='left-prev' id="prev-link" href="filtering.html" title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
           <p class="prev-next-subtitle">previous</p>
-          <p class="prev-next-title">Analysis methods</p>
+          <p class="prev-next-title">Filtering tutorial</p>
       </div>
   </a>
-  <a class='right-next' id="next-link" href="mini_methods.html" title="next page">
+  <a class='right-next' id="next-link" href="../script_usage/index.html" title="next page">
   <div class="prev-next-info">
       <p class="prev-next-subtitle">next</p>
-      <p class="prev-next-title">Mini methods</p>
+      <p class="prev-next-title">Script usage</p>
   </div>
   <i class="fa-solid fa-angle-right"></i>
   </a>
@@ -440,18 +376,13 @@ and <a class="reference external" href="https://en.wikipedia.org/wiki/Moving_ave
 <nav id="bd-toc-nav" class="page-toc">
     <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#fir-filters">
-   FIR filters
+  <a class="reference internal nav-link" href="#background">
+   Background
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#minimal-phase-filters">
-   Minimal-phase filters
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#other-filters">
-   Other filters
+  <a class="reference internal nav-link" href="#fft-deconvolution">
+   FFT deconvolution
   </a>
  </li>
 </ul>
@@ -471,7 +402,7 @@ and <a class="reference external" href="https://en.wikipedia.org/wiki/Moving_ave
 <div class="toc-item">
   
 <div class="tocsection sourcelink">
-    <a href="../_sources/analysis_methods/filtering.rst.txt">
+    <a href="../_sources/analysis_methods/mini_methods.rst.txt">
         <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
 </div>
