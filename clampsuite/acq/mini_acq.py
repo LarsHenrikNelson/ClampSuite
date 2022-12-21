@@ -13,7 +13,6 @@ from ..functions.filtering_functions import fir_zero_1
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def analyze(
         self,
-        sample_rate: Union[int, float] = 10000,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 80,
         filter_type: Literal[
@@ -73,11 +72,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         tmp_spacer: Union[int, float] = 1.5,
     ):
         # Set the attributes for the acquisition
-        self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
-        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
-        self.baseline_start = int(baseline_start * (sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -87,9 +83,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.window = window
         self.polyorder = polyorder
         self.baseline_corr = baseline_corr
-        self.baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
-        )
         self.rc_check = rc_check
         self.rc_check_start = int(rc_check_start * self.s_r_c)
         self.rc_check_end = int(rc_check_end * self.s_r_c)
@@ -113,10 +106,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.deleted_events = 0
 
         # Runs the functions to analyze the acquisition
-        self.create_mespc_array()
         if self.baseline_corr:
             self.baseline_correction()
-        self.filter_array()
+        temp_array = self.create_mespc_array()
+        self.filter_array(temp_array)
         self.set_array()
         self.set_sign()
         self.create_events()
@@ -130,15 +123,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             pass
         elif self.rc_check is True:
             if self.rc_check_end == len(self.array):
-                temp_array = np.copy(self.baselined_array[: self.rc_check_start])
-                self.rc_check_array = np.copy(
-                    self.baselined_array[self.rc_check_start :]
-                )
+                temp_array = np.copy(self.array[: self.rc_check_start])
+                self.rc_check_array = np.copy(self.array[self.rc_check_start :])
             else:
-                temp_array = np.copy(self.baselined_array[self.rc_check_end :])
-                self.rc_check_array = np.copy(self.baselined_array[self.rc_check_end :])
-            self.baselined_array = temp_array
-        self.x_array = np.arange(len(self.baselined_array)) / (self.s_r_c)
+                temp_array = np.copy(self.array[self.rc_check_end :])
+                self.rc_check_array = np.copy(self.array[self.rc_check_end :])
+        return temp_array
 
     def set_array(self):
         """Used to reduce the memory load of the class
@@ -157,14 +147,14 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.final_array = self.final_array * -1
 
     def baseline_correction(self):
-        a, b, c = 0.93259504, -249.26795569, -1.17790283
-        end = len(self.baselined_array)
-        smooth = a * np.log(end + b) + c
-        spl = interpolate.UnivariateSpline(
-            self.x_array, self.baselined_array, s=end * smooth
+        end = len(self.array)
+        num_knots = 8
+        knots = np.arange(
+            int(end / num_knots),
         )
-        baseline = spl(self.x_array)
-        self.baselined_array = self.baselined_array - baseline
+        spl = interpolate.LSQUnivariateSpline(self.plot_acq_x(), self.array, t=knots)
+        baseline = spl(self.plot_acq_x())
+        self.array = self.array - baseline
 
     def deconvolve_array(self, lambd: Union[int, float] = 4) -> np.ndarray:
         """The Wiener deconvolution equation can be found on GitHub from pbmanis
@@ -479,7 +469,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
 
         """
         self.saved_events_dict = []
-        self.x_array = "saved"
         for i in self.postsynaptic_events:
             i.x_array = "saved"
             i.event_array = "saved"

@@ -110,13 +110,6 @@ class currentClampWidget(DragDropWidget):
         self.b_end_edit.setText("300")
         self.input_layout.addRow(self.b_end_label, self.b_end_edit)
 
-        self.sample_rate_label = QLabel("Sample rate (Hz)")
-        self.sample_rate_edit = LineEdit()
-        self.sample_rate_edit.setObjectName("sample_rate_edit")
-        self.sample_rate_edit.setEnabled(True)
-        self.sample_rate_edit.setText("10000")
-        self.input_layout.addRow(self.sample_rate_label, self.sample_rate_edit)
-
         self.pulse_start_label = QLabel("Pulse start (ms)")
         self.pulse_start_edit = LineEdit()
         self.pulse_start_edit.setObjectName("pulse_start_edit")
@@ -336,7 +329,6 @@ class currentClampWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="current_clamp",
-                sample_rate=self.sample_rate_edit.toInt(),
                 baseline_start=self.b_start_edit.toInt(),
                 baseline_end=self.b_end_edit.toInt(),
                 filter_type="None",

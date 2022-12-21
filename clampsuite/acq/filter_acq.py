@@ -17,10 +17,10 @@ from ..functions.filtering_functions import (
     savgol_filt,
 )
 
-from . import base_acq
+from . import acq
 
 
-class FilterAcq(base_acq.BaseAcq, analysis="filter"):
+class FilterAcq(acq.Acquisition, analysis="filter"):
 
     """
     This is the base class for acquisitions. It returns the array from a
@@ -33,7 +33,6 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
 
     def analyze(
         self,
-        sample_rate: Union[int, float] = 10000,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
         filter_type: str = "None",
@@ -45,9 +44,8 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
         window: Union[str, None] = None,
         polyorder: Union[int, None] = None,
     ):
-        self.sample_rate = sample_rate
-        self.baseline_start = baseline_start
-        self.baseline_end = baseline_end
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -60,9 +58,8 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             self.array[self.baseline_start : self.baseline_end]
         )
         self.filter_array()
-        self.s_r_c = sample_rate / 1000
 
-    def filter_array(self):
+    def filter_array(self, array):
         """
         This funtion filters the array of data, with several different types
         of filters.
@@ -109,12 +106,14 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
         based on subtraction. Pretty esoteric and is more for learning
         purposes.
         """
-
+        baselined_array = self.array - np.mean(
+            self.array[self.baseline_start : self.baseline_end]
+        )
         if self.filter_type == "median":
-            self.filtered_array = median_filter(self.baselined_array, self.order)
+            self.filtered_array = median_filter(baselined_array, self.order)
         elif self.filter_type == "bessel":
             self.filtered_array = bessel(
-                self.baselined_array,
+                baselined_array,
                 self.order,
                 self.sample_rate,
                 self.high_pass,
@@ -122,7 +121,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "bessel_zero":
             self.filtered_array = bessel_zero(
-                self.baselined_array,
+                baselined_array,
                 self.order,
                 self.sample_rate,
                 self.high_pass,
@@ -130,7 +129,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "butterworth":
             self.filtered_array = butterworth(
-                self.baselined_array,
+                baselined_array,
                 self.order,
                 self.sample_rate,
                 self.high_pass,
@@ -138,7 +137,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "butterworth_zero":
             self.filtered_array = butterworth_zero(
-                self.baselined_array,
+                baselined_array,
                 self.order,
                 self.sample_rate,
                 self.high_pass,
@@ -146,7 +145,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "fir_zero_1":
             self.filtered_array = fir_zero_1(
-                self.baselined_array,
+                baselined_array,
                 self.sample_rate,
                 self.order,
                 self.high_pass,
@@ -157,7 +156,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "fir_zero_2":
             self.filtered_array = fir_zero_2(
-                self.baselined_array,
+                baselined_array,
                 self.sample_rate,
                 self.order,
                 self.high_pass,
@@ -168,7 +167,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "remez_1":
             self.filtered_array = remez_1(
-                self.baselined_array,
+                baselined_array,
                 self.sample_rate,
                 self.order,
                 self.high_pass,
@@ -178,7 +177,7 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "remez_2":
             self.filtered_array = remez_2(
-                self.baselined_array,
+                baselined_array,
                 self.sample_rate,
                 self.order,
                 self.high_pass,
@@ -188,15 +187,15 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
             )
         elif self.filter_type == "savgol":
             self.filtered_array = savgol_filt(
-                self.baselined_array, self.order, self.polyorder
+                baselined_array, self.order, self.polyorder
             )
 
         elif self.filter_type == "None":
-            self.filtered_array = self.baselined_array.copy()
+            self.filtered_array = baselined_array.copy()
 
         elif self.filter_type == "subtractive":
             array = fir_zero_2(
-                self.baselined_array,
+                baselined_array,
                 self.sample_rate,
                 self.order,
                 self.high_pass,
@@ -205,15 +204,13 @@ class FilterAcq(base_acq.BaseAcq, analysis="filter"):
                 self.low_width,
                 self.window,
             )
-            self.filtered_array = self.baselined_array - array
+            self.filtered_array = baselined_array - array
 
         elif self.filter_type == "ewma":
-            self.filtered_array = ewma_filt(
-                self.baselined_array, self.order, self.polyorder
-            )
+            self.filtered_array = ewma_filt(baselined_array, self.order, self.polyorder)
         elif self.filter_type == "ewma_a":
             self.filtered_array = ewma_afilt(
-                self.baselined_array, self.order, self.polyorder
+                baselined_array, self.order, self.polyorder
             )
 
     def plot_acq_x(self) -> np.ndarray:

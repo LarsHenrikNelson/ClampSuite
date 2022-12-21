@@ -75,14 +75,12 @@ def load_mat(filename: str) -> dict:
     return _check_vars(data)
 
 
-def load_scanimage_file(
-    path: PurePath,
-) -> dict:
+def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     """
     This function takes pathlib.PurePath object as the input.
     """
     acq_dict = {}
-    name = path.stem
+    name = PurePath(path).stem
     acq_dict["name"] = name
     acq_dict["acq_number"] = name.split("_")[-1]
     matfile1 = load_mat(path)
@@ -91,9 +89,10 @@ def load_scanimage_file(
     acq_dict["epoch"] = re.findall("epoch=(\D?\d*)", data_string)[0]
     analog_input = matfile1[name]["UserData"]["ai"]
     acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
+    acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
     if analog_input == 0:
         r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
-        acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        acq_dict["pulse_pattern"] = re.findall("pulseToUse0=(\D?\d*)", data_string)[0]
     elif analog_input == 1:
         r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
         acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]

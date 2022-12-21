@@ -1,7 +1,7 @@
 .. _filtering_tutorial:
 
 Filtering tutorial
-================
+===================
 
 Filtering is one of the most important steps and is usually the first step
 in analyzing a time-based signal. ClampSuite includes FIR filters, minimal-phase
@@ -24,7 +24,7 @@ If you choose to implement a high pass filter I would recommend a cutoff no high
 High pass filtering is usually used in situations where you want to recover a high frequency
 signal such as getting spikes from the wideband signal in recorded extracellularly. However
 for patch clamp ephys high pass filtering can introduce artifacts or degrade your signal.
-See good explanation about setting high and low pass filters 
+Here is a good explanation about setting high and low pass filters:
 `here <https://predictablynoisy.com/mne-python/auto_tutorials/plot_background_filtering.html#id25>`_.
 
 FIR filters

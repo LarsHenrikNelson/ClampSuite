@@ -15,7 +15,6 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
     def analyze(
         self,
-        sample_rate: Union[int, float] = 10000,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
         filter_type: str = "remez_2",
@@ -33,8 +32,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         it easy to troubleshoot.
         """
         # Set all the attributes for analysis.
-        self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
+
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -43,9 +41,8 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
-        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
-        self.baseline_start = int(baseline_start * (sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.baseline_start = int(baseline_start * self.s_r_c)
+        self.baseline_end = int(baseline_end * (self.s_r_c))
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )

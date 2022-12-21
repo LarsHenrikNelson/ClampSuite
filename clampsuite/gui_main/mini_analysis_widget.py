@@ -128,12 +128,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.b_end_edit.setText("80")
         self.input_layout.addRow("Baseline end (ms)", self.b_end_edit)
 
-        self.sample_rate_edit = LineEdit()
-        self.sample_rate_edit.setObjectName("sample_rate_edit")
-        self.sample_rate_edit.setEnabled(True)
-        self.sample_rate_edit.setText("10000")
-        self.input_layout.addRow("Sample rate", self.sample_rate_edit)
-
         self.rc_checkbox = QCheckBox()
         self.rc_checkbox.setObjectName("rc_checkbox")
         self.rc_checkbox.setChecked(True)
@@ -369,6 +363,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.spacer_edit.setEnabled(True)
         self.spacer_edit.setText("1.5")
         self.template_form.addRow("Spacer (ms)", self.spacer_edit)
+
+        self.sample_rate_edit = LineEdit()
+        self.sample_rate_edit.setObjectName("sample_rate_edit")
+        self.sample_rate_edit.setEnabled(True)
+        self.sample_rate_edit.setText("10000")
+        self.template_form.addRow("Sample rate", self.sample_rate_edit)
 
         self.template_button = QPushButton("Create template")
         self.template_form.addRow(self.template_button)
@@ -722,6 +722,7 @@ class MiniAnalysisWidget(DragDropWidget):
         risepower = self.risepower_edit.toFloat()
         length = self.temp_length_edit.toFloat()
         spacer = self.spacer_edit.toFloat()
+        sample_rate = self.sample_rate_edit.toInt()
         template = create_template(
             amplitude,
             tau_1,
@@ -729,9 +730,9 @@ class MiniAnalysisWidget(DragDropWidget):
             risepower,
             length,
             spacer,
-            self.sample_rate_edit.toInt(),
+            sample_rate,
         )
-        s_r_c = self.sample_rate_edit.toInt() / 1000
+        s_r_c = sample_rate / 1000
         self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
 
     def analyze(self):
@@ -780,7 +781,6 @@ class MiniAnalysisWidget(DragDropWidget):
             self.exp_manager,
             "analyze",
             exp=self.analysis_type,
-            sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
             filter_type=self.filter_selection.currentText(),

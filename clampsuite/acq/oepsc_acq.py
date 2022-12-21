@@ -10,7 +10,6 @@ from ..functions.curve_fit import s_exp_decay, db_exp_decay
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def analyze(
         self,
-        sample_rate: int = 10000,
         baseline_start: Union[int, float] = 800,
         baseline_end: Union[int, float] = 1000,
         filter_type: str = "None",
@@ -32,8 +31,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         curve_fit_type: str = "s_exp",
     ):
         # Set all the attributes
-        self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -42,9 +39,9 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
-        self.x_array = np.arange(len(self.array)) / (sample_rate / 1000)
-        self.baseline_start = int(baseline_start * (sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.x_array = np.arange(len(self.array)) / (self.sample_rate / 1000)
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )

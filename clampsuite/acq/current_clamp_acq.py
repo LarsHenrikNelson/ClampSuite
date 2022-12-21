@@ -11,7 +11,6 @@ from . import filter_acq
 class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def analyze(
         self,
-        sample_rate: Union[int, float] = 10000,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 100,
         filter_type: str = "None",
@@ -29,10 +28,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         threshold: Union[int, float] = -15,
         min_spikes: int = 2,
     ):
-        self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
-        self.baseline_start = int(baseline_start * (sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (sample_rate / 1000))
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -48,7 +45,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.pulse_end = int(pulse_end * self.s_r_c)
         self.ramp_start = int(ramp_start * self.s_r_c)
         self.ramp_end = int(ramp_end * self.s_r_c)
-        self.x_array = np.arange(len(self.array)) / (self.s_r_c)
         self.threshold = threshold
         self.min_spikes = min_spikes
 
@@ -133,8 +129,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
             # Differentiate the array to find the peak dv/dt.
             dv = np.gradient(self.array)
-            # dt = np.gradient(np.arange(len(self.x_array)) / 10)
-            dt = np.gradient(self.x_array)
+            dt = np.gradient(self.plot_acq_x())
             peak_dv, _ = signal.find_peaks(dv, height=6)
 
             # Pull out the index of the first peak and find the peak velocity.
@@ -442,7 +437,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             return self.rheo_x
 
     def spike_x_array(self) -> list:
-        return self.x_array[self.ap_index[0] : self.ap_index[1]]
+        return self.plot_acq_x()[self.ap_index[0] : self.ap_index[1]]
 
     def spike_peaks_x(self) -> list:
         if not np.isnan(self.peaks[0]):

@@ -138,13 +138,6 @@ class oEPSCWidget(DragDropWidget):
         self.o_b_end_edit.setText("950")
         self.input_layout_1.addRow(self.o_b_end_label, self.o_b_end_edit)
 
-        self.o_sample_rate_label = QLabel("Sample rate")
-        self.o_sample_rate_edit = LineEdit()
-        self.o_sample_rate_edit.setEnabled(True)
-        self.o_sample_rate_edit.setObjectName("o_sample_rate_edit")
-        self.o_sample_rate_edit.setText("10000")
-        self.input_layout_1.addRow(self.o_sample_rate_label, self.o_sample_rate_edit)
-
         self.o_filter_type_label = QLabel("Filter Type")
         filters = [
             "remez_2",
@@ -330,15 +323,6 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_b_end_edit.setObjectName("lfp_b_end_edit")
         self.lfp_b_end_edit.setText("950")
         self.input_layout_2.addRow(self.lfp_b_end_label, self.lfp_b_end_edit)
-
-        self.lfp_sample_rate_label = QLabel("Sample rate")
-        self.lfp_sample_rate_edit = LineEdit()
-        self.lfp_sample_rate_edit.setEnabled(True)
-        self.lfp_sample_rate_edit.setObjectName("lfp_sample_rate_edit")
-        self.lfp_sample_rate_edit.setText("10000")
-        self.input_layout_2.addRow(
-            self.lfp_sample_rate_label, self.lfp_sample_rate_edit
-        )
 
         self.lfp_filter_type_label = QLabel("Filter Type")
         self.lfp_filter_selection = QComboBox(self)
@@ -741,7 +725,6 @@ class oEPSCWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="oepsc",
-                sample_rate=self.o_sample_rate_edit.toInt(),
                 baseline_start=self.o_b_start_edit.toFloat(),
                 baseline_end=self.o_b_end_edit.toFloat(),
                 filter_type=self.o_filter_selection.currentText(),
@@ -770,7 +753,6 @@ class oEPSCWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="lfp",
-                sample_rate=self.lfp_sample_rate_edit.toInt(),
                 baseline_start=self.lfp_b_start_edit.toFloat(),
                 baseline_end=self.lfp_b_end_edit.toFloat(),
                 filter_type=self.lfp_filter_selection.currentText(),
