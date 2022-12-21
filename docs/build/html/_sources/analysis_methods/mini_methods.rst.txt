@@ -16,12 +16,15 @@ Jonas' lab. The Pernia-Andrade method uses FFT deconvolution to find mini events
 
 FFT deconvolution
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The FFTj deconvolution method is pretty good method to find postsynaptic events. Deconvolution
-is used to recover the original signal that has passed through some filter. Ideally you know
+The FFT deconvolution method is pretty good method to find postsynaptic events. Deconvolution
+is used to recover an original signal that has passed through some filter. Ideally you know
 what the filter is and in the case of a postsynaptic event we know an equation to describe a 
-postsynaptic event.
+postsynaptic event shown in python.
 
 ::
-    
+
     Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
     y = (amplitude / Aprime * ((1 - (np.exp(-t_length / tau_1))) ** risepower * np.exp((-t_length / tau_2))))
+
+In the case of the postsynaptic event imagine there is signal at zero except for random points that are
+some height above the 
