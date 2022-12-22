@@ -5,6 +5,7 @@ from typing import Callable, Union
 import yaml
 
 from ..functions.load_functions import load_acq, load_file, save_acq
+from ..functions.filtering_functions import Filters, Windows
 from ..final_analysis import FinalAnalysis
 
 
@@ -236,3 +237,11 @@ class ExpManager:
             return self.final_analysis.df_dict
         else:
             return {}
+
+    @staticmethod
+    def filters():
+        return [i.name for i in Filters]
+
+    @staticmethod
+    def windows():
+        return [i.name for i in Windows]

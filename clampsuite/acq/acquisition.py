@@ -1,6 +1,6 @@
 import copy
 
-import numpy as np
+from ..functions.filtering_functions import Filters, Windows
 
 
 class Acquisition:
@@ -53,7 +53,6 @@ class Acquisition:
         self.s_r_c = self.sample_rate / 1000
         if "saved_events_dict" in data:
             self.create_postsynaptic_events()
-            self.x_array = np.arange(len(self.final_array)) / self.s_r_c
             self.event_arrays = [
                 i.event_array - i.event_start_y for i in self.postsynaptic_events
             ]
@@ -72,6 +71,14 @@ class Acquisition:
 
     def plot_acq_x(self):
         raise NotImplementedError
+
+    @staticmethod
+    def filters():
+        return [i.name for i in Filters]
+
+    @staticmethod
+    def windows():
+        return [i.name for i in Windows]
 
 
 if __name__ == "__main__":

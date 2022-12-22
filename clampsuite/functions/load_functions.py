@@ -3,13 +3,12 @@ import json
 from math import nan
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import re
-from typing import Union, Literal
+from typing import Callable, Literal, Union
 
 import numpy as np
 from scipy.io import loadmat, matlab
 
 from ..acq import Acquisition
-
 
 """
 This function loads a matlab file and puts it into a dictionary that is easy
@@ -220,7 +219,7 @@ def load_acq(
 def load_acqs(
     analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
     file_path: Union[list, tuple, str, Path, PurePath],
-    callback_func=print,
+    callback_func: Callable = print,
 ) -> dict:
     if isinstance(file_path, (str, Path, PurePath)):
         file_path = list(file_path)
@@ -256,9 +255,3 @@ def save_acq(acq, save_filename):
         x.save_postsynaptic_events()
     with open(f"{save_filename}_{x.name}.json", "w") as write_file:
         json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-
-
-if __name__ == "__main__":
-    load_acq()
-    load_acqs()
-    load_file()

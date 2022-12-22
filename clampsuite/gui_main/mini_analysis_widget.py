@@ -146,21 +146,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.rc_check_end_edit.setText("10300")
         self.input_layout.addRow("RC check end (ms)", self.rc_check_end_edit)
 
-        filters = [
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "ewma",
-            "ewma_a",
-            "savgol",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ]
+        filters = ExpManager.filters()
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
         self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
@@ -202,19 +188,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.low_width_edit.setText("600")
         self.input_layout.addRow("Low width", self.low_width_edit)
 
-        windows = [
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ]
+        windows = ExpManager.windows()
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
         self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))

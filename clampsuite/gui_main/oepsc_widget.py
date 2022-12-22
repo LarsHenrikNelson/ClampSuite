@@ -139,21 +139,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_1.addRow(self.o_b_end_label, self.o_b_end_edit)
 
         self.o_filter_type_label = QLabel("Filter Type")
-        filters = [
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "savgol",
-            "ewma",
-            "ewma_a",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ]
+        filters = ExpManager.filters()
         self.o_filter_selection = QComboBox()
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
@@ -199,19 +185,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_1.addRow(self.o_low_width_label, self.o_low_width_edit)
 
         self.o_window_label = QLabel("Window type")
-        windows = [
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ]
+        windows = ExpManager.windows()
         self.o_window_edit = QComboBox(self)
         self.o_window_edit.setObjectName("o_window_edit")
         self.o_window_edit.addItems(windows)

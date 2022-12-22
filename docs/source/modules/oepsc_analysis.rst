@@ -13,7 +13,7 @@ the GUI.
 
 Filtering
 ----------
-For an in-depth discussion of filtering see the `filtering documentation </filtering>`_.
+For an in-depth discussion of filtering see the :doc:`filtering tutorial </analysis_methods/filtering>`.
 Filtering can change the amplitude, rise rate/time and tau of the events so it is important
 to keep the filtering settings the same for each experiment.
 

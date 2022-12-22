@@ -1,17 +1,61 @@
+from enum import Enum
+from typing import Union
+
 import numpy as np
 import patsy
 from scipy import signal
 from sklearn.linear_model import LinearRegression
 
 
-def median_filter(array, order):
+Filters = Enum(
+    "Filters",
+    [
+        "remez_2",
+        "remez_1",
+        "fir_zero_2",
+        "fir_zero_1",
+        "savgol",
+        "ewma",
+        "ewma_a",
+        "median",
+        "bessel",
+        "butterworth",
+        "bessel_zero",
+        "butterworth_zero",
+    ],
+)
+
+Windows = Enum(
+    "Windows",
+    [
+        "hann",
+        "hamming",
+        "blackmanharris",
+        "barthann",
+        "nuttall",
+        "blackman",
+        "tukey",
+        "kaiser",
+        "gaussian",
+        "parzen",
+    ],
+)
+
+
+def median_filter(array: Union[np.ndarray, list], order: int):
     if isinstance(order, float):
         order = int(order)
     filt_array = signal.medfilt(array, order)
     return filt_array
 
 
-def bessel(array, order, sample_rate, highpass=None, lowpass=None):
+def bessel(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.bessel(
             order,
@@ -35,7 +79,13 @@ def bessel(array, order, sample_rate, highpass=None, lowpass=None):
     return filt_array
 
 
-def bessel_zero(array, order, sample_rate, highpass=None, lowpass=None):
+def bessel_zero(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.bessel(
             order,
@@ -59,7 +109,13 @@ def bessel_zero(array, order, sample_rate, highpass=None, lowpass=None):
     return filt_array
 
 
-def butterworth(array, order, sample_rate, highpass=None, lowpass=None):
+def butterworth(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.butter(
             order,
@@ -83,7 +139,13 @@ def butterworth(array, order, sample_rate, highpass=None, lowpass=None):
     return filt_array
 
 
-def butterworth_zero(array, order, sample_rate, highpass=None, lowpass=None):
+def butterworth_zero(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.butter(
             order,
@@ -107,7 +169,13 @@ def butterworth_zero(array, order, sample_rate, highpass=None, lowpass=None):
     return filt_array
 
 
-def elliptic(array, order, sample_rate, highpass=None, lowpass=None):
+def elliptic(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.ellip(
             order,
@@ -131,7 +199,13 @@ def elliptic(array, order, sample_rate, highpass=None, lowpass=None):
     return filt_array
 
 
-def elliptic_zero(array, order, sample_rate, highpass=None, lowpass=None):
+def elliptic_zero(
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    highpass: Union[int, None] = None,
+    lowpass: Union[int, None] = None,
+):
     if highpass is not None and lowpass is not None:
         sos = signal.ellip(
             order,
@@ -156,14 +230,14 @@ def elliptic_zero(array, order, sample_rate, highpass=None, lowpass=None):
 
 
 def fir_zero_1(
-    array,
-    sample_rate,
-    order,
-    high_pass=None,
-    high_width=None,
-    low_pass=None,
-    low_width=None,
-    window="hann",
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    high_pass: Union[int, None] = None,
+    high_width: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
+    low_width: Union[int, None] = None,
+    window: str = "hann",
 ):
     if high_pass is not None and low_pass is not None:
         filt = signal.firwin2(
@@ -203,14 +277,14 @@ def fir_zero_1(
 
 
 def fir_zero_2(
-    array,
-    sample_rate,
-    order,
-    high_pass=None,
-    high_width=None,
-    low_pass=None,
-    low_width=None,
-    window="flattop",
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    high_pass: Union[int, None] = None,
+    high_width: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
+    low_width: Union[int, None] = None,
+    window: str = "hann",
 ):
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
@@ -257,13 +331,13 @@ def fir_zero_2(
 
 
 def remez_1(
-    array,
-    sample_rate,
-    order,
-    high_pass=None,
-    high_width=None,
-    low_pass=None,
-    low_width=None,
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    high_pass: Union[int, None] = None,
+    high_width: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
+    low_width: Union[int, None] = None,
 ):
     if high_pass is not None and low_pass is not None:
         filt = signal.remez(
@@ -300,13 +374,13 @@ def remez_1(
 
 
 def remez_2(
-    array,
-    sample_rate,
-    order,
-    high_pass=None,
-    high_width=None,
-    low_pass=None,
-    low_width=None,
+    array: Union[np.ndarray, list],
+    order: int,
+    sample_rate: int,
+    high_pass: Union[int, None] = None,
+    high_width: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
+    low_width: Union[int, None] = None,
 ):
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
@@ -349,14 +423,14 @@ def remez_2(
     return filt_array
 
 
-def savgol_filt(array, order, polyorder):
+def savgol_filt(array: Union[np.ndarray, list], order: int, polyorder: int):
     if isinstance(polyorder, float):
         polyorder = int(polyorder)
     filtered_array = signal.savgol_filter(array, order, polyorder, mode="nearest")
     return filtered_array
 
 
-def nat_spline_filt(array, order):
+def nat_spline_filt(array: Union[np.ndarray, list], order: int):
     # Good for finding baselines, but not great for filtering large arrays.
     x_array = np.arange(len(array))
     x_basis = patsy.cr(x_array, df=order, constraints="center")
@@ -365,7 +439,7 @@ def nat_spline_filt(array, order):
     return y_hat
 
 
-def ewma_filt(array, window, sum_proportion):
+def ewma_filt(array: Union[np.ndarray, list], window: int, sum_proportion: float):
     alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
     b = [alpha]
     a = [1, alpha - 1]
@@ -373,7 +447,7 @@ def ewma_filt(array, window, sum_proportion):
     return filtered
 
 
-def ewma_afilt(array, window, sum_proportion):
+def ewma_afilt(array: Union[np.ndarray, list], window: int, sum_proportion: float):
     alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
     num = np.power(1.0 - alpha, np.arange(window + 1))
     b = num / np.sum(num)
@@ -382,19 +456,19 @@ def ewma_afilt(array, window, sum_proportion):
     return filtered
 
 
-if __name__ == "__main__":
-    bessel()
-    bessel_zero()
-    butterworth()
-    butterworth_zero()
-    elliptic()
-    elliptic_zero()
-    ewma_filt()
-    ewma_afilt()
-    fir_zero_2()
-    fir_zero_1()
-    median_filter()
-    nat_spline_filt()
-    remez_2()
-    remez_1()
-    savgol_filt()
+# if __name__ == "__main__":
+#     bessel()
+#     bessel_zero()
+#     butterworth()
+#     butterworth_zero()
+#     elliptic()
+#     elliptic_zero()
+#     ewma_filt()
+#     ewma_afilt()
+#     fir_zero_2()
+#     fir_zero_1()
+#     median_filter()
+#     nat_spline_filt()
+#     remez_2()
+#     remez_1()
+#     savgol_filt()

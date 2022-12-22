@@ -92,21 +92,7 @@ class filterWidget(QWidget):
 
         self.filter_type_label = QLabel("Filter Type")
 
-        filters = [
-            "None",
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "savgol",
-            "ewma",
-            "ewma_a",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-        ]
+        filters = ExpManager.filters()
         self.filter_selection = QComboBox(self)
         self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.filter_selection.addItems(filters)
@@ -144,18 +130,7 @@ class filterWidget(QWidget):
         self.filt_layout.addRow(self.low_width_label, self.low_width_edit)
 
         self.window_label = QLabel("Window type")
-        windows = [
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-        ]
+        windows = ExpManager.windows()
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
         self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
@@ -248,7 +223,6 @@ class filterWidget(QWidget):
         ]
         h = self.exp_manager.exp_dict["filter"][key]
         h.analyze(
-            sample_rate=self.sample_rate_edit.toInt(),
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
             filter_type=self.filter_selection.currentText(),
@@ -261,7 +235,6 @@ class filterWidget(QWidget):
             polyorder=self.polyorder_edit.toFloat(),
         )
         filter_dict = {
-            "sample_rate": self.sample_rate_edit.toInt(),
             "baseline_start": self.b_start_edit.toInt(),
             "baseline_end": self.b_end_edit.toInt(),
             "filter_type": self.filter_selection.currentText(),

@@ -17,10 +17,10 @@ from ..functions.filtering_functions import (
     savgol_filt,
 )
 
-from . import acq
+from . import acquisition
 
 
-class FilterAcq(acq.Acquisition, analysis="filter"):
+class FilterAcq(acquisition.Acquisition, analysis="filter"):
 
     """
     This is the base class for acquisitions. It returns the array from a
@@ -47,12 +47,12 @@ class FilterAcq(acq.Acquisition, analysis="filter"):
         self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
         self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
+        order = self.order = order
+        high_pass = self.high_pass = high_pass
+        high_width = self.high_width = high_width
+        low_pass = self.low_pass = low_pass
+        low_width = self.low_width = low_width
+        window = self.window = window
         self.polyorder = polyorder
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
@@ -110,84 +110,84 @@ class FilterAcq(acq.Acquisition, analysis="filter"):
             self.array[self.baseline_start : self.baseline_end]
         )
         if self.filter_type == "median":
-            self.filtered_array = median_filter(baselined_array, self.order)
+            self.filtered_array = median_filter(array=baselined_array, order=self.order)
         elif self.filter_type == "bessel":
             self.filtered_array = bessel(
-                baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
+                array=baselined_array,
+                order=self.order,
+                sample_rate=self.sample_rate,
+                high_pass=self.high_pass,
+                low_pass=self.low_pass,
             )
         elif self.filter_type == "bessel_zero":
             self.filtered_array = bessel_zero(
-                baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
+                array=baselined_array,
+                order=self.order,
+                sample_rate=self.sample_rate,
+                high_pass=self.high_pass,
+                low_pass=self.low_pass,
             )
         elif self.filter_type == "butterworth":
             self.filtered_array = butterworth(
-                baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
+                array=baselined_array,
+                order=self.order,
+                sample_rate=self.sample_rate,
+                high_pass=self.high_pass,
+                low_pass=self.low_pass,
             )
         elif self.filter_type == "butterworth_zero":
             self.filtered_array = butterworth_zero(
-                baselined_array,
-                self.order,
-                self.sample_rate,
-                self.high_pass,
-                self.low_pass,
+                array=baselined_array,
+                order=self.order,
+                sample_rate=self.sample_rate,
+                high_pass=self.high_pass,
+                low_pass=self.low_pass,
             )
         elif self.filter_type == "fir_zero_1":
             self.filtered_array = fir_zero_1(
-                baselined_array,
-                self.sample_rate,
-                self.order,
-                self.high_pass,
-                self.high_width,
-                self.low_pass,
-                self.low_width,
-                self.window,
+                array=baselined_array,
+                sample_rate=self.sample_rate,
+                order=self.order,
+                high_pass=self.high_pass,
+                high_width=self.high_width,
+                low_pass=self.low_pass,
+                low_width=self.low_width,
+                window=self.window,
             )
         elif self.filter_type == "fir_zero_2":
             self.filtered_array = fir_zero_2(
-                baselined_array,
-                self.sample_rate,
-                self.order,
-                self.high_pass,
-                self.high_width,
-                self.low_pass,
-                self.low_width,
-                self.window,
+                array=baselined_array,
+                sample_rate=self.sample_rate,
+                order=self.order,
+                high_pass=self.high_pass,
+                high_width=self.high_width,
+                low_pass=self.low_pass,
+                low_width=self.low_width,
+                window=self.window,
             )
         elif self.filter_type == "remez_1":
             self.filtered_array = remez_1(
-                baselined_array,
-                self.sample_rate,
-                self.order,
-                self.high_pass,
-                self.high_width,
-                self.low_pass,
-                self.low_width,
+                array=baselined_array,
+                sample_rate=self.sample_rate,
+                order=self.order,
+                high_pass=self.high_pass,
+                high_width=self.high_width,
+                low_pass=self.low_pass,
+                low_width=self.low_width,
             )
         elif self.filter_type == "remez_2":
             self.filtered_array = remez_2(
-                baselined_array,
-                self.sample_rate,
-                self.order,
-                self.high_pass,
-                self.high_width,
-                self.low_pass,
-                self.low_width,
+                array=baselined_array,
+                sample_rate=self.sample_rate,
+                order=self.order,
+                high_pass=self.high_pass,
+                high_width=self.high_width,
+                low_pass=self.low_pass,
+                low_width=self.low_width,
             )
         elif self.filter_type == "savgol":
             self.filtered_array = savgol_filt(
-                baselined_array, self.order, self.polyorder
+                array=baselined_array, order=self.order, polyorder=self.polyorder
             )
 
         elif self.filter_type == "None":
@@ -196,21 +196,23 @@ class FilterAcq(acq.Acquisition, analysis="filter"):
         elif self.filter_type == "subtractive":
             array = fir_zero_2(
                 baselined_array,
-                self.sample_rate,
-                self.order,
-                self.high_pass,
-                self.high_width,
-                self.low_pass,
-                self.low_width,
-                self.window,
+                order=self.order,
+                sample_rate=self.sample_rate,
+                high_pass=self.high_pass,
+                high_width=self.high_width,
+                low_pass=self.low_pass,
+                low_width=self.low_width,
+                window=self.window,
             )
             self.filtered_array = baselined_array - array
 
         elif self.filter_type == "ewma":
-            self.filtered_array = ewma_filt(baselined_array, self.order, self.polyorder)
+            self.filtered_array = ewma_filt(
+                array=baselined_array, window=self.order, sum_proportion=self.polyorder
+            )
         elif self.filter_type == "ewma_a":
             self.filtered_array = ewma_afilt(
-                baselined_array, self.order, self.polyorder
+                array=baselined_array, window=self.order, sum_proportion=self.polyorder
             )
 
     def plot_acq_x(self) -> np.ndarray:

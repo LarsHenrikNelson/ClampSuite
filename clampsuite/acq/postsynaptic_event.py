@@ -26,7 +26,10 @@ class MiniEvent:
         y_array: Union[np.ndarray, list],
         sample_rate: int,
         curve_fit_decay: bool = False,
-        curve_fit_type: Literal["s_exp", "db_exp",] = "dp_exp",
+        curve_fit_type: Literal[
+            "s_exp",
+            "db_exp",
+        ] = "dp_exp",
     ):
         self.acq_number = acq_number
         self.event_pos = int(event_pos)
@@ -52,7 +55,6 @@ class MiniEvent:
 
     def create_event_array(self, y_array: Union[np.ndarray, list]):
         self.event_array = y_array[self.array_start : self.array_end]
-        self.x_array = np.arange(self.array_start, self.array_end)
 
     # Fix the find peak to scipy find peaks
     def find_peak(self):
@@ -74,7 +76,9 @@ class MiniEvent:
 
     def peak_corr(self, peak_1: int):
         peaks_2 = signal.argrelextrema(
-            self.event_array[:peak_1], comparator=np.less, order=int(0.4 * self.s_r_c),
+            self.event_array[:peak_1],
+            comparator=np.less,
+            order=int(0.4 * self.s_r_c),
         )[0]
         peaks_2 = peaks_2[peaks_2 > peak_1 - 4 * self.s_r_c]
         if len(peaks_2) == 0:
@@ -87,7 +91,7 @@ class MiniEvent:
                 final_peak = peak_1
             else:
                 final_peak = peaks_3[0]
-        self._event_peak_x = self.x_array[int(final_peak)]
+        self._event_peak_x = self.x_array()[int(final_peak)]
         self.event_peak_y = self.event_array[int(final_peak)]
 
     def find_peak_alt(self):
@@ -112,13 +116,13 @@ class MiniEvent:
             masked_array[0 : int(self._event_peak_x - self.array_start)], order=2
         )
         if len(peaks[0]) > 0:
-            self._event_start_x = self.x_array[peaks[0][-1]]
+            self._event_start_x = self.x_array()[peaks[0][-1]]
             self.event_start_y = self.event_array[peaks[0][-1]]
         else:
             event_start = np.argmax(
                 masked_array[0 : int(self._event_peak_x - self.array_start)]
             )
-            self._event_start_x = self.x_array[event_start]
+            self._event_start_x = self.x_array()[event_start]
             self.event_start_y = self.event_array[event_start]
         self.event_baseline = self.event_start_y
 
@@ -157,11 +161,11 @@ class MiniEvent:
             )[0]
             if baseline_start.size > 0:
                 temp = int(baseline_start[-1] + (i - 1 * self.s_r_c))
-                self._event_start_x = self.x_array[temp]
+                self._event_start_x = self.x_array()[temp]
                 self.event_start_y = self.event_array[temp]
             else:
                 temp = int(baseline_start.size / 2 + (i - 1 * self.s_r_c))
-                self._event_start_x = self.x_array[temp]
+                self._event_start_x = self.x_array()[temp]
                 self.event_start_y = self.event_array[temp]
         else:
             self.find_alt_baseline()
@@ -214,7 +218,7 @@ class MiniEvent:
             self.est_tau_y = (
                 (self.event_peak_y - self.event_start_y) * (1 / np.exp(1))
             ) + self.event_start_y
-            decay_x = self.x_array[
+            decay_x = self.x_array()[
                 self._event_peak_x - self.array_start : return_to_baseline
             ]
             self._event_tau_x = np.interp(self.est_tau_y, decay_y, decay_x)
@@ -229,7 +233,7 @@ class MiniEvent:
             baselined_event = self.event_array - self.event_start_y
             amp = self._event_peak_x - self.array_start
             decay_y = baselined_event[amp:]
-            decay_x = np.arange(len(decay_y))
+            decay_x = self.x_array()
             if fit_type == "db_exp":
                 upper_bounds = [0, np.inf, 0, np.inf]
                 lower_bounds = [-np.inf, 0, -np.inf, 0]
@@ -319,7 +323,10 @@ class MiniEvent:
         return [self.event_start_y, self.event_peak_y]
 
     def mini_x_array(self) -> np.ndarray:
-        return self.x_array / self.s_r_c
+        return np.arange(len(self.event_array)) / self.s_r_c
+
+    def x_array(self):
+        return np.arange(len(self.event_array)) / self.s_r_c
 
     def change_amplitude(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
@@ -356,7 +363,12 @@ class MiniEvent:
                 value = item
             if key in {"event_tau_x", "event_peak_x", "event_start_x"}:
                 key = "_" + key
-            if key not in ("mini_plot_x", "mini_plot_y", "mini_comp_y", "mini_comp_x",):
+            if key not in (
+                "mini_plot_x",
+                "mini_plot_y",
+                "mini_comp_y",
+                "mini_comp_x",
+            ):
                 setattr(self, key, value)
 
         if self.sample_rate_correction is not None:
