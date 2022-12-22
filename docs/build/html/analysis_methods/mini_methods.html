@@ -4,35 +4,34 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
     <title>Mini methods &#8212; ClampSuite 0.0.3 documentation</title>
-  
-  
-  
-  <script data-cfasync="false">
+  <script>
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=796348d33e8b1d947c94" rel="stylesheet">
-<link href="../_static/styles/bootstrap.css?digest=796348d33e8b1d947c94" rel="stylesheet">
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=796348d33e8b1d947c94" rel="stylesheet">
+  <link href="../_static/styles/theme.css?digest=1e1de1a1873e13ef5536" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1e1de1a1873e13ef5536" rel="stylesheet">
 
   
-  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=796348d33e8b1d947c94" rel="stylesheet">
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2">
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2">
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2">
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/6.1.2/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2">
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=796348d33e8b1d947c94">
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=796348d33e8b1d947c94">
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1e1de1a1873e13ef5536">
 
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -52,10 +51,6 @@
   
   
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="180" data-default-mode="">
-
-  
-  
-  <a class="skip-link" href="#main-content">Skip to main content</a>
 
   
   <input type="checkbox" class="sidebar-toggle" name="__primary" id="__primary">
@@ -118,32 +113,32 @@
     </p>
     <ul id="navbar-main-elements" class="navbar-nav">
         
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../getting_started/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../getting_started/index.html">
                         Getting Started
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../modules/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../modules/index.html">
                         Modules
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="index.html">
+                <li class="nav-item current active">
+                    <a class="nav-link" href="index.html">
                         Analysis methods
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../script_usage/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../script_usage/index.html">
                         Script usage
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
     </ul>
 </nav>
@@ -152,21 +147,19 @@
     </div>
 
     <div id="navbar-end">
-      
-        <div class="navbar-end-item navbar-persistent--container">
-          
-<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-toggle="tooltip">
+      <div class="navbar-end-item navbar-end__search-button-container">
+        
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" data-toggle="tooltip">
   <i class="fa-solid fa-magnifying-glass"></i>
 </button>
-        </div>
-      
+      </div>
       
       <div class="navbar-end-item">
-        <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-toggle="tooltip">
-    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
-    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
-    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
-</button>
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" data-toggle="tooltip">
+    <a class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="fa-regular fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></a>
+</span>
       </div>
       
       <div class="navbar-end-item">
@@ -179,13 +172,11 @@
 
 
   
-  
-    <div class="navbar-persistent--mobile">
-<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-toggle="tooltip">
+  <div class="search-button-container--mobile">
+<button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" data-toggle="tooltip">
   <i class="fa-solid fa-magnifying-glass"></i>
 </button>
-    </div>
-  
+  </div>
 
   
   <label class="sidebar-toggle secondary-toggle" for="__secondary">
@@ -215,32 +206,32 @@
     </p>
     <ul id="navbar-main-elements" class="navbar-nav">
         
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../getting_started/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../getting_started/index.html">
                         Getting Started
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../modules/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../modules/index.html">
                         Modules
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item current active">
-                      <a class="nav-link nav-internal" href="index.html">
+                <li class="nav-item current active">
+                    <a class="nav-link" href="index.html">
                         Analysis methods
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
 
-                    <li class="nav-item">
-                      <a class="nav-link nav-internal" href="../script_usage/index.html">
+                <li class="nav-item">
+                    <a class="nav-link" href="../script_usage/index.html">
                         Script usage
-                      </a>
-                    </li>
+                    </a>
+                </li>
                 
     </ul>
 </nav>
@@ -254,11 +245,11 @@
     <div class="sidebar-header-items__end">
       
       <div class="navbar-end-item">
-        <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-toggle="tooltip">
-    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
-    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
-    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
-</button>
+        <span class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" data-toggle="tooltip">
+    <a class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></a>
+    <a class="theme-switch" data-mode="dark"><i class="fa-regular fa-moon"></i></a>
+    <a class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></a>
+</span>
       </div>
       
       <div class="navbar-end-item">
@@ -294,11 +285,8 @@
     </div>
   </div>
 
-  
-  <div id="rtd-footer-container"></div>
-
       </div>
-      <main id="main-content" class="bd-main">
+      <main class="bd-main">
         
         
         <div class="bd-content">
@@ -314,7 +302,8 @@
   <section id="mini-methods">
 <span id="id1"></span><h1>Mini methods<a class="headerlink" href="#mini-methods" title="Permalink to this heading">#</a></h1>
 <p>This section describes how mini or spontaneous postsynaptic events are found in the Mini
-analysis module of ClampSuite to make the program less of a black box.</p>
+analysis module of ClampSuite to make the program less of a black box. For an explanation
+on how to use the GUI see: <a class="reference internal" href="../modules/mini_analysis.html"><span class="doc">mini analysis</span></a>.</p>
 <section id="background">
 <h2>Background<a class="headerlink" href="#background" title="Permalink to this heading">#</a></h2>
 <p>Automatic identification mini or spontaneous postsynaptic events is a somewhat challenging
@@ -324,18 +313,84 @@ well except if events have a large variance in amplitude and decay tau. There is
 method. The method was first published in the paper Pernia-Andrade et al., 2012 from Peter
 Jonas’ lab. The Pernia-Andrade method uses FFT deconvolution to find mini events.</p>
 </section>
-<section id="fft-deconvolution">
-<h2>FFT deconvolution<a class="headerlink" href="#fft-deconvolution" title="Permalink to this heading">#</a></h2>
+<section id="finding-postsynaptic-events-with-fft-deconvolution">
+<h2>Finding postsynaptic events with FFT deconvolution<a class="headerlink" href="#finding-postsynaptic-events-with-fft-deconvolution" title="Permalink to this heading">#</a></h2>
 <p>The FFT deconvolution method is pretty good method to find postsynaptic events. Deconvolution
 is used to recover an original signal that has passed through some filter. Ideally you know
 what the filter is and in the case of a postsynaptic event we know an equation to describe a
-postsynaptic event shown in python.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Aprime</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau_2</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">/</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">-</span> <span class="n">tau_2</span><span class="p">))</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">Aprime</span> <span class="o">*</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)))</span> <span class="o">**</span> <span class="n">risepower</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_2</span><span class="p">))))</span>
+postsynaptic event. To implement the FFT deconvolution to find postsynaptic events you need to
+start with a signal such as the one below.</p>
+<a class="reference internal image-reference" href="../_images/raw_array.png"><img alt="../_images/raw_array.png" class="align-center" src="../_images/raw_array.png" style="width: 320.0px; height: 240.0px;" /></a>
+<p>The signal still needs to be filtered. Filtering has a large effect on deconvolution so be sure
+to filter your signal. See the <a class="reference internal" href="filtering.html"><span class="doc">filtering tutorial</span></a> for more
+for more information on filtering a signal. Esssentially the more noise your signal has
+the worse the FFT deconvolution works. Here a well filtered version of the signal above:</p>
+<a class="reference internal image-reference" href="../_images/filtered_array.png"><img alt="../_images/filtered_array.png" class="align-center" src="../_images/filtered_array.png" style="width: 320.0px; height: 240.0px;" /></a>
+<p>Next step is to create a template mini using the code below and insert it into a kernel.
+While the exact shape of the template is not very important the spacer that offsets the template
+from the start of the kernel is very important as this changes were the postsynaptic event will
+be found. ClampSuite uses a kernel that identifies postsynatpic events right before they start.
+The kernel is an array, the same length as your signal of interested filled with zeros
+everywhere except where the template will be placed. See below for an example template and kernel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau_2</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">/</span> <span class="p">(</span><span class="n">tau_1</span> <span class="o">-</span> <span class="n">tau_2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">A</span> <span class="o">*</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_1</span><span class="p">)))</span> <span class="o">**</span> <span class="n">risepower</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="n">t_length</span> <span class="o">/</span> <span class="n">tau_2</span><span class="p">))))</span>
 </pre></div>
 </div>
-<p>In the case of the postsynaptic event imagine there is signal at zero except for random points that are
-some height above the</p>
+<a class="reference internal image-reference" href="../_images/template_kernel.png"><img alt="../_images/template_kernel.png" class="align-center" src="../_images/template_kernel.png" style="width: 600.0px; height: 200.0px;" /></a>
+<p>Once your kernel is created you take the fast Fourier transform (FFT) of the signal and the kernel.
+Then you divide the signal FFT by the kernel FFT take the inverse FFT of the resulting division.
+The filtered deconvolved array will have peaks where the postsynaptic events are. The deconvolved
+array needs to be filtered otherwise the peaks can be hidden in the noise.</p>
+<a class="reference internal image-reference" href="../_images/decon.png"><img alt="../_images/decon.png" class="align-center" src="../_images/decon.png" style="width: 600.0px; height: 200.0px;" /></a>
+<p>The you can use use a peak finding function like the find_peaks provided on by Scipy to
+find all the events. The events still need to be checked and analyzed. Sometimes the
+deconvolved peaks overlap leading to duplicated events, however this can be easily be
+checked during analysis.</p>
+<a class="reference internal image-reference" href="../_images/events.png"><img alt="../_images/events.png" class="align-center" src="../_images/events.png" style="width: 600.0px; height: 200.0px;" /></a>
+<p>Here is the code to run the deconvolution and peak finding:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">fft</span><span class="p">,</span> <span class="n">signal</span>
+
+<span class="kn">from</span> <span class="nn">clampsuite.functions.template_psc</span> <span class="kn">import</span> <span class="n">create_template</span>
+<span class="kn">from</span> <span class="nn">clampsuite.functions.filtering_functions</span> <span class="kn">import</span> <span class="n">fir_zero_1</span>
+
+<span class="n">acq_fft</span> <span class="o">=</span> <span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">((</span><span class="n">acq</span><span class="o">.</span><span class="n">plot_acq_y</span><span class="p">()))</span>
+<span class="n">template</span> <span class="o">=</span> <span class="n">create_template</span><span class="p">(</span><span class="n">amplitude</span><span class="o">=-</span><span class="mi">20</span><span class="p">)</span>
+
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">acq</span><span class="o">.</span><span class="n">plot_acq_y</span><span class="p">()))</span>
+<span class="n">kernel</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">template</span><span class="p">)]</span> <span class="o">=</span> <span class="n">template</span>
+<span class="n">kernel_fft</span> <span class="o">=</span> <span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+<span class="n">decon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">acq_fft</span> <span class="o">/</span> <span class="n">kernel_fft</span><span class="p">))</span>
+<span class="n">decon_filtered</span> <span class="o">=</span> <span class="n">fir_zero_1</span><span class="p">(</span>
+    <span class="n">array</span><span class="o">=</span><span class="n">decon</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="o">=</span><span class="n">acq</span><span class="o">.</span><span class="n">sample_rate</span><span class="p">,</span>
+    <span class="n">order</span><span class="o">=</span><span class="mi">351</span><span class="p">,</span>
+    <span class="n">high_pass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">high_width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">low_pass</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">low_width</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">window</span><span class="o">=</span><span class="s2">&quot;hann&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1">#%%</span>
+<span class="n">bottom</span><span class="p">,</span> <span class="n">top</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">decon_filtered</span><span class="p">,</span> <span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">97.5</span><span class="p">])</span>
+<span class="n">middle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
+    <span class="n">decon_filtered</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">((</span><span class="n">decon_filtered</span> <span class="o">&gt;</span> <span class="n">bottom</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">decon_filtered</span> <span class="o">&lt;</span> <span class="n">top</span><span class="p">))]</span>
+<span class="p">)</span>
+<span class="c1"># Calculate the mean and rms.</span>
+<span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">middle</span><span class="p">)</span>
+<span class="n">rms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">middle</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)))</span>
+
+<span class="c1"># Find the events.</span>
+<span class="n">peaks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span>
+    <span class="n">decon_filtered</span> <span class="o">-</span> <span class="n">mu</span><span class="p">,</span>
+    <span class="n">height</span><span class="o">=</span><span class="mf">4.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">rms</span><span class="p">),</span>
+    <span class="n">distance</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10000</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">),</span>
+    <span class="n">prominence</span><span class="o">=</span><span class="n">rms</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -383,8 +438,8 @@ some height above the</p>
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#fft-deconvolution">
-   FFT deconvolution
+  <a class="reference internal nav-link" href="#finding-postsynaptic-events-with-fft-deconvolution">
+   Finding postsynaptic events with FFT deconvolution
   </a>
  </li>
 </ul>
@@ -428,8 +483,7 @@ some height above the</p>
   
     
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/bootstrap.js?digest=796348d33e8b1d947c94"></script>
-<script src="../_static/scripts/pydata-sphinx-theme.js?digest=796348d33e8b1d947c94"></script>
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1e1de1a1873e13ef5536"></script>
 
   <footer class="bd-footer"><div class="bd-footer__inner container">
   
@@ -441,16 +495,6 @@ some height above the</p>
 
 </p>
 
-  </div>
-  
-  <div class="footer-item">
-    <p class="theme-version">
-    Built with the
-    <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">
-        PyData Sphinx Theme
-    </a>
-    0.12.0.
-</p>
   </div>
   
   <div class="footer-item">
