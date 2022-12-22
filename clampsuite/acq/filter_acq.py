@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 
@@ -35,13 +35,39 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
-        filter_type: str = "None",
+        filter_type: Literal[
+            "remez_2",
+            "remez_1",
+            "fir_zero_2",
+            "fir_zero_1",
+            "ewma",
+            "ewma_a",
+            "savgol",
+            "median",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
+            "None",
+        ] = "fir_zero_2",
         order: Union[None, int] = None,
         high_pass: Union[int, float, None] = None,
         high_width: Union[int, float, None] = None,
         low_pass: Union[int, float, None] = None,
         low_width: Union[int, float, None] = None,
-        window: Union[str, None] = None,
+        window: Literal[
+            "hann",
+            "hamming",
+            "blackmanharris",
+            "barthann",
+            "nuttall",
+            "blackman",
+            "tukey",
+            "kaiser",
+            "gaussian",
+            "parzen",
+            "exponential",
+        ] = "hann",
         polyorder: Union[int, None] = None,
     ):
         self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
@@ -54,10 +80,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         low_width = self.low_width = low_width
         window = self.window = window
         self.polyorder = polyorder
-        self.baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
-        )
-        self.filter_array()
+        self.filter_array(self.array)
 
     def filter_array(self, array):
         """
@@ -106,8 +129,8 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         based on subtraction. Pretty esoteric and is more for learning
         purposes.
         """
-        baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
+        baselined_array = array - np.mean(
+            array[self.baseline_start : self.baseline_end]
         )
         if self.filter_type == "median":
             self.filtered_array = median_filter(array=baselined_array, order=self.order)

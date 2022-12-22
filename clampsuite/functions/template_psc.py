@@ -4,11 +4,11 @@ import numpy as np
 
 
 def create_template(
-    amplitude: Union[int, float],
-    tau_1: Union[int, float],
-    tau_2: Union[int, float],
-    risepower: Union[int, float],
-    length: Union[int, float],
+    amplitude: Union[int, float] = 20,
+    tau_1: Union[int, float] = 0.3,
+    tau_2: Union[int, float] = 5,
+    risepower: Union[int, float] = 0.5,
+    length: Union[int, float] = 30,
     spacer: Union[int, float] = 1.5,
     sample_rate: int = 10000,
 ) -> np.ndarray:

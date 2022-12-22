@@ -1,10 +1,13 @@
-Mini analysis
+.. _mini_analysis:
+
+ini analysis
 ================
 
 The mini analysis module is designed to analyzed spontaneous postsynaptic currents
 (mEPSCs, sEPSCs, mIPSCs, sIPSCs). Both outward (positive) and inward currents can be
 analyzed. Currently, outward currents inverted when analyzed. Mini analysis has
-three steps; Setup, Analysis, and Final Data. 
+three steps; Setup, Analysis, and Final Data. For explanation of how Mini Analysis
+module works under the hood see: :doc:`mini methods </analysis_methods/mini_methods>`.
 
 Setup
 ~~~~~~~

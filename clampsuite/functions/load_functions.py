@@ -1,27 +1,21 @@
-from copy import deepcopy
 import json
 from math import nan
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import re
-from typing import Callable, Literal, Union
+from typing import Union
 
 import numpy as np
 from scipy.io import loadmat, matlab
 
-from ..acq import Acquisition
-
-"""
-This function loads a matlab file and puts it into a dictionary that is easy
-to use in python. The function was written by  on Stack Overflow.
-"""
-
 
 def load_mat(filename: str) -> dict:
     """
+    This function loads a matlab file and puts it into a dictionary that is
+    easy to use in python. The function was written by  on Stack Overflow.
     This function should be called instead of direct scipy.io.loadmat
     as it cures the problem of not properly recovering python dictionaries
     from mat files. It calls the function check keys to cure all entries
-    which are still mat-objects
+    which are still mat-objects.
     """
 
     def _check_vars(d):
@@ -189,69 +183,3 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
     if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
         data["s_r_c"] = data.get("sample_rate_correction")
     return data
-
-
-def load_acq(
-    analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
-    path: Union[str, Path, PurePath],
-) -> Acquisition:
-    path_obj = PurePath(path)
-    if not Path(path_obj).exists():
-        return None
-    if path_obj.suffix == ".mat":
-        acq_comp = load_scanimage_file(path_obj)
-    elif path_obj.suffix == ".json":
-        acq_comp = load_json_file(path_obj)
-    else:
-        print("File type not recognized!")
-        return None
-    if acq_comp.get("analysis"):
-        obj = Acquisition(acq_comp.get("analysis"))
-    elif isinstance(analysis, str):
-        obj = Acquisition(analysis)
-    else:
-        print("No analysis specified!")
-        return None
-    obj.load_data(acq_comp)
-    return obj
-
-
-def load_acqs(
-    analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
-    file_path: Union[list, tuple, str, Path, PurePath],
-    callback_func: Callable = print,
-) -> dict:
-    if isinstance(file_path, (str, Path, PurePath)):
-        file_path = list(file_path)
-    for count, i in enumerate(file_path):
-        print("Loading acquisitions")
-        acq_dict = {}
-        if PurePath(i).suffix == (".mat", ".json"):
-            acq = load_acq(analysis, i)
-            if acq is None:
-                pass
-            else:
-                acq_dict[int(acq.acq_number)] = acq
-                callback_func(int((100 * (count + 1) / len(file_path))))
-    return acq_dict
-
-
-def load_file(file_path: str, extension: str):
-    file_path = PurePath(file_path)
-    if file_path is None:
-        p = Path()
-        file_name = list(p.glob(f"*{extension}"))[0]
-    elif file_path.suffix == extension:
-        file_name = file_path
-    else:
-        directory = Path(file_path)
-        file_name = list(directory.glob(extension))[0]
-    return file_name
-
-
-def save_acq(acq, save_filename):
-    x = deepcopy(acq)
-    if x.analysis == "mini":
-        x.save_postsynaptic_events()
-    with open(f"{save_filename}_{x.name}.json", "w") as write_file:
-        json.dump(x.__dict__, write_file, cls=NumpyEncoder)

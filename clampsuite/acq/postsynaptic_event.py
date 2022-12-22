@@ -142,7 +142,7 @@ class MiniEvent:
         baselined_array = self.event_array - np.mean(
             self.event_array[: int(1 * self.s_r_c)]
         )
-        peak = self._event_peak_x - self.array_start
+        peak = int(self._event_peak_x - self.array_start)
         search_start = np.argwhere(
             baselined_array[:peak] > 0.5 * self.event_peak_y
         ).flatten()
@@ -323,10 +323,10 @@ class MiniEvent:
         return [self.event_start_y, self.event_peak_y]
 
     def mini_x_array(self) -> np.ndarray:
-        return np.arange(len(self.event_array)) / self.s_r_c
+        return np.arange(self.array_start, self.array_end) / self.s_r_c
 
     def x_array(self):
-        return np.arange(len(self.event_array)) / self.s_r_c
+        return np.arange(self.array_start, self.array_end, 1)
 
     def change_amplitude(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)

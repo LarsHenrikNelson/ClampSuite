@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 from scipy import integrate, optimize
@@ -12,13 +12,39 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self,
         baseline_start: Union[int, float] = 800,
         baseline_end: Union[int, float] = 1000,
-        filter_type: str = "None",
+        filter_type: Literal[
+            "remez_2",
+            "remez_1",
+            "fir_zero_2",
+            "fir_zero_1",
+            "ewma",
+            "ewma_a",
+            "savgol",
+            "median",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
+            "None",
+        ] = "fir_zero_2",
         order=None,
         high_pass: Union[int, float, None] = None,
         high_width: Union[int, float, None] = None,
         low_pass: Union[int, float, None] = None,
         low_width: Union[int, float, None] = None,
-        window: Union[str, None] = None,
+        window: Literal[
+            "hann",
+            "hamming",
+            "blackmanharris",
+            "barthann",
+            "nuttall",
+            "blackman",
+            "tukey",
+            "kaiser",
+            "gaussian",
+            "parzen",
+            "exponential",
+        ] = "hann",
         polyorder: Union[int, None] = None,
         pulse_start: Union[int, float] = 1000,
         n_window_start: Union[int, float] = 1001,

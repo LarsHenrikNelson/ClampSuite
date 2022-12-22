@@ -44,8 +44,8 @@
 
 /* green for `stable` */
 #version_switcher_button[data-active-version-name*="stable"] {
-    background-color: #98460f;
-    border-color: #98510f;
+    background-color: #ff8f26;
+    border-color: #ff8f26;
     color: white;
 }
 

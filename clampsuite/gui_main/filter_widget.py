@@ -12,7 +12,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtCore import QSize
 import pyqtgraph as pg
 
-from ..acq import ExpManager
+from ..manager import ExpManager
 from ..gui_widgets.qtwidgets import LineEdit, ListView
 
 

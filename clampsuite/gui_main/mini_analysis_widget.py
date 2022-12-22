@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..acq import ExpManager
+from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
 from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
@@ -1069,11 +1069,11 @@ class MiniAnalysisWidget(DragDropWidget):
         # the mini array falls outside of the current viewable region.
         minX, maxX = self.region.getRegion()
         width = maxX - minX
-        if mini.array_start / mini.s_r_c < minX or mini.array_end / mini.s_r_c > maxX:
+        if mini.mini_x_array()[0] < minX or mini.mini_x_array()[-1] > maxX:
             self.region.setRegion(
                 [
-                    int(mini.x_array[0] / mini.s_r_c - 100),
-                    int(mini.x_array[0] / mini.s_r_c + width - 100),
+                    int(mini.mini_x_array()[0] - 100),
+                    int(mini.mini_x_array()[0] + width - 100),
                 ]
             )
 

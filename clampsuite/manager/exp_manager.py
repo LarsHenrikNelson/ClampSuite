@@ -1,10 +1,13 @@
 from collections import OrderedDict
+from copy import deepcopy
+import json
 from pathlib import PurePath, Path
-from typing import Callable, Union
+from typing import Callable, Literal, Union
 
 import yaml
 
-from ..functions.load_functions import load_acq, load_file, save_acq
+from ..acq import Acquisition
+from ..functions.load_functions import NumpyEncoder, load_json_file, load_scanimage_file
 from ..functions.filtering_functions import Filters, Windows
 from ..final_analysis import FinalAnalysis
 
@@ -62,10 +65,24 @@ class ExpManager:
             self.save_ui_prefs(file_path, self.ui_prefs)
         if self.final_analysis is not None:
             self.save_final_analysis(file_path)
-        self.save_acqs(file_path)
+        self._save_acqs(file_path)
         self.callback_func("Finished saving")
 
-    def save_acqs(self, file_path: Union[PurePath, Path, str]):
+    @staticmethod
+    def save_acq(acq, save_filename):
+        x = deepcopy(acq)
+        if x.analysis == "mini":
+            x.save_postsynaptic_events()
+        with open(f"{save_filename}_{x.name}.json", "w") as write_file:
+            json.dump(x.__dict__, write_file, cls=NumpyEncoder)
+
+    @staticmethod
+    def save_acqs(acq_dict, file_path: Union[PurePath, Path, str]):
+        for i in acq_dict.values():
+            ExpManager.save_acq(i, file_path)
+        print("Finished saving")
+
+    def _save_acqs(self, file_path: Union[PurePath, Path, str]):
         self.callback_func("Saving acquisitions")
         count = 0
         for i in self.exp_dict.keys():
@@ -75,12 +92,12 @@ class ExpManager:
         saved = 0
         for i in self.exp_dict.values():
             for acq in i.values():
-                save_acq(acq, file_path)
+                self.save_acq(acq, file_path)
                 saved += 1
                 self.callback_func(int((100 * (saved) / count)))
         for i in self.deleted_acqs.values():
             for acq in i.values():
-                save_acq(acq, file_path)
+                self.save_acq(acq, file_path)
                 saved += 1
                 self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
@@ -101,8 +118,20 @@ class ExpManager:
         self.final_analysis.save_data(file_path)
         self.callback_func("Saved final analysis")
 
+    def load_file(self, file_path: str, extension: str):
+        file_path = PurePath(file_path)
+        if file_path is None:
+            p = Path()
+            file_name = list(p.glob(f"*{extension}"))[0]
+        elif file_path.suffix == extension:
+            file_name = file_path
+        else:
+            directory = Path(file_path)
+            file_name = list(directory.glob(extension))[0]
+        return file_name
+
     def load_ui_prefs(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
-        file_name = load_file(file_path, extension=".yaml")
+        file_name = self.load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
             ui_prefs = yaml.safe_load(file)
             return ui_prefs
@@ -110,13 +139,13 @@ class ExpManager:
     def load_analysis_prefs(
         self, file_path: Union[None, str, Path, PurePath] = None
     ) -> dict:
-        file_name = load_file(file_path, extension=".yaml")
+        file_name = self.load_file(file_path, extension=".yaml")
         with open(file_name, "r") as file:
             analysis_prefs = yaml.safe_load(file)
         return analysis_prefs
 
     def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
-        file_name = load_file(file_path, extension=".xlsx")
+        file_name = self.load_file(file_path, extension=".xlsx")
         self.final_analysis = FinalAnalysis(analysis)
         self.final_analysis.load_data(file_name)
 
@@ -158,10 +187,49 @@ class ExpManager:
             file_path = list(file_path)
         num_of_acqs = len(file_path)
         for count, i in enumerate(file_path):
-            acq = load_acq(analysis, i)
+            acq = self.load_acq(analysis, i)
             self._set_acq(acq)
             self.callback_func(int((100 * (count + 1) / num_of_acqs)))
         self.callback_func("Loaded acquisitions")
+
+    @staticmethod
+    def load_acq(
+        analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
+        path: Union[str, Path, PurePath],
+    ) -> Acquisition:
+        path_obj = PurePath(path)
+        if not Path(path_obj).exists():
+            return None
+        if path_obj.suffix == ".mat":
+            acq_comp = load_scanimage_file(path_obj)
+        elif path_obj.suffix == ".json":
+            acq_comp = load_json_file(path_obj)
+        else:
+            print("File type not recognized!")
+            return None
+        if acq_comp.get("analysis"):
+            obj = Acquisition(acq_comp.get("analysis"))
+        elif isinstance(analysis, str):
+            obj = Acquisition(analysis)
+        else:
+            print("No analysis specified!")
+            return None
+        obj.load_data(acq_comp)
+        return obj
+
+    @staticmethod
+    def load_acqs(
+        analysis: Union[str, None],
+        file_path: Union[list, tuple, str, Path, PurePath],
+    ):
+        acq_dict = {}
+        if isinstance(file_path, (str, Path, PurePath)):
+            file_path = list(file_path)
+        for i in file_path:
+            acq = ExpManager.load_acq(analysis, i)
+            if acq is not None:
+                acq_dict[int(acq.acq_number)] = acq
+        return acq_dict
 
     def _set_acq(self, acq):
         if acq is None:

@@ -50,7 +50,7 @@ class Acquisition:
     def load_data(self, data: dict):
         for key, item in data.items():
             setattr(self, key, item)
-        self.s_r_c = self.sample_rate / 1000
+        self.s_r_c = int(self.sample_rate / 1000)
         if "saved_events_dict" in data:
             self.create_postsynaptic_events()
             self.event_arrays = [

@@ -28,7 +28,7 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 
 from .acq_inspection import AcqInspectionWidget
-from ..acq import ExpManager
+from ..manager import ExpManager
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     DragDropWidget,

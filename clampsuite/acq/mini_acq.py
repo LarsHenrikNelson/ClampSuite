@@ -6,7 +6,7 @@ from scipy import signal, interpolate
 
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
-from ..functions.template_psp import create_template
+from ..functions.template_psc import create_template
 from ..functions.filtering_functions import fir_zero_1
 
 
@@ -60,7 +60,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         min_decay_time: Union[int, float] = 0.5,
         decay_rise: bool = True,
         invert: bool = False,
-        decon_type: Literal["fft", "wiener"] = "wiener",
+        decon_type: Literal["fft", "wiener", "convolution"] = "wiener",
         curve_fit_decay: bool = False,
         curve_fit_type: str = Literal["s_exp", "db_exp"],
         baseline_corr: bool = False,
@@ -106,8 +106,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.deleted_events = 0
 
         # Runs the functions to analyze the acquisition
-        if self.baseline_corr:
-            self.baseline_correction()
+        # if self.baseline_corr:
+        #     self.baseline_correction()
         temp_array = self.create_mespc_array()
         self.filter_array(temp_array)
         self.set_array()
@@ -256,6 +256,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             deconvolved_array - mu,
             height=self.sensitivity * (rms),
             distance=self.mini_spacing * self.s_r_c,
+            prominence=rms,
         )
 
         # There was an issue with the peaks list being a numpy array

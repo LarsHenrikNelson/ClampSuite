@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 from scipy.stats import linregress
@@ -17,13 +17,39 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
-        filter_type: str = "remez_2",
+        filter_type: Literal[
+            "remez_2",
+            "remez_1",
+            "fir_zero_2",
+            "fir_zero_1",
+            "ewma",
+            "ewma_a",
+            "savgol",
+            "median",
+            "bessel",
+            "butterworth",
+            "bessel_zero",
+            "butterworth_zero",
+            "None",
+        ] = "fir_zero_2",
         order: Union[int, float] = 301,
         high_pass: Union[int, float, None] = None,
         high_width: Union[int, float, None] = None,
         low_pass: Union[int, float] = 300,
         low_width: Union[int, float] = 100,
-        window: Union[int, None] = None,
+        window: Literal[
+            "hann",
+            "hamming",
+            "blackmanharris",
+            "barthann",
+            "nuttall",
+            "blackman",
+            "tukey",
+            "kaiser",
+            "gaussian",
+            "parzen",
+            "exponential",
+        ] = "hann",
         polyorder: Union[int, None] = None,
         pulse_start: Union[int, float] = 1000,
     ):
