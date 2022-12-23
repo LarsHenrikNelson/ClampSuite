@@ -10,7 +10,7 @@
 4. To activate this new environment, run `conda activate clampsuite`
 5. Anaconda has an experimental option for [pip interoperability](https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html) that makes it easier to install packages using pip.
 6. To install run `pip install clampsuite`.
-7. Now run `python -m clampsuite` and you're all set.
+7. Now run `clampsuite` and you're all set.
 8. Running the command `clampsuite --version` in the terminal will print the install version of clampsuite.
 
 <br/>

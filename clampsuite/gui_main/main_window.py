@@ -169,6 +169,7 @@ class MainWindow(QMainWindow):
             # selected
             pass
         else:
+            print(file_name)
             self.central_widget.currentWidget().loadPreferences(file_name)
 
     def savePreferences(self):

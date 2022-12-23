@@ -33,7 +33,7 @@ from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
 from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
-from ..functions.template_psp import create_template
+from ..functions.template_psc import create_template
 from ..gui_widgets.qtwidgets import (
     DragDropWidget,
     LineEdit,
@@ -51,7 +51,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def init_UI(self):
 
         # Create tabs for part of the analysis program
-        self.signals.file.connect(self.setPreferences)
+        self.signals.file.connect(self.loadPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -146,7 +146,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.rc_check_end_edit.setText("10300")
         self.input_layout.addRow("RC check end (ms)", self.rc_check_end_edit)
 
-        filters = ExpManager.filters()
+        filters = ExpManager.filters
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(filters)
         self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
@@ -188,7 +188,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.low_width_edit.setText("600")
         self.input_layout.addRow("Low width", self.low_width_edit)
 
-        windows = ExpManager.windows()
+        windows = ExpManager
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
         self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
@@ -1652,8 +1652,7 @@ class MiniAnalysisWidget(DragDropWidget):
         pref_dict["sliders"] = slider_dict
         return pref_dict
 
-    def setPreferences(self, file):
-        pref_dict = self.exp_manager.load_ui_prefs(file)
+    def setPreferences(self, pref_dict):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1695,8 +1694,8 @@ class MiniAnalysisWidget(DragDropWidget):
                     pass
 
     def loadPreferences(self, file_name):
-        self.exp_manager.load_ui_prefs(file_name)
-        self.setPreferences(self.exp_manager.ui_prefs)
+        pref_dict = self.exp_manager.load_ui_prefs(file_name)
+        self.setPreferences(pref_dict)
 
     def savePreferences(self, save_filename):
         pref_dict = self.createPrefDict()

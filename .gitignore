@@ -4,5 +4,6 @@ final_test_doct.py
 dev_env.yml
 dist/
 clampsuite.egg-info/
-.vscode/settings.json
+.vscode
 docs/source/_build/
+build

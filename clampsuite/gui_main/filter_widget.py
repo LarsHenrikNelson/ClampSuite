@@ -92,7 +92,7 @@ class filterWidget(QWidget):
 
         self.filter_type_label = QLabel("Filter Type")
 
-        filters = ExpManager.filters()
+        filters = ExpManager.filters
         self.filter_selection = QComboBox(self)
         self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.filter_selection.addItems(filters)
@@ -130,7 +130,7 @@ class filterWidget(QWidget):
         self.filt_layout.addRow(self.low_width_label, self.low_width_edit)
 
         self.window_label = QLabel("Window type")
-        windows = ExpManager.windows()
+        windows = ExpManager.window
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
         self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))

@@ -4,7 +4,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
-import statsmodels.api as sm
 
 from . import final_analysis
 

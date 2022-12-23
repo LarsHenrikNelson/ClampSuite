@@ -2,6 +2,7 @@ from collections import OrderedDict
 from copy import deepcopy
 import json
 from pathlib import PurePath, Path
+import typing
 from typing import Callable, Literal, Union
 
 import yaml
@@ -13,6 +14,9 @@ from ..final_analysis import FinalAnalysis
 
 
 class ExpManager:
+    filters = list(typing.get_args(Filters))
+    windows = list(typing.get_args(Windows))
+
     def __init__(self):
         self.exp_dict = {}
         self.final_analysis = None
@@ -305,11 +309,3 @@ class ExpManager:
             return self.final_analysis.df_dict
         else:
             return {}
-
-    @staticmethod
-    def filters():
-        return [i.name for i in Filters]
-
-    @staticmethod
-    def windows():
-        return [i.name for i in Windows]

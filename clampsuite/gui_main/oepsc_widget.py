@@ -1,4 +1,5 @@
 from collections import namedtuple
+import typing
 
 import numpy as np
 import pandas as pd
@@ -48,7 +49,7 @@ class oEPSCWidget(DragDropWidget):
         self.initUI()
 
     def initUI(self):
-        self.signals.file.connect(self.setPreferences)
+        self.signals.file.connect(self.loadPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
@@ -139,7 +140,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_1.addRow(self.o_b_end_label, self.o_b_end_edit)
 
         self.o_filter_type_label = QLabel("Filter Type")
-        filters = ExpManager.filters()
+        filters = ExpManager.filter
         self.o_filter_selection = QComboBox()
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
@@ -185,7 +186,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_1.addRow(self.o_low_width_label, self.o_low_width_edit)
 
         self.o_window_label = QLabel("Window type")
-        windows = ExpManager.windows()
+        windows = ExpManager.windows
         self.o_window_edit = QComboBox(self)
         self.o_window_edit.setObjectName("o_window_edit")
         self.o_window_edit.addItems(windows)
@@ -1251,6 +1252,7 @@ class oEPSCWidget(DragDropWidget):
     def loadPreferences(self, file_name: str):
         self.need_to_save = True
         load_dict = self.exp_manager.load_ui_prefs(file_name)
+        print(load_dict)
         self.setPreferences(load_dict)
 
     def savePrefences(self, file_path):

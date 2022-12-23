@@ -3,7 +3,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
-import statsmodels.api as sm
 
 from . import final_analysis
 from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay

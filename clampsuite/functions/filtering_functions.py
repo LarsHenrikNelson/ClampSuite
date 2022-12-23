@@ -1,45 +1,37 @@
 from enum import Enum
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
-import patsy
 from scipy import signal
-from sklearn.linear_model import LinearRegression
 
 
-Filters = Enum(
-    "Filters",
-    [
-        "remez_2",
-        "remez_1",
-        "fir_zero_2",
-        "fir_zero_1",
-        "savgol",
-        "ewma",
-        "ewma_a",
-        "median",
-        "bessel",
-        "butterworth",
-        "bessel_zero",
-        "butterworth_zero",
-    ],
-)
+Filters = Literal[
+    "remez_2",
+    "remez_1",
+    "fir_zero_2",
+    "fir_zero_1",
+    "savgol",
+    "ewma",
+    "ewma_a",
+    "median",
+    "bessel",
+    "butterworth",
+    "bessel_zero",
+    "butterworth_zero",
+]
 
-Windows = Enum(
-    "Windows",
-    [
-        "hann",
-        "hamming",
-        "blackmanharris",
-        "barthann",
-        "nuttall",
-        "blackman",
-        "tukey",
-        "kaiser",
-        "gaussian",
-        "parzen",
-    ],
-)
+Windows = Literal[
+    "hann",
+    "hamming",
+    "blackmanharris",
+    "barthann",
+    "nuttall",
+    "blackman",
+    "tukey",
+    "kaiser",
+    "gaussian",
+    "parzen",
+]
 
 
 def median_filter(array: Union[np.ndarray, list], order: int):
@@ -428,15 +420,6 @@ def savgol_filt(array: Union[np.ndarray, list], order: int, polyorder: int):
         polyorder = int(polyorder)
     filtered_array = signal.savgol_filter(array, order, polyorder, mode="nearest")
     return filtered_array
-
-
-def nat_spline_filt(array: Union[np.ndarray, list], order: int):
-    # Good for finding baselines, but not great for filtering large arrays.
-    x_array = np.arange(len(array))
-    x_basis = patsy.cr(x_array, df=order, constraints="center")
-    model = LinearRegression().fit(x_basis, array)
-    y_hat = model.predict(x_basis)
-    return y_hat
 
 
 def ewma_filt(array: Union[np.ndarray, list], window: int, sum_proportion: float):

@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def startupFunction():
     p = Path.home()
     h = "EphysAnalysisProgram"
@@ -5,7 +8,8 @@ def startupFunction():
 
     if Path(p / h).exists():
         if Path(p / h / file_name).exists():
-            pref_dict = YamlWorker.load_yaml(p / h / file_name)
+            pass
+            # pref_dict = YamlWorker.load_yaml(p / h / file_name)
         else:
             pass
     else:
