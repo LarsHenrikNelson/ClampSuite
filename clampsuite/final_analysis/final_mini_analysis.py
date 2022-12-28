@@ -48,7 +48,8 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             i[0]: i[1] for i in acq_dict.items() if len(i[1].postsynaptic_events) > 0
         }
         df_list = [pd.DataFrame(i.acq_data()) for i in acq_dict.values()]
-        self.s_r_c = acq_dict[0].s_r_c
+        keys = list(acq_dict.keys())
+        self.s_r_c = acq_dict[keys[0]].s_r_c
 
         raw_df = pd.concat(df_list, axis=0, ignore_index=True)
 
@@ -158,9 +159,9 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         self.df_dict["Extra data"] = extra_data
 
     def compute_data(self, acq_dict: dict):
+        self.extract_raw_data(acq_dict)
         average_mini = self.create_average_mini(acq_dict)
         self.analyze_average_mini(average_mini)
-        self.extract_raw_data(acq_dict)
         self.extract_final_data(acq_dict)
 
     def stem_components(

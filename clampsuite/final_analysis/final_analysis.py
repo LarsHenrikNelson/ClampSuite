@@ -1,4 +1,5 @@
 import datetime
+import clampsuite
 
 
 class FinalAnalysis:
@@ -23,7 +24,7 @@ class FinalAnalysis:
         obj.df_dict = {}
         obj.program_data = {
             "Program": ["ClampSuite"],
-            "Version": ["0.0.3"],
+            "Version": clampsuite.__version__,
             "Time stamp": [str(datetime.datetime.now())],
             "Analysis": [analysis],
         }

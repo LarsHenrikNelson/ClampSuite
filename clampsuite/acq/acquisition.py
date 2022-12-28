@@ -1,5 +1,6 @@
 import copy
 
+import clampsuite
 from ..functions.filtering_functions import Filters, Windows
 
 
@@ -22,7 +23,7 @@ class Acquisition:
         subclass = cls._class_type[analysis]
         obj = object.__new__(subclass)
         obj.analysis = analysis
-        obj.version = "0.0.3"
+        obj.version = clampsuite.__version__
         for key, value in kwargs.items():
             setattr(obj, key, value)
         return obj
