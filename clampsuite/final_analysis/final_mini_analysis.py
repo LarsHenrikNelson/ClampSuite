@@ -21,11 +21,11 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         acq_dict: dict,
         acqs_deleted: int = 0,
         sample_rate: Union[int, float] = 10000,
-        curve_fit_decay: bool = False,
-        curve_fit_type: str = "db_exp",
+        curve_fit_type: str = "s_exp",
     ):
         self.acqs_deleted = acqs_deleted
         self.sample_rate = sample_rate
+        self.curve_fit_type = curve_fit_type
         self.compute_data(acq_dict)
 
     def extract_raw_data(self, acq_dict: dict):
@@ -48,6 +48,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             i[0]: i[1] for i in acq_dict.items() if len(i[1].postsynaptic_events) > 0
         }
         df_list = [pd.DataFrame(i.acq_data()) for i in acq_dict.values()]
+        self.s_r_c = acq_dict[0].s_r_c
 
         raw_df = pd.concat(df_list, axis=0, ignore_index=True)
 
@@ -136,11 +137,11 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         event_peak_y = np.min(average_mini)
         est_tau_y = event_peak_y * (1 / np.exp(1))
         decay_y = average_mini[event_peak_x:]
-        decay_x = np.arange(len(decay_y)) / 10
+        decay_x = np.arange(len(decay_y)) / self.s_r_c
         est_tau_x = np.interp(est_tau_y, decay_y, decay_x)
         init_param = np.array([event_peak_y, est_tau_x])
-        upper_bound = (event_peak_y + 5, est_tau_x + 10)
-        lower_bound = (event_peak_y - 5, est_tau_x - 10)
+        upper_bound = (0, np.inf)
+        lower_bound = (-np.inf, 0)
         bounds = [lower_bound, upper_bound]
         popt, _ = curve_fit(s_exp_decay, decay_x, decay_y, p0=init_param, bounds=bounds)
         fit_amp, self.fit_tau_x = popt

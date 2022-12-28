@@ -140,7 +140,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_1.addRow(self.o_b_end_label, self.o_b_end_edit)
 
         self.o_filter_type_label = QLabel("Filter Type")
-        filters = ExpManager.filter
+        filters = ExpManager.filters
         self.o_filter_selection = QComboBox()
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
@@ -419,7 +419,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_plot.sigXRangeChanged.connect(lambda: self.getXRange("lfp_plot"))
 
         self.acq_button_dock = QGridLayout()
-        self.tab2_layout.addLayout(self.acq_button_dock)
+        self.tab2_layout.addLayout(self.acq_button_dock, 0)
 
         self.tab2_dock = DockArea()
         self.tab2_layout.addWidget(self.tab2_dock)

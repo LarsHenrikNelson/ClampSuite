@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import bottleneck as bn
 import numpy as np
@@ -26,6 +26,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ramp_start: Union[int, float] = 300,
         ramp_end: Union[int, float] = 4000,
         threshold: Union[int, float] = -15,
+        threshold_method: Literal[
+            "third_derivative", "max_curvature"
+        ] = "max_curvature",
         min_spikes: int = 2,
     ):
         self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
@@ -46,6 +49,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.ramp_start = int(ramp_start * self.s_r_c)
         self.ramp_end = int(ramp_end * self.s_r_c)
         self.threshold = threshold
+        self.threshold_method = threshold_method
         self.min_spikes = min_spikes
 
         # Analysis functions
@@ -186,8 +190,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def find_spk_thresh(self, array: np.ndarray) -> "tuple[int, int]":
         dv = np.gradient(array)
         ddv = np.gradient(dv)
-        dddv = np.gradient(ddv)
-        peaks, _ = signal.find_peaks(dddv, prominence=2)
+        if self.threshold_method == "third_derivative":
+            dddv = np.gradient(ddv)
+            z = (dddv - np.mean(dddv)) / np.std(dddv)
+            peaks, _ = signal.find_peaks(z, prominence=8)
+        else:
+            k = ddv * (1 + dv**2) ** (-3 / 2)
+            z = (k - np.mean(k)) / np.std(k)
+            peaks, _ = signal.find_peaks(k, prominence=8)
         rheo_x = peaks[0] - 1
         sec_spike = peaks[2] - 1
         return rheo_x, sec_spike

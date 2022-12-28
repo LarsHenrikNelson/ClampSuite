@@ -7,3 +7,8 @@ clampsuite.egg-info/
 .vscode
 docs/source/_build/
 build
+pyvenv.cfg
+bin
+include
+lib
+share

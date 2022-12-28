@@ -228,16 +228,26 @@ class MiniEvent:
             self.final_tau_x = np.nan
             self.est_tau_y = np.nan
 
+    def find_decay_array(self):
+        decay_start = self._event_peak_x - self.array_start
+        decay_temp = self.event_array[decay_start:]
+        decay_end_temp = np.where(decay_temp > self.event_start_y)[0]
+        if len(decay_end_temp) > 0:
+            decay_end = decay_end_temp[0]
+        else:
+            decay_end = np.argmax(decay_temp)
+        decay_y = decay_temp[:decay_end]
+        decay_x = np.arange(len(decay_y))
+        return decay_y, decay_x
+
     def fit_decay(self, fit_type):
         try:
-            baselined_event = self.event_array - self.event_start_y
-            amp = self._event_peak_x - self.array_start
-            decay_y = baselined_event[amp:]
-            decay_x = self.x_array()
+            decay_y, decay_x = self.find_decay_array()
+            est_tau = self._event_tau_x - self._event_peak_x
             if fit_type == "db_exp":
                 upper_bounds = [0, np.inf, 0, np.inf]
                 lower_bounds = [-np.inf, 0, -np.inf, 0]
-                init_param = np.array([self.event_peak_y, self.final_tau_x, 0, 0])
+                init_param = np.array([self.event_peak_y, est_tau, 0, 0])
                 popt, _ = optimize.curve_fit(
                     db_exp_decay,
                     decay_x,
@@ -253,7 +263,7 @@ class MiniEvent:
             else:
                 upper_bounds = [0, np.inf]
                 lower_bounds = [-np.inf, 0]
-                init_param = np.array([self.event_peak_y, self.final_tau_x])
+                init_param = np.array([self.event_peak_y, est_tau])
                 popt, _ = optimize.curve_fit(
                     s_exp_decay,
                     decay_x,
@@ -262,9 +272,7 @@ class MiniEvent:
                     bounds=[lower_bounds, upper_bounds],
                 )
                 amp_1, self.fit_tau = popt
-                self.fit_decay_y = (
-                    s_exp_decay(decay_x, amp_1, self.fit_tau) + self.event_start_y
-                )
+                self.fit_decay_y = s_exp_decay(decay_x, amp_1, self.fit_tau)
             self.fit_decay_x = (decay_x + self._event_peak_x) / self.s_r_c
         except:
             self.fit_decay_x = np.nan
@@ -295,12 +303,6 @@ class MiniEvent:
         y = [self.event_start_y, self.event_peak_y, self.est_tau_y]
         return y
 
-    def mini_plot_x(self) -> list:
-        return [
-            self.event_start_x(),
-            self.event_peak_x(),
-        ]
-
     def event_tau_x(self) -> float:
         if not np.isnan(self._event_tau_x):
             return self._event_tau_x / self.s_r_c
@@ -319,11 +321,11 @@ class MiniEvent:
         else:
             return self._event_peak_x
 
-    def mini_plot_y(self) -> list:
-        return [self.event_start_y, self.event_peak_y]
-
-    def mini_x_array(self) -> np.ndarray:
+    def plot_event_x(self) -> np.ndarray:
         return np.arange(self.array_start, self.array_end) / self.s_r_c
+
+    def plot_event_y(self) -> np.ndarray:
+        return self.event_array
 
     def x_array(self):
         return np.arange(self.array_start, self.array_end, 1)

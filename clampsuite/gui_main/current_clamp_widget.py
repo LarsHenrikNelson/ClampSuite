@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
+    QComboBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -146,6 +147,17 @@ class currentClampWidget(DragDropWidget):
         self.input_layout.addRow(
             self.min_spike_threshold_label, self.min_spike_threshold_edit
         )
+
+        self.threshold_method = QComboBox()
+        methods = [
+            "max_curvature",
+            "third_derivative",
+        ]
+        self.threshold_method.addItems(methods)
+        self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
+
+        self.threshold_method.setObjectName("threshold_method")
+        self.input_layout.addRow("Threshold method", self.threshold_method)
 
         self.min_spikes_label = QLabel("Min spikes")
         self.min_spikes_edit = LineEdit()
@@ -338,6 +350,7 @@ class currentClampWidget(DragDropWidget):
                 ramp_end=self.ramp_end_edit.toInt(),
                 threshold=self.min_spike_threshold_edit.toInt(),
                 min_spikes=self.min_spikes_edit.toInt(),
+                threshold_method=self.threshold_method.currentText(),
             )
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.setAcquisition)
