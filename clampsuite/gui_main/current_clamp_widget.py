@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
+    QAction,
     QComboBox,
     QFormLayout,
     QHBoxLayout,
@@ -274,6 +275,21 @@ class currentClampWidget(DragDropWidget):
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setMinimumWidth(300)
         self.plot_layout.addWidget(self.plot_widget)
+
+        self.delete_acq_action = QAction("Delete acq")
+        self.delete_acq_action.triggered.connect(self.deleteAcq)
+
+        self.reset_recent_acq_action = QAction("Reset recent del acq")
+        self.reset_recent_acq_action.triggered.connect(self.resetRecentRejectAcq)
+
+        self.reset_acq_action = QAction("Reset del acq(s)")
+        self.reset_acq_action.triggered.connect(self.resetRejectedAcqs)
+
+        vb = self.plot_widget.getViewBox()
+        vb.menu.addSeparator()
+        vb.menu.addAction(self.delete_acq_action)
+        vb.menu.addAction(self.reset_recent_acq_action)
+        vb.menu.addAction(self.reset_acq_action)
 
         self.spike_plot = pg.PlotWidget()
         self.spike_plot.setMinimumWidth(300)

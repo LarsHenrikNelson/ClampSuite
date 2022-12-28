@@ -6,6 +6,7 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from PyQt5.QtGui import QIntValidator, QKeySequence, QFont
 from PyQt5.QtCore import QThreadPool, Qt
 from PyQt5.QtWidgets import (
+    QAction,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -288,11 +289,11 @@ class MiniAnalysisWidget(DragDropWidget):
         )
 
         self.decon_type_edit = QComboBox(self)
-        decon_list = ["wiener", "fft"]
+        decon_list = ["wiener", "fft", "convolution"]
         self.decon_type_edit.addItems(decon_list)
         self.decon_type_edit.setMinimumContentsLength(len(max(decon_list, key=len)))
-        self.decon_type_edit.setObjectName("decon_type_edit")
-        self.settings_layout.addRow("Deconvolution type", self.decon_type_edit)
+        self.decon_type_edit.setObjectName("event_finding_method_edit")
+        self.settings_layout.addRow("Event finding method", self.decon_type_edit)
 
         self.baseline_corr_choice = QCheckBox()
         self.baseline_corr_choice.setChecked(False)
@@ -444,6 +445,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.create_mini_button = QPushButton("Create new mini")
         self.create_mini_button.clicked.connect(self.createMini)
+        self.create_mini_action = QAction("Create new mini")
+        self.create_mini_action.triggered.connect(self.createMini)
         self.acq_buttons.addWidget(self.create_mini_button, 5, 0, 1, 2)
 
         self.delete_acq_button = QPushButton("Delete acquisition")
@@ -452,10 +455,12 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
         self.reset_recent_acq_button.clicked.connect(self.resetRecentRejectedAcq)
+
         self.acq_buttons.addWidget(self.reset_recent_acq_button, 7, 0, 1, 2)
 
         self.reset_acq_button = QPushButton("Reset deleted acqs")
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
+        
         self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
 
         self.acq_buttons.setRowStretch(9, 10)
@@ -465,11 +470,26 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
         self.acq_buttons.addWidget(self.calculate_parameters_2, 10, 0, 1, 2)
 
+        self.delete_acq_action = QAction("Delete acq")
+        self.delete_acq_action.triggered.connect(self.deleteAcq)
+
+        self.reset_recent_acq_action = QAction("Reset recent del acq")
+        self.reset_recent_acq_action.triggered.connect(self.resetRecentRejectedAcq)
+
+        self.reset_acq_action = QAction("Reset del acq(s)")
+        self.reset_acq_action.triggered.connect(self.resetRejectedAcqs)
+
         # Filling the plot layout.
         self.p1 = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.p1.setObjectName("p1")
+        p1pi = self.p1.getViewBox()
+        p1pi.menu.addSeparator()
+        p1pi.menu.addAction(self.create_mini_action)
+        p1pi.menu.addAction(self.delete_acq_action)
+        p1pi.menu.addAction(self.reset_recent_acq_action)
+        p1pi.menu.addAction(self.reset_acq_action)
         self.d3.addWidget(self.p1, 0, 1)
         self.d3.layout.setColumnStretch(1, 10)
 
@@ -477,6 +497,11 @@ class MiniAnalysisWidget(DragDropWidget):
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
         self.p2.setObjectName("p2")
+        p2pi = self.p2.getViewBox()
+        p2pi.menu.addSeparator()
+        p2pi.menu.addAction(self.delete_acq_action)
+        p2pi.menu.addAction(self.reset_recent_acq_action)
+        p2pi.menu.addAction(self.reset_acq_action)
         self.d1.addWidget(self.p2)
 
         self.region = pg.LinearRegionItem()
@@ -546,18 +571,30 @@ class MiniAnalysisWidget(DragDropWidget):
         self.delete_mini_button = QPushButton("Delete event")
         self.mini_layout.addRow(self.delete_mini_button)
         self.delete_mini_button.clicked.connect(self.deleteMini)
+        self.delete_mini_action = QAction("Delete event")
+        self.delete_mini_action.triggered.connect(self.deleteMini)
 
         self.set_baseline = QPushButton("Set point as baseline")
         self.mini_layout.addRow(self.set_baseline)
         self.set_baseline.clicked.connect(self.setPointAsBaseline)
+        self.set_baseline_action = QAction("Set point as baseline")
+        self.set_baseline_action.triggered.connect(self.setPointAsBaseline)
 
         self.set_peak = QPushButton("Set point as peak")
         self.mini_layout.addRow(self.set_peak)
         self.set_peak.clicked.connect(self.setPointAsPeak)
+        self.set_peak_action = QAction("Set point as peak")
+        self.set_peak_action.triggered.connect(self.setPointAsPeak)
 
         self.mini_view_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
         )
+        mp = self.mini_view_plot.getViewBox()
+        mp.menu.addSeparator()
+        mp.menu.addAction(self.delete_mini_action)
+        mp.menu.addAction(self.set_baseline_action)
+        mp.menu.addAction(self.set_peak_action)
+
         # self.mini_view_plot.setMinimumWidth(300)
         self.mini_view_plot.setObjectName("Mini view plot")
         self.d2.addWidget(self.mini_view_plot, 0, 1)

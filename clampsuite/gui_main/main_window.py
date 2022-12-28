@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QFileDialog,
     QMainWindow,
-    QMenu,
     QPushButton,
     QStackedWidget,
     QToolBar,

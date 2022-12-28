@@ -1,9 +1,8 @@
 from collections import namedtuple
-import typing
 
 import numpy as np
-import pandas as pd
 from PyQt5.QtWidgets import (
+    QAction,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -508,6 +507,18 @@ class oEPSCWidget(DragDropWidget):
         self.delete_oepsc_button.clicked.connect(self.deleteoEPSC)
         self.delete_oepsc_button.setEnabled(True)
 
+        self.set_peak_action = QAction("Set point as peak")
+        self.set_peak_action.triggered.connect(self.setoEPSCPeak)
+
+        self.delete_oepsc_action = QAction("Delete oEPSC")
+        self.delete_oepsc_action.triggered.connect(self.deleteoEPSC)
+
+        o_vb = self.oepsc_plot.getViewBox()
+        o_vb.menu.addSeparator()
+        o_vb.menu.addAction(self.set_peak_action)
+        o_vb.menu.addSeparator()
+        o_vb.menu.addAction(self.delete_oepsc_action)
+
         self.o_info_layout.setRowStretch(7, 10)
 
         self.lfp_label = QLabel("LFP")
@@ -547,6 +558,26 @@ class oEPSCWidget(DragDropWidget):
         self.delete_lfp_button.clicked.connect(self.deleteLFP)
         self.lfp_info_layout.addRow(self.delete_lfp_button)
         self.delete_lfp_button.setEnabled(True)
+
+        self.set_fv_action = QAction("Set point as fv")
+        self.set_fv_action.triggered.connect(self.setPointAsFV)
+
+        self.set_fp_action = QAction("Set point as fp")
+        self.set_fp_action.triggered.connect(self.setPointAsFP)
+
+        self.set_slope_action = QAction("Set point as slope")
+        self.set_slope_action.triggered.connect(self.setPointAsSlopeStart)
+
+        self.delete_lfp_action = QAction()
+        self.delete_lfp_action.triggered.connect(self.deleteLFP)
+
+        vb = self.lfp_plot.getViewBox()
+        vb.menu.addSeparator()
+        vb.menu.addAction(self.set_fv_action)
+        vb.menu.addAction(self.set_fp_action)
+        vb.menu.addAction(self.set_slope_action)
+        vb.menu.addSeparator()
+        vb.menu.addAction(self.delete_lfp_action)
 
         # Tab 3 Layout
         self.tab3 = QTabWidget()
