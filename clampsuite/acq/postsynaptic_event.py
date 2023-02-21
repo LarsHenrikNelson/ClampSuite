@@ -24,6 +24,7 @@ class MiniEvent:
         acq_number: int,
         event_pos: int,
         y_array: Union[np.ndarray, list],
+        event_length: int,
         sample_rate: int,
         curve_fit_decay: bool = False,
         curve_fit_type: Literal[
@@ -38,15 +39,16 @@ class MiniEvent:
         self.curve_fit_decay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
         self.fit_tau = np.nan
-        self.create_event(y_array)
+        self.event_length = event_length
+        self.create_event(y_array, event_length)
         self.find_peak()
         self.find_event_parameters(y_array)
         self.peak_align_value = self._event_peak_x - self.array_start
 
-    def create_event(self, y_array: Union[np.ndarray, list]):
+    def create_event(self, y_array: Union[np.ndarray, list], event_length: int):
         self.array_start = int(self.event_pos - (2 * self.s_r_c))
         self.adjust_pos = int(self.event_pos - self.array_start)
-        end = int(self.event_pos + (30 * self.s_r_c))
+        end = int(self.event_pos + (event_length * self.s_r_c))
         if end > len(y_array) - 1:
             self.array_end = len(y_array) - 1
         else:

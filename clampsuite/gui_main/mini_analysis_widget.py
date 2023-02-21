@@ -261,6 +261,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.min_decay.setText("0.5")
         self.settings_layout.addRow("Min decay time (ms)", self.min_decay)
 
+        self.event_length = LineEdit()
+        self.event_length.setObjectName("event_length")
+        self.event_length.setText("30")
+        self.settings_layout.addRow("Max event length", self.event_length)
+
         self.decay_rise = QCheckBox()
         self.decay_rise.setObjectName("decay_rise")
         self.decay_rise.setChecked(True)
@@ -460,7 +465,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.reset_acq_button = QPushButton("Reset deleted acqs")
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
-        
+
         self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
 
         self.acq_buttons.setRowStretch(9, 10)
@@ -809,6 +814,7 @@ class MiniAnalysisWidget(DragDropWidget):
             min_rise_time=self.min_rise_time.toFloat(),
             max_rise_time=self.max_rise_time.toFloat(),
             min_decay_time=self.min_decay.toFloat(),
+            event_length=self.event_length.toInt(),
             decay_rise=self.decay_rise.isChecked(),
             invert=self.invert_checkbox.isChecked(),
             decon_type=self.decon_type_edit.currentText(),

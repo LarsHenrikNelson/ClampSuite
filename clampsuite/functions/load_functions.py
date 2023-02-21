@@ -99,6 +99,21 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     return acq_dict
 
 
+def load_neo_acq(analog_sig, acq_num):
+    acq_dict = {}
+    acq_dict["sample_rate"] = int(analog_sig.sampling_rate)
+    acq_dict["acq_num"] = acq_num
+    name = re.findall(r"\((.*)\)", analog_sig.name)[0]
+    acq_dict["name"] = name
+    acq_dict["time_stamp"] = acq_num * len(analog_sig) / analog_sig.sampling_rate
+    acq_dict["pulse_pattern"] = "0"
+    acq_dict["epoch"] = 0
+    acq_dict["ramp"] = 0
+    acq_dict["pulse_amp"] = 0
+    acq_dict["array"] = analog_sig.as_array().flatten()
+    return acq_dict
+
+
 class NumpyEncoder(json.JSONEncoder):
     """
     Special json encoder for numpy types. Numpy types are not accepted by the
