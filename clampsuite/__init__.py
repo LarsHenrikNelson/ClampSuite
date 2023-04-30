@@ -1,5 +1,5 @@
 __version__ = "0.0.3"
 
-from .acq import Acquisition
-from .final_analysis import FinalAnalysis
-from .manager import ExpManager
+from .acq import Acquisition  # noqa: F401
+from .final_analysis import FinalAnalysis  # noqa: F401
+from .manager import ExpManager  # noqa: F401
