@@ -1,10 +1,7 @@
 import numpy as np
-import pandas as pd
 import pyqtgraph as pg
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
-from PyQt5.QtGui import QIntValidator, QKeySequence, QFont
-from PyQt5.QtCore import QThreadPool, Qt
+from PyQt5.QtCore import Qt, QThreadPool
+from PyQt5.QtGui import QFont, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
     QCheckBox,
@@ -28,28 +25,23 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
 
+from ..functions.kde import create_kde
+from ..functions.template_psc import create_template
+from ..functions.utilities import round_sig
+from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
-from ..functions.kde import create_kde
-from ..functions.utilities import round_sig
-from ..functions.template_psc import create_template
-from ..gui_widgets.qtwidgets import (
-    DragDropWidget,
-    LineEdit,
-    ListView,
-    ThreadWorker,
-)
 
 
 class MiniAnalysisWidget(DragDropWidget):
     def __init__(self):
-
         super().__init__()
         self.init_UI()
 
     def init_UI(self):
-
         # Create tabs for part of the analysis program
         self.signals.file.connect(self.loadPreferences)
         self.signals.path.connect(self.loadExperiment)
@@ -887,7 +879,6 @@ class MiniAnalysisWidget(DragDropWidget):
         # I choose to just show
         acq_dict = self.exp_manager.exp_dict["mini"]
         if acq_dict.get(self.acquisition_number.value()):
-
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
             # acquisition dictionary. Makes it more readable.
@@ -1396,10 +1387,9 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # The mini needs a baseline of at least 2 milliseconds long.
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-            mini = acq.postsynaptic_events[id_value]
+            mini = acq.postsynaptic_events[x]
 
             if x > 2:
-
                 # Create the new mini.
                 created = acq.create_new_mini(x)
 
@@ -1700,42 +1690,27 @@ class MiniAnalysisWidget(DragDropWidget):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
-                try:
-                    i.setText(pref_dict["line_edits"][i.objectName()])
-                except:
-                    pass
+                i.setText(pref_dict["line_edits"][i.objectName()])
 
         combo_boxes = self.findChildren(QComboBox)
         for i in combo_boxes:
             if i.objectName() != "":
-                try:
-                    i.setCurrentText(pref_dict["combo_boxes"][i.objectName()])
-                except:
-                    pass
+                i.setCurrentText(pref_dict["combo_boxes"][i.objectName()])
 
         check_boxes = self.findChildren(QCheckBox)
         for i in check_boxes:
             if i.objectName() != "":
-                try:
-                    i.setChecked(pref_dict["check_boxes"][i.objectName()])
-                except:
-                    pass
+                i.setChecked(pref_dict["check_boxes"][i.objectName()])
 
         spinboxes = self.findChildren(QDoubleSpinBox)
         for i in spinboxes:
             if i.objectName() != "":
-                try:
-                    i.setValue(pref_dict["double_spinboxes"][i.objectName()])
-                except:
-                    pass
+                i.setValue(pref_dict["double_spinboxes"][i.objectName()])
 
         sliders = self.findChildren(QSlider)
         for i in sliders:
             if i.objectName() != "":
-                try:
-                    i.setValue(pref_dict["sliders"][i.objectName()])
-                except:
-                    pass
+                i.setValue(pref_dict["sliders"][i.objectName()])
 
     def loadPreferences(self, file_name):
         pref_dict = self.exp_manager.load_ui_prefs(file_name)

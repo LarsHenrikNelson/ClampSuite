@@ -2,8 +2,7 @@ from typing import Literal, Union
 
 import bottleneck as bn
 import numpy as np
-from scipy import signal
-from scipy import stats
+from scipy import signal, stats
 
 from . import filter_acq
 
@@ -220,7 +219,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # spike threshold. This is used because of how scipy.find_peaks
                 # works and was a robust way to find the first
                 # action_potential.
-                masked_array = self.array.copy()
+                self.array.copy()
                 mask = np.array(self.array > self.spike_threshold)
 
                 # First using a mask to find the indices of each action
@@ -253,7 +252,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # is the spike threshold wherever the value drops below the
                 # spike threshold. This is used because of how scipy.find_peaks
                 # works and was a robust way to find the first action_potential.
-                masked_array = self.array.copy()
+                self.array.copy()
 
                 # First using a mask to find the indices of each action
                 # potential. The index pulls out the action potential fairly

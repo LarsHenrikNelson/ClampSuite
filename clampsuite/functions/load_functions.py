@@ -1,7 +1,7 @@
 import json
-from math import nan
-from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 import re
+from math import nan
+from pathlib import PurePath, PurePosixPath, PureWindowsPath
 from typing import Union
 
 import numpy as np

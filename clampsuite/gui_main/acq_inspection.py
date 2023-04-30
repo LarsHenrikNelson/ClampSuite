@@ -6,6 +6,7 @@ Created on Sun Apr  3 12:20:28 2022
 @author: Lars
 """
 import numpy as np
+import pyqtgraph as pg
 from PyQt5.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
@@ -13,8 +14,6 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QWidget,
 )
-
-import pyqtgraph as pg
 
 
 class AcqInspectionWidget(QWidget):

@@ -1,8 +1,8 @@
 from typing import Literal, Union
 
 import numpy as np
-from scipy.stats import linregress
 from scipy import signal
+from scipy.stats import linregress
 
 from . import filter_acq
 

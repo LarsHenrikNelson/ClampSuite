@@ -1,6 +1,9 @@
 from collections import namedtuple
 
 import numpy as np
+import pyqtgraph as pg
+from PyQt5.QtCore import Qt, QThreadPool
+from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import (
     QAction,
     QCheckBox,
@@ -9,8 +12,8 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     QGridLayout,
     QHBoxLayout,
-    QLineEdit,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -20,15 +23,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
-from PyQt5.QtCore import QThreadPool
-from PyQt5.QtCore import Qt
-import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 
-from .acq_inspection import AcqInspectionWidget
-from ..manager import ExpManager
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
     DragDropWidget,
@@ -36,6 +33,8 @@ from ..gui_widgets.qtwidgets import (
     ListView,
     ThreadWorker,
 )
+from ..manager import ExpManager
+from .acq_inspection import AcqInspectionWidget
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
@@ -1243,42 +1242,27 @@ class oEPSCWidget(DragDropWidget):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
-                try:
-                    i.setText(pref_dict["line_edits"][i.objectName()])
-                except:
-                    pass
+                i.setText(pref_dict["line_edits"][i.objectName()])
 
         combo_boxes = self.findChildren(QComboBox)
         for i in combo_boxes:
             if i.objectName() != "":
-                try:
-                    i.setCurrentText(pref_dict["combo_boxes"][i.objectName()])
-                except:
-                    pass
+                i.setCurrentText(pref_dict["combo_boxes"][i.objectName()])
 
         check_boxes = self.findChildren(QCheckBox)
         for i in check_boxes:
             if i.objectName() != "":
-                try:
-                    i.setChecked(pref_dict["check_boxes"][i.objectName()])
-                except:
-                    pass
+                i.setChecked(pref_dict["check_boxes"][i.objectName()])
 
         buttons = self.findChildren(QPushButton)
         for i in buttons:
             if i.objectName() != "":
-                try:
-                    i.setEnabled(pref_dict["buttons"][i.objectName()])
-                except:
-                    pass
+                i.setEnabled(pref_dict["buttons"][i.objectName()])
 
         dspinboxes = self.findChildren(QDoubleSpinBox)
         for i in dspinboxes:
             if i.objectName() != "":
-                try:
-                    i.setvalue(pref_dict["double_spinboxes"][i.objectName()])
-                except:
-                    pass
+                i.setvalue(pref_dict["double_spinboxes"][i.objectName()])
 
     def loadPreferences(self, file_name: str):
         self.need_to_save = True

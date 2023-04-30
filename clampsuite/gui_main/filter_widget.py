@@ -1,19 +1,19 @@
-from PyQt5.QtWidgets import (
-    QPushButton,
-    QHBoxLayout,
-    QComboBox,
-    QWidget,
-    QLabel,
-    QFormLayout,
-    QSpinBox,
-    QDoubleSpinBox,
-)
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtCore import QSize
 import pyqtgraph as pg
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QWidget,
+)
 
-from ..manager import ExpManager
 from ..gui_widgets.qtwidgets import LineEdit, ListView
+from ..manager import ExpManager
 
 
 class filterWidget(QWidget):
@@ -22,7 +22,6 @@ class filterWidget(QWidget):
     """
 
     def __init__(self):
-
         super().__init__()
 
         self.analysis_type = "filter"
@@ -193,7 +192,6 @@ class filterWidget(QWidget):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-
             # Delete selections from model
             self.load_widget.deleteSelection(indexes)
             self.load_widget.clearSelection()

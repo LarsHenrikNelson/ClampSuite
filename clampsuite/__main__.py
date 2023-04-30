@@ -1,10 +1,10 @@
 import os
 import sys
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication
 import pyqtgraph as pg
 import qdarkstyle
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication
 from qdarkstyle.dark.palette import DarkPalette
 
 from .gui_main.main_window import MainWindow

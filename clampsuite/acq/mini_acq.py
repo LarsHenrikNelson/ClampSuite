@@ -1,13 +1,13 @@
-from typing import Union, Literal
+from typing import Literal, Union
 
 import numpy as np
+from scipy import interpolate, signal
 from scipy.fft import fft, ifft
-from scipy import signal, interpolate
 
+from ..functions.filtering_functions import fir_zero_1
+from ..functions.template_psc import create_template
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
-from ..functions.template_psc import create_template
-from ..functions.filtering_functions import fir_zero_1
 
 
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):

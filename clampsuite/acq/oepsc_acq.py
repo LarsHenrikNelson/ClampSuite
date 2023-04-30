@@ -3,8 +3,8 @@ from typing import Literal, Union
 import numpy as np
 from scipy import integrate, optimize
 
+from ..functions.curve_fit import db_exp_decay, s_exp_decay
 from . import filter_acq
-from ..functions.curve_fit import s_exp_decay, db_exp_decay
 
 
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):

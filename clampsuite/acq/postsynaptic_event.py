@@ -1,10 +1,10 @@
 from typing import Literal, Union
 
 import numpy as np
-from scipy import signal, optimize
+from scipy import optimize, signal
 from scipy.stats import linregress
 
-from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay
+from ..functions.curve_fit import db_exp_decay, s_exp_decay
 
 
 class MiniEvent:
@@ -348,8 +348,8 @@ class MiniEvent:
         x = int(x * self.s_r_c)
         self._event_start_x = x
         self.event_start_y = y
-        start = int((self._event_start_x - self.array_start) - (0.5 * self.s_r_c))
-        end = int(self._event_start_x - self.array_start)
+        int((self._event_start_x - self.array_start) - (0.5 * self.s_r_c))
+        int(self._event_start_x - self.array_start)
         self.amplitude = abs(self.event_peak_y - self.event_start_y)
         self.calc_event_rise_time()
         self.est_decay()

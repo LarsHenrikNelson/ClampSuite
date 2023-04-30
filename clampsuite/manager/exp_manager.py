@@ -1,16 +1,16 @@
+import json
+import typing
 from collections import OrderedDict
 from copy import deepcopy
-import json
-from pathlib import PurePath, Path
-import typing
+from pathlib import Path, PurePath
 from typing import Callable, Literal, Union
 
 import yaml
 
 from ..acq import Acquisition
-from ..functions.load_functions import NumpyEncoder, load_json_file, load_scanimage_file
-from ..functions.filtering_functions import Filters, Windows
 from ..final_analysis import FinalAnalysis
+from ..functions.filtering_functions import Filters, Windows
+from ..functions.load_functions import NumpyEncoder, load_json_file, load_scanimage_file
 
 
 class ExpManager:

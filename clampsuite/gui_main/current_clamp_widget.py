@@ -2,6 +2,8 @@ from pathlib import PurePath
 from typing import Union
 
 import numpy as np
+import pyqtgraph as pg
+from PyQt5.QtCore import QThreadPool
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
     QAction,
@@ -18,18 +20,16 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PyQt5.QtCore import QThreadPool
-import pyqtgraph as pg
 
-from .acq_inspection import AcqInspectionWidget
-from ..manager import ExpManager
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import (
+    DragDropWidget,
     LineEdit,
     ListView,
-    DragDropWidget,
     ThreadWorker,
 )
+from ..manager import ExpManager
+from .acq_inspection import AcqInspectionWidget
 
 
 class currentClampWidget(DragDropWidget):

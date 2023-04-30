@@ -1,20 +1,20 @@
-from pathlib import PurePath, Path
+from pathlib import Path, PurePath
 
-from PyQt5.QtWidgets import (
-    QLineEdit,
-    QWidget,
-    QListView,
-    QSpinBox,
-)
 from PyQt5.QtCore import (
-    pyqtSlot,
-    pyqtSignal,
     QAbstractListModel,
     QMutex,
     QObject,
     QRunnable,
     Qt,
     QThreadPool,
+    pyqtSignal,
+    pyqtSlot,
+)
+from PyQt5.QtWidgets import (
+    QLineEdit,
+    QListView,
+    QSpinBox,
+    QWidget,
 )
 
 

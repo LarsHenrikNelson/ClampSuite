@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
+from ..functions.curve_fit import s_exp_decay
 from . import final_analysis
-from ..functions.curve_fit import s_exp_decay, db_exp_decay, t_exp_decay
 
 
 class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):

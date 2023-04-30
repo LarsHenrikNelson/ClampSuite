@@ -16,7 +16,6 @@ from ..functions.filtering_functions import (
     remez_2,
     savgol_filt,
 )
-
 from . import acquisition
 
 
@@ -73,12 +72,12 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
         self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.filter_type = filter_type
-        order = self.order = order
-        high_pass = self.high_pass = high_pass
-        high_width = self.high_width = high_width
-        low_pass = self.low_pass = low_pass
-        low_width = self.low_width = low_width
-        window = self.window = window
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
         self.polyorder = polyorder
         self.filter_array(self.array)
 

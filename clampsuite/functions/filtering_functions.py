@@ -1,9 +1,7 @@
-from enum import Enum
 from typing import Literal, Union
 
 import numpy as np
 from scipy import signal
-
 
 Filters = Literal[
     "remez_2",
@@ -45,27 +43,27 @@ def bessel(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.bessel(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.bessel(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.bessel(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -75,27 +73,27 @@ def bessel_zero(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.bessel(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfiltfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.bessel(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.bessel(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
@@ -105,27 +103,27 @@ def butterworth(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.butter(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.butter(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.butter(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -135,27 +133,27 @@ def butterworth_zero(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.butter(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfiltfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.butter(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.butter(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
@@ -165,27 +163,27 @@ def elliptic(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.ellip(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.ellip(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.ellip(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -195,27 +193,27 @@ def elliptic_zero(
     array: Union[np.ndarray, list],
     order: int,
     sample_rate: int,
-    highpass: Union[int, None] = None,
-    lowpass: Union[int, None] = None,
+    high_pass: Union[int, None] = None,
+    low_pass: Union[int, None] = None,
 ):
-    if highpass is not None and lowpass is not None:
+    if high_pass is not None and low_pass is not None:
         sos = signal.ellip(
             order,
-            Wn=[highpass, lowpass],
+            Wn=[high_pass, low_pass],
             btype="bandpass",
             output="sos",
             fs=sample_rate,
         )
         filt_array = signal.sosfiltfilt(sos, array)
         return filt_array
-    elif highpass is not None and lowpass is None:
+    elif high_pass is not None and low_pass is None:
         sos = signal.ellip(
-            order, Wn=highpass, btype="highpass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
-    elif highpass is None and lowpass is not None:
+    elif high_pass is None and low_pass is not None:
         sos = signal.ellip(
-            order, Wn=lowpass, btype="lowpass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
