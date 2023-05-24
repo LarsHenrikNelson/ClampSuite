@@ -58,7 +58,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         min_rise_time: Union[int, float] = 0.5,
         max_rise_time: Union[int, float] = 4,
         min_decay_time: Union[int, float] = 0.5,
-        event_length: int = 30,
+        event_length: Union[int, float] = 30,
         decay_rise: bool = True,
         invert: bool = False,
         decon_type: Literal["fft", "wiener", "convolution"] = "wiener",
@@ -231,7 +231,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return deconvolved_array
 
-    def find_events(self):
+    def find_events(self) -> list:
         # This is not the method from the original paper but it works a
         # lot better. The original paper used 4*std of the deconvolved array.
         # The problem with that method is that interneurons needs a
@@ -307,8 +307,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                     self.final_events += [peak]
                     event_time += [event.event_peak_x()]
                     event_number += 1
-                else:
-                    pass
+                # else:
+                #     pass
 
     def check_event(self, event: MiniEvent, events: list) -> bool:
         """The function is used to screen out events based
@@ -490,7 +490,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             h.load_mini(event_dict=i, final_array=self.final_array)
             self.postsynaptic_events += [h]
 
-    def del_postsynaptic_event(self, index):
+    def del_postsynaptic_event(self, index: int):
         del self.postsynaptic_events[index]
         del self.final_events[index]
         self.deleted_events += 1
@@ -498,11 +498,17 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def sort_index(self):
         return list(np.argsort(self.final_events))
 
-    def list_of_events(self):
+    def list_of_events(self) -> list:
         return list(range(len(self.postsynaptic_events)))
 
-    def plot_acq_y(self):
-        return self.final_array
+    def plot_acq_y(self) -> np.ndarray:
+        if hasattr(self, "final_array"):
+            return self.final_array
+        else:
+            return self.array
 
-    def plot_acq_x(self):
-        return np.arange(0, len(self.final_array)) / self.s_r_c
+    def plot_acq_x(self) -> np.ndarray:
+        if hasattr(self, "final_array"):
+            return np.arange(0, len(self.final_array)) / self.s_r_c
+        else:
+            return np.arange(0, len(self.array)) / self.s_r_c

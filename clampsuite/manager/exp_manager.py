@@ -191,6 +191,8 @@ class ExpManager:
             file_path = list(file_path)
         num_of_acqs = len(file_path)
         for count, i in enumerate(file_path):
+            if not Path(i).exists():
+                raise AttributeError("File path does not exist")
             acq = self.load_acq(analysis, i)
             self._set_acq(acq)
             self.callback_func(int((100 * (count + 1) / num_of_acqs)))
@@ -212,7 +214,7 @@ class ExpManager:
             print("File type not recognized!")
             return None
         if acq_comp.get("analysis"):
-            obj = Acquisition(acq_comp.get("analysis"))
+            obj = Acquisition(acq_comp.analysis)
         elif isinstance(analysis, str):
             obj = Acquisition(analysis)
         else:
@@ -236,6 +238,7 @@ class ExpManager:
         return acq_dict
 
     def _set_acq(self, acq):
+        print(type(acq))
         if acq is None:
             pass
         elif acq.analysis in self.exp_dict:

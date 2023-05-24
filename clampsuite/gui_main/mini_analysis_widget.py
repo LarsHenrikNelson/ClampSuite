@@ -256,7 +256,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_length = LineEdit()
         self.event_length.setObjectName("event_length")
         self.event_length.setText("30")
-        self.settings_layout.addRow("Max event length", self.event_length)
+        self.settings_layout.addRow("Max event length (ms)", self.event_length)
 
         self.decay_rise = QCheckBox()
         self.decay_rise.setObjectName("decay_rise")
@@ -825,8 +825,8 @@ class MiniAnalysisWidget(DragDropWidget):
         QThreadPool.globalInstance().start(worker)
 
     def setAcquisition(self):
-        self.acquisition_number.setMaximum(self.exp_manager.start_acq)
-        self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
 
         # Minis always start from 0 since list indexing in python starts
@@ -1224,14 +1224,14 @@ class MiniAnalysisWidget(DragDropWidget):
         # object on p1 and p2 so that it does not have to be
         # referenced again.
         self.last_mini_clicked_1.setData(
-            x=mini.plot_event_x(),
-            y=mini.plot_event_y(),
+            x=mini.mini_x_comp()[:2],
+            y=mini.mini_y_comp()[:2],
             color="m",
             width=2,
         )
         self.last_mini_clicked_2.setData(
-            x=mini.plot_event_x(),
-            y=mini.plot_event_y(),
+            x=mini.mini_x_comp()[:2],
+            y=mini.mini_y_comp()[:2],
             color="m",
             width=2,
         )
@@ -1287,14 +1287,14 @@ class MiniAnalysisWidget(DragDropWidget):
             # object on p1 and p2 so that it does not have to be
             # referenced again.
             self.last_mini_clicked_1.setData(
-                x=mini.plot_event_x(),
-                y=mini.plot_event_y(),
+                x=mini.mini_x_comp()[:2],
+                y=mini.mini_y_comp()[:2],
                 color="m",
                 width=2,
             )
             self.last_mini_clicked_2.setData(
-                x=mini.plot_event_x(),
-                y=mini.plot_event_y(),
+                x=mini.mini_x_comp()[:2],
+                y=mini.mini_y_comp()[:2],
                 color="m",
                 width=2,
             )
@@ -1387,7 +1387,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # The mini needs a baseline of at least 2 milliseconds long.
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-            mini = acq.postsynaptic_events[x]
 
             if x > 2:
                 # Create the new mini.
@@ -1403,11 +1402,12 @@ class MiniAnalysisWidget(DragDropWidget):
 
                 # Return the correct position of the mini
                 id_value = self.mini_spinbox_list[-1]
+                mini = acq.postsynaptic_events[id_value]
 
                 # Add the mini item to the plot and make it clickable for p1.
                 mini_plot = pg.PlotCurveItem(
-                    x=mini.plot_event_x(),
-                    y=mini.plot_event_y(),
+                    x=mini.mini_x_comp()[:2],
+                    y=mini.mini_y_comp()[:2],
                     pen="g",
                     name=id_value,
                     clickable=True,
@@ -1415,8 +1415,8 @@ class MiniAnalysisWidget(DragDropWidget):
                 mini_plot.sigClicked.connect(self.miniClicked)
                 self.p1.addItem(mini_plot)
                 self.p2.plot(
-                    x=mini.plot_event_x(),
-                    y=mini.plot_event_y(),
+                    x=mini.mini_x_comp()[:2],
+                    y=mini.mini_y_comp()[:2],
                     pen="g",
                     name=id_value,
                 )
@@ -1433,8 +1433,6 @@ class MiniAnalysisWidget(DragDropWidget):
                 # Raise error if the point is too close to the beginning.
                 self.pointTooCloseToBeginning()
                 return None
-        else:
-            pass
 
     def deleteAcq(self):
         """

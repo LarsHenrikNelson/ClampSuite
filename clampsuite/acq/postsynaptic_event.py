@@ -1,5 +1,4 @@
 from typing import Literal, Union
-
 import numpy as np
 from scipy import optimize, signal
 from scipy.stats import linregress
@@ -141,12 +140,18 @@ class MiniEvent:
         None.
 
         """
-        baselined_array = self.event_array - np.mean(
-            self.event_array[: int(1 * self.s_r_c)]
+        # baselined_array = self.event_array - np.mean(
+        #     self.event_array[: int(1 * self.s_r_c)]
+        # )
+        baselined_array = self.event_array - np.max(
+            self.event_array[: self._event_peak_x]
         )
         peak = int(self._event_peak_x - self.array_start)
+        # search_start = np.argwhere(
+        #     baselined_array[:peak] > 0.5 * self.event_peak_y
+        # ).flatten()
         search_start = np.argwhere(
-            baselined_array[:peak] > 0.5 * self.event_peak_y
+            baselined_array[:peak] > 0.3 * self.event_peak_y
         ).flatten()
         if search_start.size > 0:
             slope = (self.event_array[search_start[-1]] - self.event_peak_y) / (
@@ -230,7 +235,7 @@ class MiniEvent:
             self.final_tau_x = np.nan
             self.est_tau_y = np.nan
 
-    def find_decay_array(self):
+    def find_decay_array(self) -> tuple[np.ndarray, np.ndarray]:
         decay_start = self._event_peak_x - self.array_start
         decay_temp = self.event_array[decay_start:]
         decay_end_temp = np.where(decay_temp > self.event_start_y)[0]
@@ -240,7 +245,7 @@ class MiniEvent:
             decay_end = np.argmax(decay_temp)
         decay_y = decay_temp[:decay_end]
         decay_x = np.arange(len(decay_y))
-        return decay_y, decay_x
+        return decay_y, np.asarray(decay_x, dtype=np.float64)
 
     def fit_decay(self, fit_type):
         try:
@@ -276,7 +281,7 @@ class MiniEvent:
                 amp_1, self.fit_tau = popt
                 self.fit_decay_y = s_exp_decay(decay_x, amp_1, self.fit_tau)
             self.fit_decay_x = (decay_x + self._event_peak_x) / self.s_r_c
-        except:
+        except (RuntimeError, ValueError):
             self.fit_decay_x = np.nan
             self.fit_decay_y = np.nan
             self.fit_tau = np.nan
