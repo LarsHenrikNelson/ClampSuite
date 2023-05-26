@@ -293,6 +293,9 @@ class filterWidget(QWidget):
     def removeLastPlotted(self):
         pass
 
+    def createExperiment(self, urls):
+        self.load_widget.model().addData(urls)
+
 
 if __name__ == "__main__":
     filterWidget()

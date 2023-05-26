@@ -139,33 +139,22 @@ class MainWindow(QMainWindow):
             path = Path(directory)
             self.working_dir = str(path)
             self.central_widget.currentWidget().loadExperiment(path)
-        else:
-            pass
 
     def createExperiment(self):
-        directory = str(
-            QFileDialog.getOpenFileNames(
-                self,
-                directory=self.working_dir,
-                caption="Open files...",
-            )
+        directory, _ = QFileDialog.getOpenFileNames(
+            self,
+            directory=self.working_dir,
+            caption="Open files...",
         )
-        if directory:
+        if len(directory) > 0:
             self.working_dir = str(PurePath(directory[0]).parent)
             self.central_widget.currentWidget().createExperiment(directory)
-        else:
-            pass
 
     def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, caption="Open file", filter="YAML Files (*.yaml)"
         )
-        if len(file_name) == 0:
-            # This prevents an error from showing up when the path is not
-            # selected
-            pass
-        else:
-            print(file_name)
+        if len(file_name) > 0:
             self.central_widget.currentWidget().loadPreferences(file_name)
 
     def savePreferences(self):

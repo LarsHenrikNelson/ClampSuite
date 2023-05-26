@@ -27,6 +27,7 @@ class Acquisition:
         obj.version = clampsuite.__version__
         for key, value in kwargs.items():
             setattr(obj, key, value)
+        setattr(obj, "accepted", True)
         return obj
 
     def __copy__(self):
@@ -74,6 +75,12 @@ class Acquisition:
     def plot_acq_x(self):
         raise NotImplementedError
 
+    def delete(self):
+        self.accepted = False
+
+    def accept(self):
+        self.accepted = True
+
     @staticmethod
     def filters():
         return [i.name for i in Filters]
@@ -81,6 +88,9 @@ class Acquisition:
     @staticmethod
     def windows():
         return [i.name for i in Windows]
+
+    def run_analysis(self):
+        raise NotImplementedError
 
 
 if __name__ == "__main__":

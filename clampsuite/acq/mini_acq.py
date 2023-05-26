@@ -107,6 +107,9 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.tmp_spacer = tmp_spacer
         self.deleted_events = 0
 
+        self.run_analysis()
+
+    def run_analysis(self):
         # Runs the functions to analyze the acquisition
         # if self.baseline_corr:
         #     self.baseline_correction()

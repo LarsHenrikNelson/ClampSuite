@@ -81,8 +81,12 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.find_fdecay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
 
+        self.run_analysis()
+
         # Analysis functions
-        self.filter_array()
+
+    def run_analysis(self):
+        self.filter_array(self.array)
         self.baseline_mean = np.mean(
             self.filtered_array[self.baseline_start : self.baseline_end]
         )

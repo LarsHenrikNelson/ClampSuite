@@ -85,8 +85,11 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self._slope = np.nan
         self.regression_line = np.nan
 
+        self.run_analysis()
+
+    def run_analysis(self):
         # Run the analysis
-        self.filter_array()
+        self.filter_array(self.array)
         self.field_potential()
         if np.isnan(self._fp_x):
             self.plot_lfp = False

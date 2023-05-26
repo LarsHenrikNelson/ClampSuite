@@ -350,7 +350,6 @@ class currentClampWidget(DragDropWidget):
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
         else:
-
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
             self.worker = ThreadWorker(
@@ -677,6 +676,9 @@ class currentClampWidget(DragDropWidget):
             i = df.columns[0]
             array = df[i]
             ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
+
+    def createExperiment(self, urls):
+        self.load_widget.model().addData(urls)
 
     def loadExperiment(self, directory: Union[str, PurePath]):
         self.reset()

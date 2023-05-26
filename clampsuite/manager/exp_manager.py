@@ -238,7 +238,6 @@ class ExpManager:
         return acq_dict
 
     def _set_acq(self, acq):
-        print(type(acq))
         if acq is None:
             pass
         elif acq.analysis in self.exp_dict:
@@ -252,8 +251,9 @@ class ExpManager:
         end_acq = []
         for i in self.exp_dict.values():
             temp = list(i.keys())
-            start_acq.append(min(temp))
-            end_acq.append(max(temp))
+            if len(temp) > 0:
+                start_acq.append(min(temp))
+                end_acq.append(max(temp))
         self.start_acq = min(start_acq)
         self.end_acq = max(end_acq)
 
@@ -273,6 +273,7 @@ class ExpManager:
     def delete_acq(self, exp: str, acq: int):
         item = self.exp_dict[exp].pop(acq)
         if exp in self.deleted_acqs:
+            item.delete()
             self.deleted_acqs[exp][acq] = item
         else:
             self.deleted_acqs[exp] = OrderedDict()
@@ -282,6 +283,8 @@ class ExpManager:
     def reset_deleted_acqs(self, exp: str):
         if self.deleted_acqs[exp]:
             del_dict = dict(self.deleted_acqs)[exp]
+            for i in del_dict.values():
+                i.accept()
             self.exp_dict[exp].update(del_dict)
             self.deleted_acqs = {}
             self.acqs_deleted = 0
@@ -289,6 +292,7 @@ class ExpManager:
     def reset_recent_deleted_acq(self, exp: str):
         if self.deleted_acqs[exp]:
             item = self.deleted_acqs[exp].popitem()
+            item.accept()
             self.exp_dict[exp][item[0]] = item[1]
             self.acqs_deleted -= 1
 
@@ -300,7 +304,7 @@ class ExpManager:
 
     def num_of_del_acqs(self):
         del_acqs = 0
-        for i in self.exp_dict.values():
+        for i in self.deleted_acqs.values():
             del_acqs += len(i)
         return i
 

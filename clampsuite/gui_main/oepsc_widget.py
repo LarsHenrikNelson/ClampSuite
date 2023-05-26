@@ -41,7 +41,6 @@ XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
 class oEPSCWidget(DragDropWidget):
     def __init__(self):
-
         super().__init__()
 
         self.initUI()
@@ -417,10 +416,11 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_plot.sigXRangeChanged.connect(lambda: self.getXRange("lfp_plot"))
 
         self.acq_button_dock = QGridLayout()
+        # self.acq_button_dock.setColumnStretch(0, 0)
         self.tab2_layout.addLayout(self.acq_button_dock, 0)
 
         self.tab2_dock = DockArea()
-        self.tab2_layout.addWidget(self.tab2_dock)
+        self.tab2_layout.addWidget(self.tab2_dock, 1)
         self.oepsc_dock = Dock("")
         self.oepsc_dock.hideTitleBar()
         self.tab2_dock.addDock(self.oepsc_dock, "left")
@@ -446,6 +446,7 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number_label = QLabel("Acquisition")
         self.acq_button_dock.addWidget(self.acquisition_number_label, 0, 0)
         self.acquisition_number = QSpinBox()
+        self.acquisition_number.setMaximumWidth(70)
         self.acquisition_number.setKeyboardTracking(False)
         self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
@@ -458,6 +459,7 @@ class oEPSCWidget(DragDropWidget):
         self.epoch_number.editingFinished.connect(
             lambda: self.editAttr("epoch", self.epoch_number.text())
         )
+        self.epoch_number.setMaximumWidth(70)
         self.acq_button_dock.addWidget(self.epoch_number, 1, 1)
 
         self.final_analysis_button = QPushButton("Final analysis")
@@ -569,6 +571,15 @@ class oEPSCWidget(DragDropWidget):
 
         self.delete_lfp_action = QAction()
         self.delete_lfp_action.triggered.connect(self.deleteLFP)
+
+        self.choose_analysis_type = QMessageBox()
+        self.choose_analysis_type.setText("Choose analysis type")
+        self.oepsc_type_button = self.choose_analysis_type.addButton(
+            "oEPSC", QMessageBox.ActionRole
+        )
+        self.lfp_type_button = self.choose_analysis_type.addButton(
+            "LFP", QMessageBox.ActionRole
+        )
 
         vb = self.lfp_plot.getViewBox()
         vb.menu.addSeparator()
@@ -693,7 +704,7 @@ class oEPSCWidget(DragDropWidget):
     def editAttr(self, line_edit, value):
         for i in self.exp_manager.exp_dict.values():
             setattr(
-                i[self.acq_number.value()],
+                i[self.acquisition_number.value()],
                 line_edit,
                 value,
             )
@@ -725,6 +736,8 @@ class oEPSCWidget(DragDropWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         self.pbar.setFormat("Analyzing...")
+        threadpool = QThreadPool()
+        # threadpool.setMaxThreadCount(2)
         if self.exp_manager.exp_dict.get("oepsc"):
             worker_1 = ThreadWorker(
                 self.exp_manager,
@@ -752,7 +765,7 @@ class oEPSCWidget(DragDropWidget):
             )
             worker_1.signals.progress.connect(self.updateProgress)
             worker_1.signals.finished.connect(self.setAcquisition)
-            QThreadPool.globalInstance().start(worker_1)
+            threadpool.start(worker_1)
         if self.exp_manager.exp_dict.get("lfp"):
             worker_2 = ThreadWorker(
                 self.exp_manager,
@@ -772,7 +785,7 @@ class oEPSCWidget(DragDropWidget):
             )
             worker_2.signals.progress.connect(self.updateProgress)
             worker_2.signals.finished.connect(self.setAcquisition)
-            QThreadPool.globalInstance().start(worker_2)
+            threadpool.start(worker_2)
             if not lfp_x_set:
                 self.lfp_x_axis = XAxisCoord(
                     self.lfp_pulse_start_edit.toInt() - 10,
@@ -1165,6 +1178,13 @@ class oEPSCWidget(DragDropWidget):
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
         QThreadPool.globalInstance().start(self.worker)
+
+    def createExperiment(self, urls):
+        self.choose_analysis_type.exec()
+        if self.choose_analysis_type.clickedButton() == self.oepsc_type_button:
+            self.oepsc_view.model().addData(urls)
+        else:
+            self.lfp_view.model().addData(urls)
 
     def setLoadData(self):
         if self.exp_manager.acqs_exist():
