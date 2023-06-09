@@ -263,8 +263,8 @@ class filterWidget(QWidget):
         if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                key = list(self.self.exp_manager.exp_dict["filter"].keys())[number - 1]
-                h = self.self.exp_manager.exp_dict["filter"][key]
+                key = list(self.exp_manager.exp_dict["filter"].keys())[number - 1]
+                h = self.exp_manager.exp_dict["filter"][key]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],

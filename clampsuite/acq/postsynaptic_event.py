@@ -151,7 +151,7 @@ class MiniEvent:
         #     baselined_array[:peak] > 0.5 * self.event_peak_y
         # ).flatten()
         search_start = np.argwhere(
-            baselined_array[:peak] > 0.3 * self.event_peak_y
+            baselined_array[:peak] > 0.35 * self.event_peak_y
         ).flatten()
         if search_start.size > 0:
             slope = (self.event_array[search_start[-1]] - self.event_peak_y) / (
