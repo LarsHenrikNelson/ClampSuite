@@ -11,7 +11,7 @@ from .postsynaptic_event import MiniEvent
 
 
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
-    def analyze(
+    def set_filter(
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 80,
@@ -52,6 +52,41 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         rc_check: bool = True,
         rc_check_start: Union[int, float] = 10000,
         rc_check_end: Union[int, float] = 10300,
+        baseline_corr: bool = False,
+    ):
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+        self.rc_check = rc_check
+        self.rc_check_start = int(rc_check_start * self.s_r_c)
+        self.rc_check_end = int(rc_check_end * self.s_r_c)
+        self.baseline_corr = baseline_corr
+
+    def set_template(
+        self,
+        tmp_amplitude: Union[int, float] = -20,
+        tmp_tau_1: Union[int, float] = 0.3,
+        tmp_tau_2: Union[int, float] = 5,
+        tmp_risepower: Union[int, float] = 0.5,
+        tmp_length: Union[int, float] = 30,
+        tmp_spacer: Union[int, float] = 1.5,
+    ):
+        self.tmp_amplitude = tmp_amplitude
+        self.tmp_tau_1 = tmp_tau_1
+        self.tmp_tau_2 = tmp_tau_2
+        self.tmp_risepower = tmp_risepower
+        self.tmp_length = tmp_length
+        self.tmp_spacer = tmp_spacer
+
+    def analyze(
+        self,
         sensitivity: Union[int, float] = 4,
         amp_threshold: Union[int, float] = 4,
         mini_spacing: Union[int, float] = 2,
@@ -64,29 +99,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         decon_type: Literal["fft", "wiener", "convolution"] = "wiener",
         curve_fit_decay: bool = False,
         curve_fit_type: Literal["s_exp", "db_exp"] = "s_exp",
-        baseline_corr: bool = False,
-        tmp_amplitude: Union[int, float] = -20,
-        tmp_tau_1: Union[int, float] = 0.3,
-        tmp_tau_2: Union[int, float] = 5,
-        tmp_risepower: Union[int, float] = 0.5,
-        tmp_length: Union[int, float] = 30,
-        tmp_spacer: Union[int, float] = 1.5,
     ):
         # Set the attributes for the acquisition
-        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
-        self.baseline_corr = baseline_corr
-        self.rc_check = rc_check
-        self.rc_check_start = int(rc_check_start * self.s_r_c)
-        self.rc_check_end = int(rc_check_end * self.s_r_c)
         self.sensitivity = sensitivity
         self.amp_threshold = amp_threshold
         self.mini_spacing = mini_spacing
@@ -99,14 +113,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.curve_fit_decay = curve_fit_decay
         self.decon_type = decon_type
         self.curve_fit_type = curve_fit_type
-        self.tmp_amplitude = tmp_amplitude
-        self.tmp_tau_1 = tmp_tau_1
-        self.tmp_tau_2 = tmp_tau_2
-        self.tmp_risepower = tmp_risepower
-        self.tmp_length = tmp_length
-        self.tmp_spacer = tmp_spacer
         self.deleted_events = 0
-
         self.run_analysis()
 
     def run_analysis(self):

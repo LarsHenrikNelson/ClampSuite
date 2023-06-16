@@ -356,16 +356,20 @@ class currentClampWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="current_clamp",
-                baseline_start=self.b_start_edit.toInt(),
-                baseline_end=self.b_end_edit.toInt(),
-                filter_type="None",
-                pulse_start=self.pulse_start_edit.toInt(),
-                pulse_end=self.pulse_end_edit.toInt(),
-                ramp_start=self.ramp_start_edit.toInt(),
-                ramp_end=self.ramp_end_edit.toInt(),
-                threshold=self.min_spike_threshold_edit.toInt(),
-                min_spikes=self.min_spikes_edit.toInt(),
-                threshold_method=self.threshold_method.currentText(),
+                filter_args=None,
+                template_args=None,
+                analysis_args={
+                    "baseline_start": self.b_start_edit.toInt(),
+                    "baseline_end": self.b_end_edit.toInt(),
+                    "filter_type": "None",
+                    "pulse_start": self.pulse_start_edit.toInt(),
+                    "pulse_end": self.pulse_end_edit.toInt(),
+                    "ramp_start": self.ramp_start_edit.toInt(),
+                    "ramp_end": self.ramp_end_edit.toInt(),
+                    "threshold": self.min_spike_threshold_edit.toInt(),
+                    "min_spikes": self.min_spikes_edit.toInt(),
+                    "threshold_method": self.threshold_method.currentText(),
+                },
             )
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.setAcquisition)
@@ -399,6 +403,7 @@ class currentClampWidget(DragDropWidget):
         self.plot_widget.clear()
         self.spike_plot.clear()
         self.exp_manager = ExpManager()
+        self.acq_view.setData(self.exp_manager)
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
 
@@ -487,7 +492,9 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="m",
                     )
             elif acq_object.ramp == "1":
-                self.plot_widget.plot(x=acq_object.x_array, y=acq_object.array)
+                self.plot_widget.plot(
+                    x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
+                )
                 if not np.isnan(acq_object.peaks[0]):
                     self.plot_widget.plot(
                         x=acq_object.spike_peaks_x(),

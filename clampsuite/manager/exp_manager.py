@@ -36,13 +36,25 @@ class ExpManager:
         self._load_acqs(analysis, file)
         self._set_start_end_acq()
 
-    def analyze_exp(self, exp: str, **kwargs):
+    def analyze_exp(
+        self, exp: str, filter_args=None, template_args=None, analysis_args=None
+    ):
         if self.exp_dict.get(exp):
             acq_dict = self.exp_dict[exp]
-            self.analysis_prefs = kwargs
+            pref_dict = {}
+            if filter_args is not None:
+                pref_dict.update(filter_args)
+            if template_args is not None:
+                pref_dict.update(template_args)
+            pref_dict.update(analysis_args)
+            self.analysis_prefs = pref_dict
             total = len(acq_dict)
             for count, i in enumerate(acq_dict.values()):
-                i.analyze(**kwargs)
+                if filter_args is not None:
+                    i.set_filter(**filter_args)
+                if template_args is not None:
+                    i.set_template(**template_args)
+                i.analyze(**analysis_args)
                 self.callback_func(int((100 * (count + 1) / total)))
             self.analyzed = True
             self.callback_func(f"Analyed {exp} acquisitions")

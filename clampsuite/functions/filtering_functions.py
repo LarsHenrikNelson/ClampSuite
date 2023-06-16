@@ -16,6 +16,7 @@ Filters = Literal[
     "butterworth",
     "bessel_zero",
     "butterworth_zero",
+    "None",
 ]
 
 Windows = Literal[
