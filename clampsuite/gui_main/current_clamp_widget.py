@@ -269,7 +269,7 @@ class currentClampWidget(DragDropWidget):
 
         self.calculate_params_2 = QPushButton("Final analysis")
         self.calculate_params_2.setObjectName("calculate_params_2")
-        self.input_layout.addRow(self.calculate_params_2)
+        self.analysis_buttons.addRow(self.calculate_params_2)
         self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
 
         self.plot_widget = pg.PlotWidget()
