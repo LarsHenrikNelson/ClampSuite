@@ -20,6 +20,9 @@ the GUI.
 * **Ramp end (ms)**: Set the end of the voltage. It can be useful to set the end time
   a couple ms past the real ramp ending.
 * **Min spike threshold (mV)**: The minimum voltage a spike needs to be to be counted.
+* **Threshold method**: There are two methods to find the spike threshold. Max_curvature
+  by dividing the first derivative by the the acquisition. The third derivative uses the
+  third derivative.
 * **Min spikes**: The minimum number of spikes an acquisition needs for the spikes to be
   analyzed.
 * **IV curve start**: The index of the acquisition that you want to start measuring

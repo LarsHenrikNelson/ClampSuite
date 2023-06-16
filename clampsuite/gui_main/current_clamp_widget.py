@@ -503,13 +503,6 @@ class currentClampWidget(DragDropWidget):
                         symbol="o",
                         symbolBrush="y",
                     )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_rheo_x(),
-                        y=[acq_object.spike_threshold],
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
-                    )
                     self.spike_plot.plot(
                         x=acq_object.spike_x_array(),
                         y=acq_object.first_ap,
@@ -520,15 +513,15 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_rheo_x(),
-                        y=[acq_object.spike_threshold],
+                        x=acq_object.plot_sp_x(),
+                        y=acq_object.plot_sp_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
                     )
                     self.spike_plot.plot(
                         x=acq_object.plot_ahp_x(),
-                        y=[acq_object.ahp_y],
+                        y=acq_object.plot_ahp_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="m",

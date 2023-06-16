@@ -192,12 +192,12 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             dddv = np.gradient(ddv)
             z = (dddv - np.mean(dddv)) / np.std(dddv)
             peaks, _ = signal.find_peaks(z, prominence=8)
+            peaks = peaks - 1
         else:
-            k = ddv * (1 + dv**2) ** (-3 / 2)
-            z = (k - np.mean(k)) / np.std(k)
-            peaks, _ = signal.find_peaks(k, prominence=8)
-        rheo_x = peaks[0] - 1
-        sec_spike = peaks[2] - 1
+            peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
+            peaks = peaks - 2
+        rheo_x = peaks[0]
+        sec_spike = peaks[2]
         return rheo_x, sec_spike
 
     def first_spike_parameters(self):
