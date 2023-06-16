@@ -142,7 +142,7 @@ class oEPSCWidget(DragDropWidget):
         self.o_filter_selection.addItems(filters)
         self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.o_filter_selection.setObjectName("o_filter_selection")
-        self.o_filter_selection.setCurrentText("savgol")
+        self.o_filter_selection.setCurrentText("fir_zero_2")
         self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
         self.o_filter_selection.currentTextChanged.connect(self.setOFiltProp)
 
@@ -156,29 +156,28 @@ class oEPSCWidget(DragDropWidget):
 
         self.o_high_pass_label = QLabel("High-pass")
         self.o_high_pass_edit = LineEdit()
-        self.o_high_pass_edit.setValidator(QIntValidator())
         self.o_high_pass_edit.setObjectName("o_high_pass_edit")
         self.o_high_pass_edit.setEnabled(True)
         self.input_layout_1.addRow(self.o_high_pass_label, self.o_high_pass_edit)
 
         self.o_high_width_label = QLabel("High-width")
         self.o_high_width_edit = LineEdit()
-        self.o_high_width_edit.setValidator(QIntValidator())
+
         self.o_high_width_edit.setObjectName("o_high_width_edit")
         self.o_high_width_edit.setEnabled(True)
         self.input_layout_1.addRow(self.o_high_width_label, self.o_high_width_edit)
 
         self.o_low_pass_label = QLabel("Low-pass")
         self.o_low_pass_edit = LineEdit()
-        self.o_low_pass_edit.setValidator(QIntValidator())
         self.o_low_pass_edit.setObjectName("o_low_pass_edit")
         self.o_low_pass_edit.setEnabled(True)
+        self.o_low_pass_edit.setText("600")
         self.input_layout_1.addRow(self.o_low_pass_label, self.o_low_pass_edit)
 
         self.o_low_width_label = QLabel("Low-width")
         self.o_low_width_edit = LineEdit()
-        self.o_low_width_edit.setValidator(QIntValidator())
         self.o_low_width_edit.setObjectName("o_low_width_edit")
+        self.o_low_width_edit.setText("600")
         self.o_low_width_edit.setEnabled(True)
         self.input_layout_1.addRow(self.o_low_width_label, self.o_low_width_edit)
 
@@ -209,7 +208,6 @@ class oEPSCWidget(DragDropWidget):
 
         self.o_pulse_start = QLabel("Pulse start")
         self.o_pulse_start_edit = LineEdit()
-        self.o_pulse_start_edit.setValidator(QDoubleValidator())
         self.o_pulse_start_edit.setEnabled(True)
         self.o_pulse_start_edit.setObjectName("o_pulse_start_edit")
         self.o_pulse_start_edit.setText("1000")
@@ -301,7 +299,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_filter_selection.addItems(filters)
         self.lfp_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.lfp_filter_selection.setObjectName("lfp_filter_selection")
-        self.lfp_filter_selection.setCurrentText("savgol")
+        self.lfp_filter_selection.setCurrentText("fir_zero_2")
         self.input_layout_2.addRow(
             self.lfp_filter_type_label, self.lfp_filter_selection
         )
@@ -318,28 +316,26 @@ class oEPSCWidget(DragDropWidget):
 
         self.lfp_high_pass_label = QLabel("High-pass")
         self.lfp_high_pass_edit = LineEdit()
-        self.lfp_high_pass_edit.setValidator(QIntValidator())
         self.lfp_high_pass_edit.setObjectName("lfp_high_pass_edit")
         self.lfp_high_pass_edit.setEnabled(True)
+        self.lfp_high_pass_edit.setText("300")
         self.input_layout_2.addRow(self.lfp_high_pass_label, self.lfp_high_pass_edit)
 
         self.lfp_high_width_label = QLabel("High-width")
         self.lfp_high_width_edit = LineEdit()
-        self.lfp_high_width_edit.setValidator(QIntValidator())
         self.lfp_high_width_edit.setObjectName("lfp_high_width_edit")
         self.lfp_high_width_edit.setEnabled(True)
+        self.lfp_high_width_edit.setText("300")
         self.input_layout_2.addRow(self.lfp_high_width_label, self.lfp_high_width_edit)
 
         self.lfp_low_pass_label = QLabel("Low-pass")
         self.lfp_low_pass_edit = LineEdit()
-        self.lfp_low_pass_edit.setValidator(QIntValidator())
         self.lfp_low_pass_edit.setObjectName("lfp_low_pass_edit")
         self.lfp_low_pass_edit.setEnabled(True)
         self.input_layout_2.addRow(self.lfp_low_pass_label, self.lfp_low_pass_edit)
 
         self.lfp_low_width_label = QLabel("Low-width")
         self.lfp_low_width_edit = LineEdit()
-        self.lfp_low_width_edit.setValidator(QIntValidator())
         self.lfp_low_width_edit.setObjectName("lfp_low_width_edit")
         self.lfp_low_width_edit.setEnabled(True)
         self.input_layout_2.addRow(self.lfp_low_width_label, self.lfp_low_width_edit)
@@ -750,13 +746,13 @@ class oEPSCWidget(DragDropWidget):
                     "baseline_end": self.o_b_end_edit.toFloat(),
                     "filter_type": self.o_filter_selection.currentText(),
                     "order": self.o_order_edit.toInt(),
-                    "high_pass": self.o_high_pass_edit.toInt(),
-                    "high_width": self.o_high_width_edit.toInt(),
-                    "low_pass": self.o_low_pass_edit.toInt(),
-                    "low_width": self.o_low_width_edit.toInt(),
+                    "high_pass": self.o_high_pass_edit.toFloat(),
+                    "high_width": self.o_high_width_edit.toFloat(),
+                    "low_pass": self.o_low_pass_edit.toFloat(),
+                    "low_width": self.o_low_width_edit.toFloat(),
                     "window": o_window,
                     "polyorder": self.o_polyorder_edit.toFloat(),
-                    "pulse_start": self.o_pulse_start_edit.toInt(),
+                    "pulse_start": self.o_pulse_start_edit.toFloat(),
                     "n_window_start": self.o_neg_start_edit.toFloat(),
                     "n_window_end": self.o_neg_end_edit.toFloat(),
                     "p_window_start": self.o_pos_start_edit.toFloat(),
@@ -782,10 +778,10 @@ class oEPSCWidget(DragDropWidget):
                     "baseline_end": self.lfp_b_end_edit.toFloat(),
                     "filter_type": self.lfp_filter_selection.currentText(),
                     "order": self.lfp_order_edit.toInt(),
-                    "high_pass": self.lfp_high_pass_edit.toInt(),
-                    "high_width": self.lfp_high_width_edit.toInt(),
-                    "low_pass": self.lfp_low_pass_edit.toInt(),
-                    "low_width": self.lfp_low_width_edit.toInt(),
+                    "high_pass": self.lfp_high_pass_edit.toFloat(),
+                    "high_width": self.lfp_high_width_edit.toFloat(),
+                    "low_pass": self.lfp_low_pass_edit.toFloat(),
+                    "low_width": self.lfp_low_width_edit.toFloat(),
                     "window": lfp_window,
                     "polyorder": self.lfp_polyorder_edit.toFloat(),
                     "pulse_start": self.lfp_pulse_start_edit.toFloat(),
