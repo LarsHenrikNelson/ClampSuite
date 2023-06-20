@@ -1286,7 +1286,7 @@ class oEPSCWidget(DragDropWidget):
         dspinboxes = self.findChildren(QDoubleSpinBox)
         for i in dspinboxes:
             if i.objectName() != "":
-                i.setvalue(pref_dict["double_spinboxes"][i.objectName()])
+                i.setvalue(float((pref_dict["double_spinboxes"][i.objectName()])))
 
     def loadPreferences(self, file_name: str):
         self.need_to_save = True

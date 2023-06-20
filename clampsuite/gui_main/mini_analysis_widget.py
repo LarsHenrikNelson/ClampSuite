@@ -1709,7 +1709,7 @@ class MiniAnalysisWidget(DragDropWidget):
         spinboxes = self.findChildren(QDoubleSpinBox)
         for i in spinboxes:
             if i.objectName() != "":
-                i.setValue(pref_dict["double_spinboxes"][i.objectName()])
+                i.setValue(float(pref_dict["double_spinboxes"][i.objectName()]))
 
         sliders = self.findChildren(QSlider)
         for i in sliders:
