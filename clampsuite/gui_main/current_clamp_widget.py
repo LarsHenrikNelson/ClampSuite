@@ -1,3 +1,4 @@
+import logging
 from pathlib import PurePath
 from typing import Union
 
@@ -22,14 +23,11 @@ from PyQt5.QtWidgets import (
 )
 
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import (
-    DragDropWidget,
-    LineEdit,
-    ListView,
-    ThreadWorker,
-)
+from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
+
+logger = logging.getLogger(__name__)
 
 
 class currentClampWidget(DragDropWidget):

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path, PurePath
 
 from PyQt5.QtWidgets import (
@@ -16,10 +17,13 @@ from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
 
+logger = logging.getLogger(__name__)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        logger.info("Creating GUI")
         self.initUI()
         self.setWidget("Mini analysis")
 
@@ -90,14 +94,20 @@ class MainWindow(QMainWindow):
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
 
+        logger.info("Creating analysis widgets")
+        logger.info("Creating MiniAnalysisWidget")
         self.mini_widget = MiniAnalysisWidget()
         self.central_widget.addWidget(self.mini_widget)
+        logger.info("Creating oEPSCWidget")
         self.oepsc_widget = oEPSCWidget()
         self.central_widget.addWidget(self.oepsc_widget)
+        logger.info("Creating currentClampWidget")
         self.current_clamp_widget = currentClampWidget()
         self.central_widget.addWidget(self.current_clamp_widget)
+        logger.info("Creating filterWidget")
         self.filter_widget = filterWidget()
         self.central_widget.addWidget(self.filter_widget)
+        logger.info("Analysis widgets created")
 
         self.setComboBoxSpacing()
         self.working_dir = str(Path().cwd())
@@ -110,12 +120,16 @@ class MainWindow(QMainWindow):
     def setWidget(self, text):
         if text == "Mini analysis":
             self.central_widget.setCurrentWidget(self.mini_widget)
+            logger.info("Central widget set as miniAnalysisWidget")
         elif text == "oEPSC/LFP":
             self.central_widget.setCurrentWidget(self.oepsc_widget)
+            logger.info("Central widget set as oEPSCWidget")
         elif text == "Current clamp":
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
+            logger.info("Central widget set as currentClampWidget")
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
+            logger.info("Central widget set as filterWidget")
 
     def saveAs(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
@@ -124,8 +138,12 @@ class MainWindow(QMainWindow):
             caption="Save data as...",
         )
         if save_filename:
+            logger.info("Saving analysis.")
             self.working_dir = str(Path(PurePath(save_filename).parent))
             self.central_widget.currentWidget().saveAs(save_filename)
+            logger.info("Analysis saved.")
+        else:
+            logger.info("No analysis to save.")
 
     def loadExperiment(self):
         directory = str(
@@ -136,9 +154,11 @@ class MainWindow(QMainWindow):
             )
         )
         if directory:
+            logger.info("Loading experiment.")
             path = Path(directory)
             self.working_dir = str(path)
             self.central_widget.currentWidget().loadExperiment(path)
+            logger.info("Experiment loaded.")
 
     def createExperiment(self):
         directory, _ = QFileDialog.getOpenFileNames(
@@ -147,22 +167,32 @@ class MainWindow(QMainWindow):
             caption="Open files...",
         )
         if len(directory) > 0:
+            logger.info("Creating/appending new experiment.")
             self.working_dir = str(PurePath(directory[0]).parent)
             self.central_widget.currentWidget().createExperiment(directory)
+            logger.info("Experiment created/appended.")
 
     def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self, caption="Open file", filter="YAML Files (*.yaml)"
         )
         if len(file_name) > 0:
+            logger.info("Loading preferences")
             self.central_widget.currentWidget().loadPreferences(file_name)
+            logger.info("Preferences loaded")
+        else:
+            logger.info("No preferences loaded")
 
     def savePreferences(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
             self, "Save preference as...", ""
         )
         if save_filename:
+            logger.info("Saving preferences")
             self.central_widget.currentWidget().savePreferences(save_filename)
+            logger.info("Preference saved")
+        else:
+            logger.info("No preferences saved")
 
     def setAppearance(self):
         # Creates a separate window to set the appearance of the application
@@ -172,3 +202,4 @@ class MainWindow(QMainWindow):
         if self.central_widget.currentWidget().need_to_save:
             self.saveAs()
         event.accept()
+        logger.info("Closing ClampSuite")

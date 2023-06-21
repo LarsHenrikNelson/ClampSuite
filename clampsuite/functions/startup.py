@@ -1,9 +1,9 @@
 from pathlib import Path
 
 
-def startupFunction():
+def startup_function():
     p = Path.home()
-    h = "EphysAnalysisProgram"
+    h = "ClampSuite"
     file_name = "Preferences.yaml"
 
     if Path(p / h).exists():
@@ -13,4 +13,5 @@ def startupFunction():
         else:
             pass
     else:
-        Path(p / h).mkdir()
+        prog_dir = Path(p / h)
+        prog_dir.mkdir()

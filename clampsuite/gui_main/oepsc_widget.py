@@ -1,3 +1,4 @@
+import logging
 from collections import namedtuple
 
 import numpy as np
@@ -27,16 +28,13 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import (
-    DragDropWidget,
-    LineEdit,
-    ListView,
-    ThreadWorker,
-)
+from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
+
+logger = logging.getLogger(__name__)
 
 
 class oEPSCWidget(DragDropWidget):

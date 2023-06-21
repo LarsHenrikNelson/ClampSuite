@@ -1,3 +1,5 @@
+import logging
+
 import qdarkstyle
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
@@ -15,6 +17,8 @@ from PyQt5.QtWidgets import (
     QStackedLayout,
     QWidget,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PreferencesWidget(QWidget):

@@ -1,19 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr  3 12:20:28 2022
+import logging
 
-@author: Lars
-"""
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import (
-    QFormLayout,
-    QHBoxLayout,
-    QLineEdit,
-    QSpinBox,
-    QWidget,
-)
+from PyQt5.QtWidgets import QFormLayout, QHBoxLayout, QLineEdit, QSpinBox, QWidget
+
+logger = logging.getLogger(__name__)
 
 
 class AcqInspectionWidget(QWidget):

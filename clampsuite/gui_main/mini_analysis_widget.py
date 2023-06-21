@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QThreadPool
@@ -34,6 +36,8 @@ from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget
+
+logger = logging.getLogger(__name__)
 
 
 class MiniAnalysisWidget(DragDropWidget):
@@ -1722,11 +1726,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def savePreferences(self, save_filename):
         pref_dict = self.createPrefDict()
-        pref_dict = self.createPrefDict()
         if pref_dict:
             self.exp_manager.save_ui_prefs(save_filename, pref_dict)
-        else:
-            pass
 
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
@@ -1734,7 +1735,7 @@ class MiniAnalysisWidget(DragDropWidget):
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 
-    def setAppearncePreferences(self, pref_dict):
+    def setAppearancePreferences(self, pref_dict):
         self.p1.setBackground(pref_dict[0])
         self.p1.getAxis("left").setPen(pref_dict[1])
         self.p1.getAxis("left").setTextPen(pref_dict[1])
