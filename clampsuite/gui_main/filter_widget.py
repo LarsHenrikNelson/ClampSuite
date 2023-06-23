@@ -44,7 +44,7 @@ class filterWidget(QWidget):
         self.plot_layout.addLayout(self.filt_layout, 0)
 
         self.plot_widget = pg.GraphicsLayoutWidget()
-        self.p1 = self.plot_widget.addPlot(row=0, col=0)
+        self.p1 = self.plot_widget.addPlot(row=0, col=0, useOpenGL=True)
         pg.setConfigOptions(antialias=True)
         self.plot_layout.addWidget(self.plot_widget, 1)
         self.p1.setMinimumWidth(500)

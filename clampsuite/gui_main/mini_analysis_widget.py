@@ -352,7 +352,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_button.setObjectName("template_button")
 
         self.template_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.template_plot.setObjectName("Template plot")
         self.template_plot.setMinimumHeight(300)
@@ -482,7 +482,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Filling the plot layout.
         self.p1 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.p1.setObjectName("p1")
         p1pi = self.p1.getViewBox()
@@ -495,7 +495,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.d3.layout.setColumnStretch(1, 10)
 
         self.p2 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.p2.setObjectName("p2")
         p2pi = self.p2.getViewBox()
@@ -588,7 +588,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.set_peak_action.triggered.connect(self.setPointAsPeak)
 
         self.mini_view_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         mp = self.mini_view_plot.getViewBox()
         mp.menu.addSeparator()
@@ -612,15 +612,15 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dock_area3.addDock(self.ave_mini_dock, position="right")
         self.dock_area3.addDock(self.data_dock, position="bottom")
         self.ave_mini_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.ave_mini_dock.addWidget(self.ave_mini_plot)
         self.ave_mini_plot.setObjectName("Ave mini plot")
         self.final_tab_widget = QTabWidget()
         self.final_tab_widget.setMinimumHeight(300)
         self.table_dock.addWidget(self.final_tab_widget)
-        self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"})
-        self.amp_dist = pg.PlotWidget()
+        self.stem_plot = pg.PlotWidget(labels={"bottom": "Time (ms)"}, useOpenGL=True)
+        self.amp_dist = pg.PlotWidget(useOpenGL=True)
         self.plot_selector = QComboBox()
         self.plot_selector.setMaximumWidth(100)
         self.plot_selector.currentTextChanged.connect(self.plotRawData)

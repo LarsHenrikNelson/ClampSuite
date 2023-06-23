@@ -270,7 +270,7 @@ class currentClampWidget(DragDropWidget):
         self.analysis_buttons.addRow(self.calculate_params_2)
         self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
 
-        self.plot_widget = pg.PlotWidget()
+        self.plot_widget = pg.PlotWidget(useOpenGL=True)
         self.plot_widget.setMinimumWidth(300)
         self.plot_layout.addWidget(self.plot_widget)
 
@@ -289,7 +289,7 @@ class currentClampWidget(DragDropWidget):
         vb.menu.addAction(self.reset_recent_acq_action)
         vb.menu.addAction(self.reset_acq_action)
 
-        self.spike_plot = pg.PlotWidget()
+        self.spike_plot = pg.PlotWidget(useOpenGL=True)
         self.spike_plot.setMinimumWidth(300)
         self.plot_layout.addWidget(self.spike_plot)
 
@@ -595,7 +595,7 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(True)
 
     def plotIVCurve(self):
-        iv_curve_plot = pg.PlotWidget()
+        iv_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["iv_curve_plot"] = iv_curve_plot
         self.tabs.addTab(iv_curve_plot, "IV curve")
         fa = self.exp_manager.final_analysis
@@ -622,7 +622,7 @@ class currentClampWidget(DragDropWidget):
                 )
 
     def plotSpikeFrequency(self, hertz):
-        spike_curve_plot = pg.PlotWidget()
+        spike_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.tabs.addTab(spike_curve_plot, "Spike curve")
         pulse_amp = hertz.pop("Pulse_amp").to_numpy()
@@ -642,7 +642,7 @@ class currentClampWidget(DragDropWidget):
             )
 
     def plotPulseAP(self, df):
-        pulse_ap_plot = pg.PlotWidget()
+        pulse_ap_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["pulse_ap_plot"] = pulse_ap_plot
         self.tabs.addTab(pulse_ap_plot, "Pulse AP")
         pulse_ap_plot.addLegend()
@@ -659,7 +659,7 @@ class currentClampWidget(DragDropWidget):
             pulse_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def plotRampAP(self, df):
-        ramp_ap_plot = pg.PlotWidget()
+        ramp_ap_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["ramp_ap_plot"] = ramp_ap_plot
         self.tabs.addTab(ramp_ap_plot, "Ramp AP")
         ramp_ap_plot.addLegend()
