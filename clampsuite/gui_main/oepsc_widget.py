@@ -394,7 +394,7 @@ class oEPSCWidget(DragDropWidget):
 
         # Plots
         self.oepsc_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.oepsc_plot.setObjectName("oEPSC plot")
         self.oepsc_plot.setAutoVisible(y=True)
@@ -402,7 +402,7 @@ class oEPSCWidget(DragDropWidget):
         self.oepsc_plot.sigXRangeChanged.connect(lambda: self.getXRange("oepsc_plot"))
 
         self.lfp_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}
+            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
         )
         self.lfp_plot.setObjectName("LFP plot")
         self.lfp_plot.setMinimumWidth(500)
@@ -607,13 +607,12 @@ class oEPSCWidget(DragDropWidget):
     def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
-            i.setMinimumWidth(60)
             if not isinstance(i.parentWidget(), QSpinBox):
                 i.setMinimumWidth(70)
 
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
-            i.setMinimumWidth(100)
+            i.setMinimumWidth(80)
 
     def inspectAcqs(self, analysis_type):
         if not self.exp_manager.acqs_exist():
@@ -1284,12 +1283,11 @@ class oEPSCWidget(DragDropWidget):
         dspinboxes = self.findChildren(QDoubleSpinBox)
         for i in dspinboxes:
             if i.objectName() != "":
-                i.setvalue(float((pref_dict["double_spinboxes"][i.objectName()])))
+                i.setValue(float((pref_dict["double_spinboxes"][i.objectName()])))
 
     def loadPreferences(self, file_name: str):
         self.need_to_save = True
         load_dict = self.exp_manager.load_ui_prefs(file_name)
-        print(load_dict)
         self.setPreferences(load_dict)
 
     def savePrefences(self, file_path):

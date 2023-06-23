@@ -10,12 +10,7 @@ from PyQt5.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
-from PyQt5.QtWidgets import (
-    QLineEdit,
-    QListView,
-    QSpinBox,
-    QWidget,
-)
+from PyQt5.QtWidgets import QLineEdit, QListView, QSpinBox, QWidget
 
 
 class LineEdit(QLineEdit):
@@ -252,7 +247,6 @@ class StringBox(QSpinBox):
         self.setRange(0, len(strings) - 1)
 
     def textFromValue(self, value):
-
         # returning string from index
         # _string = tuple
         return self._strings[value]

@@ -219,7 +219,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         return self._peak_x / self.s_r_c
 
     def est_decay(self) -> Union[float, int]:
-        if isinstance(self.est_tau_x, np.nan):
+        if np.isnan(self.est_tau_x):
             return np.nan
         else:
             return self.est_tau_x - self.peak_x()
