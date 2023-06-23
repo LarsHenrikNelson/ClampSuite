@@ -224,7 +224,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             deconvolved_array = signal.convolve(self.final_array, template, mode="same")
         return deconvolved_array
 
-    def create_deconvolved_array(self):
+    def create_deconvolved_array(self) -> np.ndarray:
         deconvolved_array = self.deconvolve_array()
         if self.decon_type == "fft" or self.decon_type == "wiener":
             filtered_decon_array = fir_zero_1(
@@ -241,15 +241,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return deconvolved_array
 
-    def find_events(self) -> list:
-        # This is not the method from the original paper but it works a
-        # lot better. The original paper used 4*std of the deconvolved array.
-        # The problem with that method is that interneurons needs a
-        # different sensitivity setting. I wanted to keep the settings as
-        # consistent as possible between different cell types.
-
-        deconvolved_array = self.create_deconvolved_array()
-
+    def deconvolved_rms(self, deconvolved_array: np.ndarray) -> Union[float, float]:
         # Get the top and bottom 2.5% cutoff.
         bottom, top = np.percentile(deconvolved_array, [2.5, 97.5])
 
@@ -263,6 +255,19 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         mu = np.mean(middle)
         rms = np.sqrt(np.mean(np.square(middle - mu)))
 
+        return mu, rms
+
+    def find_events(self) -> list:
+        # This is not the method from the original paper but it works a
+        # lot better. The original paper used 4*std of the deconvolved array.
+        # The problem with that method is that interneurons needs a
+        # different sensitivity setting. I wanted to keep the settings as
+        # consistent as possible between different cell types.
+
+        deconvolved_array = self.create_deconvolved_array()
+
+        mu, rms = self.deconvolved_rms(deconvolved_array)
+
         # Find the events.
         peaks, _ = signal.find_peaks(
             deconvolved_array - mu,
@@ -275,6 +280,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         # so it is converted to a python list.
         events = peaks.tolist()
         return events
+
+    def plot_deconvolved_acq(self):
+        deconvolved_array = self.create_deconvolved_array()
+        mu, rms = self.deconvolved_rms(deconvolved_array)
+        baseline = np.full(deconvolved_array.size, self.sensitivity * rms)
+        return (deconvolved_array - mu), baseline
 
     def create_events(self):
         """This functions creates the events based on the list of peaks found

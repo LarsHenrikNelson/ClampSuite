@@ -37,6 +37,7 @@ def main(logger):
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
         QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     pg.setConfigOptions(antialias=True)
+    pg.setConfigOption("foreground", "#C9CDD0")
     os.environ["QT_API"] = "pyqt5"
     app = QApplication([])
     dark_stylesheet = qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=DarkPalette)

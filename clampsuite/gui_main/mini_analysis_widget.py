@@ -35,7 +35,7 @@ from ..functions.template_psc import create_template
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
-from .acq_inspection import AcqInspectionWidget
+from .acq_inspection import AcqInspectionWidget, DeconInspectionWidget
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dlg = QMessageBox(self)
 
         self.inspection_widget = AcqInspectionWidget()
+        self.decon_plot = DeconInspectionWidget()
 
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
@@ -351,8 +352,16 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_button.clicked.connect(self.createTemplate)
         self.template_button.setObjectName("template_button")
 
-        self.template_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
+        self.template_plot = pg.PlotWidget(useOpenGL=True)
+        self.template_plot.setLabel(
+            "bottom",
+            text="Time (ms)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
+        )
+        self.template_plot.setLabel(
+            "left",
+            text="Amplitude (pA)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
         )
         self.template_plot.setObjectName("Template plot")
         self.template_plot.setMinimumHeight(300)
@@ -450,26 +459,30 @@ class MiniAnalysisWidget(DragDropWidget):
         self.create_mini_action.triggered.connect(self.createMini)
         self.acq_buttons.addWidget(self.create_mini_button, 5, 0, 1, 2)
 
+        self.acq_buttons.setRowStretch(6, 5)
+
         self.delete_acq_button = QPushButton("Delete acquisition")
         self.delete_acq_button.clicked.connect(self.deleteAcq)
-        self.acq_buttons.addWidget(self.delete_acq_button, 6, 0, 1, 2)
+        self.acq_buttons.addWidget(self.delete_acq_button, 7, 0, 1, 2)
 
         self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
         self.reset_recent_acq_button.clicked.connect(self.resetRecentRejectedAcq)
-
-        self.acq_buttons.addWidget(self.reset_recent_acq_button, 7, 0, 1, 2)
+        self.acq_buttons.addWidget(self.reset_recent_acq_button, 8, 0, 1, 2)
 
         self.reset_acq_button = QPushButton("Reset deleted acqs")
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
-
         self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
 
-        self.acq_buttons.setRowStretch(9, 10)
+        self.decon_acq_button = QPushButton("Plot deconvolution")
+        self.decon_acq_button.clicked.connect(self.plotDeconvolution)
+        self.acq_buttons.addWidget(self.decon_acq_button, 9, 0, 1, 2)
+
+        self.acq_buttons.setRowStretch(10, 10)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_buttons.addWidget(self.calculate_parameters_2)
         self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
-        self.acq_buttons.addWidget(self.calculate_parameters_2, 10, 0, 1, 2)
+        self.acq_buttons.addWidget(self.calculate_parameters_2, 11, 0, 1, 2)
 
         self.delete_acq_action = QAction("Delete acq")
         self.delete_acq_action.triggered.connect(self.deleteAcq)
@@ -482,7 +495,17 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Filling the plot layout.
         self.p1 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
+            useOpenGL=True,
+        )
+        self.p1.setLabel(
+            "bottom",
+            text="Time (ms)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
+        )
+        self.p1.setLabel(
+            "left",
+            text="Amplitude (pA)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
         )
         self.p1.setObjectName("p1")
         p1pi = self.p1.getViewBox()
@@ -494,8 +517,16 @@ class MiniAnalysisWidget(DragDropWidget):
         self.d3.addWidget(self.p1, 0, 1)
         self.d3.layout.setColumnStretch(1, 10)
 
-        self.p2 = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
+        self.p2 = pg.PlotWidget(useOpenGL=True)
+        self.p2.setLabel(
+            "bottom",
+            text="Time (ms)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
+        )
+        self.p2.setLabel(
+            "left",
+            text="Amplitude (pA)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
         )
         self.p2.setObjectName("p2")
         p2pi = self.p2.getViewBox()
@@ -587,8 +618,16 @@ class MiniAnalysisWidget(DragDropWidget):
         self.set_peak_action = QAction("Set point as peak")
         self.set_peak_action.triggered.connect(self.setPointAsPeak)
 
-        self.mini_view_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
+        self.mini_view_plot = pg.PlotWidget(useOpenGL=True)
+        self.mini_view_plot.setLabel(
+            "bottom",
+            text="Time (ms)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
+        )
+        self.mini_view_plot.setLabel(
+            "left",
+            text="Amplitude (pA)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
         )
         mp = self.mini_view_plot.getViewBox()
         mp.menu.addSeparator()
@@ -613,6 +652,16 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dock_area3.addDock(self.data_dock, position="bottom")
         self.ave_mini_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
+        )
+        self.ave_mini_plot.setLabel(
+            "bottom",
+            text="Time (ms)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
+        )
+        self.ave_mini_plot.setLabel(
+            "left",
+            text="Amplitude (pA)",
+            **{"color": "#C9CDD0", "font-size": "10pt"},
         )
         self.ave_mini_dock.addWidget(self.ave_mini_plot)
         self.ave_mini_plot.setObjectName("Ave mini plot")
@@ -1124,10 +1173,9 @@ class MiniAnalysisWidget(DragDropWidget):
         mini_item = pg.PlotDataItem(
             x=mini.plot_event_x(),
             y=mini.plot_event_y(),
-            pen=pg.mkPen(linewidth=3),
             symbol="o",
             symbolPen=None,
-            symbolBrush="w",
+            symbolBrush="#C9CDD0",
             symbolSize=6,
         )
 
@@ -1443,6 +1491,15 @@ class MiniAnalysisWidget(DragDropWidget):
                 # Raise error if the point is too close to the beginning.
                 self.pointTooCloseToBeginning()
                 return None
+
+    def plotDeconvolution(self):
+        if not self.exp_manager.acqs_exist():
+            self.fileDoesNotExist()
+            return None
+        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+        decon, baseline = acq.plot_deconvolved_acq()
+        self.decon_plot.plotData(decon, baseline, np.arange(decon.size))
+        self.decon_plot.show()
 
     def deleteAcq(self):
         """

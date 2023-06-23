@@ -81,3 +81,29 @@ class AcqInspectionWidget(QWidget):
 
     def clearData(self):
         self.acq_dict = {}
+
+
+class DeconInspectionWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        # self.path_layout = QHBoxLayout()
+        self.plot_layout = QHBoxLayout()
+        self.props_layout = QFormLayout()
+        self.acq_dict = {}
+
+        # Since the class is inheriting from QWdiget there is no need to set
+        # or define a central widget like the mainwindow setCentralWidget
+        self.setLayout(self.plot_layout)
+        self.plot_layout.addLayout(self.props_layout, 0)
+
+        self.plot_widget = pg.PlotWidget(labels={"bottom": "Samples"}, useOpenGL=True)
+        pg.setConfigOptions(antialias=True)
+        self.plot_widget.setMinimumWidth(500)
+        self.plot_layout.addWidget(self.plot_widget)
+
+    def plotData(self, decon, baseline, x_array):
+        self.plot_widget.clear()
+
+        self.plot_widget.plot(y=decon, x=x_array)
+        self.plot_widget.plot(y=baseline, x=x_array, pen=pg.mkPen(color="m", width=3))
