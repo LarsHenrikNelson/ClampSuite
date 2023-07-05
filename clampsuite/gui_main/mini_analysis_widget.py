@@ -46,6 +46,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.init_UI()
 
     def init_UI(self):
+        logger.info("Creating Mini analysis GUI")
         # Create tabs for part of the analysis program
         self.signals.file.connect(self.loadPreferences)
         self.signals.path.connect(self.loadExperiment)
@@ -712,6 +713,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
         self.setWidth()
+        logger.info("Mini analysis GUI created.")
 
     def windowChanged(self, text):
         if text == "Gaussian":
@@ -795,6 +797,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
 
     def analyze(self):
+        logger.info("Analysis started.")
         """
         This function creates each MiniAnalysis object and puts
         it into a dictionary. The minis are create within the
@@ -810,6 +813,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_view_plot.clear()
 
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
             return None
@@ -881,9 +885,11 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         worker.signals.progress.connect(self.updateProgress)
         worker.signals.finished.connect(self.setAcquisition)
+        logger.info("Starting analysis thread.")
         QThreadPool.globalInstance().start(worker)
 
     def setAcquisition(self):
+        logger.info("Analysis finished.")
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
@@ -906,6 +912,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """This function plots each acquisition and each of its minis."""
 
         if not self.exp_manager.analyzed:
+            logger.info("Data not analyzed, need to analyze data first.")
             self.fileDoesNotExist()
             return None
 
@@ -938,6 +945,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # I choose to just show
         acq_dict = self.exp_manager.exp_dict["mini"]
         if acq_dict.get(self.acquisition_number.value()):
+            logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
             # acquisition dictionary. Makes it more readable.
@@ -985,6 +993,10 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Plot the postsynaptic events.
             if acq_object.postsynaptic_events:
+                logger.info(
+                    f"Plotting acquisition {self.acquisition_number.value()} events."
+                )
+
                 # Create the mini list and the true index of each mini.
                 # Since the plot items on a pyqtgraph plot cannot be sorted
                 # I had to create a way to correctly reference the position
@@ -1000,6 +1012,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 # Plot each mini. Since the postsynaptic events are stored in
                 # a list you can iterate through the list even if there is just
                 # one event because lists are iterable in python.
+
                 for i in self.mini_spinbox_list:
                     # Create the mini plot item that is added to the p1 plot.
                     mini_plot = pg.PlotCurveItem(
@@ -1029,9 +1042,13 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.mini_number.setMaximum(self.mini_spinbox_list[-1])
                 self.mini_number.setValue(0)
                 self.mini_spinbox(0)
+                logger.info(
+                    f"Acquisition {self.acquisition_number.value()}: Events plotted."
+                )
             else:
                 self.acquisition_number.setEnabled(True)
         else:
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             text.setFont(QFont("Helvetica", 20))
             self.p2.setRange(xRange=(-30, 30), yRange=(-30, 30))
@@ -1039,6 +1056,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.acquisition_number.setEnabled(True)
 
     def reset(self):
+        logger.info("Resetting UI.")
         """
         This function resets all the variables and clears all the plots.
         It takes a while to run.
@@ -1064,11 +1082,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
         self.plot_selector.clear()
-        self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
         self.exp_manager = ExpManager()
         self.load_widget.setData(self.exp_manager)
         self.clearTables()
+        self.pbar.setFormat("Ready to analyze")
+        logger.info("UI Reset. Ready to analyze.")
 
     def update(self):
         """
@@ -1104,20 +1123,27 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         Returns the points clicked in the acquisition plot window.
         """
+        logger.info(f"Acquisition {self.acquisition_number.value()} point clicked.")
         if self.last_acq_point_clicked is not None:
             self.last_acq_point_clicked.resetPen()
             self.last_acq_point_clicked.setSize(size=3)
         points[0].setPen("g", width=2)
         points[0].setSize(size=12)
         self.last_acq_point_clicked = points[0]
+        logger.info(
+            f"Point {self.last_acq_point_clicked.pos()[0]} set as point clicked."
+        )
 
     def miniClicked(self, item):
         """
         Set the mini spinbox to the mini that was clicked in the acquisition
         window.
         """
-        self.mini_number.setValue(self.sort_index.index(int(item.name())))
-        self.mini_spinbox(self.sort_index.index(int(item.name())))
+        logger.info("Event clicked.")
+        index = self.sort_index.index(int(item.name()))
+        self.mini_number.setValue(index)
+        self.mini_spinbox(index)
+        logger.info(f"Event {index} set a current event.")
 
     def mini_spinbox(self, h):
         """
@@ -1125,8 +1151,18 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.exp_manager.acqs_exist():
+            logger.info("Event was not plotted since acquisition does not exist.")
             self.fileDoesNotExist()
             return None
+
+        # Return the correct index of the mini. This is needed because of
+        # how new minis are created
+        mini_index = self.sort_index[h]
+
+        logger.info(
+            f"Plotting event {mini_index} on acquisition \
+                  {self.acquisition_number.value()}."
+        )
 
         self.need_to_save = True
 
@@ -1145,10 +1181,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Clear the mini plot
         self.mini_view_plot.clear()
-
-        # Return the correct index of the mini. This is needed because of
-        # how new minis are created
-        mini_index = self.sort_index[h]
 
         # Reference the mini.
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
@@ -1221,6 +1253,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.mini_rise_rate.setText(str(round_sig(mini.rise_rate, sig=4)))
         self.mini_baseline.setText(str(round_sig(mini.event_start_y, sig=4)))
 
+        logger.info("Event plotted.")
+
     def miniPlotClicked(self, item, points):
         """
         Function to make the mini in the mini view widget
@@ -1231,6 +1265,9 @@ class MiniAnalysisWidget(DragDropWidget):
         None
         """
         # Resets the color of the previously clicked mini point.
+        mini_index = self.sort_index[int(self.mini_number.text())]
+
+        logger.info(f"Point clicked on event {mini_index}.")
         if self.last_mini_point_clicked:
             self.last_mini_point_clicked.resetPen()
             self.last_mini_point_clicked = None
@@ -1239,6 +1276,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # was clicked.
         points[0].setPen("m", width=4)
         self.last_mini_point_clicked = points[0]
+
+        logger.info(f"Point {self.last_mini_point_clicked.pos()[0]} clicked.")
 
     def setPointAsPeak(self):
         """
@@ -1251,6 +1290,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acqs_exist():
+            logger.info("No event peak was set.")
             self.fileDoesNotExist()
             return None
 
@@ -1259,6 +1299,17 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.need_to_save = True
 
+        # Find the index of the mini so that the correct mini is
+        # modified.
+        mini_index = self.sort_index[int(self.mini_number.text())]
+        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+        mini = acq.postsynaptic_events[mini_index]
+
+        logger.info(
+            f"Setting point as peak on event {mini_index} on \
+                acquisition {self.acquisition_number.value()}."
+        )
+
         # if len(self.last_mini_point_clicked) > 0:
         # X and Y point of the mini point that was clicked. The
         # x point needs to be adjusted back to samples for the
@@ -1266,12 +1317,6 @@ class MiniAnalysisWidget(DragDropWidget):
         # object.
         x = self.last_mini_point_clicked.pos()[0]
         y = self.last_mini_point_clicked.pos()[1]
-
-        # Find the index of the mini so that the correct mini is
-        # modified.
-        mini_index = self.sort_index[int(self.mini_number.text())]
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-        mini = acq.postsynaptic_events[mini_index]
 
         # Pass the x and y points to the change amplitude function
         # for the postsynaptic event.
@@ -1302,6 +1347,11 @@ class MiniAnalysisWidget(DragDropWidget):
         # else:
         #     pass
 
+        logger.info(
+            f"Peak set on event {mini_index} on \
+                acquisition {self.acquisition_number.value()}."
+        )
+
     def setPointAsBaseline(self):
         """
         This will set the baseline as the point selected on the mini plot and
@@ -1313,6 +1363,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acqs_exist():
+            logger.info("No event baseline was set.")
             self.fileDoesNotExist()
             return None
 
@@ -1322,19 +1373,23 @@ class MiniAnalysisWidget(DragDropWidget):
         self.need_to_save = True
 
         if self.last_mini_point_clicked is not None:
-            # X and Y point of the mini point that was clicked. The
-            # x point needs to be adjusted back to samples for the
-            # change amplitude function in the postsynaptic event
-            # object.
-            x = self.last_mini_point_clicked.pos()[0]
-            y = self.last_mini_point_clicked.pos()[1]
-
             # Find the index of the mini so that the correct mini is
             # modified.
             mini_index = self.sort_index[int(self.mini_number.text())]
 
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
             mini = acq.postsynaptic_events[mini_index]
+
+            logger.info(
+                f"Setting point as peak on event {mini_index} on \
+                    acquisition {self.acquisition_number.value()}."
+            )
+            # X and Y point of the mini point that was clicked. The
+            # x point needs to be adjusted back to samples for the
+            # change amplitude function in the postsynaptic event
+            # object.
+            x = self.last_mini_point_clicked.pos()[0]
+            y = self.last_mini_point_clicked.pos()[1]
 
             # Pass the x and y points to the change baseline function
             # for the postsynaptic event.
@@ -1365,6 +1420,11 @@ class MiniAnalysisWidget(DragDropWidget):
         # else:
         #     pass
 
+        logger.info(
+            f"Baseline set on event {mini_index} on \
+                acquisition {self.acquisition_number.value()}."
+        )
+
     def deleteMini(self):
         """
         This function deletes a mini from the acquisition and removes it from the
@@ -1375,6 +1435,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None
         """
         if not self.exp_manager.acqs_exist():
+            logger.info("No event deleted.")
             self.fileDoesNotExist()
             return None
         self.need_to_save = True
