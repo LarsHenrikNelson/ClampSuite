@@ -44,9 +44,8 @@ def main(logger):
     app = QApplication([])
 
     wdir = PurePath(__file__).parent
-    logo_path = str(wdir / "logo/logo.png")
+    logo_path = str(wdir / "logo/d_logo.png")
     pic = QPixmap(logo_path)
-    print(logo_path)
     splash = QSplashScreen(pic)
     splash.show()
 
