@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QFileDialog,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QStackedWidget,
     QToolBar,
@@ -142,8 +143,6 @@ class MainWindow(QMainWindow):
             self.working_dir = str(Path(PurePath(save_filename).parent))
             self.central_widget.currentWidget().saveAs(save_filename)
             logger.info("Analysis saved.")
-        else:
-            logger.info("No analysis to save.")
 
     def loadExperiment(self):
         directory = str(
@@ -200,6 +199,12 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.central_widget.currentWidget().need_to_save:
-            self.saveAs()
+            msgbox = QMessageBox()
+            msgbox.setInformativeText("Do you want to save your changes?")
+            msgbox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
+            msgbox.setDefaultButton(QMessageBox.Save)
+            ret = msgbox.exec()
+
+            if ret == QMessageBox.Save:
+                self.saveAs()
         event.accept()
-        logger.info("Closing ClampSuite")

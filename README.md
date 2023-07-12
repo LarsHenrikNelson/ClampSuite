@@ -3,7 +3,7 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;There are currently four different modules: MiniAnalysis, Current Clamp, oEPSC/LFP and Filter design. The program exports user settings for the interface, an individual JSON file for each acquisition, and an Excel file for the raw and processed data. Each module is built to allow the user to delete acquisitions, events or modify baselines or peak values. Each module allows for drag and drop to loading of files for analysis or to reload already analyzed files.
 
-## Installation
+## Installation for Anaconda
 1. Install an [Anaconda](https://www.anaconda.com/download/) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) distribution of Python and your operating system. Note you will need to use an anaconda prompt if you did not add anaconda to the path.
 2. Open an anaconda prompt / command prompt with `conda` for **python 3** in the path
 3. Create a new environment with `conda create --name clampsuite python=3.10`.
@@ -12,6 +12,12 @@
 6. To install run `pip install clampsuite`.
 7. Now run `clampsuite` and you're all set.
 8. Running the command `clampsuite --version` in the terminal will print the install version of clampsuite.
+
+## Installation with Anaconda
+1. 'pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git' for the stable branch (main) or 'pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop' for
+the development branch.
+8. Running the command `pip show clampsuite` in the terminal will print the details of the version of clampsuite you installed.
+
 
 <br/>
 
