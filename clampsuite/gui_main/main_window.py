@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         if save_filename:
             logger.info("Saving preferences")
             self.central_widget.currentWidget().savePreferences(save_filename)
-            logger.info("Preference saved")
+            logger.info("Preferences saved")
         else:
             logger.info("No preferences saved")
 

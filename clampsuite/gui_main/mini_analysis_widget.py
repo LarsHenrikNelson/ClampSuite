@@ -46,6 +46,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.init_UI()
 
     def init_UI(self):
+        self.plot_dict = {}
+
         logger.info("Creating Mini analysis GUI")
         # Create tabs for part of the analysis program
         self.signals.file.connect(self.loadPreferences)
@@ -235,11 +237,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.amp_thresh_edit.setText("4")
         self.settings_layout.addRow("Amplitude threshold (pA)", self.amp_thresh_edit)
 
-        self.mini_spacing_edit = LineEdit()
-        self.mini_spacing_edit.setObjectName("mini_spacing_edit")
-        self.mini_spacing_edit.setEnabled(True)
-        self.mini_spacing_edit.setText("2")
-        self.settings_layout.addRow("Min mini spacing (ms)", self.mini_spacing_edit)
+        self.event_spacing_edit = LineEdit()
+        self.event_spacing_edit.setObjectName("mini_spacing_edit")
+        self.event_spacing_edit.setEnabled(True)
+        self.event_spacing_edit.setText("2")
+        self.settings_layout.addRow("Min event spacing (ms)", self.event_spacing_edit)
 
         self.min_rise_time = LineEdit()
         self.min_rise_time.setObjectName("min_rise_time")
@@ -260,7 +262,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.settings_layout.addRow("Min decay time (ms)", self.min_decay)
 
         self.event_length = LineEdit()
-        self.event_length.setObjectName("event_length")
+        self.event_length.setObjectName("mini_length")
         self.event_length.setText("30")
         self.settings_layout.addRow("Max event length (ms)", self.event_length)
 
@@ -295,7 +297,7 @@ class MiniAnalysisWidget(DragDropWidget):
         decon_list = ["wiener", "fft", "convolution"]
         self.decon_type_edit.addItems(decon_list)
         self.decon_type_edit.setMinimumContentsLength(len(max(decon_list, key=len)))
-        self.decon_type_edit.setObjectName("event_finding_method_edit")
+        self.decon_type_edit.setObjectName("mini_finding_method_edit")
         self.settings_layout.addRow("Event finding method", self.decon_type_edit)
 
         self.baseline_corr_choice = QCheckBox()
@@ -354,6 +356,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_button.setObjectName("template_button")
 
         self.template_plot = pg.PlotWidget(useOpenGL=True)
+        self.plot_dict["Template plot"] = self.template_plot
         self.template_plot.setLabel(
             "bottom",
             text="Time (ms)",
@@ -379,7 +382,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Tab 2 layouts
         self.d1 = Dock("Overview")
-        self.d2 = Dock("Mini")
+        self.d2 = Dock("Event")
         self.d3 = Dock("Acq view")
         self.d1.hideTitleBar()
         self.d2.hideTitleBar()
@@ -448,17 +451,17 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acq_buttons.addWidget(self.right_button, 3, 1)
 
         self.slider_sensitivity = QSlider()
-        self.slider_sensitivity.setObjectName("mini plot slider")
+        self.slider_sensitivity.setObjectName("event plot slider")
         self.slider_sensitivity.setOrientation(Qt.Horizontal)
         self.slider_sensitivity.setValue(20)
         self.slider_sensitivity.valueChanged.connect(self.slider_value)
         self.acq_buttons.addWidget(self.slider_sensitivity, 4, 0, 1, 2)
 
-        self.create_mini_button = QPushButton("Create new mini")
-        self.create_mini_button.clicked.connect(self.createMini)
-        self.create_mini_action = QAction("Create new mini")
-        self.create_mini_action.triggered.connect(self.createMini)
-        self.acq_buttons.addWidget(self.create_mini_button, 5, 0, 1, 2)
+        self.create_event_button = QPushButton("Create new event")
+        self.create_event_button.clicked.connect(self.createEvent)
+        self.create_event_action = QAction("Create new event")
+        self.create_event_action.triggered.connect(self.createEvent)
+        self.acq_buttons.addWidget(self.create_event_button, 5, 0, 1, 2)
 
         self.acq_buttons.setRowStretch(6, 5)
 
@@ -498,6 +501,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p1 = pg.PlotWidget(
             useOpenGL=True,
         )
+        self.plot_dict["p1"] = self.p1
         self.p1.setLabel(
             "bottom",
             text="Time (ms)",
@@ -511,7 +515,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p1.setObjectName("p1")
         p1pi = self.p1.getViewBox()
         p1pi.menu.addSeparator()
-        p1pi.menu.addAction(self.create_mini_action)
+        p1pi.menu.addAction(self.create_event_action)
         p1pi.menu.addAction(self.delete_acq_action)
         p1pi.menu.addAction(self.reset_recent_acq_action)
         p1pi.menu.addAction(self.reset_acq_action)
@@ -519,6 +523,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.d3.layout.setColumnStretch(1, 10)
 
         self.p2 = pg.PlotWidget(useOpenGL=True)
+        self.plot_dict["p2"] = self.p2
         self.p2.setLabel(
             "bottom",
             text="Time (ms)",
@@ -548,124 +553,124 @@ class MiniAnalysisWidget(DragDropWidget):
         self.region.setRegion([0, 400])
         self.region.setZValue(10)
 
-        self.mini_view_widget = QWidget()
-        self.mini_view_scroll = QScrollArea()
-        # self.mini_view_scroll.setMinimumWidth(200)
-        self.mini_view_scroll.setContentsMargins(20, 20, 20, 20)
-        self.mini_view_scroll.setWidget(self.mini_view_widget)
-        self.mini_view_scroll.setWidgetResizable(True)
-        self.d2.addWidget(self.mini_view_scroll, 0, 0)
+        self.event_view_widget = QWidget()
+        self.event_view_scroll = QScrollArea()
+        # self.event_view_scroll.setMinimumWidth(200)
+        self.event_view_scroll.setContentsMargins(20, 20, 20, 20)
+        self.event_view_scroll.setWidget(self.event_view_widget)
+        self.event_view_scroll.setWidgetResizable(True)
+        self.d2.addWidget(self.event_view_scroll, 0, 0)
         self.d2.layout.setColumnStretch(0, 0)
-        self.mini_layout = QFormLayout()
-        self.mini_view_widget.setLayout(self.mini_layout)
+        self.event_layout = QFormLayout()
+        self.event_view_widget.setLayout(self.event_layout)
 
-        self.mini_number_label = QLabel("Event")
-        self.mini_number = QSpinBox()
-        self.mini_number.setMaximumWidth(70)
-        self.mini_number.setKeyboardTracking(False)
-        self.mini_layout.addRow(self.mini_number_label, self.mini_number)
-        self.mini_number.setEnabled(True)
-        self.mini_number.setMinimumWidth(70)
-        self.mini_number.valueChanged.connect(self.mini_spinbox)
+        self.event_number_label = QLabel("Event")
+        self.event_number = QSpinBox()
+        self.event_number.setMaximumWidth(70)
+        self.event_number.setKeyboardTracking(False)
+        self.event_layout.addRow(self.event_number_label, self.event_number)
+        self.event_number.setEnabled(True)
+        self.event_number.setMinimumWidth(70)
+        self.event_number.valueChanged.connect(self.event_spinbox)
 
-        self.mini_baseline_label = QLabel("Baseline (pA)")
-        self.mini_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
-        self.mini_baseline = QLineEdit()
-        self.mini_baseline.setMaximumWidth(70)
-        self.mini_baseline.setReadOnly(True)
-        self.mini_layout.addRow(self.mini_baseline_label, self.mini_baseline)
+        self.event_baseline_label = QLabel("Baseline (pA)")
+        self.event_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
+        self.event_baseline = QLineEdit()
+        self.event_baseline.setMaximumWidth(70)
+        self.event_baseline.setReadOnly(True)
+        self.event_layout.addRow(self.event_baseline_label, self.event_baseline)
 
-        self.mini_amplitude_label = QLabel("Amplitude (pA)")
-        self.mini_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
-        self.mini_amplitude = QLineEdit()
-        self.mini_amplitude.setMaximumWidth(70)
-        self.mini_amplitude.setReadOnly(True)
-        self.mini_layout.addRow(self.mini_amplitude_label, self.mini_amplitude)
+        self.event_amplitude_label = QLabel("Amplitude (pA)")
+        self.event_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
+        self.event_amplitude = QLineEdit()
+        self.event_amplitude.setMaximumWidth(70)
+        self.event_amplitude.setReadOnly(True)
+        self.event_layout.addRow(self.event_amplitude_label, self.event_amplitude)
 
-        self.mini_tau_label = QLabel("Est tau (ms)")
-        self.mini_tau = QLineEdit()
-        self.mini_tau.setMaximumWidth(70)
-        self.mini_tau.setReadOnly(True)
-        self.mini_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
-        self.mini_layout.addRow(self.mini_tau_label, self.mini_tau)
+        self.event_tau_label = QLabel("Est tau (ms)")
+        self.event_tau = QLineEdit()
+        self.event_tau.setMaximumWidth(70)
+        self.event_tau.setReadOnly(True)
+        self.event_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
+        self.event_layout.addRow(self.event_tau_label, self.event_tau)
 
-        self.mini_rise_time_label = QLabel("Rise time (ms)")
-        self.mini_rise_time = QLineEdit()
-        self.mini_rise_time.setMaximumWidth(70)
-        self.mini_rise_time.setReadOnly(True)
-        self.mini_layout.addRow(self.mini_rise_time_label, self.mini_rise_time)
+        self.event_rise_time_label = QLabel("Rise time (ms)")
+        self.event_rise_time = QLineEdit()
+        self.event_rise_time.setMaximumWidth(70)
+        self.event_rise_time.setReadOnly(True)
+        self.event_layout.addRow(self.event_rise_time_label, self.event_rise_time)
 
-        self.mini_rise_rate_label = QLabel("Rise rate (pA/ms)")
-        self.mini_rise_rate = QLineEdit()
-        self.mini_rise_rate.setMaximumWidth(70)
-        self.mini_rise_rate.setReadOnly(True)
-        self.mini_layout.addRow(self.mini_rise_rate_label, self.mini_rise_rate)
+        self.event_rise_rate_label = QLabel("Rise rate (pA/ms)")
+        self.event_rise_rate = QLineEdit()
+        self.event_rise_rate.setMaximumWidth(70)
+        self.event_rise_rate.setReadOnly(True)
+        self.event_layout.addRow(self.event_rise_rate_label, self.event_rise_rate)
 
-        self.delete_mini_button = QPushButton("Delete event")
-        self.mini_layout.addRow(self.delete_mini_button)
-        self.delete_mini_button.clicked.connect(self.deleteMini)
-        self.delete_mini_action = QAction("Delete event")
-        self.delete_mini_action.triggered.connect(self.deleteMini)
+        self.delete_event_button = QPushButton("Delete event")
+        self.event_layout.addRow(self.delete_event_button)
+        self.delete_event_button.clicked.connect(self.deleteEvent)
+        self.delete_event_action = QAction("Delete event")
+        self.delete_event_action.triggered.connect(self.deleteEvent)
 
         self.set_baseline = QPushButton("Set point as baseline")
-        self.mini_layout.addRow(self.set_baseline)
+        self.event_layout.addRow(self.set_baseline)
         self.set_baseline.clicked.connect(self.setPointAsBaseline)
         self.set_baseline_action = QAction("Set point as baseline")
         self.set_baseline_action.triggered.connect(self.setPointAsBaseline)
 
         self.set_peak = QPushButton("Set point as peak")
-        self.mini_layout.addRow(self.set_peak)
+        self.event_layout.addRow(self.set_peak)
         self.set_peak.clicked.connect(self.setPointAsPeak)
         self.set_peak_action = QAction("Set point as peak")
         self.set_peak_action.triggered.connect(self.setPointAsPeak)
 
-        self.mini_view_plot = pg.PlotWidget(useOpenGL=True)
-        self.mini_view_plot.setLabel(
+        self.event_view_plot = pg.PlotWidget(useOpenGL=True)
+        self.event_view_plot.setLabel(
             "bottom",
             text="Time (ms)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.mini_view_plot.setLabel(
+        self.event_view_plot.setLabel(
             "left",
             text="Amplitude (pA)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        mp = self.mini_view_plot.getViewBox()
+        mp = self.event_view_plot.getViewBox()
         mp.menu.addSeparator()
-        mp.menu.addAction(self.delete_mini_action)
+        mp.menu.addAction(self.delete_event_action)
         mp.menu.addAction(self.set_baseline_action)
         mp.menu.addAction(self.set_peak_action)
 
-        # self.mini_view_plot.setMinimumWidth(300)
-        self.mini_view_plot.setObjectName("Mini view plot")
-        self.d2.addWidget(self.mini_view_plot, 0, 1)
+        # self.event_view_plot.setMinimumWidth(300)
+        self.event_view_plot.setObjectName("Event view plot")
+        self.d2.addWidget(self.event_view_plot, 0, 1)
         self.d2.layout.setColumnStretch(1, 10)
 
         # Tab 3 layouts and setup
         self.table_dock = Dock("Table")
         self.table_dock.hideTitleBar()
-        self.ave_mini_dock = Dock("Mini")
-        self.ave_mini_dock.hideTitleBar()
+        self.ave_event_dock = Dock("Event")
+        self.ave_event_dock.hideTitleBar()
         self.data_dock = Dock("Data")
         self.data_dock.hideTitleBar()
         self.dock_area3.addDock(self.table_dock, position="left")
-        self.dock_area3.addDock(self.ave_mini_dock, position="right")
+        self.dock_area3.addDock(self.ave_event_dock, position="right")
         self.dock_area3.addDock(self.data_dock, position="bottom")
-        self.ave_mini_plot = pg.PlotWidget(
+        self.ave_event_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )
-        self.ave_mini_plot.setLabel(
+        self.ave_event_plot.setLabel(
             "bottom",
             text="Time (ms)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.ave_mini_plot.setLabel(
+        self.ave_event_plot.setLabel(
             "left",
             text="Amplitude (pA)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.ave_mini_dock.addWidget(self.ave_mini_plot)
-        self.ave_mini_plot.setObjectName("Ave mini plot")
+        self.ave_event_dock.addWidget(self.ave_event_plot)
+        self.ave_event_plot.setObjectName("Ave event plot")
         self.final_tab_widget = QTabWidget()
         self.final_tab_widget.setMinimumHeight(300)
         self.table_dock.addWidget(self.final_tab_widget)
@@ -680,28 +685,28 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.exp_manager = ExpManager()
         self.load_widget.setData(self.exp_manager)
-        self.last_mini_deleted = {}
-        self.last_mini_deleted = []
-        self.last_mini_point_clicked = None
+        self.last_event_deleted = {}
+        self.last_event_deleted = []
+        self.last_event_point_clicked = None
         self.last_acq_point_clicked = None
-        self.mini_spinbox_list = []
-        self.last_mini_clicked_1 = []
-        self.last_mini_clicked_2 = []
+        self.event_spinbox_list = []
+        self.last_event_clicked_1 = []
+        self.last_event_clicked_2 = []
         self.sort_index = []
         self.template = []
-        self.mini_spinbox_list = []
-        self.minis_deleted = 0
+        self.event_spinbox_list = []
+        self.events_deleted = 0
         self.calc_param_clicked = False
         self.table_dict = {}
         self.need_to_save = False
         self.modify = 20
 
         # Shortcuts
-        self.del_mini_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
-        self.del_mini_shortcut.activated.connect(self.deleteMini)
+        self.del_event_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.del_event_shortcut.activated.connect(self.deleteEvent)
 
-        self.create_mini_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
-        self.create_mini_shortcut.activated.connect(self.createMini)
+        self.create_event_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
+        self.create_event_shortcut.activated.connect(self.createEvent)
 
         self.set_baseline = QShortcut(QKeySequence("Ctrl + B"), self)
         self.set_baseline.activated.connect(self.setPointAsBaseline)
@@ -713,7 +718,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
         self.setWidth()
-        logger.info("Mini analysis GUI created.")
+        logger.info("Event analysis GUI created.")
 
     def windowChanged(self, text):
         if text == "Gaussian":
@@ -800,9 +805,9 @@ class MiniAnalysisWidget(DragDropWidget):
         logger.info("Analysis started.")
         """
         This function creates each MiniAnalysis object and puts
-        it into a dictionary. The minis are create within the
-        MiniAnalysis objection. Note that the created
-        MiniAnalysis object needs to have analyze run. This was
+        it into a dictionary. The events are create within the
+        EventAnalysis objection. Note that the created
+        EventAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
 
@@ -810,7 +815,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p2.clear()
         self.p1.setAutoVisible(y=True)
         self.p2.enableAutoRange()
-        self.mini_view_plot.clear()
+        self.event_view_plot.clear()
 
         if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions, analysis ended.")
@@ -828,7 +833,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Analyzing...")
         self.pbar.setValue(0)
 
-        # The for loop creates each MiniAnalysis object. Enumerate returns
+        # The for loop creates each EventAnalysis object. Enumerate returns
         # count which is used to adjust the progress bar and acq_components
         # comes from the load_widget
         if (
@@ -863,11 +868,11 @@ class MiniAnalysisWidget(DragDropWidget):
             analysis_args={
                 "sensitivity": self.sensitivity_edit.toFloat(),
                 "amp_threshold": self.amp_thresh_edit.toFloat(),
-                "mini_spacing": self.mini_spacing_edit.toFloat(),
+                "mini_spacing": self.event_spacing_edit.toFloat(),
                 "min_rise_time": self.min_rise_time.toFloat(),
                 "max_rise_time": self.max_rise_time.toFloat(),
                 "min_decay_time": self.min_decay.toFloat(),
-                "event_length": self.event_length.toInt(),
+                "mini_length": self.event_length.toInt(),
                 "decay_rise": self.decay_rise.isChecked(),
                 "invert": self.invert_checkbox.isChecked(),
                 "decon_type": self.decon_type_edit.currentText(),
@@ -894,11 +899,11 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
 
-        # Minis always start from 0 since list indexing in python starts
-        # at zero. I choose this because it is easier to reference minis
-        # when adding or removing minis and python list indexing starts at 0.
-        self.mini_number.setMinimum(0)
-        # self.mini_spinbox(0)
+        # Events always start from 0 since list indexing in python starts
+        # at zero. I choose this because it is easier to reference events
+        # when adding or removing events and python list indexing starts at 0.
+        self.event_number.setMinimum(0)
+        # self.event_spinbox(0)
 
         # Enabling the buttons since they were temporarily disabled while
         # The acquisitions were analyzed.
@@ -909,7 +914,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Analysis finished")
 
     def acqSpinbox(self, h):
-        """This function plots each acquisition and each of its minis."""
+        """This function plots each acquisition and each of its events."""
 
         if not self.exp_manager.analyzed:
             logger.info("Data not analyzed, need to analyze data first.")
@@ -923,27 +928,27 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p2.clear()
         self.p1.setAutoVisible(y=True)
         self.p2.enableAutoRange()
-        self.mini_view_plot.clear()
+        self.event_view_plot.clear()
 
         # Reset the clicked points since we do not want to accidentally
         # adjust plot items on the new acquisition
         self.last_acq_point_clicked = None
-        self.last_mini_clicked_1 = []
-        self.last_mini_clicked_2 = []
-        self.last_mini_point_clicked = None
+        self.last_event_clicked_1 = []
+        self.last_event_clicked_2 = []
+        self.last_event_point_clicked = None
 
-        # sort_index and mini_spinbox_list are used to reference the correct
-        # mini when using the mini_spinbox. This was choosen because you cannot
+        # sort_index and event_spinbox_list are used to reference the correct
+        # event when using the event_spinbox. This was choosen because you cannot
         # sort GUI objects when they are presented on the screen.
         self.sort_index = []
-        self.mini_spinbox_list = []
+        self.event_spinbox_list = []
 
         # Temporarily disable the acquisition number to prevent some weird behavior
         # where the the box will skip every other acquisition.
         self.acquisition_number.setEnabled(False)
 
         # I choose to just show
-        acq_dict = self.exp_manager.exp_dict["mini"]
+        acq_dict = self.exp_manager.exp_dict["event"]
         if acq_dict.get(self.acquisition_number.value()):
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
             # Creates a reference to the acquisition object so that the
@@ -968,7 +973,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # Creates the ability to click on specific points in the main
             # acquisition plot window. The function acqPlotClicked stores
             # the point clicked for later use and is used when creating a
-            # new mini.
+            # new event.
             acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
 
             # Add the plot item to the plot. Need to do it this way since
@@ -997,51 +1002,51 @@ class MiniAnalysisWidget(DragDropWidget):
                     f"Plotting acquisition {self.acquisition_number.value()} events."
                 )
 
-                # Create the mini list and the true index of each mini.
+                # Create the event list and the true index of each event.
                 # Since the plot items on a pyqtgraph plot cannot be sorted
                 # I had to create a way to correctly reference the position
-                # of minis when adding new minis because I ended up just
-                # adding the new minis to postsynaptic events list.
-                self.sort_index = self.exp_manager.exp_dict["mini"][
+                # of events when adding new events because I ended up just
+                # adding the new events to postsynaptic events list.
+                self.sort_index = self.exp_manager.exp_dict["event"][
                     self.acquisition_number.value()
                 ].sort_index()
-                self.mini_spinbox_list = self.exp_manager.exp_dict["mini"][
+                self.event_spinbox_list = self.exp_manager.exp_dict["event"][
                     self.acquisition_number.value()
                 ].list_of_events()
 
-                # Plot each mini. Since the postsynaptic events are stored in
+                # Plot each event. Since the postsynaptic events are stored in
                 # a list you can iterate through the list even if there is just
                 # one event because lists are iterable in python.
 
-                for i in self.mini_spinbox_list:
-                    # Create the mini plot item that is added to the p1 plot.
-                    mini_plot = pg.PlotCurveItem(
-                        x=acq_object.postsynaptic_events[i].mini_x_comp()[:2],
-                        y=acq_object.postsynaptic_events[i].mini_y_comp()[:2],
+                for i in self.event_spinbox_list:
+                    # Create the event plot item that is added to the p1 plot.
+                    event_plot = pg.PlotCurveItem(
+                        x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
+                        y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
                         pen="g",
                         name=i,
                         clickable=True,
                     )
-                    # Adds the clicked functionality to the mini plot item.
-                    mini_plot.sigClicked.connect(self.miniClicked)
-                    self.p1.addItem(mini_plot)
+                    # Adds the clicked functionality to the event plot item.
+                    event_plot.sigClicked.connect(self.eventClicked)
+                    self.p1.addItem(event_plot)
 
-                    # Minis plotted on p2 do not need any interactivity. You have
-                    # create new mini plot items for each plot because one graphic
+                    # Events plotted on p2 do not need any interactivity. You have
+                    # create new event plot items for each plot because one graphic
                     # item cannot be used in multiple parts of a GUI in Qt.
                     self.p2.plot(
-                        x=acq_object.postsynaptic_events[i].mini_x_comp()[:2],
-                        y=acq_object.postsynaptic_events[i].mini_y_comp()[:2],
+                        x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
+                        y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
                         pen="g",
                     )
 
-                # Set the mini spinbox to the first mini and sets the min
-                # an max value. I choose to start the minis at 0 because it
-                # is easier to work with mini referenceing
-                self.mini_number.setMinimum(0)
-                self.mini_number.setMaximum(self.mini_spinbox_list[-1])
-                self.mini_number.setValue(0)
-                self.mini_spinbox(0)
+                # Set the event spinbox to the first event and sets the min
+                # an max value. I choose to start the events at 0 because it
+                # is easier to work with event referenceing
+                self.event_number.setMinimum(0)
+                self.event_number.setMaximum(self.event_spinbox_list[-1])
+                self.event_number.setValue(0)
+                self.event_spinbox(0)
                 logger.info(
                     f"Acquisition {self.acquisition_number.value()}: Events plotted."
                 )
@@ -1066,16 +1071,16 @@ class MiniAnalysisWidget(DragDropWidget):
         self.template_plot.clear()
         self.load_widget.clearData()
         self.calc_param_clicked = False
-        self.mini_view_plot.clear()
-        self.last_mini_point_clicked = None
+        self.event_view_plot.clear()
+        self.last_event_point_clicked = None
         self.last_acq_point_clicked = None
-        self.last_mini_clicked_1 = []
-        self.last_mini_clicked_2 = []
-        self.mini_spinbox_list = []
+        self.last_event_clicked_1 = []
+        self.last_event_clicked_2 = []
+        self.event_spinbox_list = []
         self.sort_index = []
         self.stem_plot.clear()
         self.amp_dist.clear()
-        self.ave_mini_plot.clear()
+        self.ave_event_plot.clear()
         self.inspection_widget.clearData()
         self.calc_param_clicked = False
         self.need_to_save = False
@@ -1134,20 +1139,20 @@ class MiniAnalysisWidget(DragDropWidget):
             f"Point {self.last_acq_point_clicked.pos()[0]} set as point clicked."
         )
 
-    def miniClicked(self, item):
+    def eventClicked(self, item):
         """
-        Set the mini spinbox to the mini that was clicked in the acquisition
+        Set the event spinbox to the event that was clicked in the acquisition
         window.
         """
         logger.info("Event clicked.")
         index = self.sort_index.index(int(item.name()))
-        self.mini_number.setValue(index)
-        self.mini_spinbox(index)
+        self.event_number.setValue(index)
+        self.event_spinbox(index)
         logger.info(f"Event {index} set a current event.")
 
-    def mini_spinbox(self, h):
+    def event_spinbox(self, h):
         """
-        Function to plot a mini in the mini plot.
+        Function to plot a event in the event plot.
         """
 
         if not self.exp_manager.acqs_exist():
@@ -1155,133 +1160,133 @@ class MiniAnalysisWidget(DragDropWidget):
             self.fileDoesNotExist()
             return None
 
-        # Return the correct index of the mini. This is needed because of
-        # how new minis are created
-        mini_index = self.sort_index[h]
+        # Return the correct index of the event. This is needed because of
+        # how new events are created
+        event_index = self.sort_index[h]
 
         logger.info(
-            f"Plotting event {mini_index} on acquisition \
+            f"Plotting event {event_index} on acquisition \
                   {self.acquisition_number.value()}."
         )
 
         self.need_to_save = True
 
-        # if h in self.mini_spinbox_list:
-        # Clear the last mini_point_clicked
-        self.last_mini_point_clicked = None
+        # if h in self.event_spinbox_list:
+        # Clear the last event_point_clicked
+        self.last_event_point_clicked = None
 
-        # Resets the color of the minis on p1 and p2. In python
+        # Resets the color of the events on p1 and p2. In python
         # when you create an object it is given a position in the memory
         # you can create new "pointers" to the object. This makes it
         # easy to modify Qt graphics objects without having to find them
         # under their original parent.
-        if self.last_mini_clicked_1:
-            self.last_mini_clicked_1.setPen("g")
-            self.last_mini_clicked_2.setPen("g")
+        if self.last_event_clicked_1:
+            self.last_event_clicked_1.setPen("g")
+            self.last_event_clicked_2.setPen("g")
 
-        # Clear the mini plot
-        self.mini_view_plot.clear()
+        # Clear the event plot
+        self.event_view_plot.clear()
 
-        # Reference the mini.
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-        mini = acq.postsynaptic_events[mini_index]
+        # Reference the event.
+        acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+        event = acq.postsynaptic_events[event_index]
 
-        # This allows the window on p1 to follow each mini when using
-        # the mini spinbox. The window will only adjust if any part of
-        # the mini array falls outside of the current viewable region.
+        # This allows the window on p1 to follow each event when using
+        # the event spinbox. The window will only adjust if any part of
+        # the event array falls outside of the current viewable region.
         minX, maxX = self.region.getRegion()
         width = maxX - minX
-        if mini.plot_event_x()[0] < minX or mini.plot_event_x()[-1] > maxX:
+        if event.plot_event_x()[0] < minX or event.plot_event_x()[-1] > maxX:
             self.region.setRegion(
                 [
-                    int(mini.plot_event_x()[0] - 100),
-                    int(mini.plot_event_x()[0] + width - 100),
+                    int(event.plot_event_x()[0] - 100),
+                    int(event.plot_event_x()[0] + width - 100),
                 ]
             )
 
-        # Create the mini plot item. The x_array is a method call
+        # Create the event plot item. The x_array is a method call
         # because it needs to be corrected for sample rate and
         # displayed as milliseconds.
-        mini_item = pg.PlotDataItem(
-            x=mini.plot_event_x(),
-            y=mini.plot_event_y(),
+        event_item = pg.PlotDataItem(
+            x=event.plot_event_x(),
+            y=event.plot_event_y(),
             symbol="o",
             symbolPen=None,
             symbolBrush="#C9CDD0",
             symbolSize=6,
         )
 
-        # Add clickable functionality to the mini plot item.
-        mini_item.sigPointsClicked.connect(self.miniPlotClicked)
+        # Add clickable functionality to the event plot item.
+        event_item.sigPointsClicked.connect(self.eventPlotClicked)
 
         # Plot item for the baseline, peak and estimated tau.
-        mini_plot_items = pg.PlotDataItem(
-            x=mini.mini_x_comp(),
-            y=mini.mini_y_comp(),
+        event_plot_items = pg.PlotDataItem(
+            x=event.event_x_comp(),
+            y=event.event_y_comp(),
             pen=None,
             symbol="o",
             symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m"), pg.mkBrush("b")],
             symbolSize=12,
         )
 
-        # Add the plot items to the mini view widget.
-        self.mini_view_plot.addItem(mini_item)
-        self.mini_view_plot.addItem(mini_plot_items)
+        # Add the plot items to the event view widget.
+        self.event_view_plot.addItem(event_item)
+        self.event_view_plot.addItem(event_plot_items)
 
         # Plot the fit taus if curve fit was selected.
-        if mini.fit_tau is not np.nan and self.curve_fit_decay.isChecked():
-            mini_decay_items = pg.PlotDataItem(
-                x=mini.fit_decay_x,
-                y=mini.fit_decay_y,
+        if event.fit_tau is not np.nan and self.curve_fit_decay.isChecked():
+            event_decay_items = pg.PlotDataItem(
+                x=event.fit_decay_x,
+                y=event.fit_decay_y,
                 pen=pg.mkPen((255, 0, 255, 175), width=3),
             )
-            self.mini_view_plot.addItem(mini_decay_items)
+            self.event_view_plot.addItem(event_decay_items)
 
-        # Sets the color of the minis on p1 and p2 so that the mini
-        # selected with the spinbox or the mini that was clicked is shown.
-        self.p2.listDataItems()[mini_index + 1].setPen("m", width=2)
-        self.p1.listDataItems()[mini_index + 1].setPen("m", width=2)
+        # Sets the color of the events on p1 and p2 so that the event
+        # selected with the spinbox or the event that was clicked is shown.
+        self.p2.listDataItems()[event_index + 1].setPen("m", width=2)
+        self.p1.listDataItems()[event_index + 1].setPen("m", width=2)
 
-        # Creating a reference to the clicked minis.
-        self.last_mini_clicked_2 = self.p2.listDataItems()[mini_index + 1]
-        self.last_mini_clicked_1 = self.p1.listDataItems()[mini_index + 1]
+        # Creating a reference to the clicked events.
+        self.last_event_clicked_2 = self.p2.listDataItems()[event_index + 1]
+        self.last_event_clicked_1 = self.p1.listDataItems()[event_index + 1]
 
-        # Set the attributes of the mini on the GUI.
-        self.mini_amplitude.setText(str(round_sig(mini.amplitude, sig=4)))
-        self.mini_tau.setText(str(round_sig(mini.final_tau_x, sig=4)))
-        self.mini_rise_time.setText(str(round_sig(mini.rise_time, sig=4)))
-        self.mini_rise_rate.setText(str(round_sig(mini.rise_rate, sig=4)))
-        self.mini_baseline.setText(str(round_sig(mini.event_start_y, sig=4)))
+        # Set the attributes of the event on the GUI.
+        self.event_amplitude.setText(str(round_sig(event.amplitude, sig=4)))
+        self.event_tau.setText(str(round_sig(event.final_tau_x, sig=4)))
+        self.event_rise_time.setText(str(round_sig(event.rise_time, sig=4)))
+        self.event_rise_rate.setText(str(round_sig(event.rise_rate, sig=4)))
+        self.event_baseline.setText(str(round_sig(event.event_start_y, sig=4)))
 
         logger.info("Event plotted.")
 
-    def miniPlotClicked(self, item, points):
+    def eventPlotClicked(self, item, points):
         """
-        Function to make the mini in the mini view widget
+        Function to make the event in the event view widget
         clickable.
 
         Returns
         -------
         None
         """
-        # Resets the color of the previously clicked mini point.
-        mini_index = self.sort_index[int(self.mini_number.text())]
+        # Resets the color of the previously clicked event point.
+        event_index = self.sort_index[int(self.event_number.text())]
 
-        logger.info(f"Point clicked on event {mini_index}.")
-        if self.last_mini_point_clicked:
-            self.last_mini_point_clicked.resetPen()
-            self.last_mini_point_clicked = None
+        logger.info(f"Point clicked on event {event_index}.")
+        if self.last_event_point_clicked:
+            self.last_event_point_clicked.resetPen()
+            self.last_event_point_clicked = None
 
-        # Set the color and size of the new mini point that
+        # Set the color and size of the new event point that
         # was clicked.
         points[0].setPen("m", width=4)
-        self.last_mini_point_clicked = points[0]
+        self.last_event_point_clicked = points[0]
 
-        logger.info(f"Point {self.last_mini_point_clicked.pos()[0]} clicked.")
+        logger.info(f"Point {self.last_event_point_clicked.pos()[0]} clicked.")
 
     def setPointAsPeak(self):
         """
-        This will set the mini peak as the point selected on the mini plot and
+        This will set the event peak as the point selected on the event plot and
         update the other two acquisition plots.
 
         Returns
@@ -1290,71 +1295,72 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acqs_exist():
-            logger.info("No event peak was set.")
+            logger.info("No event peak was set, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
 
-        if self.last_mini_point_clicked is None:
+        if self.last_event_point_clicked is None:
+            logger.info("No event peak was set, peak not set.")
             return None
 
         self.need_to_save = True
 
-        # Find the index of the mini so that the correct mini is
+        # Find the index of the event so that the correct event is
         # modified.
-        mini_index = self.sort_index[int(self.mini_number.text())]
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-        mini = acq.postsynaptic_events[mini_index]
+        event_index = self.sort_index[int(self.event_number.text())]
+        acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+        event = acq.postsynaptic_events[event_index]
 
         logger.info(
-            f"Setting point as peak on event {mini_index} on \
+            f"Setting point as peak on event {event_index} on \
                 acquisition {self.acquisition_number.value()}."
         )
 
-        # if len(self.last_mini_point_clicked) > 0:
-        # X and Y point of the mini point that was clicked. The
+        # if len(self.last_event_point_clicked) > 0:
+        # X and Y point of the event point that was clicked. The
         # x point needs to be adjusted back to samples for the
         # change amplitude function in the postsynaptic event
         # object.
-        x = self.last_mini_point_clicked.pos()[0]
-        y = self.last_mini_point_clicked.pos()[1]
+        x = self.last_event_point_clicked.pos()[0]
+        y = self.last_event_point_clicked.pos()[1]
 
         # Pass the x and y points to the change amplitude function
         # for the postsynaptic event.
-        mini.change_amplitude(x, y)
+        event.change_amplitude(x, y)
 
-        # Redraw the minis on p1 and p2 plots. Note that the last
-        # mini clicked provides a "pointed" to the correct plot
+        # Redraw the events on p1 and p2 plots. Note that the last
+        # event clicked provides a "pointed" to the correct plot
         # object on p1 and p2 so that it does not have to be
         # referenced again.
-        self.last_mini_clicked_1.setData(
-            x=mini.mini_x_comp()[:2],
-            y=mini.mini_y_comp()[:2],
+        self.last_event_clicked_1.setData(
+            x=event.event_x_comp()[:2],
+            y=event.event_y_comp()[:2],
             color="m",
             width=2,
         )
-        self.last_mini_clicked_2.setData(
-            x=mini.mini_x_comp()[:2],
-            y=mini.mini_y_comp()[:2],
+        self.last_event_clicked_2.setData(
+            x=event.event_x_comp()[:2],
+            y=event.event_y_comp()[:2],
             color="m",
             width=2,
         )
 
-        # This is need to redraw the mini in the mini view.
-        self.mini_spinbox(int(self.mini_number.text()))
+        # This is need to redraw the event in the event view.
+        self.event_spinbox(int(self.event_number.text()))
 
         # Reset the last point clicked.
-        self.last_mini_point_clicked = []
+        self.last_event_point_clicked = []
         # else:
         #     pass
 
         logger.info(
-            f"Peak set on event {mini_index} on \
+            f"Peak set on event {event_index} on \
                 acquisition {self.acquisition_number.value()}."
         )
 
     def setPointAsBaseline(self):
         """
-        This will set the baseline as the point selected on the mini plot and
+        This will set the baseline as the point selected on the event plot and
         update the other two acquisition plots.
 
         Returns
@@ -1363,71 +1369,72 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acqs_exist():
-            logger.info("No event baseline was set.")
+            logger.info("No event baseline was set, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
 
-        if self.last_mini_point_clicked is None:
+        if self.last_event_point_clicked is None:
+            logger.info("No event baseline was set, baseline not set.")
             return None
 
         self.need_to_save = True
 
-        if self.last_mini_point_clicked is not None:
-            # Find the index of the mini so that the correct mini is
+        if self.last_event_point_clicked is not None:
+            # Find the index of the event so that the correct event is
             # modified.
-            mini_index = self.sort_index[int(self.mini_number.text())]
+            event_index = self.sort_index[int(self.event_number.text())]
 
-            acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-            mini = acq.postsynaptic_events[mini_index]
+            acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+            event = acq.postsynaptic_events[event_index]
 
             logger.info(
-                f"Setting point as peak on event {mini_index} on \
+                f"Setting point as peak on event {event_index} on \
                     acquisition {self.acquisition_number.value()}."
             )
-            # X and Y point of the mini point that was clicked. The
+            # X and Y point of the event point that was clicked. The
             # x point needs to be adjusted back to samples for the
             # change amplitude function in the postsynaptic event
             # object.
-            x = self.last_mini_point_clicked.pos()[0]
-            y = self.last_mini_point_clicked.pos()[1]
+            x = self.last_event_point_clicked.pos()[0]
+            y = self.last_event_point_clicked.pos()[1]
 
             # Pass the x and y points to the change baseline function
             # for the postsynaptic event.
-            mini.change_baseline(x, y)
+            event.change_baseline(x, y)
 
-            # Redraw the minis on p1 and p2 plots. Note that the last
-            # mini clicked provides a "pointed" to the correct plot
+            # Redraw the events on p1 and p2 plots. Note that the last
+            # event clicked provides a "pointed" to the correct plot
             # object on p1 and p2 so that it does not have to be
             # referenced again.
-            self.last_mini_clicked_1.setData(
-                x=mini.mini_x_comp()[:2],
-                y=mini.mini_y_comp()[:2],
+            self.last_event_clicked_1.setData(
+                x=event.event_x_comp()[:2],
+                y=event.event_y_comp()[:2],
                 color="m",
                 width=2,
             )
-            self.last_mini_clicked_2.setData(
-                x=mini.mini_x_comp()[:2],
-                y=mini.mini_y_comp()[:2],
+            self.last_event_clicked_2.setData(
+                x=event.event_x_comp()[:2],
+                y=event.event_y_comp()[:2],
                 color="m",
                 width=2,
             )
 
-            # This is need to redraw the mini in the mini view.
-            self.mini_spinbox(int(self.mini_number.text()))
+            # This is need to redraw the event in the event view.
+            self.event_spinbox(int(self.event_number.text()))
 
             # Reset the last point clicked.
-            self.last_mini_point_clicked = None
+            self.last_event_point_clicked = None
         # else:
         #     pass
 
         logger.info(
-            f"Baseline set on event {mini_index} on \
+            f"Baseline set on event {event_index} on \
                 acquisition {self.acquisition_number.value()}."
         )
 
-    def deleteMini(self):
+    def deleteEvent(self):
         """
-        This function deletes a mini from the acquisition and removes it from the
+        This function deletes a event from the acquisition and removes it from the
         GUI.
 
         Returns
@@ -1435,66 +1442,77 @@ class MiniAnalysisWidget(DragDropWidget):
         None
         """
         if not self.exp_manager.acqs_exist():
-            logger.info("No event deleted.")
+            logger.info("No event deleted, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
         self.need_to_save = True
 
-        # self.last_mini_deleted = \
-        #     self.acq_object.postsynaptic_events[int(self.mini_number.text())]
-        self.last_mini_deleted_number = self.mini_number.text()
+        # Find the correct event.
+        event_index = self.sort_index[int(self.event_number.text())]
 
-        # Clear the mini view plot.
-        self.mini_view_plot.clear()
+        logger.info(
+            f"Deleting event {event_index} on acquisition \
+                  {self.acquisition_number.value()}."
+        )
 
-        # Find the correct mini.
-        mini_index = self.sort_index[int(self.mini_number.text())]
+        # self.last_event_deleted = \
+        #     self.acq_object.postsynaptic_events[int(self.event_number.text())]
+        self.last_event_deleted_number = self.event_number.text()
 
-        # Remove the mini from the plots. +1 is added because the first plot
+        # Clear the event view plot.
+        self.event_view_plot.clear()
+
+        # Remove the event from the plots. +1 is added because the first plot
         # item is the acquisition.
-        self.p1.removeItem(self.p1.listDataItems()[mini_index + 1])
-        self.p2.removeItem(self.p2.listDataItems()[mini_index + 1])
+        self.p1.removeItem(self.p1.listDataItems()[event_index + 1])
+        self.p2.removeItem(self.p2.listDataItems()[event_index + 1])
 
-        # Deleted the mini from the postsynaptic events and final events.
+        # Deleted the event from the postsynaptic events and final events.
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-        acq.del_postsynaptic_event(mini_index)
+        acq.del_postsynaptic_event(event_index)
 
-        # Recreate the sort_index and mini_spinboxlist
+        # Recreate the sort_index and event_spinboxlist
         self.sort_index = self.exp_manager.exp_dict["mini"][
             self.acquisition_number.value()
         ].sort_index()
-        self.mini_spinbox_list = self.exp_manager.exp_dict["mini"][
+        self.event_spinbox_list = self.exp_manager.exp_dict["mini"][
             self.acquisition_number.value()
         ].list_of_events()
 
-        # Rename the plotted mini's
+        # Rename the plotted event's
         for num, i, j in zip(
-            self.mini_spinbox_list,
+            self.event_spinbox_list,
             self.p1.listDataItems()[1:],
             self.p2.listDataItems()[1:],
         ):
             i.opts["name"] = num
             j.opts["name"] = num
 
-        # Clear the last_mini_clicked_1 to prevent erros
-        self.last_mini_clicked_1 = []
-        self.last_mini_clicked_2 = []
+        # Clear the last_event_clicked_1 to prevent erros
+        self.last_event_clicked_1 = []
+        self.last_event_clicked_2 = []
 
         # Reset the maximum spinbox value
-        self.mini_number.setMaximum(self.mini_spinbox_list[-1])
+        self.event_number.setMaximum(self.event_spinbox_list[-1])
 
-        # Plot the next mini in the list
-        self.mini_spinbox(int(self.mini_number.text()))
-        self.minis_deleted += 1
+        # Plot the next event in the list
+        self.event_spinbox(int(self.event_number.text()))
+        self.events_deleted += 1
 
-    def createMini(self):
+        logger.info(
+            f"Deleted event {event_index} on acquisition \
+                {self.acquisition_number.value()}."
+        )
+
+    def createEvent(self):
         """
-        This function is used to create new mini events. By clicking
-        on the main acquisition and clicking create new mini's button
+        This function is used to create new event events. By clicking
+        on the main acquisition and clicking create new event's button
         will run this function.
         """
 
         if not self.exp_manager.acqs_exist():
+            logger.info("No event created, acquisitions do not exist.")
             self.fileDoesNotExist()
             return None
 
@@ -1502,65 +1520,75 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Make sure that the last acq point that was clicked exists.
         if self.last_acq_point_clicked is not None:
+            logger.info(
+                f"Creating event on acquisition {self.acquisition_number.value()}."
+            )
             x = self.last_acq_point_clicked.pos()[0]
 
-            # The mini needs a baseline of at least 2 milliseconds long.
+            # The event needs a baseline of at least 2 milliseconds long.
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
 
             if x > 2:
-                # Create the new mini.
-                created = acq.create_new_mini(x)
+                # Create the new event.
+                created = acq.create_new_event(x)
 
                 if not created:
-                    self.miniNotCreated()
+                    self.eventNotCreated()
                     return None
 
-                # Reset the mini_spinbox_list and sort index.
+                # Reset the event_spinbox_list and sort index.
                 self.sort_index = acq.sort_index()
-                self.mini_spinbox_list = acq.list_of_events()
+                self.event_spinbox_list = acq.list_of_events()
 
-                # Return the correct position of the mini
-                id_value = self.mini_spinbox_list[-1]
-                mini = acq.postsynaptic_events[id_value]
+                # Return the correct position of the event
+                id_value = self.event_spinbox_list[-1]
+                event = acq.postsynaptic_events[id_value]
 
-                # Add the mini item to the plot and make it clickable for p1.
-                mini_plot = pg.PlotCurveItem(
-                    x=mini.mini_x_comp()[:2],
-                    y=mini.mini_y_comp()[:2],
+                # Add the event item to the plot and make it clickable for p1.
+                event_plot = pg.PlotCurveItem(
+                    x=event.event_x_comp()[:2],
+                    y=event.event_y_comp()[:2],
                     pen="g",
                     name=id_value,
                     clickable=True,
                 )
-                mini_plot.sigClicked.connect(self.miniClicked)
-                self.p1.addItem(mini_plot)
+                event_plot.sigClicked.connect(self.eventClicked)
+                self.p1.addItem(event_plot)
                 self.p2.plot(
-                    x=mini.mini_x_comp()[:2],
-                    y=mini.mini_y_comp()[:2],
+                    x=event.event_x_comp()[:2],
+                    y=event.event_y_comp()[:2],
                     pen="g",
                     name=id_value,
                 )
 
                 # Set the spinbox maximum and current value.
-                self.mini_number.setMaximum(self.mini_spinbox_list[-1])
-                self.mini_number.setValue(self.sort_index.index(id_value))
-                self.mini_spinbox(self.sort_index.index(id_value))
+                self.event_number.setMaximum(self.event_spinbox_list[-1])
+                self.event_number.setValue(self.sort_index.index(id_value))
+                self.event_spinbox(self.sort_index.index(id_value))
 
                 # Reset the clicked point so a new point is not accidentally created.
                 self.last_acq_point_clicked.resetPen()
                 self.last_acq_point_clicked = None
+
+                logger.info(
+                    f"Event created on acquisition {self.acquisition_number.value()}."
+                )
             else:
                 # Raise error if the point is too close to the beginning.
                 self.pointTooCloseToBeginning()
+                logger.info("No event created, selected point to close to beginning.")
                 return None
 
     def plotDeconvolution(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("No deconvolution plotted, acquisitions do not exist.")
             self.fileDoesNotExist()
             return None
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
         decon, baseline = acq.plot_deconvolved_acq()
         self.decon_plot.plotData(decon, baseline, np.arange(decon.size))
         self.decon_plot.show()
+        logger.info("Plotted deconvolution")
 
     def deleteAcq(self):
         """
@@ -1569,9 +1597,11 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
             return None
 
+        logger.info(f"Deleting aquisition {self.acquisition_number.value()}.")
         self.need_to_save = True
 
         self.recent_reject_acq = {}
@@ -1583,30 +1613,40 @@ class MiniAnalysisWidget(DragDropWidget):
         # Clear plots
         self.p1.clear()
         self.p2.clear()
-        self.mini_view_plot.clear()
+        self.event_view_plot.clear()
 
         # Reset the analysis list and change the acquisition to the next
         # acquisition.
         self.acquisition_number.setValue(self.acquisition_number.value() + 1)
+        logger.info(f"Aquisition {self.acquisition_number.value()} deleted.")
 
     def resetRejectedAcqs(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("Did not reset acquistions, no acquisitions exist.")
             self.fileDoesNotExist()
             return None
+        logger.info("Resetting deleted acquisitions.")
         self.exp_manager.reset_deleted_acqs("mini")
+        logger.info("Deleted acquisitions reset.")
 
     def resetRecentRejectedAcq(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.fileDoesNotExist()
             return None
+        logger.info("Resetting most recent deleted acquisition.")
         number = self.exp_manager.reset_recent_deleted_acq("mini")
         self.acquisition_number.setValue(number)
+        logger.info(f"Acquisition {number} reset.")
 
     def runFinalAnalysis(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("Did not run final analysis, no acquisitions exist.")
             self.fileDoesNotExist()
             return None
+        logger.info("Begining final analysis.")
         if self.exp_manager.final_analysis is not None:
+            logger.info("Clearing previous analysis.")
             self.final_tab_widget.clear()
             self.clearTables()
             self.table_dict = {}
@@ -1615,16 +1655,23 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(False)
         self.calc_param_clicked = True
         self.pbar.setFormat("Analyzing...")
+        self.info("Experiment manager started final analysis")
         self.exp_manager.run_final_analysis(acqs_deleted=self.exp_manager.acqs_deleted)
+        logger.info("Experiment manager finished final analysis.")
         fa = self.exp_manager.final_analysis
-        self.plotAveMini(
-            fa.average_mini_x(), fa.average_mini_y(), fa.fit_decay_x(), fa.fit_decay_y()
+        self.plotAveEvent(
+            fa.average_event_x(),
+            fa.average_event_y(),
+            fa.fit_decay_x(),
+            fa.fit_decay_y(),
         )
+        logger.info("Plotted average event")
         for key, df in fa.df_dict.items():
             data_table = pg.TableWidget(sortable=False)
             self.table_dict[key] = data_table
             data_table.setData(df.T.to_dict("dict"))
             self.final_tab_widget.addTab(data_table, key)
+        logger.info("Load final data.")
         plots = [
             "Amplitude (pA)",
             "Est tau (ms)",
@@ -1641,11 +1688,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(2)
+        logger.info("Plotted final data.")
+        logger.info("Finished analyzing.")
 
-    def plotAveMini(self, x, y, decay_x, decay_y):
-        self.ave_mini_plot.clear()
-        self.ave_mini_plot.plot(x=x, y=y)
-        self.ave_mini_plot.plot(x=decay_x, y=decay_y, pen="g")
+    def plotAveEvent(self, x, y, decay_x, decay_y):
+        self.ave_event_plot.clear()
+        self.ave_event_plot.plot(x=x, y=y)
+        self.ave_event_plot.plot(x=decay_x, y=decay_y, pen="g")
 
     def plotRawData(self, y: str):
         if self.exp_manager.final_analysis is not None and y != "":
@@ -1711,14 +1760,15 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         self.dlg.exec()
 
-    def miniNotCreated(self):
+    def eventNotCreated(self):
         self.dlg.setWindowTitle("Information")
         self.dlg.setText("Event could not be created")
         self.dlg.exec()
 
     def loadExperiment(self, directory):
+        logger.info(f"Loading experiment from {directory}.")
         self.reset()
-        self.ave_mini_plot.clear()
+        self.ave_event_plot.clear()
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
         self.worker = ThreadWorker(
@@ -1730,10 +1780,11 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def setLoadData(self):
         if self.exp_manager.final_analysis is not None:
+            logger.info("Setting previously analyzed data.")
             fa = self.exp_manager.final_analysis
-            self.plotAveMini(
-                fa.average_mini_x(),
-                fa.average_mini_y(),
+            self.plotAveEvent(
+                fa.average_event_x(),
+                fa.average_event_y(),
                 fa.fit_decay_x(),
                 fa.fit_decay_y(),
             )
@@ -1756,8 +1807,10 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.ui_prefs["Acq_number"])
+        logger.info("Experiment successfully loaded.")
 
     def saveAs(self, save_filename):
+        logger.info("Saving experiment.")
         self.reset_button.setEnabled(False)
         self.pbar.setFormat("Saving...")
         self.pbar.setValue(0)
@@ -1775,6 +1828,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_widget.model().addData(urls)
 
     def createPrefDict(self):
+        logger.info("Creating prefernces dictionary.")
         pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -1810,9 +1864,11 @@ class MiniAnalysisWidget(DragDropWidget):
             if i.objectName() != "":
                 slider_dict[i.objectName()] = i.value()
         pref_dict["sliders"] = slider_dict
+        logger.info("Preferences dictionary created.")
         return pref_dict
 
     def setPreferences(self, pref_dict):
+        logger.info("Setting MiniAnalysis preferences.")
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1864,12 +1920,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.p2.getAxis("left").setTextPen(pref_dict[3])
         self.p2.getAxis("bottom").setPen(pref_dict[3])
         self.p2.getAxis("bottom").setTextPen(pref_dict[3])
-        self.mini_view_plot.setBackground(pref_dict[4])
-        self.mini_view_plot.getAxis("left").setPen(pref_dict[5])
-        self.mini_view_plot.getAxis("left").setTextPen(pref_dict[5])
-        self.mini_view_plot.getAxis("bottom").setPen(pref_dict[5])
-        self.mini_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
-
-
-if __name__ == "__main__":
-    MiniAnalysisWidget()
+        self.event_view_plot.setBackground(pref_dict[4])
+        self.event_view_plot.getAxis("left").setPen(pref_dict[5])
+        self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
+        self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
+        self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])

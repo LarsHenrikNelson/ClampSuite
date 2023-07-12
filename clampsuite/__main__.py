@@ -22,14 +22,18 @@ def check_dir():
     return prog_dir
 
 
-def create_log_file(path):
+def create_loghandlers(path):
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
     fh = logging.FileHandler(path / "clampsuite_log.log", mode="w")
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
-    return fh
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.WARNING)
+    sh.setFormatter(formatter)
+    return fh, sh
 
 
 def main(logger):
@@ -60,11 +64,12 @@ def main(logger):
 
 if __name__ == "__main__":
     prog_dir = check_dir()
-    logger = logging.getLogger("clampsuite")
-    logger.setLevel(level=logging.DEBUG)
-    logger.propagate = False
-    fh = create_log_file(prog_dir)
-    logger.addHandler(fh)
 
+    logger = logging.getLogger("clampsuite")
+    logger.propagate = False
+    fh, sh = create_loghandlers(prog_dir)
+    logger.addHandler(sh)
+    logger.addHandler(fh)
     logger.info("Starting ClampSuite")
+
     main(logger)
