@@ -43,9 +43,9 @@ logger = logging.getLogger(__name__)
 class MiniAnalysisWidget(DragDropWidget):
     def __init__(self):
         super().__init__()
-        self.init_UI()
+        self.initUI()
 
-    def init_UI(self):
+    def initUI(self):
         self.plot_dict = {}
 
         logger.info("Creating Mini analysis GUI")
@@ -382,7 +382,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Tab 2 layouts
         self.d1 = Dock("Overview")
-        self.d2 = Dock("Event")
+        self.d2 = Dock("mini")
         self.d3 = Dock("Acq view")
         self.d1.hideTitleBar()
         self.d2.hideTitleBar()
@@ -564,14 +564,14 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_layout = QFormLayout()
         self.event_view_widget.setLayout(self.event_layout)
 
-        self.event_number_label = QLabel("Event")
+        self.event_number_label = QLabel("mini")
         self.event_number = QSpinBox()
         self.event_number.setMaximumWidth(70)
         self.event_number.setKeyboardTracking(False)
         self.event_layout.addRow(self.event_number_label, self.event_number)
         self.event_number.setEnabled(True)
         self.event_number.setMinimumWidth(70)
-        self.event_number.valueChanged.connect(self.event_spinbox)
+        self.event_number.valueChanged.connect(self.eventSpinbox)
 
         self.event_baseline_label = QLabel("Baseline (pA)")
         self.event_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
@@ -649,7 +649,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Tab 3 layouts and setup
         self.table_dock = Dock("Table")
         self.table_dock.hideTitleBar()
-        self.ave_event_dock = Dock("Event")
+        self.ave_event_dock = Dock("mini")
         self.ave_event_dock.hideTitleBar()
         self.data_dock = Dock("Data")
         self.data_dock.hideTitleBar()
@@ -767,20 +767,28 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def inspectAcqs(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions exist to inspect.")
             self.fileDoesNotExist()
         else:
+            logger.info("Opening acquisition inspection widget.")
             self.inspection_widget.clearData()
             self.inspection_widget.setData(self.analysis_type, self.exp_manager)
             self.inspection_widget.show()
 
     def delSelection(self):
-        # Deletes the selected acquisitions from the list
-        indices = self.load_widget.selectedIndexes()
-        if len(indices) > 0:
-            self.load_widget.deleteSelection(indices)
-            self.load_widget.clearSelection()
+        if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions exist to remove from analysis list.")
+            self.fileDoesNotExist()
+        else:
+            # Deletes the selected acquisitions from the list
+            indices = self.load_widget.selectedIndexes()
+            if len(indices) > 0:
+                self.load_widget.deleteSelection(indices)
+                self.load_widget.clearSelection()
+                logger.info("Removed acquisitions from analysis.")
 
     def createTemplate(self):
+        logger.info("Creating event template.")
         self.template_plot.clear()
         amplitude = self.amplitude_edit.toFloat()
         tau_1 = self.tau_1_edit.toFloat()
@@ -800,9 +808,9 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         s_r_c = sample_rate / 1000
         self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
+        logger.info("Event template created and plotted.")
 
     def analyze(self):
-        logger.info("Analysis started.")
         """
         This function creates each MiniAnalysis object and puts
         it into a dictionary. The events are create within the
@@ -810,18 +818,19 @@ class MiniAnalysisWidget(DragDropWidget):
         EventAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
+        if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions, analysis ended.")
+            self.fileDoesNotExist()
+            self.analyze_acq_button.setEnabled(True)
+            return None
+
+        logger.info("Analysis started.")
 
         self.p1.clear()
         self.p2.clear()
         self.p1.setAutoVisible(y=True)
         self.p2.enableAutoRange()
         self.event_view_plot.clear()
-
-        if not self.exp_manager.acqs_exist():
-            logger.info("No acquisitions, analysis ended.")
-            self.fileDoesNotExist()
-            self.analyze_acq_button.setEnabled(True)
-            return None
 
         self.need_to_save = True
 
@@ -903,7 +912,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # at zero. I choose this because it is easier to reference events
         # when adding or removing events and python list indexing starts at 0.
         self.event_number.setMinimum(0)
-        # self.event_spinbox(0)
+        # self.eventSpinbox(0)
 
         # Enabling the buttons since they were temporarily disabled while
         # The acquisitions were analyzed.
@@ -912,17 +921,19 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(1)
         self.pbar.setFormat("Analysis finished")
+        logger.info("First acquisition set.")
 
     def acqSpinbox(self, h):
         """This function plots each acquisition and each of its events."""
 
         if not self.exp_manager.analyzed:
-            logger.info("Data not analyzed, need to analyze data first.")
+            logger.info("No acquisitions analyzed, acquisition not set.")
             self.fileDoesNotExist()
             return None
 
         # Plots are cleared first otherwise new data is just appended to
         # the plot.
+        logger.info("Preparing UI for plotting.")
         self.need_to_save = True
         self.p1.clear()
         self.p2.clear()
@@ -938,19 +949,21 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_event_point_clicked = None
 
         # sort_index and event_spinbox_list are used to reference the correct
-        # event when using the event_spinbox. This was choosen because you cannot
+        # event when using the eventSpinbox. This was choosen because you cannot
         # sort GUI objects when they are presented on the screen.
         self.sort_index = []
         self.event_spinbox_list = []
 
         # Temporarily disable the acquisition number to prevent some weird behavior
         # where the the box will skip every other acquisition.
-        self.acquisition_number.setEnabled(False)
 
         # I choose to just show
-        acq_dict = self.exp_manager.exp_dict["event"]
+        acq_dict = self.exp_manager.exp_dict["mini"]
         if acq_dict.get(self.acquisition_number.value()):
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
+
+            self.acquisition_number.setEnabled(False)
+
             # Creates a reference to the acquisition object so that the
             # acquisition object does not have to be referenced from
             # acquisition dictionary. Makes it more readable.
@@ -995,6 +1008,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Enabled the acquisition number since it was disabled earlier.
             self.acquisition_number.setEnabled(True)
+            logger.info(f"Acquisition {self.acquisition_number.value()} plotted.")
 
             # Plot the postsynaptic events.
             if acq_object.postsynaptic_events:
@@ -1007,10 +1021,10 @@ class MiniAnalysisWidget(DragDropWidget):
                 # I had to create a way to correctly reference the position
                 # of events when adding new events because I ended up just
                 # adding the new events to postsynaptic events list.
-                self.sort_index = self.exp_manager.exp_dict["event"][
+                self.sort_index = self.exp_manager.exp_dict["mini"][
                     self.acquisition_number.value()
                 ].sort_index()
-                self.event_spinbox_list = self.exp_manager.exp_dict["event"][
+                self.event_spinbox_list = self.exp_manager.exp_dict["mini"][
                     self.acquisition_number.value()
                 ].list_of_events()
 
@@ -1046,12 +1060,15 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.event_number.setMinimum(0)
                 self.event_number.setMaximum(self.event_spinbox_list[-1])
                 self.event_number.setValue(0)
-                self.event_spinbox(0)
+                self.eventSpinbox(0)
+                logger.info(
+                    f"Acquisition {self.acquisition_number.value()} has no events to\
+                         plot."
+                )
+            else:
                 logger.info(
                     f"Acquisition {self.acquisition_number.value()}: Events plotted."
                 )
-            else:
-                self.acquisition_number.setEnabled(True)
         else:
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
@@ -1147,10 +1164,10 @@ class MiniAnalysisWidget(DragDropWidget):
         logger.info("Event clicked.")
         index = self.sort_index.index(int(item.name()))
         self.event_number.setValue(index)
-        self.event_spinbox(index)
+        self.eventSpinbox(index)
         logger.info(f"Event {index} set a current event.")
 
-    def event_spinbox(self, h):
+    def eventSpinbox(self, h):
         """
         Function to plot a event in the event plot.
         """
@@ -1188,7 +1205,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_view_plot.clear()
 
         # Reference the event.
-        acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
         event = acq.postsynaptic_events[event_index]
 
         # This allows the window on p1 to follow each event when using
@@ -1308,7 +1325,7 @@ class MiniAnalysisWidget(DragDropWidget):
         # Find the index of the event so that the correct event is
         # modified.
         event_index = self.sort_index[int(self.event_number.text())]
-        acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
         event = acq.postsynaptic_events[event_index]
 
         logger.info(
@@ -1346,7 +1363,7 @@ class MiniAnalysisWidget(DragDropWidget):
         )
 
         # This is need to redraw the event in the event view.
-        self.event_spinbox(int(self.event_number.text()))
+        self.eventSpinbox(int(self.event_number.text()))
 
         # Reset the last point clicked.
         self.last_event_point_clicked = []
@@ -1384,7 +1401,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # modified.
             event_index = self.sort_index[int(self.event_number.text())]
 
-            acq = self.exp_manager.exp_dict["event"][self.acquisition_number.value()]
+            acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
             event = acq.postsynaptic_events[event_index]
 
             logger.info(
@@ -1420,7 +1437,7 @@ class MiniAnalysisWidget(DragDropWidget):
             )
 
             # This is need to redraw the event in the event view.
-            self.event_spinbox(int(self.event_number.text()))
+            self.eventSpinbox(int(self.event_number.text()))
 
             # Reset the last point clicked.
             self.last_event_point_clicked = None
@@ -1441,8 +1458,13 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
-        if not self.exp_manager.acqs_exist():
-            logger.info("No event deleted, acquisition do not exist.")
+        if not self.exp_manager.acqs_exist() or not self.acq_manager["mini"].get(
+            self.acquisition_number.value()
+        ):
+            logger.info(
+                f"No event deleted, acquisition {self.acquisition_number.value()} \
+                does not exist."
+            )
             self.fileDoesNotExist()
             return None
         self.need_to_save = True
@@ -1471,7 +1493,7 @@ class MiniAnalysisWidget(DragDropWidget):
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
         acq.del_postsynaptic_event(event_index)
 
-        # Recreate the sort_index and event_spinboxlist
+        # Recreate the sort_index and event_spinbox_list
         self.sort_index = self.exp_manager.exp_dict["mini"][
             self.acquisition_number.value()
         ].sort_index()
@@ -1496,7 +1518,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_number.setMaximum(self.event_spinbox_list[-1])
 
         # Plot the next event in the list
-        self.event_spinbox(int(self.event_number.text()))
+        self.eventSpinbox(int(self.event_number.text()))
         self.events_deleted += 1
 
         logger.info(
@@ -1564,7 +1586,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 # Set the spinbox maximum and current value.
                 self.event_number.setMaximum(self.event_spinbox_list[-1])
                 self.event_number.setValue(self.sort_index.index(id_value))
-                self.event_spinbox(self.sort_index.index(id_value))
+                self.eventSpinbox(self.sort_index.index(id_value))
 
                 # Reset the clicked point so a new point is not accidentally created.
                 self.last_acq_point_clicked.resetPen()
@@ -1624,38 +1646,47 @@ class MiniAnalysisWidget(DragDropWidget):
         if not self.exp_manager.acqs_exist():
             logger.info("Did not reset acquistions, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-        logger.info("Resetting deleted acquisitions.")
-        self.exp_manager.reset_deleted_acqs("mini")
-        logger.info("Deleted acquisitions reset.")
+        else:
+            self.need_to_save = True
+            logger.info("Resetting deleted acquisitions.")
+            self.exp_manager.reset_deleted_acqs("mini")
+            logger.info("Deleted acquisitions reset.")
+            self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectedAcq(self):
         if not self.exp_manager.acqs_exist():
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-        logger.info("Resetting most recent deleted acquisition.")
-        number = self.exp_manager.reset_recent_deleted_acq("mini")
-        self.acquisition_number.setValue(number)
-        logger.info(f"Acquisition {number} reset.")
+        else:
+            self.need_to_save = True
+            logger.info("Resetting most recent deleted acquisition.")
+            number = self.exp_manager.reset_recent_deleted_acq("mini")
+            if number != 0:
+                self.acquisition_number.setValue(number)
+                logger.info(f"Acquisition {number} reset.")
+                self.pbar.setFormat(f"Reset acquisition {number}.")
+            else:
+                logger.info("No acquisition to reset.")
+                self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist():
-            logger.info("Did not run final analysis, no acquisitions exist.")
+        if self.exp_manager.analyzed:
+            logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None
-        logger.info("Begining final analysis.")
+        logger.info("Beginning final analysis.")
+        self.calculate_parameters.setEnabled(False)
+        self.calculate_parameters_2.setEnabled(False)
+        self.calc_param_clicked = True
         if self.exp_manager.final_analysis is not None:
             logger.info("Clearing previous analysis.")
             self.final_tab_widget.clear()
             self.clearTables()
             self.table_dict = {}
         self.need_to_save = True
-        self.calculate_parameters.setEnabled(False)
-        self.calculate_parameters_2.setEnabled(False)
-        self.calc_param_clicked = True
+
         self.pbar.setFormat("Analyzing...")
-        self.info("Experiment manager started final analysis")
+        logger.info("Experiment manager started final analysis")
         self.exp_manager.run_final_analysis(acqs_deleted=self.exp_manager.acqs_deleted)
         logger.info("Experiment manager finished final analysis.")
         fa = self.exp_manager.final_analysis
@@ -1671,7 +1702,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.table_dict[key] = data_table
             data_table.setData(df.T.to_dict("dict"))
             self.final_tab_widget.addTab(data_table, key)
-        logger.info("Load final data.")
+        logger.info("Set final data into tables.")
         plots = [
             "Amplitude (pA)",
             "Est tau (ms)",
@@ -1690,6 +1721,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab_widget.setCurrentIndex(2)
         logger.info("Plotted final data.")
         logger.info("Finished analyzing.")
+        self.pbar.setFormat("Final analysis finished")
 
     def plotAveEvent(self, x, y, decay_x, decay_y):
         self.ave_event_plot.clear()
@@ -1768,7 +1800,6 @@ class MiniAnalysisWidget(DragDropWidget):
     def loadExperiment(self, directory):
         logger.info(f"Loading experiment from {directory}.")
         self.reset()
-        self.ave_event_plot.clear()
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
         self.worker = ThreadWorker(
@@ -1781,6 +1812,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def setLoadData(self):
         if self.exp_manager.final_analysis is not None:
             logger.info("Setting previously analyzed data.")
+            self.pbar.setFormat("Setting previously analyzed data.")
             fa = self.exp_manager.final_analysis
             self.plotAveEvent(
                 fa.average_event_x(),
@@ -1808,27 +1840,40 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.ui_prefs["Acq_number"])
         logger.info("Experiment successfully loaded.")
+        self.pbar("Experiment successfully loaded")
 
     def saveAs(self, save_filename):
-        logger.info("Saving experiment.")
-        self.reset_button.setEnabled(False)
-        self.pbar.setFormat("Saving...")
-        self.pbar.setValue(0)
-        pref_dict = self.createPrefDict()
-        pref_dict["Final Analysis"] = self.calc_param_clicked
-        pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.exp_manager.set_ui_prefs(pref_dict)
-        self.worker = ThreadWorker(self.exp_manager, "save", file_path=save_filename)
-        self.worker.signals.progress.connect(self.updateProgress)
-        QThreadPool.globalInstance().start(self.worker)
-        self.reset_button.setEnabled(True)
-        self.need_to_save = False
+        if not self.exp_manager.acqs_exist():
+            self.fileDoesNotExist()
+        else:
+            logger.info("Saving experiment.")
+            self.reset_button.setEnabled(False)
+            self.pbar.setFormat("Saving...")
+            self.pbar.setValue(0)
+            pref_dict = self.createPrefDict()
+            pref_dict["Final Analysis"] = self.calc_param_clicked
+            pref_dict["Acq_number"] = self.acquisition_number.value()
+            self.exp_manager.set_ui_prefs(pref_dict)
+            self.worker = ThreadWorker(
+                self.exp_manager, "save", file_path=save_filename
+            )
+            self.worker.signals.progress.connect(self.updateProgress)
+            self.worker.signals.finished.connect(self.finishedSaving)
+            QThreadPool.globalInstance().start(self.worker)
+            self.reset_button.setEnabled(True)
+            self.need_to_save = False
+
+    def finishedSaving(self):
+        self.pbar.setFormat("Finished saving")
+        self.logger.info("Finished saving.")
 
     def createExperiment(self, urls):
+        self.pbar("Creating experiment")
         self.load_widget.model().addData(urls)
+        self.pbar("Experiment created")
 
     def createPrefDict(self):
-        logger.info("Creating prefernces dictionary.")
+        logger.info("Creating preferences dictionary.")
         pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -1893,6 +1938,8 @@ class MiniAnalysisWidget(DragDropWidget):
         for i in sliders:
             if i.objectName() != "":
                 i.setValue(pref_dict["sliders"][i.objectName()])
+        logger.info("Preferences set.")
+        self.pbar.setFormat("Preferences set")
 
     def loadPreferences(self, file_name):
         pref_dict = self.exp_manager.load_ui_prefs(file_name)

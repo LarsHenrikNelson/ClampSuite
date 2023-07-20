@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import QThreadPool
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QFont
 from PyQt5.QtWidgets import (
     QAction,
     QComboBox,
@@ -39,9 +39,12 @@ class currentClampWidget(DragDropWidget):
 
     def __init__(self):
         super().__init__()
+        self.initUI()
 
         # pg.setConfigOptions(antialias=True)
 
+    def initUI(self):
+        logger.info("Creating current clamp UI.")
         self.acq_dict = {}
         self.hertz_y = []
         self.deleted_acqs = {}
@@ -303,12 +306,18 @@ class currentClampWidget(DragDropWidget):
         self.acq_view.setData(self.exp_manager)
         self.pbar.setFormat("Ready to analyze")
         self.setWidth()
+        logger.info("Current clamp UI created.")
 
     def editAttr(self, line_edit, value):
+        logger.info(f"Editing aquisition attribute {self.acquisition_number.value()}.")
         acq = self.exp_manager.exp_dict["current_clamp"][
             self.acquisition_number.value()
         ]
         setattr(acq, line_edit, value)
+        logger.info(
+            f"Set {value} for {line_edit} on aquisition\
+                  {self.acquisition_number.value()}."
+        )
         return True
 
     def setWidth(self):
@@ -323,31 +332,36 @@ class currentClampWidget(DragDropWidget):
 
     def inspectAcqs(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions exist to inspect.")
             self.fileDoesNotExist()
-            return None
-        self.inspection_widget.clearData()
-        self.inspection_widget.setData(self.analysis_type, self.exp_manager)
-        self.inspection_widget.show()
+        else:
+            logger.info("Opening acquisition inspection widget.")
+            self.inspection_widget.clearData()
+            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
+            self.inspection_widget.show()
 
     def deleteSelection(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions exist to remove from analysis list.")
             self.fileDoesNotExist()
-            return None
+        else:
+            # Deletes the selected acquisitions from the list
+            indices = self.acq_view.selectedIndexes()
 
-        # Deletes the selected acquisitions from the list
-        indices = self.acq_view.selectedIndexes()
-
-        if len(indices) > 0:
-            self.acq_view.deleteSelection(indices)
-            self.acq_view.clearSelection()
+            if len(indices) > 0:
+                self.acq_view.deleteSelection(indices)
+                self.acq_view.clearSelection()
+            logger.info("Removed acquisitions from analysis.")
 
     def analyze(self):
-        self.need_to_save = True
-        self.analyze_acq_button.setEnabled(False)
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
         else:
+            logger.info("Analysis started.")
+            self.need_to_save = True
+            self.analyze_acq_button.setEnabled(False)
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
             self.worker = ThreadWorker(
@@ -371,17 +385,22 @@ class currentClampWidget(DragDropWidget):
             )
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.setAcquisition)
+            logger.info("Starting analysis thread.")
             QThreadPool.globalInstance().start(self.worker)
 
     def setAcquisition(self):
+        logger.info("Analysis finished.")
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
         self.spinbox(self.exp_manager.start_acq)
         self.analyze_acq_button.setEnabled(True)
+        self.main_widget.setCurrentIndex(1)
         self.pbar.setFormat("Analysis finished")
+        logger.info("Firsts acquisition set.")
 
     def reset(self):
+        logger.info("Resetting UI.")
         self.need_to_save = False
         self.acq_dict = {}
         self.acq_view.clearData()
@@ -404,6 +423,7 @@ class currentClampWidget(DragDropWidget):
         self.acq_view.setData(self.exp_manager)
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
+        logger.info("UI Reset. Ready to analyze.")
 
     def clearPlots(self):
         for i in self.plot_dict.values():
@@ -419,15 +439,19 @@ class currentClampWidget(DragDropWidget):
 
     def spinbox(self, h):
         if not self.exp_manager.analyzed:
+            logger.info("No acquisitions analyzed, acquisition not set.")
             self.fileDoesNotExist()
             return None
 
+        logger.info("Preparing UI for plotting.")
+        self.acquisition_number.setEnabled(False)
         self.need_to_save = True
         self.plot_widget.clear()
         self.spike_plot.clear()
         if self.exp_manager.exp_dict["current_clamp"].get(
             self.acquisition_number.value()
         ):
+            logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
             acq_object = self.exp_manager.exp_dict["current_clamp"][
                 self.acquisition_number.value()
             ]
@@ -525,66 +549,86 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="m",
                     )
         else:
-            pass
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
+            text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
+            text.setFont(QFont("Helvetica", 20))
+            self.plot_widget.setRange(xRange=(-30, 30), yRange=(-30, 30))
+            self.plot_widget.addItem(text)
+        self.acquisition_number.setEnabled(True)
 
     def deleteAcq(self):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist() or not self.acq_manager[
+            "current_clamp"
+        ].get(self.acquisition_number.value()):
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.fileDoesNotExist()
             return None
 
+        logger.info(f"Deleting acquisition {self.acquisition_number.value()}.")
         self.need_to_save = False
-        self.recent_reject_acq = {}
-        self.deleted_acqs[self.acquisition_number.value()] = self.acq_dict[
-            self.acquisition_number.value()
-        ]
-        self.recent_reject_acq[self.acquisition_number.value()] = self.acq_dict[
-            self.acquisition_number.value()
-        ]
-        del self.acq_dict[self.acquisition_number.value()]
+        self.exp_manager.delete_acq("mini", self.acquisition_number.value())
+
+        # Clear plots
         self.plot_widget.clear()
+        logger.info(f"Deleted acquisition {self.acquisition_number.value()}.")
 
     def resetRejectedAcqs(self):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist():
+            logger.info("Did not reset acquistions, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-
-        self.need_to_save = False
-        self.acq_dict.update(self.deleted_acqs)
-        self.deleted_acqs = {}
-        self.recent_reject_acq = {}
+        else:
+            self.need_to_save = True
+            logger.info("Resetting deleted acquisitions.")
+            self.exp_manager.reset_deleted_acqs("mini")
+            logger.info("Deleted acquisitions reset.")
+            self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectAcq(self):
-        if not self.acq_dict:
+        if not self.exp_manager.acqs_exist():
+            logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-
-        self.need_to_save = False
-        self.acq_dict.update(self.recent_reject_acq)
+        else:
+            self.need_to_save = True
+            logger.info("Resetting most recent deleted acquisition.")
+            number = self.exp_manager.reset_recent_deleted_acq("mini")
+            if number != 0:
+                self.acquisition_number.setValue(number)
+                logger.info(f"Acquisition {number} reset.")
+                self.pbar.setFormat(f"Reset acquisition {number}.")
+            else:
+                logger.info("No acquisition to reset.")
+                self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist():
+        if self.exp_manager.analyzed:
+            logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None
 
+        logger.info("Beginning final analysis.")
         self.need_to_save = True
+        self.calc_param_clicked = True
         self.calculate_parameters.setEnabled(False)
-        if self.final_obj is not None:
+        if self.exp_manager.final_analysis is not None:
             self.final_obj = None
             self.tabs.clear()
             self.clearPlots()
             self.clearTables()
             self.plot_dict = {}
             self.table_dict = {}
-        self.calc_param_clicked = True
+        self.pbar.setFormat("Analyzing...")
+        logger.info("Experiment manager started final analysis")
         self.exp_manager.run_final_analysis(
             iv_start=self.iv_start_edit.toInt(), iv_end=self.iv_end_edit.toInt()
         )
+        logger.info("Experiment manager finished final analysis.")
         fi_an = self.exp_manager.final_analysis
         for key, value in fi_an.df_dict.items():
             table = pg.TableWidget(sortable=False)
             table.setData(value.T.to_dict())
             self.table_dict["key"] = table
             self.tabs.addTab(table, key)
+        logger.info("Set final data into tables.")
         self.plotIVCurve()
         if fi_an.hertz:
             self.plotSpikeFrequency(fi_an.df_dict["Hertz"])
@@ -593,6 +637,10 @@ class currentClampWidget(DragDropWidget):
         if fi_an.ramp_ap:
             self.plotRampAP(fi_an.df_dict["Ramp APs"])
         self.calculate_parameters.setEnabled(True)
+        self.main_widget.setCurrentIndex(2)
+        logger.info("Plotted final data.")
+        logger.info("Finished analyzing.")
+        self.pbar.setFormat("Final analysis finished")
 
     def plotIVCurve(self):
         iv_curve_plot = pg.PlotWidget(useOpenGL=True)
@@ -676,9 +724,12 @@ class currentClampWidget(DragDropWidget):
             ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def createExperiment(self, urls):
+        self.pbar("Creating experiment")
         self.load_widget.model().addData(urls)
+        self.pbar("Experiment created")
 
     def loadExperiment(self, directory: Union[str, PurePath]):
+        logger.info(f"Loading experiment from {directory}.")
         self.reset()
         self.pbar.setFormat("Loading...")
         self.analyze_acq_button.setEnabled(False)
@@ -694,6 +745,8 @@ class currentClampWidget(DragDropWidget):
     def setLoadData(self):
         self.acq_view.setData(self.exp_manager)
         if self.exp_manager.final_analysis is not None:
+            logger.info("Setting previously analyzed data.")
+            self.pbar.setFormat("Setting previously analyzed data.")
             fa = self.exp_manager.final_analysis
             for key, value in fa.df_dict.items():
                 table = pg.TableWidget(sortable=False)
@@ -714,14 +767,20 @@ class currentClampWidget(DragDropWidget):
             self.spinbox(self.exp_manager.start_acq)
             self.calculate_parameters.setEnabled(True)
             self.analyze_acq_button.setEnabled(True)
+        logger.info("Experiment successfully loaded.")
+        self.pbar("Experiment successfully loaded")
 
     def setPreferences(self, pref_dict: dict):
+        logger.info("Setting CurrentClamp preferences.")
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
                 i.setText(pref_dict["line_edits"][i.objectName()])
+        logger.info("Preferences set.")
+        self.pbar.setFormat("Preferences set")
 
     def createPrefDict(self):
+        logger.info("Creating preferences dictionary.")
         pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -729,6 +788,7 @@ class currentClampWidget(DragDropWidget):
             if i.objectName() != "":
                 line_edit_dict[i.objectName()] = i.text()
         pref_dict["line_edits"] = line_edit_dict
+        logger.info("Preferences dictionary created.")
         return pref_dict
 
     def fileDoesNotExist(self):
@@ -739,21 +799,25 @@ class currentClampWidget(DragDropWidget):
     def saveAs(self, file_path: Union[str, PurePath]):
         if not self.exp_manager.acqs_exist():
             self.fileDoesNotExist()
-            return None
+        else:
+            logger.info("Saving experiment.")
+            self.reset_button.setEnabled(False)
+            self.pbar.setValue(0)
+            self.pbar.setFormat("Saving...")
+            pref_dict = self.createPrefDict()
+            pref_dict["Final Analysis"] = self.calc_param_clicked
+            pref_dict["Acq_number"] = self.acquisition_number.value()
+            self.exp_manager.set_ui_prefs(pref_dict)
+            self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
+            self.worker.signals.progress.connect(self.updateProgress)
+            self.worker.signals.finished.connect(self.finishedSaving)
+            QThreadPool.globalInstance().start(self.worker)
+            self.reset_button.setEnabled(True)
+            self.need_to_save = False
 
-        self.reset_button.setEnabled(False)
-        self.pbar.setValue(0)
-        self.pbar.setFormat("Saving...")
-        pref_dict = self.createPrefDict()
-        pref_dict["Final Analysis"] = self.calc_param_clicked
-        pref_dict["Acq_number"] = self.acquisition_number.value()
-        self.exp_manager.set_ui_prefs(pref_dict)
-        self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
-        self.worker.signals.progress.connect(self.updateProgress)
-        self.worker.signals.progress.connect(self.updateProgress)
-        QThreadPool.globalInstance().start(self.worker)
-        self.reset_button.setEnabled(True)
-        self.need_to_save = False
+    def finishedSaving(self):
+        self.pbar.setFormat("Finished saving")
+        self.logger.info("Finished saving.")
 
     def loadPreferences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True

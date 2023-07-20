@@ -300,6 +300,9 @@ class ExpManager:
             self.exp_dict[exp].update(del_dict)
             self.deleted_acqs = {}
             self.acqs_deleted = 0
+            return 1
+        else:
+            return 0
 
     def reset_recent_deleted_acq(self, exp: str):
         if self.deleted_acqs[exp]:
@@ -307,6 +310,9 @@ class ExpManager:
             item.accept()
             self.exp_dict[exp][item[0]] = item[1]
             self.acqs_deleted -= 1
+            return item[0]
+        else:
+            return 0
 
     def acqs_exist(self) -> bool:
         if self.exp_dict:
