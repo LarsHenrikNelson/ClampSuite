@@ -13,7 +13,7 @@ exp_manager = ExpManager()
 # Create a list of acquisitions to open or just a single file.
 # The experiment manager can deal with missing files such if you specify 1-10 and 8
 # is missing.
-file_paths = [f"<insert path and with file prefix>{i}.mat" for i in range(1, 11)]
+file_paths = [f"my/path/to_file/AD_{i}.mat" for i in range(1, 11)]
 exp_manager.create_exp(analysis="mini", file=file_paths)
 
 # %%
@@ -26,17 +26,17 @@ exp_manager.run_final_analysis()
 
 # %%
 # Save individual parts of the data.zs
-exp_manager.save_acqs("<insert path to folder>")
-exp_manager.save_final_analysis("<insert path to folder>")
-exp_manager.save_ui_prefs("<insert path to folder>")
+exp_manager.save_acqs("my/path/to_folder")
+exp_manager.save_final_analysis("my/path/to_folder")
+exp_manager.save_ui_prefs("my/path/to_folder")
 
 # %%
 # Save all data at once
-exp_manager.save_data("<insert path to folder>")
+exp_manager.save_data("my/path/to_folder")
 
 # %%
-# Load existing data, note that a yaml file needs to be include.
-file_path = "<insert path to folder>"
+# Load existing "mini" data, note that a yaml file needs to be include.
+file_path = "my/path/to_folder"
 exp_manager.load_final_analysis("mini", file_path)
 
 
@@ -44,7 +44,7 @@ exp_manager.load_final_analysis("mini", file_path)
 # Load a single acquisition
 acq = ExpManager.load_acq(
     analysis="mini",
-    path=r"<insert path to file>",
+    path=r"my/path/to_folder/AD_0.mat",
 )
 
 # %%
