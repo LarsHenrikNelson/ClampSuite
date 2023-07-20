@@ -35,7 +35,10 @@ exp_manager.save_ui_prefs("my/path/to_folder")
 exp_manager.save_data("my/path/to_folder")
 
 # %%
-# Load existing "mini" data, note that a yaml file needs to be include.
+# Load existing "mini" data from ClampSuite
+# Note that a yaml file needs to be include.
+# If you just want to load acquisitions then use load_acq
+#  or load_acqs
 file_path = "my/path/to_folder"
 exp_manager.load_final_analysis("mini", file_path)
 
@@ -45,6 +48,14 @@ exp_manager.load_final_analysis("mini", file_path)
 acq = ExpManager.load_acq(
     analysis="mini",
     path=r"my/path/to_folder/AD_0.mat",
+)
+
+# %%
+# Load a multiple acquisition, returns a dictionary
+file_paths = [f"my/path/to_file/AD_{i}.json" for i in range(1, 11)]
+acq = ExpManager.load_acqs(
+    analysis="mini",
+    file_path=file_paths,
 )
 
 # %%
