@@ -6,7 +6,7 @@ from pathlib import Path, PurePath
 import pyqtgraph as pg
 import qdarkstyle
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QApplication, QSplashScreen
 from qdarkstyle.dark.palette import DarkPalette
 
@@ -55,7 +55,9 @@ def main(logger):
 
     dark_stylesheet = qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=DarkPalette)
     app.setStyleSheet(dark_stylesheet)
+    app.setWindowIcon(QIcon(pic))
     window = MainWindow()
+    window.setWindowTitle("ClampSuite")
     window.show()
     splash.finish(window)
     app.aboutToQuit.connect(lambda: logger.info("Closing ClampSuite"))
