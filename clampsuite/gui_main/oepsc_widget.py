@@ -4,7 +4,7 @@ from collections import namedtuple
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtGui import QDoubleValidator, QIntValidator, QFont
 from PyQt5.QtWidgets import (
     QAction,
     QCheckBox,
@@ -834,13 +834,16 @@ class oEPSCWidget(DragDropWidget):
         self.oepsc_plot.clear()
         self.lfp_plot.clear()
         if not self.exp_manager.acqs_exist():
+            logger.info("No acquisitions analyzed, acquisition not set.")
             self.fileDoesNotExist()
             return None
+        logger.info("Preparing UI for plotting.")
         self.need_to_save = True
         self.acquisition_number.setDisabled(True)
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
         if self.exp_manager.exp_dict["oepsc"].get(self.acquisition_number.value()):
+            logger.info(f"Plotting oEPSC {self.acquisition_number.value()}.")
             oepsc_object = self.exp_manager.exp_dict["oepsc"][
                 self.acquisition_number.value()
             ]
@@ -884,9 +887,15 @@ class oEPSCWidget(DragDropWidget):
                 self.oepsc_edecay_edit.setText(
                     str(round_sig((oepsc_object.est_decay())))
                 )
+            logger.info(f"oEPSC acquisition {self.acquisition_number.value()} plotted.")
         else:
-            pass
+            logger.info(f"No oEPSC acquisition {self.acquisition_number.value()}.")
+            text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
+            text.setFont(QFont("Helvetica", 20))
+            self.oepsc_plot.setRange(xRange=(-30, 30), yRange=(-30, 30))
+            self.oepsc_plot.addItem(text)
         if self.exp_manager.exp_dict["lfp"].get(self.acquisition_number.value()):
+            logger.info(f"Plotting LFP {self.acquisition_number.value()}.")
             lfp_object = self.exp_manager.exp_dict["lfp"][
                 self.acquisition_number.value()
             ]
@@ -928,17 +937,21 @@ class oEPSCWidget(DragDropWidget):
             )
             self.lfp_plot.enableAutoRange(axis="y")
             self.lfp_plot.setAutoVisible(y=True)
+            logger.info(f"LFP acquisition {self.acquisition_number.value()} plotted.")
         else:
-            pass
+            logger.info(f"No LFP acquisition {self.acquisition_number.value()}.")
+            text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
+            text.setFont(QFont("Helvetica", 20))
+            self.lfp_plot.setRange(xRange=(-30, 30), yRange=(-30, 30))
+            self.lfp_plot.addItem(text)
         if oepsc_object is not None:
             self.epoch_number.setText(oepsc_object.epoch)
         elif lfp_object is not None:
             self.epoch_number.setText(lfp_object.epoch)
-        else:
-            pass
         self.acquisition_number.setEnabled(True)
 
     def reset(self):
+        logger.info("Reseting UI.")
         self.oepsc_plot.clear()
         self.lfp_plot.clear()
         self.tab3.clear()
@@ -951,6 +964,7 @@ class oEPSCWidget(DragDropWidget):
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
+        logger.info("UI reset.")
 
     def clearTables(self):
         for i in self.table_dict.values():
@@ -960,24 +974,36 @@ class oEPSCWidget(DragDropWidget):
         self.table_dict = {}
 
     def oEPSCPlotClicked(self, item, points):
+        logger.info(
+            f"oEPSC acquisition {self.acquisition_number.value()} point clicked."
+        )
         if len(self.last_oepsc_point_clicked) > 0:
-            self.last_oepsc_point_clicked[0].resetPen()
-            self.last_oepsc_point_clicked[0].resetBrush()
-            self.last_oepsc_point_clicked[0].setSize(size=3)
+            self.last_oepsc_point_clicked.resetPen()
+            self.last_oepsc_point_clicked.resetBrush()
+            self.last_oepsc_point_clicked.setSize(size=3)
         points[0].setPen("g", width=2)
         points[0].setBrush("w")
         points[0].setSize(size=8)
-        self.last_oepsc_point_clicked = points
+        self.last_oepsc_point_clicked = points[0]
+        logger.info(
+            f"Point {self.last_acq_point_clicked.pos()[0]} set as oEPSC point clicked."
+        )
 
     def LFPPlotClicked(self, item, points):
+        logger.info(
+            f"oEPSC acquisition {self.acquisition_number.value()} point clicked."
+        )
         if len(self.last_lfp_point_clicked) > 0:
-            self.last_lfp_point_clicked[0].resetPen()
-            self.last_lfp_point_clicked[0].resetBrush()
-            self.last_lfp_point_clicked[0].setSize(size=3)
+            self.last_lfp_point_clicked.resetPen()
+            self.last_lfp_point_clicked.resetBrush()
+            self.last_lfp_point_clicked.setSize(size=3)
         points[0].setPen("g", width=2)
         points[0].setBrush("w")
         points[0].setSize(size=8)
-        self.last_lfp_point_clicked = points
+        self.last_lfp_point_clicked = points[0]
+        logger.info(
+            f"Point {self.last_acq_point_clicked.pos()[0]} set as LFP point clicked."
+        )
 
     def setPointAsFV(self):
         """
@@ -990,13 +1016,20 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.exp_dict.get("lfp"):
+            logger.info("Fiber volley was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
 
+        if self.last_lfp_point_clicked is None:
+            logger.info("No LFP point was set, fiber volley not set.")
+            return None
+
+        logger.info(f"Setting fiber volley on LFP {self.acquisition_number.value()}.")
+
         self.need_to_save = True
 
-        x = self.last_lfp_point_clicked[0].pos()[0]
-        y = self.last_lfp_point_clicked[0].pos()[1]
+        x = self.last_lfp_point_clicked.pos()[0]
+        y = self.last_lfp_point_clicked.pos()[1]
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
 
@@ -1019,9 +1052,11 @@ class oEPSCWidget(DragDropWidget):
             )
 
         self.lfp_fv_edit.setText(str(round_sig(acq.fv_y)))
-        self.last_lfp_point_clicked[0].resetPen()
-        self.last_lfp_point_clicked[0].resetBrush()
+        self.last_lfp_point_clicked.resetPen()
+        self.last_lfp_point_clicked.resetBrush()
         self.last_lfp_point_clicked = []
+
+        logger.info(f"Fiber volley set on LFP {self.acquisition_number.value()}.")
 
     def setPointAsSlopeStart(self):
         """
@@ -1034,13 +1069,20 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.exp_dict.get("lfp"):
+            logger.info("Slope start was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
 
+        if self.last_lfp_point_clicked is None:
+            logger.info("No LFP point was set, slope start not set.")
+            return None
+
+        logger.info(f"Setting slope start on LFP {self.acquisition_number.value()}.")
+
         self.need_to_save = True
 
-        x = self.last_lfp_point_clicked[0].pos()[0]
-        y = self.last_lfp_point_clicked[0].pos()[1]
+        x = self.last_lfp_point_clicked.pos()[0]
+        y = self.last_lfp_point_clicked.pos()[1]
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
 
@@ -1062,9 +1104,10 @@ class oEPSCWidget(DragDropWidget):
                 name="reg_line",
             )
         self.lfp_fv_edit.setText(str(round_sig(acq.fv_y)))
-        self.last_lfp_point_clicked[0].resetPen()
-        self.last_lfp_point_clicked[0].resetBrush()
+        self.last_lfp_point_clicked.resetPen()
+        self.last_lfp_point_clicked.resetBrush()
         self.last_lfp_point_clicked = []
+        logger.info(f"Slope start set on LFP {self.acquisition_number.value()}.")
 
     def setPointAsFP(self):
         """
@@ -1077,13 +1120,17 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.exp_dict.get("lfp"):
+            logger.info("Field potential was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
 
-        self.need_to_save = True
+        if self.last_lfp_point_clicked is None:
+            logger.info("No LFP point was set, field potential not set.")
+            return None
 
-        x = self.last_lfp_point_clicked[0].pos()[0]
-        y = self.last_lfp_point_clicked[0].pos()[1]
+        logger.info(f"Setting slope start on LFP {self.acquisition_number.value()}.")
+        x = self.last_lfp_point_clicked.pos()[0]
+        y = self.last_lfp_point_clicked.pos()[1]
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
         acq.change_fp(x, y)
@@ -1104,14 +1151,28 @@ class oEPSCWidget(DragDropWidget):
             )
         self.lfp_fp_edit.setText(str(round_sig(acq.fp_y)))
         self.lfp_fp_slope_edit.setText(str(round_sig(acq.slope)))
-        self.last_lfp_point_clicked[0].resetPen()
-        self.last_lfp_point_clicked[0].resetBrush()
+        self.last_lfp_point_clicked.resetPen()
+        self.last_lfp_point_clicked.resetBrush()
         self.last_lfp_point_clicked = []
+        logger.info(f"Field potential set on LFP {self.acquisition_number.value()}.")
 
     def setoEPSCPeak(self):
-        if not self.exp_manager.exp_dict.get["oepsc"]:
+        """Sets the peak on the oEPSC acquisition.
+
+        Returns:
+        -------
+        None.
+        """
+        if not self.exp_manager.exp_dict.get("lfp"):
+            logger.info("oEPSC peak was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
+
+        if self.last_lfp_point_clicked is None:
+            logger.info("No oEPSC point was set, peak not set.")
+            return None
+
+        logger.info(f"Setting peak on oEPSC {self.acquisition_number.value()}.")
         acq = self.exp_manager.exp_dict[self.acquisition_number.value()]
         self.need_to_save = True
         x = self.last_oepsc_point_clicked[0].pos()[0]
@@ -1129,29 +1190,34 @@ class oEPSCWidget(DragDropWidget):
         self.last_oepsc_point_clicked[0].resetPen()
         self.last_oepsc_point_clicked[0].resetBrush()
         self.last_oepsc_point_clicked = []
+        logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
 
     def deleteoEPSC(self):
         if not self.exp_manager.exp_dict.get["oepsc"]:
+            logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-
-        self.need_to_save = True
-        self.oepsc_plot.clear()
-        self.exp_manager.delete_acq("oepsc", self.acquisition_number.value())
+        else:
+            self.need_to_save = True
+            self.oepsc_plot.clear()
+            self.exp_manager.delete_acq("oepsc", self.acquisition_number.value())
+            logger.info(f"oEPSC Aquisition {self.acquisition_number.value()} deleted.")
 
     def deleteLFP(self):
         if not self.exp_manager.exp_dict.get["lfp"]:
+            logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
-            return None
-
-        self.need_to_save = True
-        self.lfp_plot.clear()
-        self.exp_manager.delete_acq("lfp", self.acquisition_number.value())
+        else:
+            self.need_to_save = True
+            self.lfp_plot.clear()
+            self.exp_manager.delete_acq("lfp", self.acquisition_number.value())
+            logger.info(f"LFP Aquisition {self.acquisition_number.value()} deleted.")
 
     def runFinalAnalysis(self):
         if not self.exp_manager.acqs_exist():
+            logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None
+        logger.info("Beginning final analysis.")
         self.need_to_save = True
         self.final_analysis_button.setEnabled(False)
         self.calc_param_clicked = True
@@ -1163,11 +1229,14 @@ class oEPSCWidget(DragDropWidget):
             self.tab3.addTab(table)
             table.setData(df.T.to_dict("dict"))
         self.final_analysis_button.setEnabled(True)
+        self.pbar.setFormat("Final analysis finished")
 
     def saveAs(self, file_path):
         if not self.exp_manager.acqs_exist():
+            logger.info("There are no acquisitions to save")
             self.fileDoesNotExist()
             return None
+        logger.info("Saving experiment.")
         self.pbar.setValue(0)
         self.pbar.setFormat("Saving...")
         pref_dict = self.createPrefDict()
@@ -1179,11 +1248,17 @@ class oEPSCWidget(DragDropWidget):
         self.pbar.setFormat("Saving files...")
         self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
         self.worker.signals.progress.connect(self.updateProgress)
+        self.worker.signals.finished.connect(self.finishedSaving)
         QThreadPool.globalInstance().start(self.worker)
         self.pbar.setFormat("Data saved")
         self.need_to_save = False
 
+    def finishedSaving(self):
+        self.pbar.setFormat("Finished saving")
+        self.logger.info("Finished saving.")
+
     def loadExperiment(self, directory):
+        logger.info(f"Loading experiment from {directory}.")
         self.reset()
         self.pbar.setFormat("Loading...")
         self.pbar.setValue(0)
@@ -1196,11 +1271,14 @@ class oEPSCWidget(DragDropWidget):
         QThreadPool.globalInstance().start(self.worker)
 
     def createExperiment(self, urls):
+        self.pbar("Creating experiment")
         self.choose_analysis_type.exec()
         if self.choose_analysis_type.clickedButton() == self.oepsc_type_button:
             self.oepsc_view.model().addData(urls)
+            self.pbar("oEPSC experiment created")
         else:
             self.lfp_view.model().addData(urls)
+            self.pbar("LFP experiment created")
 
     def setLoadData(self):
         if self.exp_manager.acqs_exist():
@@ -1225,6 +1303,8 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setEnabled(True)
         fa = self.exp_manager.final_analysis
         if fa is not None:
+            logger.info("Setting previously analyzed data.")
+            self.pbar.setFormat("Setting previously analyzed data.")
             for key, df in fa.df_dict.items():
                 table = pg.TableWidget()
                 self.table_dict[key] = table
@@ -1235,8 +1315,11 @@ class oEPSCWidget(DragDropWidget):
         self.reset_button.setEnabled(True)
         self.acquisition_number.setEnabled(True)
         self.final_analysis_button.setEnabled(True)
+        logger.info("Experiment successfullzsy loaded.")
+        self.pbar("Experiment successfully loaded")
 
     def createPrefDict(self):
+        logger.info("Creating preferences dictionary.")
         pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -1272,9 +1355,11 @@ class oEPSCWidget(DragDropWidget):
             if i.objectName() != "":
                 dspinbox_dict[i.objectName()] = i.text()
         pref_dict["double_spinboxes"] = dspinbox_dict
+        logger.info("Preferences dictionary created.")
         return pref_dict
 
     def setPreferences(self, pref_dict):
+        logger.info("Setting oEPSC/LFP preferences.")
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
             if i.objectName() != "":
@@ -1299,6 +1384,9 @@ class oEPSCWidget(DragDropWidget):
         for i in dspinboxes:
             if i.objectName() != "":
                 i.setValue(float((pref_dict["double_spinboxes"][i.objectName()])))
+
+        logger.info("Preferences set.")
+        self.pbar.setFormat("Preferences set")
 
     def loadPreferences(self, file_name: str):
         self.need_to_save = True

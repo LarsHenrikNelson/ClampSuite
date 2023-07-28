@@ -1310,7 +1310,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No event peak was set, acquisition do not exist.")
+            logger.info("No event peak was set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
 
@@ -1327,7 +1327,7 @@ class MiniAnalysisWidget(DragDropWidget):
         event = acq.postsynaptic_events[event_index]
 
         logger.info(
-            f"Setting point as peak on event {event_index} on \
+            f"Setting peak on event {event_index} on \
                 acquisition {self.acquisition_number.value()}."
         )
 
@@ -1842,6 +1842,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def saveAs(self, save_filename):
         if not self.exp_manager.acqs_exist("mini"):
+            logger.info("There are no acquisitions to save")
             self.fileDoesNotExist()
         else:
             logger.info("Saving experiment.")
