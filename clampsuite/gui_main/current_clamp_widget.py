@@ -79,7 +79,7 @@ class currentClampWidget(DragDropWidget):
         self.setup_layout.addStretch(1)
         self.plot_layout = QHBoxLayout()
         self.analysis_buttons = QFormLayout()
-        self.h_layout.addLayout(self.plot_layout)
+        self.h_layout.addLayout(self.plot_layout, 1)
         self.plot_layout.addLayout(self.analysis_buttons, 0)
 
         # Input widgets and labels
