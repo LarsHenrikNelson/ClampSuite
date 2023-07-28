@@ -331,7 +331,7 @@ class currentClampWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions exist to inspect.")
             self.fileDoesNotExist()
         else:
@@ -341,7 +341,7 @@ class currentClampWidget(DragDropWidget):
             self.inspection_widget.show()
 
     def deleteSelection(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions exist to remove from analysis list.")
             self.fileDoesNotExist()
         else:
@@ -354,7 +354,7 @@ class currentClampWidget(DragDropWidget):
             logger.info("Removed acquisitions from analysis.")
 
     def analyze(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
@@ -557,7 +557,7 @@ class currentClampWidget(DragDropWidget):
         self.acquisition_number.setEnabled(True)
 
     def deleteAcq(self):
-        if not self.exp_manager.acqs_exist() or not self.acq_manager[
+        if not self.exp_manager.acqs_exist("current_clamp") or not self.acq_manager[
             "current_clamp"
         ].get(self.acquisition_number.value()):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
@@ -573,7 +573,7 @@ class currentClampWidget(DragDropWidget):
         logger.info(f"Deleted acquisition {self.acquisition_number.value()}.")
 
     def resetRejectedAcqs(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not reset acquistions, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -584,7 +584,7 @@ class currentClampWidget(DragDropWidget):
             self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectAcq(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -797,7 +797,7 @@ class currentClampWidget(DragDropWidget):
         self.dlg.exec()
 
     def saveAs(self, file_path: Union[str, PurePath]):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("current_clamp"):
             self.fileDoesNotExist()
         else:
             logger.info("Saving experiment.")

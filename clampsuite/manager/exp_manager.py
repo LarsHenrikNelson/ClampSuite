@@ -314,11 +314,8 @@ class ExpManager:
         else:
             return 0
 
-    def acqs_exist(self) -> bool:
-        if self.exp_dict:
-            return True
-        else:
-            return False
+    def acqs_exist(self, exp) -> bool:
+        return self.exp_dict.get(exp)
 
     def num_of_del_acqs(self):
         del_acqs = 0

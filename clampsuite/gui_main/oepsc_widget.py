@@ -44,6 +44,7 @@ class oEPSCWidget(DragDropWidget):
         self.initUI()
 
     def initUI(self):
+        logger.info("Creating oEPSC/LFP GUI")
         self.signals.file.connect(self.loadPreferences)
         self.signals.path.connect(self.loadExperiment)
         self.parent_layout = QVBoxLayout()
@@ -92,7 +93,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
         self.del_oepsc_sel = QPushButton("Delete selection")
         self.del_oepsc_sel.clicked.connect(
-            lambda checked: self.delSelection(self.oepsc_view)
+            lambda checked: self.delSelection(self.oepsc_view, "oepsc")
         )
         self.view_layout_1.addWidget(self.del_oepsc_sel)
         self.form_layouts.addLayout(self.view_layout_1)
@@ -110,7 +111,7 @@ class oEPSCWidget(DragDropWidget):
         self.view_layout_2.addWidget(self.inspect_lfp_acqs)
         self.del_lfp_sel = QPushButton("Delete selection")
         self.del_lfp_sel.clicked.connect(
-            lambda checked: self.delSelection(self.lfp_view)
+            lambda checked: self.delSelection(self.lfp_view, "lfp")
         )
         self.view_layout_2.addWidget(self.del_lfp_sel)
         self.form_layouts.addLayout(self.view_layout_2)
@@ -604,6 +605,8 @@ class oEPSCWidget(DragDropWidget):
         self.calc_param_clicked = False
         self.need_to_save = False
 
+        logger.info("Event oEPSC/LFP GUI created.")
+
     def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
         for i in line_edits:
@@ -660,12 +663,17 @@ class oEPSCWidget(DragDropWidget):
             self.lfp_order_label.setText("Order")
             self.lfp_polyorder_label.setText("Polyorder")
 
-    def delSelection(self, list_view):
-        # Deletes the selected acquisitions from the list
-        indexes = list_view.selectedIndexes()
-        if len(indexes) > 0:
-            list_view.deleteSelection(indexes)
-            list_view.clearSelection()
+    def delSelection(self, list_view, exp):
+        if not self.exp_manager.acqs_exist(exp):
+            logger.info(f"No {exp} acquisitions exist to remove from analysis list.")
+            self.fileDoesNotExist()
+        else:
+            # Deletes the selected acquisitions from the list
+            indexes = list_view.selectedIndexes()
+            if len(indexes) > 0:
+                list_view.deleteSelection(indexes)
+                list_view.clearSelection()
+                logger.info("Removed acquisitions from analysis.")
 
     def getXRange(self, plot):
         h = str(self.acquisition_number.text())
@@ -704,9 +712,17 @@ class oEPSCWidget(DragDropWidget):
         return True
 
     def analyze(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
+            "lfp"
+        ):
+            logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
             return None
+
+        logger.info("Analysis started.")
+        self.pbar.setFormat("Analyzing...")
+        self.pbar.setValue(0)
+
         self.on_x_set = False
         self.op_x_set = False
         lfp_x_set = False
@@ -728,9 +744,7 @@ class oEPSCWidget(DragDropWidget):
             )
         else:
             lfp_window = self.lfp_window_edit.currentText()
-        self.pbar.setFormat("Analyzing...")
-        threadpool = QThreadPool()
-        # threadpool.setMaxThreadCount(2)
+        threadpool = QThreadPool().globalInstance()
         if self.exp_manager.exp_dict.get("oepsc"):
             worker_1 = ThreadWorker(
                 self.exp_manager,
@@ -799,6 +813,7 @@ class oEPSCWidget(DragDropWidget):
             self.acquisition_number.setMinimum(self.exp_manager.start_acq)
             self.acquisition_number.setValue(self.exp_manager.start_acq)
             self.acqSpinbox(self.exp_manager.start_acq)
+            logger.info("Analysis finished.")
             self.pbar.setFormat("Analysis finished")
 
     def setOEPSCLimits(self, oepsc_object):

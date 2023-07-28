@@ -766,7 +766,7 @@ class MiniAnalysisWidget(DragDropWidget):
             i.adjustSize()
 
     def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions exist to inspect.")
             self.fileDoesNotExist()
         else:
@@ -776,7 +776,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.inspection_widget.show()
 
     def delSelection(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions exist to remove from analysis list.")
             self.fileDoesNotExist()
         else:
@@ -818,13 +818,15 @@ class MiniAnalysisWidget(DragDropWidget):
         EventAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
             self.analyze_acq_button.setEnabled(True)
             return None
 
         logger.info("Analysis started.")
+        self.pbar.setFormat("Analyzing...")
+        self.pbar.setValue(0)
 
         self.p1.clear()
         self.p2.clear()
@@ -837,10 +839,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         self.calculate_parameters_2.setEnabled(False)
-
-        # Sets the progress bar to 0
-        self.pbar.setFormat("Analyzing...")
-        self.pbar.setValue(0)
 
         # The for loop creates each EventAnalysis object. Enumerate returns
         # count which is used to adjust the progress bar and acq_components
@@ -903,7 +901,6 @@ class MiniAnalysisWidget(DragDropWidget):
         QThreadPool.globalInstance().start(worker)
 
     def setAcquisition(self):
-        logger.info("Analysis finished.")
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
@@ -920,6 +917,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(1)
+        logger.info("Analysis finished.")
         self.pbar.setFormat("Analysis finished")
         logger.info("First acquisition set.")
 
@@ -1172,7 +1170,7 @@ class MiniAnalysisWidget(DragDropWidget):
         Function to plot a event in the event plot.
         """
 
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("Event was not plotted since acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1311,7 +1309,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No event peak was set, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
@@ -1385,7 +1383,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No event baseline was set, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
@@ -1458,7 +1456,7 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
-        if not self.exp_manager.acqs_exist() or not self.acq_manager["mini"].get(
+        if not self.exp_manager.acqs_exist("mini") or not self.acq_manager["mini"].get(
             self.acquisition_number.value()
         ):
             logger.info(
@@ -1533,7 +1531,7 @@ class MiniAnalysisWidget(DragDropWidget):
         will run this function.
         """
 
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No event created, acquisitions do not exist.")
             self.fileDoesNotExist()
             return None
@@ -1602,7 +1600,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 return None
 
     def plotDeconvolution(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No deconvolution plotted, acquisitions do not exist.")
             self.fileDoesNotExist()
             return None
@@ -1618,7 +1616,7 @@ class MiniAnalysisWidget(DragDropWidget):
         button is clicked.
         """
 
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
             return None
@@ -1643,7 +1641,7 @@ class MiniAnalysisWidget(DragDropWidget):
         logger.info(f"Aquisition {self.acquisition_number.value()} deleted.")
 
     def resetRejectedAcqs(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not reset acquistions, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -1654,7 +1652,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectedAcq(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -1843,7 +1841,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar("Experiment successfully loaded")
 
     def saveAs(self, save_filename):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("mini"):
             self.fileDoesNotExist()
         else:
             logger.info("Saving experiment.")
