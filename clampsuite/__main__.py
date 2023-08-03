@@ -15,7 +15,7 @@ from .gui_main.main_window import MainWindow
 
 def check_dir():
     p = Path.home()
-    h = "clampsuite"
+    h = ".clampsuite"
     prog_dir = Path(p / h)
     if not prog_dir.exists():
         prog_dir.mkdir()
