@@ -223,8 +223,7 @@ class ExpManager:
         elif path_obj.suffix == ".json":
             acq_comp = load_json_file(path_obj)
         else:
-            print("File type not recognized!")
-            return None
+            raise AttributeError("File type not recognized!")
         if acq_comp.get("analysis"):
             obj = Acquisition(acq_comp.analysis)
         elif isinstance(analysis, str):
@@ -315,7 +314,13 @@ class ExpManager:
             return 0
 
     def acqs_exist(self, exp) -> bool:
-        return self.exp_dict.get(exp)
+        return exp in self.exp_dict
+
+    def acq_exists(self, exp, acq_num) -> bool:
+        if exp in self.exp_dict:
+            return acq_num in self.exp_dict[exp]
+        else:
+            return False
 
     def num_of_del_acqs(self):
         del_acqs = 0

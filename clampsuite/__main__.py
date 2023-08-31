@@ -51,7 +51,7 @@ def main(logger):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("clampsuite")
+    logger = logging.getLogger(".clampsuite")
     logger.setLevel(logging.INFO)
     prog_dir = check_dir()
     logger.propagate = False

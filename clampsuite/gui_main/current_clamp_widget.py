@@ -448,8 +448,9 @@ class currentClampWidget(DragDropWidget):
         self.need_to_save = True
         self.plot_widget.clear()
         self.spike_plot.clear()
-        if self.exp_manager.exp_dict["current_clamp"].get(
+        if (
             self.acquisition_number.value()
+            in self.exp_manager.exp_dict["current_clamp"]
         ):
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
             acq_object = self.exp_manager.exp_dict["current_clamp"][
@@ -557,9 +558,10 @@ class currentClampWidget(DragDropWidget):
         self.acquisition_number.setEnabled(True)
 
     def deleteAcq(self):
-        if not self.exp_manager.acqs_exist("current_clamp") or not self.acq_manager[
-            "current_clamp"
-        ].get(self.acquisition_number.value()):
+        if (
+            not self.exp_manager.acqs_exist("current_clamp")
+            or self.acquisition_number.value() not in self.acq_manager["current_clamp"]
+        ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.fileDoesNotExist()
             return None
@@ -600,7 +602,7 @@ class currentClampWidget(DragDropWidget):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if self.exp_manager.analyzed:
+        if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None

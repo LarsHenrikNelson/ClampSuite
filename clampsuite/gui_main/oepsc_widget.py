@@ -618,7 +618,9 @@ class oEPSCWidget(DragDropWidget):
             i.setMinimumWidth(80)
 
     def inspectAcqs(self, analysis_type):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("lfp") and not self.exp_manager.acqs_exist(
+            "oepsc"
+        ):
             self.fileDoesNotExist()
         else:
             self.inspection_widget.clearData()
@@ -676,16 +678,16 @@ class oEPSCWidget(DragDropWidget):
                 logger.info("Removed acquisitions from analysis.")
 
     def getXRange(self, plot):
-        h = str(self.acquisition_number.text())
+        h = self.acquisition_number.value()
         if plot == "oepsc_plot":
             x = self.oepsc_plot.viewRange()[0]
-            if self.exp_manager.exp_dict["oepsc"].get(h):
+            if self.exp_manager.acqs_exist(h):
                 self.setOPlotX(x)
             else:
                 pass
         elif plot == "lfp_plot":
             x = self.lfp_plot.viewRange()[0]
-            if self.exp_manager.exp_dict["lfp"].get(h):
+            if self.exp_manager.acqs_exist(h):
                 self.setLFPPlotX(x)
             else:
                 pass
@@ -745,7 +747,7 @@ class oEPSCWidget(DragDropWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         threadpool = QThreadPool().globalInstance()
-        if self.exp_manager.exp_dict.get("oepsc"):
+        if self.exp_manager.acqs_exist("oepsc"):
             worker_1 = ThreadWorker(
                 self.exp_manager,
                 "analyze",
@@ -777,7 +779,7 @@ class oEPSCWidget(DragDropWidget):
             worker_1.signals.progress.connect(self.updateProgress)
             worker_1.signals.finished.connect(self.setAcquisition)
             threadpool.start(worker_1)
-        if self.exp_manager.exp_dict.get("lfp"):
+        if self.exp_manager.acqs_exist("lfp"):
             worker_2 = ThreadWorker(
                 self.exp_manager,
                 "analyze",
@@ -813,6 +815,7 @@ class oEPSCWidget(DragDropWidget):
             self.acquisition_number.setMinimum(self.exp_manager.start_acq)
             self.acquisition_number.setValue(self.exp_manager.start_acq)
             self.acqSpinbox(self.exp_manager.start_acq)
+            self.tabs.setCurrentIndex(1)
             logger.info("Analysis finished.")
             self.pbar.setFormat("Analysis finished")
 
@@ -833,7 +836,9 @@ class oEPSCWidget(DragDropWidget):
     def acqSpinbox(self, h):
         self.oepsc_plot.clear()
         self.lfp_plot.clear()
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
+            "lfp"
+        ):
             logger.info("No acquisitions analyzed, acquisition not set.")
             self.fileDoesNotExist()
             return None
@@ -842,7 +847,7 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setDisabled(True)
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
-        if self.exp_manager.exp_dict["oepsc"].get(self.acquisition_number.value()):
+        if self.exp_manager.acq_exists("oepsc", self.acquisition_number.value()):
             logger.info(f"Plotting oEPSC {self.acquisition_number.value()}.")
             oepsc_object = self.exp_manager.exp_dict["oepsc"][
                 self.acquisition_number.value()
@@ -894,7 +899,7 @@ class oEPSCWidget(DragDropWidget):
             text.setFont(QFont("Helvetica", 20))
             self.oepsc_plot.setRange(xRange=(-30, 30), yRange=(-30, 30))
             self.oepsc_plot.addItem(text)
-        if self.exp_manager.exp_dict["lfp"].get(self.acquisition_number.value()):
+        if self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
             logger.info(f"Plotting LFP {self.acquisition_number.value()}.")
             lfp_object = self.exp_manager.exp_dict["lfp"][
                 self.acquisition_number.value()
@@ -964,6 +969,7 @@ class oEPSCWidget(DragDropWidget):
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
+        self.tabs.setCurrentIndex(0)
         logger.info("UI reset.")
 
     def clearTables(self):
@@ -1015,7 +1021,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.exp_dict.get("lfp"):
+        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
             logger.info("Fiber volley was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1068,7 +1074,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.exp_dict.get("lfp"):
+        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
             logger.info("Slope start was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1119,7 +1125,7 @@ class oEPSCWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.exp_dict.get("lfp"):
+        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
             logger.info("Field potential was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1163,7 +1169,7 @@ class oEPSCWidget(DragDropWidget):
         -------
         None.
         """
-        if not self.exp_manager.exp_dict.get("lfp"):
+        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
             logger.info("oEPSC peak was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1193,7 +1199,7 @@ class oEPSCWidget(DragDropWidget):
         logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
 
     def deleteoEPSC(self):
-        if not self.exp_manager.exp_dict.get["oepsc"]:
+        if not self.exp_manager.acqs_exist("oepsc"):
             logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -1203,7 +1209,7 @@ class oEPSCWidget(DragDropWidget):
             logger.info(f"oEPSC Aquisition {self.acquisition_number.value()} deleted.")
 
     def deleteLFP(self):
-        if not self.exp_manager.exp_dict.get["lfp"]:
+        if not self.exp_manager.acqs_exist("lfp"):
             logger.info("No acquisition deleted, no acquisitions exist.")
             self.fileDoesNotExist()
         else:
@@ -1213,7 +1219,9 @@ class oEPSCWidget(DragDropWidget):
             logger.info(f"LFP Aquisition {self.acquisition_number.value()} deleted.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
+            "lfp"
+        ):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None
@@ -1226,13 +1234,16 @@ class oEPSCWidget(DragDropWidget):
         for key, df in fa.df_dict.items():
             table = pg.TableWidget()
             self.table_dict[key] = table
-            self.tab3.addTab(table)
+            self.tab3.addTab(table, key)
             table.setData(df.T.to_dict("dict"))
         self.final_analysis_button.setEnabled(True)
+        self.tabs.setCurrentIndex(2)
         self.pbar.setFormat("Final analysis finished")
 
     def saveAs(self, file_path):
-        if not self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
+            "lfp"
+        ):
             logger.info("There are no acquisitions to save")
             self.fileDoesNotExist()
             return None
@@ -1281,16 +1292,18 @@ class oEPSCWidget(DragDropWidget):
             self.pbar("LFP experiment created")
 
     def setLoadData(self):
-        if self.exp_manager.acqs_exist():
+        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
+            "lfp"
+        ):
             self.acquisition_number.setMaximum(self.exp_manager.start_acq)
             self.acquisition_number.setMinimum(self.exp_manager.end_acq)
         if self.exp_manager.ui_pref:
             self.setPreferences(self.exp_manager.ui_prefs)
-        if self.exp_manager.exp_dict.get("oepsc"):
+        if self.exp_manager.acqs_exist("oepsc"):
             self.oepsc_view.setData(self.exp_manager)
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
-        if self.exp_manager.exp_dict.get("lfp"):
+        if self.exp_manager.acqs_exist("lfp"):
             self.lfp_view.setData(self.exp_manager)
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)

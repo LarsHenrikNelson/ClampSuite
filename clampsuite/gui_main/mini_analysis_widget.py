@@ -463,7 +463,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.create_event_action.triggered.connect(self.createEvent)
         self.acq_buttons.addWidget(self.create_event_button, 5, 0, 1, 2)
 
-        self.acq_buttons.setRowStretch(6, 5)
+        self.acq_buttons.setRowStretch(6, 10)
 
         self.delete_acq_button = QPushButton("Delete acquisition")
         self.delete_acq_button.clicked.connect(self.deleteAcq)
@@ -481,7 +481,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.decon_acq_button.clicked.connect(self.plotDeconvolution)
         self.acq_buttons.addWidget(self.decon_acq_button, 10, 0, 1, 2)
 
-        self.acq_buttons.setRowStretch(10, 10)
+        self.acq_buttons.setRowStretch(11, 10)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_buttons.addWidget(self.calculate_parameters_2)
@@ -957,7 +957,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # I choose to just show
         acq_dict = self.exp_manager.exp_dict["mini"]
-        if acq_dict.get(self.acquisition_number.value()):
+        if self.acquisition_number.value() in acq_dict:
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
 
             self.acquisition_number.setEnabled(False)
@@ -1456,8 +1456,9 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
-        if not self.exp_manager.acqs_exist("mini") or not self.exp_manager["mini"].get(
-            self.acquisition_number.value()
+        if (
+            not self.exp_manager.acqs_exist("mini")
+            or self.exp_manager.exp_dict["mini"] not in self.exp_manager["mini"]
         ):
             logger.info(
                 f"No event deleted, acquisition {self.acquisition_number.value()} \
