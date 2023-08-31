@@ -879,7 +879,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 "min_rise_time": self.min_rise_time.toFloat(),
                 "max_rise_time": self.max_rise_time.toFloat(),
                 "min_decay_time": self.min_decay.toFloat(),
-                "mini_length": self.event_length.toInt(),
+                "event_length": self.event_length.toInt(),
                 "decay_rise": self.decay_rise.isChecked(),
                 "invert": self.invert_checkbox.isChecked(),
                 "decon_type": self.decon_type_edit.currentText(),
