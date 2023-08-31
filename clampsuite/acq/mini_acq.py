@@ -372,7 +372,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         else:
             return True
 
-    def create_new_mini(self, x: Union[int, float]) -> bool:
+    def create_new_event(self, x: Union[int, float]) -> bool:
         """Creates a new mini event based on the time
         of the event passed to the function. The new
         event is not screened like the automatically
@@ -508,7 +508,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.postsynaptic_events = []
         for i in self.saved_events_dict:
             h = MiniEvent()
-            h.load_mini(event_dict=i, final_array=self.final_array)
+            h.load_event(event_dict=i, final_array=self.final_array)
             self.postsynaptic_events += [h]
 
     def del_postsynaptic_event(self, index: int):

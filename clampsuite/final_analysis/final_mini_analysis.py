@@ -208,14 +208,14 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
     def extra_data(self) -> Union[None, pd.DataFrame]:
         return self.df_dict.get("Extra data")
 
-    def average_mini_y(self) -> np.ndarray:
+    def average_event_y(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_y"].dropna().to_numpy()
         else:
             return np.array([])
 
-    def average_mini_x(self) -> np.ndarray:
+    def average_event_x(self) -> np.ndarray:
         df = self.extra_data()
         if df is not None:
             return df["ave_mini_x"].dropna().to_numpy()

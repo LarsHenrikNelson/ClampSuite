@@ -158,18 +158,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # This takes the last value of an array of values that are
                 # less than the threshold of the second derivative. It was
                 # the most robust way to find the spike threshold time.
-                # try:
-                #     self.rheo_x = (
-                #         np.argwhere(
-                #             np.gradient(dv[self._pulse_start : peak_dv[0]]) < (0.3)
-                #         )
-                #         + self._pulse_start
-                #     )[-1][0]
-                # except:
-                #     self.rheo_x = (
-                #         np.argmin(dv[self._pulse_start : peak_dv[0]])
-                #         + self._pulse_start
-                #     )
                 self.rheo_x, _ = self.find_spk_thresh(self.array)
 
                 # Find the spike_threshold using the timing found above

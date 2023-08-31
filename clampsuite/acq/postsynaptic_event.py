@@ -298,7 +298,7 @@ class MiniEvent:
             if self.curve_fit_decay:
                 self.fit_decay(fit_type=self.curve_fit_type)
 
-    def mini_x_comp(self) -> list:
+    def event_x_comp(self) -> list:
         x = [
             self.event_start_x(),
             self.event_peak_x(),
@@ -306,7 +306,7 @@ class MiniEvent:
         ]
         return x
 
-    def mini_y_comp(self) -> list:
+    def event_y_comp(self) -> list:
         y = [self.event_start_y, self.event_peak_y, self.est_tau_y]
         return y
 
@@ -362,7 +362,7 @@ class MiniEvent:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self._event_peak_x - self.array_start
 
-    def load_mini(self, event_dict: dict, final_array: np.ndarray):
+    def load_event(self, event_dict: dict, final_array: np.ndarray):
         self.sample_rate_correction = None
 
         for key, item in event_dict.items():

@@ -303,9 +303,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.baseline_corr_choice = QCheckBox()
         self.baseline_corr_choice.setChecked(False)
         self.baseline_corr_choice.setTristate(False)
-        self.settings_layout.addRow(
-            "Baseline correction (experimental)", self.baseline_corr_choice
-        )
+        # self.settings_layout.addRow(
+        #     "Baseline correction (experimental)", self.baseline_corr_choice
+        # )
 
         self.tau_1_edit = LineEdit()
         self.tau_1_edit.setObjectName("tau_1_edit")
@@ -475,18 +475,18 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.reset_acq_button = QPushButton("Reset deleted acqs")
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
-        self.acq_buttons.addWidget(self.reset_acq_button, 8, 0, 1, 2)
+        self.acq_buttons.addWidget(self.reset_acq_button, 9, 0, 1, 2)
 
         self.decon_acq_button = QPushButton("Plot deconvolution")
         self.decon_acq_button.clicked.connect(self.plotDeconvolution)
-        self.acq_buttons.addWidget(self.decon_acq_button, 9, 0, 1, 2)
+        self.acq_buttons.addWidget(self.decon_acq_button, 10, 0, 1, 2)
 
         self.acq_buttons.setRowStretch(10, 10)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_buttons.addWidget(self.calculate_parameters_2)
         self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
-        self.acq_buttons.addWidget(self.calculate_parameters_2, 11, 0, 1, 2)
+        self.acq_buttons.addWidget(self.calculate_parameters_2, 12, 0, 1, 2)
 
         self.delete_acq_action = QAction("Delete acq")
         self.delete_acq_action.triggered.connect(self.deleteAcq)
@@ -1456,7 +1456,7 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
-        if not self.exp_manager.acqs_exist("mini") or not self.acq_manager["mini"].get(
+        if not self.exp_manager.acqs_exist("mini") or not self.exp_manager["mini"].get(
             self.acquisition_number.value()
         ):
             logger.info(
@@ -1668,7 +1668,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if self.exp_manager.analyzed:
+        if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist()
             return None
@@ -1780,7 +1780,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def fileDoesNotExist(self):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("No files are loaded or analyzed")
+        self.dlg.setText("No files are loaded or analyzed.")
         self.dlg.exec()
 
     def pointTooCloseToBeginning(self):
@@ -1864,7 +1864,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def finishedSaving(self):
         self.pbar.setFormat("Finished saving")
-        self.logger.info("Finished saving.")
+        logger.info("Finished saving.")
 
     def createExperiment(self, urls):
         self.pbar("Creating experiment")

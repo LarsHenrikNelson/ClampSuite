@@ -15,25 +15,11 @@ from .gui_main.main_window import MainWindow
 
 def check_dir():
     p = Path.home()
-    h = ".clampsuite"
+    h = "clampsuite"
     prog_dir = Path(p / h)
     if not prog_dir.exists():
         prog_dir.mkdir()
     return prog_dir
-
-
-def create_loghandlers(path):
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-    )
-    fh = logging.FileHandler(path / "clampsuite_log.log", mode="w")
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.WARNING)
-    sh.setFormatter(formatter)
-    return fh, sh
 
 
 def main(logger):
@@ -65,12 +51,17 @@ def main(logger):
 
 
 if __name__ == "__main__":
-    prog_dir = check_dir()
-
     logger = logging.getLogger("clampsuite")
+    logger.setLevel(logging.INFO)
+    prog_dir = check_dir()
     logger.propagate = False
-    fh, sh = create_loghandlers(prog_dir)
-    logger.addHandler(sh)
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+    )
+    fh = logging.FileHandler(prog_dir / "clampsuite_log.log", mode="w")
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.INFO)
     logger.addHandler(fh)
     logger.info("Starting ClampSuite")
 
