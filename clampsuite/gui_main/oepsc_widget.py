@@ -752,9 +752,7 @@ class oEPSCWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="oepsc",
-                filter_args=None,
-                template_args=None,
-                analysis_args={
+                filter_args={
                     "baseline_start": self.o_b_start_edit.toFloat(),
                     "baseline_end": self.o_b_end_edit.toFloat(),
                     "filter_type": self.o_filter_selection.currentText(),
@@ -765,6 +763,9 @@ class oEPSCWidget(DragDropWidget):
                     "low_width": self.o_low_width_edit.toFloat(),
                     "window": o_window,
                     "polyorder": self.o_polyorder_edit.toFloat(),
+                },
+                template_args=None,
+                analysis_args={
                     "pulse_start": self.o_pulse_start_edit.toFloat(),
                     "n_window_start": self.o_neg_start_edit.toFloat(),
                     "n_window_end": self.o_neg_end_edit.toFloat(),
@@ -784,9 +785,7 @@ class oEPSCWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="lfp",
-                filter_args=None,
-                template_args=None,
-                analysis_args={
+                filter_args={
                     "baseline_start": self.lfp_b_start_edit.toFloat(),
                     "baseline_end": self.lfp_b_end_edit.toFloat(),
                     "filter_type": self.lfp_filter_selection.currentText(),
@@ -797,6 +796,9 @@ class oEPSCWidget(DragDropWidget):
                     "low_width": self.lfp_low_width_edit.toFloat(),
                     "window": lfp_window,
                     "polyorder": self.lfp_polyorder_edit.toFloat(),
+                },
+                template_args=None,
+                analysis_args={
                     "pulse_start": self.lfp_pulse_start_edit.toFloat(),
                 },
             )

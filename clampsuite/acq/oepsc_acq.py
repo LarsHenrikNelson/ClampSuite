@@ -8,7 +8,7 @@ from . import filter_acq
 
 
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
-    def analyze(
+    def set_filter(
         self,
         baseline_start: Union[int, float] = 800,
         baseline_end: Union[int, float] = 1000,
@@ -46,6 +46,21 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             "exponential",
         ] = "hann",
         polyorder: Union[int, None] = None,
+    ):
+        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
+        self.filter_type = filter_type
+        self.order = order
+        self.high_pass = high_pass
+        self.high_width = high_width
+        self.low_pass = low_pass
+        self.low_width = low_width
+        self.window = window
+        self.polyorder = polyorder
+
+    def analyze(
+        self,
         pulse_start: Union[int, float] = 1000,
         n_window_start: Union[int, float] = 1001,
         n_window_end: Union[int, float] = 1050,
@@ -57,20 +72,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         curve_fit_type: str = "s_exp",
     ):
         # Set all the attributes
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
         self.x_array = np.arange(len(self.array)) / (self.sample_rate / 1000)
-        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
-        self.baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
-        )
         self._pulse_start = int(pulse_start * self.s_r_c)
         self.n_window_start = int(n_window_start * self.s_r_c)
         self.n_window_end = int(n_window_end * self.s_r_c)
@@ -82,8 +84,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.curve_fit_type = curve_fit_type
 
         self.run_analysis()
-
-        # Analysis functions
 
     def run_analysis(self):
         self.filter_array(self.array)

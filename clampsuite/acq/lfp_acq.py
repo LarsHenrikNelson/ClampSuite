@@ -13,7 +13,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     Acquisition class and takes input specific for LFP analysis.
     """
 
-    def analyze(
+    def filter_acq(
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
@@ -51,14 +51,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             "exponential",
         ] = "hann",
         polyorder: Union[int, None] = None,
-        pulse_start: Union[int, float] = 1000,
     ):
-        """
-        This function runs all the other functions in one place. This makes
-        it easy to troubleshoot.
-        """
-        # Set all the attributes for analysis.
-
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -69,9 +62,17 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.polyorder = polyorder
         self.baseline_start = int(baseline_start * self.s_r_c)
         self.baseline_end = int(baseline_end * (self.s_r_c))
-        self.baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
-        )
+
+    def analyze(
+        self,
+        pulse_start: Union[int, float] = 1000,
+    ):
+        """
+        This function runs all the other functions in one place. This makes
+        it easy to troubleshoot.
+        """
+        # Set all the attributes for analysis.
+
         self._pulse_start = int(pulse_start * self.s_r_c)
         self._fp_x = np.nan
         self.fp_y = np.nan

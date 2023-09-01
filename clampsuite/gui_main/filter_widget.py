@@ -224,7 +224,7 @@ class filterWidget(QWidget):
             self.acq_number.value() - 1
         ]
         h = self.exp_manager.exp_dict["filter"][key]
-        h.analyze(
+        h.set_filter(
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
             filter_type=self.filter_selection.currentText(),
@@ -236,6 +236,7 @@ class filterWidget(QWidget):
             window=window,
             polyorder=self.polyorder_edit.toFloat(),
         )
+        h.analyze()
         filter_dict = {
             "baseline_start": self.b_start_edit.toInt(),
             "baseline_end": self.b_end_edit.toInt(),

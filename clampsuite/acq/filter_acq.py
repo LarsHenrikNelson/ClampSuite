@@ -30,7 +30,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
     for offline analysis because the signal can baselined using the mean.
     """
 
-    def analyze(
+    def set_filter(
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,
@@ -71,6 +71,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
     ):
         self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
         self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -79,6 +80,9 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
+        self.filter_array(self.array)
+
+    def analyze(self):
         self.filter_array(self.array)
 
     def filter_array(self, array):
