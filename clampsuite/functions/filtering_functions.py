@@ -59,12 +59,12 @@ def bessel(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.bessel(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.bessel(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -89,12 +89,12 @@ def bessel_zero(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.bessel(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.bessel(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
@@ -119,12 +119,12 @@ def butterworth(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.butter(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.butter(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -149,12 +149,12 @@ def butterworth_zero(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.butter(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.butter(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
@@ -179,12 +179,12 @@ def elliptic(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.ellip(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.ellip(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfilt(sos, array)
     return filt_array
@@ -209,12 +209,12 @@ def elliptic_zero(
         return filt_array
     elif high_pass is not None and low_pass is None:
         sos = signal.ellip(
-            order, Wn=high_pass, btype="high_pass", output="sos", fs=sample_rate
+            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     elif high_pass is None and low_pass is not None:
         sos = signal.ellip(
-            order, Wn=low_pass, btype="low_pass", output="sos", fs=sample_rate
+            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
         )
         filt_array = signal.sosfiltfilt(sos, array)
     return filt_array
