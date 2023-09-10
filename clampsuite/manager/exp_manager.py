@@ -17,7 +17,7 @@ class ExpManager:
     filters = list(typing.get_args(Filters))
     windows = list(typing.get_args(Windows))
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.exp_dict = {}
         self.final_analysis = None
         self.ui_prefs = None
@@ -32,13 +32,13 @@ class ExpManager:
 
     def create_exp(
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
-    ):
+    ) -> None:
         self._load_acqs(analysis, file)
         self._set_start_end_acq()
 
     def analyze_exp(
         self, exp: str, filter_args=None, template_args=None, analysis_args=None
-    ):
+    ) -> None:
         if self.exp_dict.get(exp):
             acq_dict = self.exp_dict[exp]
             pref_dict = {}
@@ -59,11 +59,11 @@ class ExpManager:
             self.analyzed = True
             self.callback_func(f"Analyed {exp} acquisitions")
 
-    def set_ui_prefs(self, pref_dict: dict):
+    def set_ui_prefs(self, pref_dict: dict) -> None:
         self.ui_prefs = pref_dict
         self.ui_prefs["Deleted acqs"] = {}
 
-    def run_final_analysis(self, **kwargs):
+    def run_final_analysis(self, **kwargs) -> None:
         analysis = list(self.exp_dict.keys())
         if len(analysis) == 1:
             self.final_analysis = FinalAnalysis(analysis[0])
@@ -74,7 +74,7 @@ class ExpManager:
             oepsc = self.exp_dict.get("oepsc")
             self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
-    def save_data(self, file_path: Union[Path, PurePath, str]):
+    def save_data(self, file_path: Union[Path, PurePath, str]) -> None:
         if self.ui_prefs is not None:
             for key, data in self.deleted_acqs.items():
                 self.ui_prefs["Deleted acqs"] = {key: list(data.keys())}
@@ -85,7 +85,7 @@ class ExpManager:
         self.callback_func("Finished saving")
 
     @staticmethod
-    def save_acq(acq, save_filename):
+    def save_acq(acq, save_filename) -> None:
         x = deepcopy(acq)
         if x.analysis == "mini":
             x.save_postsynaptic_events()
@@ -93,12 +93,12 @@ class ExpManager:
             json.dump(x.__dict__, write_file, cls=NumpyEncoder)
 
     @staticmethod
-    def save_acqs(acq_dict, file_path: Union[PurePath, Path, str]):
+    def save_acqs(acq_dict, file_path: Union[PurePath, Path, str]) -> None:
         for i in acq_dict.values():
             ExpManager.save_acq(i, file_path)
         print("Finished saving")
 
-    def _save_acqs(self, file_path: Union[PurePath, Path, str]):
+    def _save_acqs(self, file_path: Union[PurePath, Path, str]) -> None:
         self.callback_func("Saving acquisitions")
         count = 0
         for i in self.exp_dict.keys():
@@ -118,23 +118,23 @@ class ExpManager:
                 self.callback_func(int((100 * (saved) / count)))
         self.callback_func("Saved acqs")
 
-    def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs):
+    def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs) -> None:
         self.callback_func("Saving preferences")
         with open(f"{file_path}.yaml", "w") as file:
             yaml.dump(ui_prefs, file)
         self.callback_func("Saved preferences")
 
-    def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]):
+    def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]) -> None:
         with open(f"{file_path}.yaml", "w") as file:
             yaml.dump(self.analysis_prefs, file)
         self.callback_func("Saved user preferences")
 
-    def save_final_analysis(self, file_path: Union[PurePath, Path, str]):
+    def save_final_analysis(self, file_path: Union[PurePath, Path, str]) -> None:
         self.callback_func("Saving final analysis")
         self.final_analysis.save_data(file_path)
         self.callback_func("Saved final analysis")
 
-    def load_file(self, file_path: str, extension: str):
+    def load_file(self, file_path: str, extension: str) -> Union[list, PurePath]:
         file_path = PurePath(file_path)
         if file_path is None:
             p = Path()
@@ -198,7 +198,7 @@ class ExpManager:
         self,
         analysis: Union[str, None],
         file_path: Union[list, tuple, str, Path, PurePath],
-    ):
+    ) -> None:
         if isinstance(file_path, (str, Path, PurePath)):
             file_path = list(file_path)
         num_of_acqs = len(file_path)
@@ -229,8 +229,7 @@ class ExpManager:
         elif isinstance(analysis, str):
             obj = Acquisition(analysis)
         else:
-            print("No analysis specified!")
-            return None
+            raise AttributeError("Must provide an analysis.")
         obj.load_data(acq_comp)
         return obj
 
@@ -238,7 +237,7 @@ class ExpManager:
     def load_acqs(
         analysis: Union[str, None],
         file_path: Union[list, tuple, str, Path, PurePath],
-    ):
+    ) -> dict:
         acq_dict = {}
         if isinstance(file_path, (str, Path, PurePath)):
             file_path = list(file_path)
@@ -248,7 +247,7 @@ class ExpManager:
                 acq_dict[int(acq.acq_number)] = acq
         return acq_dict
 
-    def _set_acq(self, acq):
+    def _set_acq(self, acq) -> None:
         if acq is None:
             pass
         elif acq.analysis in self.exp_dict:
@@ -257,7 +256,7 @@ class ExpManager:
             self.exp_dict[acq.analysis] = {}
             self.exp_dict[acq.analysis][int(acq.acq_number)] = acq
 
-    def _set_start_end_acq(self):
+    def _set_start_end_acq(self) -> None:
         start_acq = []
         end_acq = []
         for i in self.exp_dict.values():
@@ -268,12 +267,10 @@ class ExpManager:
         self.start_acq = min(start_acq)
         self.end_acq = max(end_acq)
 
-    def _set_deleted_acqs(self):
-        for exp in self.exp_dict:
-            acqs = self.ui_prefs["Deleted acqs"].get(exp)
-            if acqs:
-                for acq in acqs:
-                    self.delete_acq(exp, acq)
+    def _set_deleted_acqs(self) -> None:
+        for exp, acqs in self.exp_dict.items():
+            for acq in acqs:
+                self.delete_acq(exp, acq)
 
     def set_callback(self, func: Callable[[int, str], None]):
         self.callback_func = func
@@ -281,7 +278,7 @@ class ExpManager:
     def get_acqs(self, exp: str) -> list:
         return [i.name for i in self.exp_dict[exp].values()]
 
-    def delete_acq(self, exp: str, acq: int):
+    def delete_acq(self, exp: str, acq: int) -> None:
         item = self.exp_dict[exp].pop(acq)
         if exp in self.deleted_acqs:
             item.delete()
@@ -291,7 +288,7 @@ class ExpManager:
             self.deleted_acqs[exp][acq] = item
         self.acqs_deleted += 1
 
-    def reset_deleted_acqs(self, exp: str):
+    def reset_deleted_acqs(self, exp: str) -> int:
         if self.deleted_acqs[exp]:
             del_dict = dict(self.deleted_acqs)[exp]
             for i in del_dict.values():
@@ -322,14 +319,17 @@ class ExpManager:
         else:
             return False
 
-    def num_of_del_acqs(self):
+    def num_of_del_acqs(self) -> int:
         del_acqs = 0
         for i in self.deleted_acqs.values():
             del_acqs += len(i)
         return i
 
-    def set_current_acq(self):
-        return self.ui_prefs["Acq_number"]
+    def set_current_acq(self) -> int:
+        if self.ui_prefs is not None:
+            return self.ui_prefs["Acq_number"]
+        else:
+            raise AttributeError("UI prefs do not exist")
 
     def get_final_analysis_data(self) -> dict:
         if self.final_analysis is not None:

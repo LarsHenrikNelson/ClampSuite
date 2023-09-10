@@ -32,9 +32,16 @@ plotting = [
 data = [
     "h5py"
 ]
+testing = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "tox"
+]
 
 [project.urls]
-Homepage = "https://github.com/LarsHenrikNelson/ClamPy"
+Homepage = "https://github.com/LarsHenrikNelson/ClampSuite"
 
 [project.gui-scripts]
 clampsuite = "clampsuite.__main__:main"
@@ -42,3 +49,7 @@ clampsuite = "clampsuite.__main__:main"
 [tool.setuptools.dynamic]
 version = {attr = "clampsuite.__version__"}
 
+[tool.mypy]
+mypy_path = "clampsuite"
+check_untyped_defs = true
+ignore_missing_imports = true

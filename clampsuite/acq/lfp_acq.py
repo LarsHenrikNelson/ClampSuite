@@ -32,7 +32,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             "butterworth_zero",
             "None",
         ] = "fir_zero_2",
-        order: Union[int, float] = 301,
+        order: Union[int, None] = 301,
         high_pass: Union[int, float, None] = None,
         high_width: Union[int, float, None] = None,
         low_pass: Union[int, float] = 300,
@@ -51,7 +51,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             "exponential",
         ] = "hann",
         polyorder: Union[int, None] = None,
-    ):
+    ) -> None:
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -66,7 +66,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     def analyze(
         self,
         pulse_start: Union[int, float] = 1000,
-    ):
+    ) -> None:
         """
         This function runs all the other functions in one place. This makes
         it easy to troubleshoot.
@@ -88,7 +88,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
         self.run_analysis()
 
-    def run_analysis(self):
+    def run_analysis(self) -> None:
         # Run the analysis
         self.filter_array(self.array)
         self.field_potential()
@@ -101,7 +101,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self.regression()
             self.plot_lfp = True
 
-    def field_potential(self):
+    def field_potential(self) -> None:
         """
         This function finds the field potential based on the largest value in
         the array.
@@ -112,10 +112,10 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
 
         """
         # The end value was chosed based on experimental data.
-        w_end = self._pulse_start + 200
+        w_end = self._pulse_start + int(20 * self.s_r_c)
 
         # The start value was chosen based on experimental data.
-        w_start = self._pulse_start + 44
+        w_start = self._pulse_start + int(4.4 * self.s_r_c)
 
         if abs(np.max(self.filtered_array[w_start:w_end])) < abs(
             np.min(self.filtered_array[w_start:w_end])
@@ -126,7 +126,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self.fp_y = np.nan
             self._fp_x = np.nan
 
-    def find_fiber_volley(self):
+    def find_fiber_volley(self) -> None:
         if np.isnan(self._fp_x) or self._fp_x is None:
             self.fv_y = np.nan
             self._fv_x = np.nan
@@ -135,13 +135,13 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                 -1 * self.filtered_array[self._pulse_start : self._fp_x],
                 width=int(0.5 * self.s_r_c),
             )
-        if len(peaks) > 0:
-            self._fv_x = int(peaks[0] + self._pulse_start)
-            self.fv_y = self.filtered_array[self._fv_x]
-        else:
-            self.fv_y, self._fv_x = self.fiber_volley_sec()
+            if len(peaks) > 0:
+                self._fv_x = int(peaks[0] + self._pulse_start)
+                self.fv_y = self.filtered_array[self._fv_x]
+            else:
+                self.fv_y, self._fv_x = self.fiber_volley_sec()
 
-    def fiber_volley_sec(self):
+    def fiber_volley_sec(self) -> tuple[float, int]:
         """
         This function finds the fiber volley based on the position of the
         field potential. The window for finding the fiber volley is based on
@@ -163,7 +163,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         fv_x = np.argmin(self.filtered_array[w_start:w_end]) + w_start
         return fv_y, fv_x
 
-    def find_slope_array_sec(self, w_end):
+    def find_slope_array_sec(self, w_end: int) -> None:
         """
         This function returns the array for slope of the field potential onset
         based upon the 10-90% values of the field potential rise. The field
@@ -190,8 +190,8 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             if w_end < w_start:
                 self.slope_y = [np.nan]
                 self._slope_x = [np.nan]
-                self.max_x = [np.nan]
-                self.max_y = [np.nan]
+                self.max_x = np.nan
+                self.max_y = np.nan
             else:
                 self.max_x = np.argmax(self.filtered_array[w_start:w_end]) + w_start
                 self.max_y = np.max(self.filtered_array[w_start:w_end])
@@ -204,8 +204,8 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                     int(len(x_array_subset) * 0.1) : int(len(x_array_subset) * 0.9)
                 ]
         else:
-            self.max_x = [np.nan]
-            self.max_y = [np.nan]
+            self.max_x = np.nan
+            self.max_y = np.nan
             self.slope_y = [np.nan]
             self._slope_x = [np.nan]
 
@@ -221,7 +221,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self.max_x = self._fv_x + int(1 * self.s_r_c)
         self.max_y = self.filtered_array[self.max_x]
 
-    def find_slope_array(self):
+    def find_slope_array(self) -> None:
         x_array_subset = np.arange(self.max_x, self._fp_x + 1)
         y_array_subset = self.filtered_array[self.max_x : self._fp_x + 1]
         self.slope_y = y_array_subset[
@@ -231,7 +231,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             int(len(x_array_subset) * 0.1) : int(len(x_array_subset) * 0.9)
         ]
 
-    def regression(self):
+    def regression(self) -> None:
         """
         This function runs a regression on the slope array created by the
         find_slop_array function.
@@ -241,7 +241,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         None.
 
         """
-        if len(self.slope_y) > 5:
+        if len(self.slope_y) >= 5:
             reg = linregress(self._slope_x, self.slope_y)
             self._slope = reg[0]
             self.reg_line = [(self._slope * i) + reg[1] for i in self._slope_x]
@@ -250,7 +250,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self._slope = np.nan
             self.reg_line = np.nan
 
-    def change_fv(self, x: Union[int, float], y: Union[int, float]):
+    def change_fv(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fv_x = x
         self.fv_y = y
@@ -258,14 +258,14 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.find_slope_array()
         self.regression()
 
-    def change_fp(self, x: Union[int, float], y: Union[int, float]):
+    def change_fp(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fp_x = x
         self.fp_y = y
         self.find_slope_array()
         self.regression()
 
-    def change_slope_start(self, x: Union[int, float], y: Union[int, float]):
+    def change_slope_start(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self.max_x = x
         self.max_y = y
@@ -278,11 +278,11 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     def plot_elements_y(self) -> list:
         return [self.fv_y, self.fp_y]
 
-    def slope_x(self) -> Union[float, int]:
+    def slope_x(self) -> np.ndarray:
         if not np.isnan(self._slope):
-            return self._slope_x / self.s_r_c
+            return np.array(self._slope_x) / self.s_r_c
         else:
-            return self._slope_x
+            return np.array(self._slope_x)
 
     def fp_x(self) -> Union[float, int]:
         if not np.isnan(self._fp_x):
@@ -290,7 +290,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         else:
             return self._fp_x
 
-    def fv_x(self) -> float:
+    def fv_x(self) -> Union[float, int]:
         if not np.isnan(self._fv_x):
             return self._fv_x / self.s_r_c
         else:

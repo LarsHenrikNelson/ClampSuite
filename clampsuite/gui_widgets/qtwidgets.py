@@ -89,74 +89,6 @@ class WorkerSignals(QObject):
     path = pyqtSignal(object)
 
 
-class ListView(QListView):
-    """
-    This is a custom listview that allows for drag and drop loading of
-    scanimage matlab files.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.setAcceptDrops(True)
-        self.setSelectionMode(self.MultiSelection)
-        self.setDropIndicatorShown(True)
-        self.setModel(ListModel())
-
-    def dragEnterEvent(self, e):
-        """
-        This function will detect the drag enter event from the mouse on the
-        main window
-        """
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    def dragMoveEvent(self, e):
-        """
-        This function will detect the drag move event on the main window
-        """
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    @pyqtSlot()
-    def dropEvent(self, e):
-        """
-        This function will enable the drop file directly on to the
-        main window. The file location will be stored in the self.filename
-        """
-        if e.mimeData().hasUrls:
-            e.setDropAction(Qt.CopyAction)
-            e.accept()
-            self.model().addData(e.mimeData().urls())
-        else:
-            e.ignore()
-
-    def clearData(self):
-        self.model().clearData()
-        self.model().layoutChanged.emit()
-
-    def deleteSelection(self, index_list):
-        rows = [i.row() for i in index_list]
-        indexes = sorted(rows, reverse=True)
-        for i in indexes:
-            self.model().deleteSelection(i)
-            self.model().layoutChanged.emit()
-            self.clearSelection()
-
-    def addAcq(self, urls):
-        self.model().addData(urls)
-        self.model().layoutChanged.emit()
-
-    def setAnalysisType(self, analysis):
-        self.model().setAnalysisType(analysis)
-
-    def setData(self, exp_manager):
-        self.model().setLoadData(exp_manager)
-
-
 class ListModel(QAbstractListModel):
     """
     The model contains all the load data for the list view. Qt works using a
@@ -232,6 +164,74 @@ class ListModel(QAbstractListModel):
 
     def setLoadData(self, exp_manager):
         self.exp_manager = exp_manager
+
+
+class ListView(QListView):
+    """
+    This is a custom listview that allows for drag and drop loading of
+    scanimage matlab files.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.setAcceptDrops(True)
+        self.setSelectionMode(self.MultiSelection)
+        self.setDropIndicatorShown(True)
+        self.setModel(ListModel())
+
+    def dragEnterEvent(self, e):
+        """
+        This function will detect the drag enter event from the mouse on the
+        main window
+        """
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e):
+        """
+        This function will detect the drag move event on the main window
+        """
+        if e.mimeData().hasUrls:
+            e.accept()
+        else:
+            e.ignore()
+
+    @pyqtSlot()
+    def dropEvent(self, e):
+        """
+        This function will enable the drop file directly on to the
+        main window. The file location will be stored in the self.filename
+        """
+        if e.mimeData().hasUrls:
+            e.setDropAction(Qt.CopyAction)
+            e.accept()
+            self.model().addData(e.mimeData().urls())
+        else:
+            e.ignore()
+
+    def clearData(self):
+        self.model().clearData()
+        self.model().layoutChanged.emit()
+
+    def deleteSelection(self, index_list):
+        rows = [i.row() for i in index_list]
+        indexes = sorted(rows, reverse=True)
+        for i in indexes:
+            self.model().deleteSelection(i)
+            self.model().layoutChanged.emit()
+            self.clearSelection()
+
+    def addAcq(self, urls):
+        self.model().addData(urls)
+        self.model().layoutChanged.emit()
+
+    def setAnalysisType(self, analysis):
+        self.model().setAnalysisType(analysis)
+
+    def setData(self, exp_manager):
+        self.model().setLoadData(exp_manager)
 
 
 class StringBox(QSpinBox):

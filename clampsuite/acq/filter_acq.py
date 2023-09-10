@@ -85,7 +85,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
     def analyze(self):
         self.filter_array(self.array)
 
-    def filter_array(self, array):
+    def filter_array(self, array) -> None:
         """
         This funtion filters the array of data, with several different types
         of filters.

@@ -1365,8 +1365,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Reset the last point clicked.
         self.last_event_point_clicked = []
-        # else:
-        #     pass
 
         logger.info(
             f"Peak set on event {event_index} on \
