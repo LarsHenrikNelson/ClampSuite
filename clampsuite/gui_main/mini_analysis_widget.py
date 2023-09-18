@@ -1309,7 +1309,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
             logger.info("No event peak was set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
@@ -1381,7 +1381,7 @@ class MiniAnalysisWidget(DragDropWidget):
         None.
 
         """
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
             logger.info("No event baseline was set, acquisition do not exist.")
             self.fileDoesNotExist()
             return None
@@ -1454,10 +1454,7 @@ class MiniAnalysisWidget(DragDropWidget):
         -------
         None
         """
-        if (
-            not self.exp_manager.acqs_exist("mini")
-            or self.exp_manager.exp_dict["mini"] not in self.exp_manager["mini"]
-        ):
+        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
             logger.info(
                 f"No event deleted, acquisition {self.acquisition_number.value()} \
                 does not exist."

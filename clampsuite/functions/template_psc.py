@@ -4,7 +4,7 @@ import numpy as np
 
 
 def create_template(
-    amplitude: Union[int, float] = 20,
+    amplitude: Union[int, float] = -20,
     tau_1: Union[int, float] = 0.3,
     tau_2: Union[int, float] = 5,
     risepower: Union[int, float] = 0.5,
@@ -41,7 +41,3 @@ def create_template(
     )
     template[offset:] = y
     return template
-
-
-if __name__ == "__main__":
-    create_template()
