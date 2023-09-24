@@ -30,8 +30,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ] = "max_curvature",
         min_spikes: int = 2,
     ):
-        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.baseline_start = int(baseline_start * self.s_r_c)
+        self.baseline_end = int(baseline_end * self.s_r_c)
+        if self._pulse_start == 0:
+            self._pulse_start = self.baseline_end
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -40,11 +42,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
-        self.baselined_array = self.array - np.mean(
-            self.array[self.baseline_start : self.baseline_end]
-        )
-        self._pulse_start = int(self._pulse_start * self.s_r_c)
-        self.pulse_end = int((self.pulse_end + 2) * self.s_r_c)
         self.threshold = threshold
         self.threshold_method = threshold_method
         self.min_spikes = min_spikes
@@ -71,18 +68,15 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 self.array[self.baseline_start : self.baseline_end]
             )
             max_value = np.max(self.array[self._pulse_start : self.pulse_end])
-            self.start = int(
-                self._pulse_start + ((self.pulse_end - self._pulse_start) / 2)
-            )
             if max_value < self.threshold:
                 self.delta_v = (
-                    np.mean(self.array[self.start : self.pulse_end])
+                    np.mean(self.array[self._pulse_start : self.pulse_end])
                     - self.baseline_mean
                 )
             else:
                 m = stats.mode(
                     bn.move_mean(
-                        self.array[self.start : self.pulse_end],
+                        self.array[self._pulse_start : self.pulse_end],
                         window=1000,
                         min_count=1,
                     ),
@@ -102,16 +96,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         # Find the peaks of the spikes. The prominence is set to avoid picking
         # peaks that are just noise.
-        if self.ramp == "0":
-            self.peaks, _ = signal.find_peaks(
-                self.array[: self.pulse_end],
-                height=self.threshold,
-                prominence=int(1 * self.s_r_c),
-            )
-        elif self.ramp == "1":
-            self.peaks, _ = signal.find_peaks(
-                self.array[: self.pulse_end], height=self.threshold, prominence=10
-            )
+        self.peaks, _ = signal.find_peaks(
+            self.array[self._pulse_start : self.pulse_end],
+            height=self.threshold,
+            prominence=int(1 * self.s_r_c),
+        )
         if len(self.peaks) < self.min_spikes:
             # If there are no peaks fill in values with np.nan. This helps with
             # analysis further down the line as nan values are fairly easy to
@@ -124,6 +113,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ap_v = np.nan
             self.peak_volt = np.nan
         else:
+            self.peaks += self._pulse_start
             # Get the peak voltage
             self.peak_volt = self.array[self.peaks[0]]
 
@@ -140,7 +130,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             baseline_std = np.std(dv[self.baseline_start : self.baseline_end])
 
             # Calculate the IEI and correction for sample rate
-            if len(self.peaks) > 1:
+            if not np.isnan(self.peaks[0]):
                 self.iei = np.diff(self.peaks) / self.s_r_c
                 self.iei_mean = self.iei.mean()
             else:
@@ -295,10 +285,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
     def find_baseline_stability(self):
         if self.ramp == "0":
-            self.baseline_stability = np.abs(
-                np.mean(self.array[: self._pulse_start])
-                - np.mean(self.array[self.pulse_end :])
-            )
+            if self.pulse_end != self.array.size:
+                self.baseline_stability = np.abs(
+                    np.mean(self.array[: self._pulse_start])
+                    - np.mean(self.array[self.pulse_end :])
+                )
+            else:
+                self.baseline_stability = 0.0
         elif self.ramp == "1":
             self.baseline_stability = np.abs(
                 np.mean(self.array[: self._pulse_start])
@@ -344,7 +337,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             else:
                 # Create the ramp current values.
                 ramp_values = np.linspace(
-                    0, int(self.pulse_amp), num=self.pulse_end - self._pulse_start
+                    0, self.pulse_amp, num=self.pulse_end - self._pulse_start
                 )
 
                 # Create an array of zeros where the ramp will be placed.
@@ -424,11 +417,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # length of the pulse. If there is only one spike the hertz
             # returns an impossibly fast number is you take only divide by
             # the start of the spike_threshold to the end of the pulse.
-            return len(self.peaks) / (
-                (self.pulse_end - self._pulse_start) / self.sample_rate
-            )
+            if not np.isnan(self.peaks[0]):
+                return len(self.peaks) / (
+                    (self.pulse_end - self._pulse_start) / self.sample_rate
+                )
+            else:
+                return np.nan
         elif self.ramp == "1":
-            return len(self.peaks) / ((self.pulse_end - self.rheo_x) / self.sample_rate)
+            if not np.isnan(self.peaks[0]):
+                return len(self.peaks) / (
+                    (self.pulse_end - self.rheo_x) / self.sample_rate
+                )
+            else:
+                return np.nan
 
     def spike_width_y(self) -> list:
         if self.width_comp is not None:

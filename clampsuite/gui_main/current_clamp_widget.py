@@ -208,16 +208,16 @@ class currentClampWidget(DragDropWidget):
             self.acquisition_number_label, self.acquisition_number
         )
 
-        self.epoch_number = QLineEdit()
+        self.epoch_number = LineEdit()
         self.analysis_buttons.addRow("Epoch", self.epoch_number)
         self.epoch_number.editingFinished.connect(
-            lambda: self.editAttr("epoch", self.epoch_number.text())
+            lambda: self.editAttr("epoch", self.epoch_number.toText())
         )
 
-        self.pulse_amp_num = QLineEdit()
+        self.pulse_amp_num = LineEdit()
         self.analysis_buttons.addRow("Pulse amp", self.pulse_amp_num)
         self.pulse_amp_num.editingFinished.connect(
-            lambda: self.editAttr("pulse_amp", self.pulse_amp_num.text())
+            lambda: self.editAttr("pulse_amp", self.pulse_amp_num.toFloat())
         )
 
         self.baseline_mean_label = QLabel("Baseline mean (mV)")
@@ -454,7 +454,7 @@ class currentClampWidget(DragDropWidget):
                 self.acquisition_number.value()
             ]
             self.epoch_number.setText(acq_object.epoch)
-            self.pulse_amp_num.setText(acq_object.pulse_amp)
+            self.pulse_amp_num.setText(str(acq_object.pulse_amp))
             self.baseline_mean_edit.setText(
                 str(round_sig(acq_object.baseline_mean, sig=4))
             )

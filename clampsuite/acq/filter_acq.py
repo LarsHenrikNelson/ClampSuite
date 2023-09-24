@@ -69,8 +69,8 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         ] = "hann",
         polyorder: Union[int, None] = None,
     ):
-        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.baseline_start = int(baseline_start * self.s_r_c)
+        self.baseline_end = int(baseline_end * self.s_r_c)
         self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
         self.filter_type = filter_type
         self.order = order

@@ -13,7 +13,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
     Acquisition class and takes input specific for LFP analysis.
     """
 
-    def filter_acq(
+    def set_filter(
         self,
         baseline_start: Union[int, float] = 0,
         baseline_end: Union[int, float] = 800,

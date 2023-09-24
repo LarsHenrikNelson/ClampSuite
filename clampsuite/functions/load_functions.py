@@ -100,7 +100,8 @@ def find_pulse_data(data_string, component):
 
 def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     """
-    This function takes pathlib.PurePath object as the input.
+    This function takes pathlib.PurePath object or string as the input.
+    All the data that is in time is converted to samples.
     """
     acq_dict = {}
     name = PurePath(path).stem
@@ -113,6 +114,7 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     analog_input = matfile1[name]["UserData"]["ai"]
     acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
     acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
+    acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
     acq_dict["pulse_amp"] = "0"
     if analog_input == 0:
         # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
@@ -120,31 +122,25 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
         amp, start, end, ramp, duration = find_pulse_data(
             data_string, "pulseString_ao0=(.*?)state"
         )
-        acq_dict["pulse_amp"] = amp
-        acq_dict["_pulse_start"] = start
-        acq_dict["pulse_end"] = end
-        acq_dict["ramp"] = ramp
-        acq_dict["duration"] = duration
+
     elif analog_input == 1:
         # r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
         acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
         amp, start, end, ramp, duration = find_pulse_data(
             data_string, "pulseString_ao1=(.*?)state"
         )
-        acq_dict["pulse_amp"] = amp
-        acq_dict["_pulse_start"] = start
-        acq_dict["pulse_end"] = end
-        acq_dict["ramp"] = ramp
-        acq_dict["duration"] = duration
-    # ramp = re.findall(r"ramp=(\D?\d*);", r[0])
-    # if ramp:
-    #     acq_dict["ramp"] = ramp[0]
-    # else:
-    #     acq_dict["ramp"] = "0"
-    amp, start, end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
-    acq_dict["rc_amp"] = amp
-    acq_dict["rc_start"] = start
-    acq_dict["rc_end"] = end
+    acq_dict["pulse_amp"] = amp
+    acq_dict["_pulse_start"] = int(start * acq_dict["s_r_c"])
+    if end > 0:
+        acq_dict["pulse_end"] = int(end * acq_dict["s_r_c"])
+    else:
+        acq_dict["pulse_end"] = int(duration * acq_dict["s_r_c"])
+    acq_dict["ramp"] = ramp
+    acq_dict["duration"] = int(duration * acq_dict["s_r_c"])
+    rc_amp, rc_start, rc_end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
+    acq_dict["rc_amp"] = rc_amp
+    acq_dict["rc_start"] = int(rc_start * acq_dict["s_r_c"])
+    acq_dict["rc_end"] = int(rc_end * acq_dict["s_r_c"])
     return acq_dict
 
 
@@ -244,6 +240,8 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
         if isinstance(data[key], list):
             if key not in ["postsynaptic_events", "final_events"]:
                 data[key] = np.array(data[key])
+    if "pulse_amp" in data:
+        data["pulse_amp"] = float(data["pulse_amp"])
     if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
         data["s_r_c"] = data.get("sample_rate_correction")
     return data
