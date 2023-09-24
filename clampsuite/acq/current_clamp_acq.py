@@ -20,13 +20,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         low_width: Union[None, int, float] = None,
         window: Union[None, int] = None,
         polyorder: Union[None, int, float] = None,
-        pulse_start: Union[int, float] = 300,
-        pulse_end: Union[int, float] = 1000,
-        ramp_start: Union[int, float] = 300,
-        ramp_end: Union[int, float] = 4000,
+        # pulse_start: Union[int, float] = 300,
+        # pulse_end: Union[int, float] = 1000,
+        # ramp_start: Union[int, float] = 300,
+        # ramp_end: Union[int, float] = 4000,
         threshold: Union[int, float] = -15,
         threshold_method: Literal[
-            "third_derivative", "max_curvature"
+            "third_derivative", "max_curvature", "legacy"
         ] = "max_curvature",
         min_spikes: int = 2,
     ):
@@ -43,10 +43,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.baselined_array = self.array - np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )
-        self._pulse_start = int(pulse_start * self.s_r_c)
-        self.pulse_end = int(pulse_end * self.s_r_c)
-        self.ramp_start = int(ramp_start * self.s_r_c)
-        self.ramp_end = int(ramp_end * self.s_r_c)
+        self._pulse_start = int(self._pulse_start * self.s_r_c)
+        self.pulse_end = int((self.pulse_end + 2) * self.s_r_c)
         self.threshold = threshold
         self.threshold_method = threshold_method
         self.min_spikes = min_spikes
@@ -112,7 +110,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             )
         elif self.ramp == "1":
             self.peaks, _ = signal.find_peaks(
-                self.array[: self.ramp_end], height=self.threshold, prominence=10
+                self.array[: self.pulse_end], height=self.threshold, prominence=10
             )
         if len(self.peaks) < self.min_spikes:
             # If there are no peaks fill in values with np.nan. This helps with
@@ -181,9 +179,25 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             z = (dddv - np.mean(dddv)) / np.std(dddv)
             peaks, _ = signal.find_peaks(z, prominence=8)
             peaks = peaks - 1
-        else:
+        elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
+        elif self.threshold_method == "legacy":
+            dv = np.gradient(self.array)
+            peak_dv, _ = signal.find_peaks(dv, height=6)
+            try:
+                peaks = (
+                    np.argwhere(np.gradient(dv[self._pulse_start : peak_dv[0]]) < (0.3))
+                    + self._pulse_start
+                )[-1]
+            except IndexError:
+                peaks = [
+                    (np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start)
+                ]
+        else:
+            raise AttributeError(
+                "threshold_method must be third_derivative, max_curvature or legacy."
+            )
         rheo_x = peaks[0]
         sec_spike = peaks[2]
         return rheo_x, sec_spike
@@ -256,7 +270,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 else:
                     self.ap_index = [
                         self.indices[0] - int(5 * self.s_r_c),
-                        self.ramp_end,
+                        self.pulse_end,
                     ]
 
                 # Extract the first action potential based on the ap_index.
@@ -269,7 +283,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             if self.ramp == "0":
                 end = self.pulse_end
             else:
-                end = self.ramp_end
+                end = self.pulse_end
             masked_array = self.array.copy()
             mask = np.array(self.array > self.spike_threshold)
             masked_array[~mask] = self.spike_threshold
@@ -287,8 +301,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             )
         elif self.ramp == "1":
             self.baseline_stability = np.abs(
-                np.mean(self.array[: self.ramp_start])
-                - np.mean(self.array[self.ramp_end :])
+                np.mean(self.array[: self._pulse_start])
+                - np.mean(self.array[self.pulse_end :])
             )
         else:
             self.baseline_stability = np.nan
@@ -330,14 +344,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             else:
                 # Create the ramp current values.
                 ramp_values = np.linspace(
-                    0, int(self.pulse_amp), num=self.ramp_end - self.ramp_start
+                    0, int(self.pulse_amp), num=self.pulse_end - self._pulse_start
                 )
 
                 # Create an array of zeros where the ramp will be placed.
                 ramp_array = np.zeros(len(self.array))
 
                 # Insert the ramp into the array of zeros.
-                ramp_array[self.ramp_start : self.ramp_end] = ramp_values
+                ramp_array[self._pulse_start : self.pulse_end] = ramp_values
 
                 # Extract the ramp rheobase.
                 self.ramp_rheo = ramp_array[self.rheo_x]
@@ -414,7 +428,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 (self.pulse_end - self._pulse_start) / self.sample_rate
             )
         elif self.ramp == "1":
-            return len(self.peaks) / ((self.ramp_end - self.rheo_x) / self.sample_rate)
+            return len(self.peaks) / ((self.pulse_end - self.rheo_x) / self.sample_rate)
 
     def spike_width_y(self) -> list:
         if self.width_comp is not None:

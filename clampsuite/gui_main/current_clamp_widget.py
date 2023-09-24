@@ -113,33 +113,33 @@ class currentClampWidget(DragDropWidget):
         self.b_end_edit.setText("300")
         self.input_layout.addRow(self.b_end_label, self.b_end_edit)
 
-        self.pulse_start_label = QLabel("Pulse start (ms)")
-        self.pulse_start_edit = LineEdit()
-        self.pulse_start_edit.setObjectName("pulse_start_edit")
-        self.pulse_start_edit.setEnabled(True)
-        self.pulse_start_edit.setText("300")
-        self.input_layout.addRow(self.pulse_start_label, self.pulse_start_edit)
+        # self.pulse_start_label = QLabel("Pulse start (ms)")
+        # self.pulse_start_edit = LineEdit()
+        # self.pulse_start_edit.setObjectName("pulse_start_edit")
+        # self.pulse_start_edit.setEnabled(True)
+        # self.pulse_start_edit.setText("300")
+        # self.input_layout.addRow(self.pulse_start_label, self.pulse_start_edit)
 
-        self.pulse_end_label = QLabel("Pulse end (ms)")
-        self.pulse_end_edit = LineEdit()
-        self.pulse_end_edit.setObjectName("pulse_end_edit")
-        self.pulse_end_edit.setEnabled(True)
-        self.pulse_end_edit.setText("1002")
-        self.input_layout.addRow(self.pulse_end_label, self.pulse_end_edit)
+        # self.pulse_end_label = QLabel("Pulse end (ms)")
+        # self.pulse_end_edit = LineEdit()
+        # self.pulse_end_edit.setObjectName("pulse_end_edit")
+        # self.pulse_end_edit.setEnabled(True)
+        # self.pulse_end_edit.setText("1002")
+        # self.input_layout.addRow(self.pulse_end_label, self.pulse_end_edit)
 
-        self.ramp_start_label = QLabel("Ramp start (ms)")
-        self.ramp_start_edit = LineEdit()
-        self.ramp_start_edit.setObjectName("ramp_start_edit")
-        self.ramp_start_edit.setEnabled(True)
-        self.ramp_start_edit.setText("300")
-        self.input_layout.addRow(self.ramp_start_label, self.ramp_start_edit)
+        # self.ramp_start_label = QLabel("Ramp start (ms)")
+        # self.ramp_start_edit = LineEdit()
+        # self.ramp_start_edit.setObjectName("ramp_start_edit")
+        # self.ramp_start_edit.setEnabled(True)
+        # self.ramp_start_edit.setText("300")
+        # self.input_layout.addRow(self.ramp_start_label, self.ramp_start_edit)
 
-        self.ramp_end_label = QLabel("Ramp end (ms)")
-        self.ramp_end_edit = LineEdit()
-        self.ramp_end_edit.setObjectName("ramp_end_edit")
-        self.ramp_end_edit.setEnabled(True)
-        self.ramp_end_edit.setText("4000")
-        self.input_layout.addRow(self.ramp_end_label, self.ramp_end_edit)
+        # self.ramp_end_label = QLabel("Ramp end (ms)")
+        # self.ramp_end_edit = LineEdit()
+        # self.ramp_end_edit.setObjectName("ramp_end_edit")
+        # self.ramp_end_edit.setEnabled(True)
+        # self.ramp_end_edit.setText("4000")
+        # self.input_layout.addRow(self.ramp_end_label, self.ramp_end_edit)
 
         self.min_spike_threshold_label = QLabel("Min spike threshold (mV)")
         self.min_spike_threshold_edit = LineEdit()
@@ -151,10 +151,7 @@ class currentClampWidget(DragDropWidget):
         )
 
         self.threshold_method = QComboBox()
-        methods = [
-            "max_curvature",
-            "third_derivative",
-        ]
+        methods = ["max_curvature", "third_derivative", "legacy"]
         self.threshold_method.addItems(methods)
         self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
 
@@ -374,10 +371,10 @@ class currentClampWidget(DragDropWidget):
                     "baseline_start": self.b_start_edit.toInt(),
                     "baseline_end": self.b_end_edit.toInt(),
                     "filter_type": "None",
-                    "pulse_start": self.pulse_start_edit.toInt(),
-                    "pulse_end": self.pulse_end_edit.toInt(),
-                    "ramp_start": self.ramp_start_edit.toInt(),
-                    "ramp_end": self.ramp_end_edit.toInt(),
+                    # "pulse_start": self.pulse_start_edit.toInt(),
+                    # "pulse_end": self.pulse_end_edit.toInt(),
+                    # "ramp_start": self.ramp_start_edit.toInt(),
+                    # "ramp_end": self.ramp_end_edit.toInt(),
                     "threshold": self.min_spike_threshold_edit.toInt(),
                     "min_spikes": self.min_spikes_edit.toInt(),
                     "threshold_method": self.threshold_method.currentText(),

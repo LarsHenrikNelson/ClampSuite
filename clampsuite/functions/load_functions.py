@@ -68,6 +68,36 @@ def load_mat(filename: str) -> dict:
     return _check_vars(data)
 
 
+def find_pulse_data(data_string, component):
+    temp_string = re.findall(component, data_string)
+    amp = 0.0
+    start = 0.0
+    end = 0.0
+    ramp = 0
+    duration = 0
+    if len(temp_string) == 1:
+        temp_string = temp_string[0]
+        amp_temp = re.findall("amplitude=(.*?);", temp_string)
+        if len(amp_temp) == 1:
+            amp = float(amp_temp[0])
+        start_temp = re.findall("delay=(.*?);", temp_string)
+        if len(start_temp) == 1:
+            start = float(start_temp[0])
+        duration_temp = re.findall("duration=(.*?);", temp_string)
+        if len(duration_temp) == 1:
+            duration = float(duration_temp[0])
+        width_temp = re.findall("pulseWidth=(.*?);", temp_string)
+        if len(width_temp) == 1:
+            width = float(width_temp[0])
+            end = start + width
+        else:
+            end = 0
+        ramp_temp = re.findall(r"ramp=(.*?);", temp_string)
+        if len(width_temp) == 1:
+            ramp = ramp_temp[0]
+    return amp, start, end, ramp, duration
+
+
 def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     """
     This function takes pathlib.PurePath object as the input.
@@ -83,19 +113,38 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     analog_input = matfile1[name]["UserData"]["ai"]
     acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
     acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
+    acq_dict["pulse_amp"] = "0"
     if analog_input == 0:
-        r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
+        # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
         acq_dict["pulse_pattern"] = re.findall("pulseToUse0=(\D?\d*)", data_string)[0]
+        amp, start, end, ramp, duration = find_pulse_data(
+            data_string, "pulseString_ao0=(.*?)state"
+        )
+        acq_dict["pulse_amp"] = amp
+        acq_dict["_pulse_start"] = start
+        acq_dict["pulse_end"] = end
+        acq_dict["ramp"] = ramp
+        acq_dict["duration"] = duration
     elif analog_input == 1:
-        r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
+        # r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
         acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
-    ramp = re.findall(r"ramp=(\D?\d*);", r[0])
-    if ramp:
-        acq_dict["ramp"] = ramp[0]
-        acq_dict["pulse_amp"] = re.findall("amplitude=(\D?\d*)", r[0])[0]
-    else:
-        acq_dict["ramp"] = "0"
-        acq_dict["pulse_amp"] = "0"
+        amp, start, end, ramp, duration = find_pulse_data(
+            data_string, "pulseString_ao1=(.*?)state"
+        )
+        acq_dict["pulse_amp"] = amp
+        acq_dict["_pulse_start"] = start
+        acq_dict["pulse_end"] = end
+        acq_dict["ramp"] = ramp
+        acq_dict["duration"] = duration
+    # ramp = re.findall(r"ramp=(\D?\d*);", r[0])
+    # if ramp:
+    #     acq_dict["ramp"] = ramp[0]
+    # else:
+    #     acq_dict["ramp"] = "0"
+    amp, start, end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
+    acq_dict["rc_amp"] = amp
+    acq_dict["rc_start"] = start
+    acq_dict["rc_end"] = end
     return acq_dict
 
 

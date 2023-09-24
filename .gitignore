@@ -14,3 +14,4 @@ lib
 share
 .ruff_cache
 clampsuite/gui_widgets/test_widgets.py
+.mypy_cache
