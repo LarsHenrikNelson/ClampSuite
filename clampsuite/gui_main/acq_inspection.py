@@ -73,7 +73,7 @@ class AcqInspectionWidget(QWidget):
                 y=self.acq_dict[number].array,
             )
             self.ramp.setText(self.acq_dict[number].ramp)
-            self.pulse_amp.setText(self.acq_dict[number].pulse_amp)
+            self.pulse_amp.setText(str(self.acq_dict[number].pulse_amp))
             self.epoch.setText(self.acq_dict[number].epoch)
 
         else:

@@ -132,15 +132,26 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     acq_dict["pulse_amp"] = amp
     acq_dict["_pulse_start"] = int(start * acq_dict["s_r_c"])
     if end > 0:
-        acq_dict["pulse_end"] = int(end * acq_dict["s_r_c"])
+        acq_dict["_pulse_end"] = int(end * acq_dict["s_r_c"])
     else:
-        acq_dict["pulse_end"] = int(duration * acq_dict["s_r_c"])
+        acq_dict["_pulse_end"] = int(duration * acq_dict["s_r_c"])
     acq_dict["ramp"] = ramp
-    acq_dict["duration"] = int(duration * acq_dict["s_r_c"])
+    acq_dict["_duration"] = int(duration * acq_dict["s_r_c"])
+    acq_dict["pulse_amp"] = amp
+    acq_dict["pulse_start"] = acq_dict["s_r_c"]
+    if end > 0:
+        acq_dict["pulse_end"] = acq_dict["s_r_c"]
+    else:
+        acq_dict["pulse_end"] = acq_dict["s_r_c"]
+    acq_dict["duration"] = acq_dict["s_r_c"]
+
     rc_amp, rc_start, rc_end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
+    acq_dict["_rc_amp"] = rc_amp
+    acq_dict["_rc_start"] = int(rc_start * acq_dict["s_r_c"])
+    acq_dict["_rc_end"] = int(rc_end * acq_dict["s_r_c"])
     acq_dict["rc_amp"] = rc_amp
-    acq_dict["rc_start"] = int(rc_start * acq_dict["s_r_c"])
-    acq_dict["rc_end"] = int(rc_end * acq_dict["s_r_c"])
+    acq_dict["rc_start"] = acq_dict["s_r_c"]
+    acq_dict["rc_end"] = acq_dict["s_r_c"]
     return acq_dict
 
 

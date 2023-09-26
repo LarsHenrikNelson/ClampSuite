@@ -67,16 +67,16 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.baseline_mean = np.mean(
                 self.array[self.baseline_start : self.baseline_end]
             )
-            max_value = np.max(self.array[self._pulse_start : self.pulse_end])
+            max_value = np.max(self.array[self._pulse_start : self._pulse_end])
             if max_value < self.threshold:
                 self.delta_v = (
-                    np.mean(self.array[self._pulse_start : self.pulse_end])
+                    np.mean(self.array[self._pulse_start : self._pulse_end])
                     - self.baseline_mean
                 )
             else:
                 m = stats.mode(
                     bn.move_mean(
-                        self.array[self._pulse_start : self.pulse_end],
+                        self.array[self._pulse_start : self._pulse_end],
                         window=1000,
                         min_count=1,
                     ),
@@ -97,7 +97,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         # Find the peaks of the spikes. The prominence is set to avoid picking
         # peaks that are just noise.
         self.peaks, _ = signal.find_peaks(
-            self.array[self._pulse_start : self.pulse_end],
+            self.array[self._pulse_start : self._pulse_end],
             height=self.threshold,
             prominence=int(1 * self.s_r_c),
         )
@@ -173,7 +173,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
         elif self.threshold_method == "legacy":
-            dv = np.gradient(self.array)
             peak_dv, _ = signal.find_peaks(dv, height=6)
             try:
                 peaks = (
@@ -226,12 +225,12 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                     else:
                         self.ap_index = [
                             self.indices[0] - int(5 * self.s_r_c),
-                            self.pulse_end,
+                            self._pulse_end,
                         ]
                 else:
                     self.ap_index = [
                         self.indices[0] - int(5 * self.s_r_c),
-                        self.pulse_end,
+                        self._pulse_end,
                     ]
 
                 # Extract the first action potential based on the ap_index.
@@ -260,7 +259,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 else:
                     self.ap_index = [
                         self.indices[0] - int(5 * self.s_r_c),
-                        self.pulse_end,
+                        self._pulse_end,
                     ]
 
                 # Extract the first action potential based on the ap_index.
@@ -271,9 +270,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         # The pulse half-width.
         if not np.isnan(self.peaks[0]):
             if self.ramp == "0":
-                end = self.pulse_end
+                end = self._pulse_end
             else:
-                end = self.pulse_end
+                end = self._pulse_end
             masked_array = self.array.copy()
             mask = np.array(self.array > self.spike_threshold)
             masked_array[~mask] = self.spike_threshold
@@ -285,17 +284,17 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
     def find_baseline_stability(self):
         if self.ramp == "0":
-            if self.pulse_end != self.array.size:
+            if self._pulse_end != self.array.size:
                 self.baseline_stability = np.abs(
                     np.mean(self.array[: self._pulse_start])
-                    - np.mean(self.array[self.pulse_end :])
+                    - np.mean(self.array[self._pulse_end :])
                 )
             else:
                 self.baseline_stability = 0.0
         elif self.ramp == "1":
             self.baseline_stability = np.abs(
                 np.mean(self.array[: self._pulse_start])
-                - np.mean(self.array[self.pulse_end :])
+                - np.mean(self.array[self._pulse_end :])
             )
         else:
             self.baseline_stability = np.nan
@@ -337,14 +336,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             else:
                 # Create the ramp current values.
                 ramp_values = np.linspace(
-                    0, self.pulse_amp, num=self.pulse_end - self._pulse_start
+                    0, self.pulse_amp, num=self._pulse_end - self._pulse_start
                 )
 
                 # Create an array of zeros where the ramp will be placed.
                 ramp_array = np.zeros(len(self.array))
 
                 # Insert the ramp into the array of zeros.
-                ramp_array[self._pulse_start : self.pulse_end] = ramp_values
+                ramp_array[self._pulse_start : self._pulse_end] = ramp_values
 
                 # Extract the ramp rheobase.
                 self.ramp_rheo = ramp_array[self.rheo_x]
@@ -419,14 +418,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # the start of the spike_threshold to the end of the pulse.
             if not np.isnan(self.peaks[0]):
                 return len(self.peaks) / (
-                    (self.pulse_end - self._pulse_start) / self.sample_rate
+                    (self._pulse_end - self._pulse_start) / self.sample_rate
                 )
             else:
                 return np.nan
         elif self.ramp == "1":
             if not np.isnan(self.peaks[0]):
                 return len(self.peaks) / (
-                    (self.pulse_end - self.rheo_x) / self.sample_rate
+                    (self._pulse_end - self.rheo_x) / self.sample_rate
                 )
             else:
                 return np.nan
@@ -479,7 +478,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         if self.ramp == "0":
             x = (
-                int(((self.pulse_end - self._pulse_start) / 2) + self._pulse_start)
+                int(((self._pulse_end - self._pulse_start) / 2) + self._pulse_start)
                 / self.s_r_c
             )
             plot_x = [x, x]
