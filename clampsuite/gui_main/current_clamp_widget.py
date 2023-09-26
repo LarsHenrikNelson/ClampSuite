@@ -816,7 +816,7 @@ class currentClampWidget(DragDropWidget):
 
     def finishedSaving(self):
         self.pbar.setFormat("Finished saving")
-        self.logger.info("Finished saving.")
+        logger.info("Finished saving.")
 
     def loadPreferences(self, file_name: Union[str, PurePath]):
         self.need_to_save = True
