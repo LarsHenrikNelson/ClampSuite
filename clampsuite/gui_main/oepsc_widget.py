@@ -4,7 +4,7 @@ from collections import namedtuple
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QDoubleValidator, QIntValidator, QFont
+from PyQt5.QtGui import QDoubleValidator, QFont, QIntValidator
 from PyQt5.QtWidgets import (
     QAction,
     QCheckBox,

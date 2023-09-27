@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import QThreadPool
-from PyQt5.QtGui import QIntValidator, QFont
+from PyQt5.QtGui import QFont, QIntValidator
 from PyQt5.QtWidgets import (
     QAction,
     QComboBox,
@@ -21,6 +21,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
@@ -82,7 +84,7 @@ class currentClampWidget(DragDropWidget):
         self.h_layout.addLayout(self.plot_layout, 1)
         self.plot_layout.addLayout(self.analysis_buttons, 0)
 
-        # Input widgets and labels
+        # Input widgets and labels (Tab 1)
         self.load_acq_label = QLabel("Acquisition(s)")
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
@@ -192,13 +194,7 @@ class currentClampWidget(DragDropWidget):
         self.reset_button.clicked.connect(self.reset)
         self.reset_button.setObjectName("reset_button")
 
-        # Tab 2 layout
-        self.tabs = QTabWidget()
-        self.tabs.setUsesScrollButtons(True)
-        self.main_widget.addTab(self.tabs, "Final data")
-        self.tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
-
-        # Analysis layout setup
+        # Analysis layout setup (tab 2)
         self.acquisition_number_label = QLabel("Acq number")
         self.acquisition_number = QSpinBox()
         self.acquisition_number.setKeyboardTracking(False)
@@ -283,15 +279,32 @@ class currentClampWidget(DragDropWidget):
         self.reset_acq_action = QAction("Reset del acq(s)")
         self.reset_acq_action.triggered.connect(self.resetRejectedAcqs)
 
+        self.spike_plot = pg.PlotWidget(useOpenGL=True)
+        self.spike_plot.setMinimumWidth(300)
+        self.plot_layout.addWidget(self.spike_plot)
+
+        # Tab 3 layout
+        self.tab3_dock = DockArea()
+        self.df_dock = Dock("Data")
+        self.tab3_dock.addDock(self.df_dock, "left")
+        self.df_tabs = QTabWidget()
+        self.df_tabs.setUsesScrollButtons(True)
+        self.df_dock.addWidget(self.df_tabs)
+        self.plot_dock = Dock("Plots")
+        self.tab3_dock.addDock(self.plot_dock, "right")
+        self.plot_tabs = QTabWidget()
+        self.plot_tabs.setUsesScrollButtons(True)
+        self.plot_dock.addWidget(self.plot_tabs)
+        self.main_widget.addTab(self.tab3_dock, "Final data")
+        self.plot_tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
+        self.df_tabs.setUsesScrollButtons(True)
+
+        # Other UI
         vb = self.plot_widget.getViewBox()
         vb.menu.addSeparator()
         vb.menu.addAction(self.delete_acq_action)
         vb.menu.addAction(self.reset_recent_acq_action)
         vb.menu.addAction(self.reset_acq_action)
-
-        self.spike_plot = pg.PlotWidget(useOpenGL=True)
-        self.spike_plot.setMinimumWidth(300)
-        self.plot_layout.addWidget(self.spike_plot)
 
         self.pbar = QProgressBar(self)
         self.pbar.setValue(0)
@@ -408,7 +421,8 @@ class currentClampWidget(DragDropWidget):
         self.pref_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
-        self.tabs.clear()
+        self.df_tabs.clear()
+        self.plot_tabs.clear()
         self.clearPlots()
         self.clearTables()
         self.plot_dict = {}
@@ -610,7 +624,8 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(False)
         if self.exp_manager.final_analysis is not None:
             self.final_obj = None
-            self.tabs.clear()
+            self.df_tabs.clear()
+            self.plot_tabs.clear()
             self.clearPlots()
             self.clearTables()
             self.plot_dict = {}
@@ -626,7 +641,7 @@ class currentClampWidget(DragDropWidget):
             table = pg.TableWidget(sortable=False)
             table.setData(value.T.to_dict())
             self.table_dict["key"] = table
-            self.tabs.addTab(table, key)
+            self.df_tabs.addTab(table, key)
         logger.info("Set final data into tables.")
         self.plotIVCurve()
         if fi_an.hertz:
@@ -644,7 +659,7 @@ class currentClampWidget(DragDropWidget):
     def plotIVCurve(self):
         iv_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["iv_curve_plot"] = iv_curve_plot
-        self.tabs.addTab(iv_curve_plot, "IV curve")
+        self.plot_tabs.addTab(iv_curve_plot, "IV curve")
         fa = self.exp_manager.final_analysis
         deltav_df = fa.df_dict["Delta V"]
         iv_x = fa.df_dict["iv_x"]
@@ -671,7 +686,7 @@ class currentClampWidget(DragDropWidget):
     def plotSpikeFrequency(self, hertz):
         spike_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
-        self.tabs.addTab(spike_curve_plot, "Spike curve")
+        self.plot_tabs.addTab(spike_curve_plot, "Spike curve")
         pulse_amp = hertz.pop("Pulse_amp").to_numpy()
         plot_epochs = hertz.columns.to_list()
         spike_curve_plot.addLegend()
@@ -691,7 +706,7 @@ class currentClampWidget(DragDropWidget):
     def plotPulseAP(self, df):
         pulse_ap_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["pulse_ap_plot"] = pulse_ap_plot
-        self.tabs.addTab(pulse_ap_plot, "Pulse AP")
+        self.plot_tabs.addTab(pulse_ap_plot, "Pulse AP")
         pulse_ap_plot.addLegend()
         if len(df.columns) > 1:
             for i in df.columns:
@@ -708,7 +723,7 @@ class currentClampWidget(DragDropWidget):
     def plotRampAP(self, df):
         ramp_ap_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["ramp_ap_plot"] = ramp_ap_plot
-        self.tabs.addTab(ramp_ap_plot, "Ramp AP")
+        self.plot_tabs.addTab(ramp_ap_plot, "Ramp AP")
         ramp_ap_plot.addLegend()
         if len(df.columns) > 1:
             for i in df.columns:
@@ -751,7 +766,7 @@ class currentClampWidget(DragDropWidget):
                 table = pg.TableWidget(sortable=False)
                 table.setData(value.T.to_dict())
                 self.table_dict["key"] = table
-                self.tabs.addTab(table, key)
+                self.df_tabs.addTab(table, key)
             self.plotIVCurve()
             if fa.hertz:
                 self.plotSpikeFrequency(fa.df_dict["Hertz"])
@@ -787,6 +802,12 @@ class currentClampWidget(DragDropWidget):
             if i.objectName() != "":
                 line_edit_dict[i.objectName()] = i.text()
         pref_dict["line_edits"] = line_edit_dict
+        combo_box_dict = {}
+        combo_boxes = self.findChildren(QComboBox)
+        for i in combo_boxes:
+            if i.objectName() != "":
+                combo_box_dict[i.objectName()] = i.currentText()
+        pref_dict["combo_boxes"] = combo_box_dict
         logger.info("Preferences dictionary created.")
         return pref_dict
 
