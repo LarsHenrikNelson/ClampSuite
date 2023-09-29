@@ -115,7 +115,7 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
     acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
     acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
-    acq_dict["pulse_amp"] = "0"
+    acq_dict["pulse_amp"] = 0.0
     if analog_input == 0:
         # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
         acq_dict["pulse_pattern"] = re.findall("pulseToUse0=(\D?\d*)", data_string)[0]

@@ -216,19 +216,20 @@ class currentClampWidget(DragDropWidget):
             lambda: self.editAttr("pulse_amp", self.pulse_amp_num.toFloat())
         )
 
-        self.baseline_mean_label = QLabel("Baseline mean (mV)")
-        self.baseline_mean_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.baseline_mean_label, self.baseline_mean_edit)
-
-        self.delta_v_label = QLabel("Delta V (mV)")
-        self.delta_v_edit = QLineEdit()
-        self.analysis_buttons.addRow(self.delta_v_label, self.delta_v_edit)
-
-        self.spike_threshold_label = QLabel("Spike threshold (mV)")
-        self.spike_threshold_edit = QLineEdit()
-        self.analysis_buttons.addRow(
-            self.spike_threshold_label, self.spike_threshold_edit
+        self.pulse_pattern = QLineEdit()
+        self.pulse_pattern.editingFinished.connect(
+            lambda: self.editAttr("pulse_pattern", self.pulse_pattern.text())
         )
+        self.analysis_buttons.addRow("Pulse pattern", self.pulse_pattern)
+
+        self.baseline_mean_edit = QLineEdit()
+        self.analysis_buttons.addRow("Baseline mean (mV)", self.baseline_mean_edit)
+
+        self.delta_v_edit = QLineEdit()
+        self.analysis_buttons.addRow("Delta V (mV)", self.delta_v_edit)
+
+        self.spike_threshold_edit = QLineEdit()
+        self.analysis_buttons.addRow("Spike threshold (mV)", self.spike_threshold_edit)
 
         self.half_width_edit = QLineEdit()
         self.analysis_buttons.addRow("Half-width (ms)", self.half_width_edit)
@@ -482,6 +483,7 @@ class currentClampWidget(DragDropWidget):
             ]
             self.epoch_number.setText(acq_object.epoch)
             self.pulse_amp_num.setText(str(acq_object.pulse_amp))
+            self.pulse_pattern.setText(acq_object.pulse_pattern)
             self.baseline_mean_edit.setText(
                 str(round_sig(acq_object.baseline_mean, sig=4))
             )

@@ -69,6 +69,9 @@ class Acquisition:
     def set_ramp(self, ramp):
         self.ramp = ramp
 
+    def set_pulse_pattern(self, pulse_pattern):
+        self.pulse_pattern = pulse_pattern
+
     def plot_acq_y(self):
         raise NotImplementedError
 

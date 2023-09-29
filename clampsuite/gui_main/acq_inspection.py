@@ -4,6 +4,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QFormLayout, QHBoxLayout, QLineEdit, QSpinBox, QWidget
 
+from ..gui_widgets.qtwidgets import LineEdit
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,11 +40,17 @@ class AcqInspectionWidget(QWidget):
         )
         self.props_layout.addRow("Epoch", self.epoch)
 
-        self.pulse_amp = QLineEdit()
+        self.pulse_amp = LineEdit()
         self.pulse_amp.editingFinished.connect(
-            lambda: self.editAttr("pulse_amp", self.pulse_amp.text())
+            lambda: self.editAttr("pulse_amp", self.pulse_amp.toFloat())
         )
         self.props_layout.addRow("Pulse amp", self.pulse_amp)
+
+        self.pulse_pattern = QLineEdit()
+        self.pulse_pattern.editingFinished.connect(
+            lambda: self.editAttr("pulse_pattern", self.pulse_pattern.text())
+        )
+        self.props_layout.addRow("Pulse pattern", self.pulse_pattern)
 
         self.ramp = QLineEdit()
         self.ramp.editingFinished.connect(
@@ -73,6 +81,7 @@ class AcqInspectionWidget(QWidget):
                 y=self.acq_dict[number].array,
             )
             self.ramp.setText(self.acq_dict[number].ramp)
+            self.pulse_pattern.setText(self.acq_dict[number].pulse_pattern)
             self.pulse_amp.setText(str(self.acq_dict[number].pulse_amp))
             self.epoch.setText(self.acq_dict[number].epoch)
 
