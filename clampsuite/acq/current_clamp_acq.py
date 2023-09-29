@@ -146,7 +146,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # This takes the last value of an array of values that are
                 # less than the threshold of the second derivative. It was
                 # the most robust way to find the spike threshold time.
-                self.rheo_x, _ = self.find_spk_thresh(self.array)
+                self.rheo_x = self.find_spk_thresh(self.array)
 
                 # Find the spike_threshold using the timing found above
                 self.spike_threshold = self.array[self.rheo_x]
@@ -166,9 +166,16 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ddv = np.gradient(dv)
         if self.threshold_method == "third_derivative":
             dddv = np.gradient(ddv)
-            z = (dddv - np.mean(dddv)) / np.std(dddv)
-            peaks, _ = signal.find_peaks(z, prominence=8)
-            peaks = peaks - 1
+            dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
+            peaks, _ = signal.find_peaks(
+                dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
+                height=2,
+            )
+            # if peaks.size == 0:
+            #     peaks, _ = signal.find_peaks(
+            #         dddv_zscored[self._pulse_start :], prominence=5
+            #     )
+            peaks = peaks - 1 + self._pulse_start + int(1 * self.s_r_c)
         elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
@@ -188,8 +195,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 "threshold_method must be third_derivative, max_curvature or legacy."
             )
         rheo_x = peaks[0]
-        sec_spike = peaks[2]
-        return rheo_x, sec_spike
+        return rheo_x
 
     def first_spike_parameters(self):
         """This function analyzes the parameter of the first action potential in

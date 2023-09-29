@@ -469,7 +469,9 @@ class currentClampWidget(DragDropWidget):
         self.acquisition_number.setEnabled(False)
         self.need_to_save = True
         self.plot_widget.clear()
+        self.plot_widget.enableAutoRange()
         self.spike_plot.clear()
+        self.spike_plot.enableAutoRange()
         if (
             self.acquisition_number.value()
             in self.exp_manager.exp_dict["current_clamp"]
@@ -869,6 +871,7 @@ class currentClampWidget(DragDropWidget):
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
             self.pbar.setValue(value)
+            # self.pbar.setFormat(f"{value}")
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 

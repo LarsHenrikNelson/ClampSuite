@@ -57,7 +57,7 @@ class ExpManager:
                 i.analyze(**analysis_args)
                 self.callback_func(int((100 * (count + 1) / total)))
             self.analyzed = True
-            self.callback_func(f"Analyed {exp} acquisitions")
+            self.callback_func(f"Analyzed {exp} acquisitions")
 
     def set_ui_prefs(self, pref_dict: dict) -> None:
         self.ui_prefs = pref_dict
