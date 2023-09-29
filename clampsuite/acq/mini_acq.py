@@ -54,9 +54,11 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         rc_check_end: Union[int, float] = 10300,
         baseline_corr: bool = False,
     ):
-        self.baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self.baseline_end = int(baseline_end * (self.sample_rate / 1000))
-        self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
+        self._baseline_start = int(baseline_start * (self.sample_rate / 1000))
+        self._baseline_end = int(baseline_end * (self.sample_rate / 1000))
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass

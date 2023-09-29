@@ -319,16 +319,27 @@ class currentClampWidget(DragDropWidget):
         logger.info("Current clamp UI created.")
 
     def editAttr(self, line_edit, value):
-        logger.info(f"Editing aquisition attribute {self.acquisition_number.value()}.")
-        acq = self.exp_manager.exp_dict["current_clamp"][
-            self.acquisition_number.value()
-        ]
-        setattr(acq, line_edit, value)
-        logger.info(
-            f"Set {value} for {line_edit} on aquisition\
-                  {self.acquisition_number.value()}."
-        )
-        return True
+        if (
+            not self.exp_manager.acqs_exist("current_clamp")
+            or self.acquisition_number.value()
+            not in self.exp_manager.exp_dict["current_clamp"]
+        ):
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
+            self.fileDoesNotExist()
+            return False
+        else:
+            logger.info(
+                f"Editing aquisition attribute {self.acquisition_number.value()}."
+            )
+            acq = self.exp_manager.exp_dict["current_clamp"][
+                self.acquisition_number.value()
+            ]
+            setattr(acq, line_edit, value)
+            logger.info(
+                f"Set {value} for {line_edit} on aquisition\
+                    {self.acquisition_number.value()}."
+            )
+            return True
 
     def setWidth(self):
         line_edits = self.findChildren(QLineEdit)
@@ -571,7 +582,8 @@ class currentClampWidget(DragDropWidget):
     def deleteAcq(self):
         if (
             not self.exp_manager.acqs_exist("current_clamp")
-            or self.acquisition_number.value() not in self.acq_manager["current_clamp"]
+            or self.acquisition_number.value()
+            not in self.exp_manager.exp_dict["current_clamp"]
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.fileDoesNotExist()
@@ -579,7 +591,7 @@ class currentClampWidget(DragDropWidget):
 
         logger.info(f"Deleting acquisition {self.acquisition_number.value()}.")
         self.need_to_save = False
-        self.exp_manager.delete_acq("mini", self.acquisition_number.value())
+        self.exp_manager.delete_acq("current_clamp", self.acquisition_number.value())
 
         # Clear plots
         self.plot_widget.clear()
@@ -592,7 +604,7 @@ class currentClampWidget(DragDropWidget):
         else:
             self.need_to_save = True
             logger.info("Resetting deleted acquisitions.")
-            self.exp_manager.reset_deleted_acqs("mini")
+            self.exp_manager.reset_deleted_acqs("current_clamp")
             logger.info("Deleted acquisitions reset.")
             self.pbar.setFormat("Reset deleted acquisitions.")
 
@@ -603,7 +615,7 @@ class currentClampWidget(DragDropWidget):
         else:
             self.need_to_save = True
             logger.info("Resetting most recent deleted acquisition.")
-            number = self.exp_manager.reset_recent_deleted_acq("mini")
+            number = self.exp_manager.reset_recent_deleted_acq("current_clamp")
             if number != 0:
                 self.acquisition_number.setValue(number)
                 logger.info(f"Acquisition {number} reset.")
@@ -750,7 +762,10 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(False)
         self.exp_manger = ExpManager()
         self.worker = ThreadWorker(
-            self.exp_manager, function="load", analysis="mini", file_path=directory
+            self.exp_manager,
+            function="load",
+            analysis="current_clamp",
+            file_path=directory,
         )
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)

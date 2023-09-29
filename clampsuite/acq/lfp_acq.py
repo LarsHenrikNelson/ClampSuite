@@ -60,8 +60,10 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
-        self.baseline_start = int(baseline_start * self.s_r_c)
-        self.baseline_end = int(baseline_end * (self.s_r_c))
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self._baseline_start = int(baseline_start * self.s_r_c)
+        self._baseline_end = int(baseline_end * (self.s_r_c))
 
     def analyze(
         self,

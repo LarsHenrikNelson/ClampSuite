@@ -47,9 +47,11 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         ] = "hann",
         polyorder: Union[int, None] = None,
     ):
-        self.baseline_start = int(baseline_start * self.s_r_cz)
-        self.baseline_end = int(baseline_end * self.s_r_c)
-        self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
+        self._baseline_start = int(baseline_start * self.s_r_c)
+        self._baseline_end = int(baseline_end * self.s_r_c)
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -88,7 +90,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def run_analysis(self):
         self.filter_array(self.array)
         self.baseline_mean = np.mean(
-            self.filtered_array[self.baseline_start : self.baseline_end]
+            self.filtered_array[self._baseline_start : self._baseline_end]
         )
         self.find_peak_dir()
         self.find_amplitude()
@@ -136,18 +138,18 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
                 0
             ]
         if index.shape[0] > 0:
-            self.index = index[0] + self._peak_x
+            self._index = index[0] + self._peak_x
         else:
-            self.index = len(self.filtered_array)
+            self._index = len(self.filtered_array)
 
     def find_charge_transfer(self):
         self.charge_transfer = integrate.trapz(
-            self.filtered_array[self._pulse_start : self.index],
-            self.x_array[self._pulse_start : self.index],
+            self.filtered_array[self._pulse_start : self._index],
+            self.x_array[self._pulse_start : self._index],
         )
 
     def find_est_decay(self):
-        self.decay_y = self.filtered_array[self._peak_x : self.index]
+        self.decay_y = self.filtered_array[self._peak_x : self._index]
         if self.decay_y.size > 0:
             self.est_tau_y = self.peak_y * (1 / np.exp(1))
 
@@ -159,7 +161,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             decay_y = self.decay_y
 
         if self.decay_y.size > 0:
-            self.decay_x = self.x_array[self._peak_x : self.index]
+            self.decay_x = self.x_array[self._peak_x : self._index]
             self.est_tau_x = np.interp(y, decay_y, self.decay_x)
 
         else:

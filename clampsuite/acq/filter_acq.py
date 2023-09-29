@@ -69,9 +69,11 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         ] = "hann",
         polyorder: Union[int, None] = None,
     ):
-        self.baseline_start = int(baseline_start * self.s_r_c)
-        self.baseline_end = int(baseline_end * self.s_r_c)
-        self.offset = np.mean(self.array[self.baseline_start : self.baseline_end])
+        self._baseline_start = int(baseline_start * self.s_r_c)
+        self._baseline_end = int(baseline_end * self.s_r_c)
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
@@ -133,7 +135,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         purposes.
         """
         baselined_array = array - np.mean(
-            array[self.baseline_start : self.baseline_end]
+            array[self._baseline_start : self._baseline_end]
         )
         if self.filter_type == "median":
             self.filtered_array = median_filter(array=baselined_array, order=self.order)

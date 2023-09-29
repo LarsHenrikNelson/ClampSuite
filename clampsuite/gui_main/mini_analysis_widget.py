@@ -952,14 +952,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.sort_index = []
         self.event_spinbox_list = []
 
-        # Temporarily disable the acquisition number to prevent some weird behavior
-        # where the the box will skip every other acquisition.
-
         # I choose to just show
         acq_dict = self.exp_manager.exp_dict["mini"]
         if self.acquisition_number.value() in acq_dict:
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
 
+            # Temporarily disable the acquisition number to prevent some weird behavior
+            # where the the box will skip every other acquisition.
             self.acquisition_number.setEnabled(False)
 
             # Creates a reference to the acquisition object so that the
