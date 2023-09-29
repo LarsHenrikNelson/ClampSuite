@@ -40,7 +40,7 @@ class MiniEvent:
         self.fit_tau = np.nan
         self.event_length = event_length
         self._event_length = int(event_length * self.s_r_c)
-        self.create_event(y_array, event_length)
+        self.create_event(y_array)
         self.find_peak()
         self.find_event_parameters(y_array)
         self.peak_align_value = self._event_peak_x - self._array_start
@@ -48,7 +48,7 @@ class MiniEvent:
     def create_event(self, y_array: Union[np.ndarray, list]):
         self._array_start = int(self._event_pos - (2 * self.s_r_c))
         self.adjust_pos = int(self._event_pos - self._array_start)
-        end = int(self.event_pos + self._event_length)
+        end = int(self._event_pos + self._event_length)
         if end > len(y_array) - 1:
             self._array_end = len(y_array) - 1
         else:
@@ -330,13 +330,13 @@ class MiniEvent:
             return self._event_peak_x
 
     def plot_event_x(self) -> np.ndarray:
-        return np.arange(self._array_start, self.array_end) / self.s_r_c
+        return np.arange(self._array_start, self._array_end) / self.s_r_c
 
     def plot_event_y(self) -> np.ndarray:
         return self.event_array
 
     def x_array(self):
-        return np.arange(self._array_start, self.array_end, 1)
+        return np.arange(self._array_start, self._array_end, 1)
 
     def change_amplitude(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
