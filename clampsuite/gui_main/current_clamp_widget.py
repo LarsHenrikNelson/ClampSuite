@@ -661,11 +661,11 @@ class currentClampWidget(DragDropWidget):
         logger.info("Set final data into tables.")
         self.plotIVCurve()
         if fi_an.hertz:
-            self.plotSpikeFrequency(fi_an.df_dict["Hertz"])
+            self.plotSpikeFrequency(fi_an.df_dict["Hertz"].copy())
         if fi_an.pulse_ap:
-            self.plotPulseAP(fi_an.df_dict["Pulse APs"])
+            self.plotPulseAP(fi_an.df_dict["Pulse APs"].copy())
         if fi_an.ramp_ap:
-            self.plotRampAP(fi_an.df_dict["Ramp APs"])
+            self.plotRampAP(fi_an.df_dict["Ramp APs"].copy())
         self.calculate_parameters.setEnabled(True)
         self.main_widget.setCurrentIndex(2)
         logger.info("Plotted final data.")
