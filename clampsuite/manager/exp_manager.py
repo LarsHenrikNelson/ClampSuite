@@ -203,10 +203,9 @@ class ExpManager:
             file_path = list(file_path)
         num_of_acqs = len(file_path)
         for count, i in enumerate(file_path):
-            if not Path(i).exists():
-                raise AttributeError("File path does not exist")
-            acq = self.load_acq(analysis, i)
-            self._set_acq(acq)
+            if Path(i).exists():
+                acq = self.load_acq(analysis, i)
+                self._set_acq(acq)
             self.callback_func(int((100 * (count + 1) / num_of_acqs)))
         self.callback_func("Loaded acquisitions")
 
