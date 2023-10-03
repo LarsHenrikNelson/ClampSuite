@@ -989,7 +989,7 @@ class oEPSCWidget(DragDropWidget):
         logger.info(
             f"oEPSC acquisition {self.acquisition_number.value()} point clicked."
         )
-        if len(self.last_oepsc_point_clicked) > 0:
+        if self.last_oepsc_point_clicked:
             self.last_oepsc_point_clicked.resetPen()
             self.last_oepsc_point_clicked.resetBrush()
             self.last_oepsc_point_clicked.setSize(size=3)
@@ -998,14 +998,15 @@ class oEPSCWidget(DragDropWidget):
         points[0].setSize(size=8)
         self.last_oepsc_point_clicked = points[0]
         logger.info(
-            f"Point {self.last_acq_point_clicked.pos()[0]} set as oEPSC point clicked."
+            f"Point {self.last_oepsc_point_clicked.pos()[0]} \
+            set as oEPSC point clicked."
         )
 
     def LFPPlotClicked(self, item, points):
         logger.info(
             f"oEPSC acquisition {self.acquisition_number.value()} point clicked."
         )
-        if len(self.last_lfp_point_clicked) > 0:
+        if self.last_lfp_point_clicked:
             self.last_lfp_point_clicked.resetPen()
             self.last_lfp_point_clicked.resetBrush()
             self.last_lfp_point_clicked.setSize(size=3)
@@ -1014,7 +1015,7 @@ class oEPSCWidget(DragDropWidget):
         points[0].setSize(size=8)
         self.last_lfp_point_clicked = points[0]
         logger.info(
-            f"Point {self.last_acq_point_clicked.pos()[0]} set as LFP point clicked."
+            f"Point {self.last_lfp_point_clicked.pos()[0]} set as LFP point clicked."
         )
 
     def setPointAsFV(self):
@@ -1066,7 +1067,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_fv_edit.setText(str(round_sig(acq.fv_y)))
         self.last_lfp_point_clicked.resetPen()
         self.last_lfp_point_clicked.resetBrush()
-        self.last_lfp_point_clicked = []
+        self.last_lfp_point_clicked = None
 
         logger.info(f"Fiber volley set on LFP {self.acquisition_number.value()}.")
 
@@ -1118,7 +1119,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_fv_edit.setText(str(round_sig(acq.fv_y)))
         self.last_lfp_point_clicked.resetPen()
         self.last_lfp_point_clicked.resetBrush()
-        self.last_lfp_point_clicked = []
+        self.last_lfp_point_clicked = None
         logger.info(f"Slope start set on LFP {self.acquisition_number.value()}.")
 
     def setPointAsFP(self):
@@ -1165,7 +1166,7 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_fp_slope_edit.setText(str(round_sig(acq.slope)))
         self.last_lfp_point_clicked.resetPen()
         self.last_lfp_point_clicked.resetBrush()
-        self.last_lfp_point_clicked = []
+        self.last_lfp_point_clicked = None
         logger.info(f"Field potential set on LFP {self.acquisition_number.value()}.")
 
     def setoEPSCPeak(self):
@@ -1175,20 +1176,20 @@ class oEPSCWidget(DragDropWidget):
         -------
         None.
         """
-        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
+        if not self.exp_manager.acq_exists("oepsc", self.acquisition_number.value()):
             logger.info("oEPSC peak was not set, acquisition does not exist.")
             self.fileDoesNotExist()
             return None
 
-        if self.last_lfp_point_clicked is None:
+        if self.last_oepsc_point_clicked is None:
             logger.info("No oEPSC point was set, peak not set.")
             return None
 
         logger.info(f"Setting peak on oEPSC {self.acquisition_number.value()}.")
-        acq = self.exp_manager.exp_dict[self.acquisition_number.value()]
+        acq = self.exp_manager.exp_dict["oepsc"][self.acquisition_number.value()]
         self.need_to_save = True
-        x = self.last_oepsc_point_clicked[0].pos()[0]
-        y = self.last_oepsc_point_clicked[0].pos()[1]
+        x = self.last_oepsc_point_clicked.pos()[0]
+        y = self.last_oepsc_point_clicked.pos()[1]
         acq.change_peak(x, y)
         self.oepsc_peak_plot.setData(
             x=acq.plot_x_comps(),
@@ -1199,9 +1200,9 @@ class oEPSCWidget(DragDropWidget):
             pen=None,
         )
         self.oepsc_amp_edit.setText(str(round_sig(acq.peak_y)))
-        self.last_oepsc_point_clicked[0].resetPen()
-        self.last_oepsc_point_clicked[0].resetBrush()
-        self.last_oepsc_point_clicked = []
+        self.last_oepsc_point_clicked.resetPen()
+        self.last_oepsc_point_clicked.resetBrush()
+        self.last_oepsc_point_clicked = None
         logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
 
     def deleteoEPSC(self):

@@ -1363,7 +1363,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.eventSpinbox(int(self.event_number.text()))
 
         # Reset the last point clicked.
-        self.last_event_point_clicked = []
+        self.last_event_point_clicked = None
 
         logger.info(
             f"Peak set on event {event_index} on \
