@@ -967,9 +967,11 @@ class oEPSCWidget(DragDropWidget):
         self.clearTables()
         self.calc_param_clicked = False
         self.inspection_widget.removeFileList()
-        self.ExpManager = None
         self.oepsc_view.clearData()
         self.lfp_view.clearData()
+        self.exp_manager = ExpManager()
+        self.oepsc_view.setData(self.exp_manager)
+        self.lfp_view.setData(self.exp_manager)
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
