@@ -63,7 +63,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
 
     def analyze(
         self,
-        pulse_start: Union[int, float] = 1000,
         n_window_start: Union[int, float] = 1001,
         n_window_end: Union[int, float] = 1050,
         p_window_start: Union[int, float] = 1045,
@@ -75,7 +74,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     ):
         # Set all the attributes
         self.x_array = np.arange(len(self.array)) / (self.sample_rate / 1000)
-        self._pulse_start = int(pulse_start * self.s_r_c)
         self.n_window_start = int(n_window_start * self.s_r_c)
         self.n_window_end = int(n_window_end * self.s_r_c)
         self.p_window_start = int(p_window_start * self.s_r_c)
@@ -244,9 +242,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         else:
             return [self.peak_y, self.est_tau_x]
 
-    def pulse_start(self) -> list:
-        return self._pulse_start / self.s_r_c
-
     def plot_acq_x(self) -> np.ndarray:
         return np.arange(0, len(self.filtered_array)) / self.s_r_c
 
@@ -260,7 +255,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             "Peak direction": self.peak_direction,
             "Amplitude": abs(self.peak_y),
             "Peak time (ms)": self.peak_x(),
-            "oEPSC Pulse start (ms)": self.pulse_start(),
+            "oEPSC Pulse start (ms)": self.pulse_start,
         }
         if self.find_ct:
             oepsc_dict["Charge_transfer"] = self.charge_transfer

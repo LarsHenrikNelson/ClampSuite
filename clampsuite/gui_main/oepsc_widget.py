@@ -205,12 +205,12 @@ class oEPSCWidget(DragDropWidget):
 
         self.input_layout_3.addRow(QLabel(""), QLabel(""))
 
-        self.o_pulse_start = QLabel("Pulse start")
-        self.o_pulse_start_edit = LineEdit()
-        self.o_pulse_start_edit.setEnabled(True)
-        self.o_pulse_start_edit.setObjectName("o_pulse_start_edit")
-        self.o_pulse_start_edit.setText("1000")
-        self.input_layout_3.addRow(self.o_pulse_start, self.o_pulse_start_edit)
+        # self.o_pulse_start = QLabel("Pulse start")
+        # self.o_pulse_start_edit = LineEdit()
+        # self.o_pulse_start_edit.setEnabled(True)
+        # self.o_pulse_start_edit.setObjectName("o_pulse_start_edit")
+        # self.o_pulse_start_edit.setText("1000")
+        # self.input_layout_3.addRow(self.o_pulse_start, self.o_pulse_start_edit)
 
         self.o_neg_window_start = QLabel("Negative window start")
         self.o_neg_start_edit = LineEdit()
@@ -766,7 +766,7 @@ class oEPSCWidget(DragDropWidget):
                 },
                 template_args=None,
                 analysis_args={
-                    "pulse_start": self.o_pulse_start_edit.toFloat(),
+                    # "pulse_start": self.o_pulse_start_edit.toFloat(),
                     "n_window_start": self.o_neg_start_edit.toFloat(),
                     "n_window_end": self.o_neg_end_edit.toFloat(),
                     "p_window_start": self.o_pos_start_edit.toFloat(),
@@ -824,13 +824,13 @@ class oEPSCWidget(DragDropWidget):
     def setOEPSCLimits(self, oepsc_object):
         if not self.on_x_set:
             self.on_x_axis = XAxisCoord(
-                self.o_pulse_start_edit.toInt() - 100,
-                self.o_pulse_start_edit.toInt() + 450,
+                oepsc_object.pulse_start - 100,
+                oepsc_object.pulse_start + 450,
             )
             self.on_x_set = True
-        elif not self.op_x_set:
+        if not self.op_x_set:
             self.op_x_axis = XAxisCoord(
-                self.o_pulse_start_edit.toInt() - 100,
+                oepsc_object.pulse_start - 100,
                 oepsc_object.x_array[-1],
             )
             self.op_x_set = True
@@ -838,6 +838,8 @@ class oEPSCWidget(DragDropWidget):
     def acqSpinbox(self, h):
         self.oepsc_plot.clear()
         self.lfp_plot.clear()
+        oepsc_object = None
+        lfp_object = None
         if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
             "lfp"
         ):
