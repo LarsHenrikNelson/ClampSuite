@@ -326,7 +326,7 @@ class currentClampWidget(DragDropWidget):
             not in self.exp_manager.exp_dict["current_clamp"]
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
-            self.fileDoesNotExist()
+            self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
             return False
         else:
             logger.info(
@@ -355,7 +355,7 @@ class currentClampWidget(DragDropWidget):
     def inspectAcqs(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions exist to inspect.")
-            self.fileDoesNotExist()
+            self.errorDialog("No acquisitions exist to inspect.")
         else:
             logger.info("Opening acquisition inspection widget.")
             self.inspection_widget.clearData()
@@ -365,7 +365,7 @@ class currentClampWidget(DragDropWidget):
     def deleteSelection(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions exist to remove from analysis list.")
-            self.fileDoesNotExist()
+            self.errorDialog("No acquisitions exist to remove from analysis list.")
         else:
             # Deletes the selected acquisitions from the list
             indices = self.acq_view.selectedIndexes()
@@ -377,8 +377,8 @@ class currentClampWidget(DragDropWidget):
 
     def analyze(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
-            logger.info("No acquisitions, analysis ended.")
-            self.fileDoesNotExist()
+            logger.info("No acquisitions loaded, analysis ended.")
+            self.errorDialog("No acquisitions loaded, analysis ended.")
             self.analyze_acq_button.setEnabled(True)
         else:
             logger.info("Analysis started.")
@@ -462,8 +462,14 @@ class currentClampWidget(DragDropWidget):
 
     def spinbox(self, h):
         if not self.exp_manager.analyzed:
-            logger.info("No acquisitions analyzed, acquisition not set.")
-            self.fileDoesNotExist()
+            logger.info(
+                "No acquisitions analyzed,"
+                f" acquisition {self.acquisition_number.value()} not set."
+            )
+            self.errorDialog(
+                "No acquisitions analyzed,\n"
+                f"acquisition {self.acquisition_number.value()} not set."
+            )
             return None
 
         logger.info("Preparing UI for plotting.")
@@ -590,7 +596,7 @@ class currentClampWidget(DragDropWidget):
             not in self.exp_manager.exp_dict["current_clamp"]
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
-            self.fileDoesNotExist()
+            self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
             return None
 
         logger.info(f"Deleting acquisition {self.acquisition_number.value()}.")
@@ -604,7 +610,7 @@ class currentClampWidget(DragDropWidget):
     def resetRejectedAcqs(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not reset acquistions, no acquisitions exist.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not reset acquistions, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting deleted acquisitions.")
@@ -615,7 +621,7 @@ class currentClampWidget(DragDropWidget):
     def resetRecentRejectAcq(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting most recent deleted acquisition.")
@@ -631,7 +637,7 @@ class currentClampWidget(DragDropWidget):
     def runFinalAnalysis(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
 
         logger.info("Beginning final analysis.")
@@ -830,14 +836,14 @@ class currentClampWidget(DragDropWidget):
         logger.info("Preferences dictionary created.")
         return pref_dict
 
-    def fileDoesNotExist(self):
+    def errorDialog(self, text):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("No files are loaded or analyzed")
+        self.dlg.setText(text)
         self.dlg.exec()
 
     def saveAs(self, file_path: Union[str, PurePath]):
         if not self.exp_manager.acqs_exist("current_clamp"):
-            self.fileDoesNotExist()
+            self.errorDialog("No data to save")
         else:
             logger.info("Saving experiment.")
             self.reset_button.setEnabled(False)

@@ -317,24 +317,24 @@ class oEPSCWidget(DragDropWidget):
         self.lfp_high_pass_edit = LineEdit()
         self.lfp_high_pass_edit.setObjectName("lfp_high_pass_edit")
         self.lfp_high_pass_edit.setEnabled(True)
-        self.lfp_high_pass_edit.setText("300")
         self.input_layout_2.addRow(self.lfp_high_pass_label, self.lfp_high_pass_edit)
 
         self.lfp_high_width_label = QLabel("High-width")
         self.lfp_high_width_edit = LineEdit()
         self.lfp_high_width_edit.setObjectName("lfp_high_width_edit")
         self.lfp_high_width_edit.setEnabled(True)
-        self.lfp_high_width_edit.setText("300")
         self.input_layout_2.addRow(self.lfp_high_width_label, self.lfp_high_width_edit)
 
         self.lfp_low_pass_label = QLabel("Low-pass")
         self.lfp_low_pass_edit = LineEdit()
+        self.lfp_low_pass_edit.setText("300")
         self.lfp_low_pass_edit.setObjectName("lfp_low_pass_edit")
         self.lfp_low_pass_edit.setEnabled(True)
         self.input_layout_2.addRow(self.lfp_low_pass_label, self.lfp_low_pass_edit)
 
         self.lfp_low_width_label = QLabel("Low-width")
         self.lfp_low_width_edit = LineEdit()
+        self.lfp_low_width_edit.setText("300")
         self.lfp_low_width_edit.setObjectName("lfp_low_width_edit")
         self.lfp_low_width_edit.setEnabled(True)
         self.input_layout_2.addRow(self.lfp_low_width_label, self.lfp_low_width_edit)
@@ -998,8 +998,8 @@ class oEPSCWidget(DragDropWidget):
         points[0].setSize(size=8)
         self.last_oepsc_point_clicked = points[0]
         logger.info(
-            f"Point {self.last_oepsc_point_clicked.pos()[0]} \
-            set as oEPSC point clicked."
+            f"Point {self.last_oepsc_point_clicked.pos()[0]}"
+            "set as oEPSC point clicked."
         )
 
     def LFPPlotClicked(self, item, points):
@@ -1029,12 +1029,19 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
-            logger.info("Fiber volley was not set, acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Fiber volley was not set,"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "Fiber volley was not set, acquisition\n"
+                f"{self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_lfp_point_clicked is None:
-            logger.info("No LFP point was set, fiber volley not set.")
+            logger.info("No LFP point was selected, fiber volley not set.")
+            self.fileDoesNotExist("No LFP point was selected, fiber volley not set.")
             return None
 
         logger.info(f"Setting fiber volley on LFP {self.acquisition_number.value()}.")
@@ -1082,12 +1089,19 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
-            logger.info("Slope start was not set, acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Slope start was not set,"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "Slope start was not set, acquisition\n"
+                f"{self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_lfp_point_clicked is None:
-            logger.info("No LFP point was set, slope start not set.")
+            logger.info("No LFP point was selected, slope start not set.")
+            self.fileDoesNotExist("No LFP point was selected, slope start not set.")
             return None
 
         logger.info(f"Setting slope start on LFP {self.acquisition_number.value()}.")
@@ -1133,12 +1147,19 @@ class oEPSCWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acq_exists("lfp", self.acquisition_number.value()):
-            logger.info("Field potential was not set, acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Field potential was not set,"
+                f" acquisition {self.acquisition_number.value()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "Field potential was not set, acquisition\n"
+                f"{self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_lfp_point_clicked is None:
-            logger.info("No LFP point was set, field potential not set.")
+            logger.info("No LFP point was selected, field potential not set.")
+            self.fileDoesNotExist("No LFP point was selected, field potential not set.")
             return None
 
         logger.info(f"Setting slope start on LFP {self.acquisition_number.value()}.")
@@ -1177,12 +1198,19 @@ class oEPSCWidget(DragDropWidget):
         None.
         """
         if not self.exp_manager.acq_exists("oepsc", self.acquisition_number.value()):
-            logger.info("oEPSC peak was not set, acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "oEPSC peak was not set, acquisition"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "oEPSC peak was not set, acquisition\n"
+                f"{self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_oepsc_point_clicked is None:
-            logger.info("No oEPSC point was set, peak not set.")
+            logger.info("No oEPSC point was selected, peak not set.")
+            self.fileDoesNotExist("No oEPSC point was selected, peak not set.")
             return None
 
         logger.info(f"Setting peak on oEPSC {self.acquisition_number.value()}.")
@@ -1207,8 +1235,14 @@ class oEPSCWidget(DragDropWidget):
 
     def deleteoEPSC(self):
         if not self.exp_manager.acqs_exist("oepsc"):
-            logger.info("No acquisition deleted, no acquisitions exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "No acquisition deleted, oepsc acquisition"
+                f" {self.acquisition_number.values()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "No acquisition deleted, oepsc acquisition\n"
+                f"{self.acquisition_number.values()} does not exist."
+            )
         else:
             self.need_to_save = True
             self.oepsc_plot.clear()
@@ -1216,9 +1250,15 @@ class oEPSCWidget(DragDropWidget):
             logger.info(f"oEPSC Aquisition {self.acquisition_number.value()} deleted.")
 
     def deleteLFP(self):
-        if not self.exp_manager.acqs_exist("lfp"):
-            logger.info("No acquisition deleted, no acquisitions exist.")
-            self.fileDoesNotExist()
+        if not self.exp_manager.acq_exists("lfp", self.acquisition_number.values()):
+            logger.info(
+                "No acquisition deleted, lfp acquisition"
+                f"{self.acquisition_number.values()} does not exist."
+            )
+            self.fileDoesNotExist(
+                "No acquisition deleted, lfp acquisition\n"
+                f"{self.acquisition_number.values()} does not exist."
+            )
         else:
             self.need_to_save = True
             self.lfp_plot.clear()
@@ -1230,7 +1270,9 @@ class oEPSCWidget(DragDropWidget):
             "lfp"
         ):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
-            self.fileDoesNotExist()
+            self.fileDoesNotExist(
+                "Did not run final analysis, no acquisitions analyzed."
+            )
             return None
         logger.info("Beginning final analysis.")
         self.need_to_save = True
@@ -1251,8 +1293,8 @@ class oEPSCWidget(DragDropWidget):
         if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
             "lfp"
         ):
-            logger.info("There are no acquisitions to save")
-            self.fileDoesNotExist()
+            logger.info("There is no data to save")
+            self.fileDoesNotExist("There is no data to save")
             return None
         logger.info("Saving experiment.")
         self.pbar.setValue(0)
@@ -1426,9 +1468,10 @@ class oEPSCWidget(DragDropWidget):
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 
-    def fileDoesNotExist(self):
+    def fileDoesNotExist(self, text):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("No files are loaded or analyzed")
+        self.dlg.setText(text)
+        # self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
 

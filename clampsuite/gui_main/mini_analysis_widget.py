@@ -768,7 +768,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def inspectAcqs(self):
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions exist to inspect.")
-            self.fileDoesNotExist()
+            self.errorDialog("No acquisitions exist to inspect.")
         else:
             logger.info("Opening acquisition inspection widget.")
             self.inspection_widget.clearData()
@@ -778,7 +778,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def delSelection(self):
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions exist to remove from analysis list.")
-            self.fileDoesNotExist()
+            self.errorDialog("No acquisitions exist to remove from analysis list.")
         else:
             # Deletes the selected acquisitions from the list
             indices = self.load_widget.selectedIndexes()
@@ -820,7 +820,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("No acquisitions, analysis ended.")
-            self.fileDoesNotExist()
+            self.errorDialog("No acquisitions, analysis ended.")
             self.analyze_acq_button.setEnabled(True)
             return None
 
@@ -925,8 +925,14 @@ class MiniAnalysisWidget(DragDropWidget):
         """This function plots each acquisition and each of its events."""
 
         if not self.exp_manager.analyzed:
-            logger.info("No acquisitions analyzed, acquisition not set.")
-            self.fileDoesNotExist()
+            logger.info(
+                "No acquisitions analyzed,"
+                f" acquisition {self.acquisition_number.value()} not set."
+            )
+            self.errorDialog(
+                "No acquisitions analyzed,\n"
+                f"acquisition {self.acquisition_number.value()} not set."
+            )
             return None
 
         # Plots are cleared first otherwise new data is just appended to
@@ -1170,8 +1176,14 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.exp_manager.acqs_exist("mini"):
-            logger.info("Event was not plotted since acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Event was not plotted, acquisition"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.errorDialog(
+                "Event was not plotted,\n"
+                f" {self.acquisition_number.value()} does not exist."
+            )
             return None
 
         # Return the correct index of the event. This is needed because of
@@ -1309,12 +1321,19 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
-            logger.info("No event peak was set, acquisition does not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Event peak was not set, acquisition"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.errorDialog(
+                "Event peak was not set, acquisition\n"
+                f" {self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_event_point_clicked is None:
-            logger.info("No event peak was set, peak not set.")
+            logger.info("No event peak was selected, peak not set.")
+            self.errorDialog("No event peak was selected, peak not set.")
             return None
 
         self.need_to_save = True
@@ -1381,12 +1400,19 @@ class MiniAnalysisWidget(DragDropWidget):
 
         """
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
-            logger.info("No event baseline was set, acquisition do not exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                "Event baseline was not set,"
+                f" acquisition {self.acquisition_number.value()} does not exist."
+            )
+            self.errorDialog(
+                "Event baseline was not set,\n"
+                f"acquisition {self.acquisition_number.value()} does not exist."
+            )
             return None
 
         if self.last_event_point_clicked is None:
-            logger.info("No event baseline was set, baseline not set.")
+            logger.info("No event baseline was selected, baseline not set.")
+            self.errorDialog("No event baseline was selected, baseline not set.")
             return None
 
         self.need_to_save = True
@@ -1455,10 +1481,13 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
             logger.info(
-                f"No event deleted, acquisition {self.acquisition_number.value()} \
-                does not exist."
+                f"No event deleted, acquisition {self.acquisition_number.value()}"
+                "does not exist."
             )
-            self.fileDoesNotExist()
+            self.errorDialog(
+                "No event deleted, acquisition\n"
+                f"{self.acquisition_number.value()} does not exist."
+            )
             return None
         self.need_to_save = True
 
@@ -1526,9 +1555,15 @@ class MiniAnalysisWidget(DragDropWidget):
         will run this function.
         """
 
-        if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No event created, acquisitions do not exist.")
-            self.fileDoesNotExist()
+        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
+            logger.info(
+                "No event created, acquisition"
+                f" {self.acquisition_number.value()} does not exist."
+            )
+            self.errorDialog(
+                "No event created, acquisition\n"
+                f" {self.acquisition_number.value()} does not exist."
+            )
             return None
 
         self.need_to_save = True
@@ -1548,7 +1583,14 @@ class MiniAnalysisWidget(DragDropWidget):
                 created = acq.create_new_event(x)
 
                 if not created:
-                    self.eventNotCreated()
+                    self.errorDialog(
+                        f"Could not create event at {x}\n"
+                        f" on acquisition {self.acquisition_number.value()}"
+                    )
+                    self.logger.info(
+                        f"Could not create event at {x}"
+                        f" on acquisition {self.acquisition_number.value()}"
+                    )
                     return None
 
                 # Reset the event_spinbox_list and sort index.
@@ -1590,14 +1632,23 @@ class MiniAnalysisWidget(DragDropWidget):
                 )
             else:
                 # Raise error if the point is too close to the beginning.
-                self.pointTooCloseToBeginning()
+                self.errorDialog(
+                    "The selected point is too close\n"
+                    "to the beginning of the acquisition"
+                )
                 logger.info("No event created, selected point to close to beginning.")
                 return None
 
     def plotDeconvolution(self):
-        if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No deconvolution plotted, acquisitions do not exist.")
-            self.fileDoesNotExist()
+        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
+            logger.info(
+                "No deconvolution plotted, acquisition"
+                f" {self.acquisition_number.value()} do not exist."
+            )
+            self.errorDialog(
+                "No deconvolution plotted, acquisition\n"
+                f" {self.acquisition_number.value()} do not exist."
+            )
             return None
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
         decon, baseline = acq.plot_deconvolved_acq()
@@ -1612,8 +1663,14 @@ class MiniAnalysisWidget(DragDropWidget):
         """
 
         if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No acquisition deleted, no acquisitions exist.")
-            self.fileDoesNotExist()
+            logger.info(
+                f"Acquisition {self.acquisition_number.value()} was not"
+                " deleted, no acquisitions exist."
+            )
+            self.errorDialog(
+                f"Acquisition {self.acquisition_number.value()} was not\n"
+                " deleted, no acquisitions exist."
+            )
             return None
 
         logger.info(f"Deleting aquisition {self.acquisition_number.value()}.")
@@ -1638,7 +1695,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def resetRejectedAcqs(self):
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not reset acquistions, no acquisitions exist.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not reset acquistions, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting deleted acquisitions.")
@@ -1649,7 +1706,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def resetRecentRejectedAcq(self):
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting most recent deleted acquisition.")
@@ -1665,7 +1722,7 @@ class MiniAnalysisWidget(DragDropWidget):
     def runFinalAnalysis(self):
         if not self.exp_manager.acqs_exist("mini"):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
-            self.fileDoesNotExist()
+            self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
         logger.info("Beginning final analysis.")
         self.calculate_parameters.setEnabled(False)
@@ -1773,16 +1830,9 @@ class MiniAnalysisWidget(DragDropWidget):
         stem_item = pg.PlotDataItem(x=x_stems, y=y_stems, connect="pairs")
         self.amp_dist.addItem(stem_item)
 
-    def fileDoesNotExist(self):
+    def errorDialog(self, text):
         self.dlg.setWindowTitle("Error")
-        self.dlg.setText("No files are loaded or analyzed.")
-        self.dlg.exec()
-
-    def pointTooCloseToBeginning(self):
-        self.dlg.setWindowTitle("Information")
-        self.dlg.setText(
-            ("The selected point is too close" "to the beginning of the acquisition")
-        )
+        self.dlg.setText(text)
         self.dlg.exec()
 
     def eventNotCreated(self):
@@ -1837,8 +1887,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def saveAs(self, save_filename):
         if not self.exp_manager.acqs_exist("mini"):
-            logger.info("There are no acquisitions to save")
-            self.fileDoesNotExist()
+            logger.info("There is no data to save")
+            self.errorDialog("There is no data to save")
         else:
             logger.info("Saving experiment.")
             self.reset_button.setEnabled(False)

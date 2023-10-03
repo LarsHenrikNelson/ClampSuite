@@ -47,6 +47,12 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         ] = "hann",
         polyorder: Union[int, None] = None,
     ):
+        if high_pass - high_width <= 0:
+            raise ValueError(f"{high_pass} - {high_width} cannot be <= 0.")
+        if low_pass + low_width >= self.sample_rate / 2:
+            raise ValueError(
+                f"{low_pass} + {low_width} cannot be >= {self.sample_rate/2}."
+            )
         self._baseline_start = int(baseline_start * self.s_r_c)
         self._baseline_end = int(baseline_end * self.s_r_c)
         self.baseline_start = baseline_start
