@@ -1,5 +1,4 @@
 **/__pycache__/
-final_test_doct.py
 ._env.yml
 dev_env.yml
 dist/
@@ -13,5 +12,4 @@ include
 lib
 share
 .ruff_cache
-clampsuite/gui_widgets/test_widgets.py
 .mypy_cache
