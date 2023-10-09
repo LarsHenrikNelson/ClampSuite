@@ -54,12 +54,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         rc_check_end: Union[int, float] = 10300,
         baseline_corr: bool = False,
     ):
-        if high_pass - high_width <= 0:
-            raise ValueError(f"{high_pass} - {high_width} cannot be <= 0.")
-        if low_pass + low_width >= self.sample_rate / 2:
-            raise ValueError(
-                f"{low_pass} + {low_width} cannot be >= {self.sample_rate/2}."
-            )
         self._baseline_start = int(baseline_start * (self.sample_rate / 1000))
         self._baseline_end = int(baseline_end * (self.sample_rate / 1000))
         self.baseline_start = baseline_start
