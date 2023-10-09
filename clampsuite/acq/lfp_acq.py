@@ -52,12 +52,6 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         ] = "hann",
         polyorder: Union[int, None] = None,
     ) -> None:
-        if high_pass - high_width <= 0:
-            raise ValueError(f"{high_pass} - {high_width} cannot be <= 0.")
-        if low_pass + low_width >= self.sample_rate / 2:
-            raise ValueError(
-                f"{low_pass} + {low_width} cannot be >= {self.sample_rate/2}."
-            )
         self.filter_type = filter_type
         self.order = order
         self.high_pass = high_pass
