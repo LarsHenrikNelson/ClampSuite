@@ -223,8 +223,8 @@ class ExpManager:
             acq_comp = load_json_file(path_obj)
         else:
             raise AttributeError("File type not recognized!")
-        if acq_comp.get("analysis"):
-            obj = Acquisition(acq_comp.analysis)
+        if "analysis" in acq_comp:
+            obj = Acquisition(acq_comp["analysis"])
         elif isinstance(analysis, str):
             obj = Acquisition(analysis)
         else:

@@ -40,6 +40,34 @@ def median_filter(array: Union[np.ndarray, list], order: int):
     return filt_array
 
 
+def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate):
+    if high_pass is not None and high_width is not None:
+        if high_pass < high_width:
+            raise AttributeError("high_pass must be large than high_width")
+    if low_pass is not None and low_width is not None:
+        if (low_pass + low_width) >= sample_rate:
+            raise AttributeError("low_pass + low_width must be < sample_rate")
+    if high_pass is not None and high_width is None:
+        raise AttributeError("high_width must be provided is low_pass is provided")
+    if low_pass is not None and low_width is None:
+        raise AttributeError("low_width must be provided is low_pass is provided")
+    if high_width is not None and high_pass is None:
+        raise AttributeError("high_pass must be provided is high_width is provided")
+    if low_width is not None and low_pass is None:
+        raise AttributeError("low_pass must be provided is low_width is provided")
+    if low_pass is not None and high_pass is not None:
+        if low_pass < high_pass:
+            raise AttributeError("low_pass must be > high_pass")
+    if low_pass is not None:
+        if low_pass == 0:
+            raise AttributeError("low_pass must be > 0")
+    if high_pass is not None:
+        if high_pass == sample_rate:
+            raise AttributeError("high pass must be < sample_rate")
+        if high_pass == 0:
+            raise AttributeError("high_pass must be > 0")
+
+
 def bessel(
     array: Union[np.ndarray, list],
     order: int,
@@ -230,6 +258,7 @@ def fir_zero_1(
     low_width: Union[int, float, None] = None,
     window: str = "hann",
 ):
+    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
     if high_pass is not None and low_pass is not None:
         filt = signal.firwin2(
             order,
@@ -277,6 +306,7 @@ def fir_zero_2(
     low_width: Union[int, float, None] = None,
     window: str = "hann",
 ):
+    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
         filt = signal.firwin2(
@@ -330,6 +360,7 @@ def remez_1(
     low_pass: Union[int, float, None] = None,
     low_width: Union[int, float, None] = None,
 ):
+    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
     if high_pass is not None and low_pass is not None:
         filt = signal.remez(
             order,
@@ -373,6 +404,7 @@ def remez_2(
     low_pass: Union[int, float, None] = None,
     low_width: Union[int, float, None] = None,
 ):
+    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
     grp_delay = int(0.5 * (order - 1))
     if high_pass is not None and low_pass is not None:
         filt = signal.remez(

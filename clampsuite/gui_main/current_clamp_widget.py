@@ -390,16 +390,13 @@ class currentClampWidget(DragDropWidget):
                 self.exp_manager,
                 "analyze",
                 exp="current_clamp",
-                filter_args=None,
-                template_args=None,
-                analysis_args={
+                filter_args={
                     "baseline_start": self.b_start_edit.toInt(),
                     "baseline_end": self.b_end_edit.toInt(),
                     "filter_type": "None",
-                    # "pulse_start": self.pulse_start_edit.toInt(),
-                    # "pulse_end": self.pulse_end_edit.toInt(),
-                    # "ramp_start": self.ramp_start_edit.toInt(),
-                    # "ramp_end": self.ramp_end_edit.toInt(),
+                },
+                template_args=None,
+                analysis_args={
                     "threshold": self.min_spike_threshold_edit.toInt(),
                     "min_spikes": self.min_spikes_edit.toInt(),
                     "threshold_method": self.threshold_method.currentText(),

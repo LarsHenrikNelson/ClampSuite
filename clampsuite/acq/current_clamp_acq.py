@@ -10,38 +10,18 @@ from . import filter_acq
 class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def analyze(
         self,
-        baseline_start: Union[int, float] = 0,
-        baseline_end: Union[int, float] = 100,
-        filter_type: str = "None",
-        order: Union[None, int] = 201,
-        high_pass: Union[None, int, float] = None,
-        high_width: Union[None, int, float] = None,
-        low_pass: Union[None, int, float] = None,
-        low_width: Union[None, int, float] = None,
-        window: Union[None, int] = None,
-        polyorder: Union[None, int, float] = None,
-        # pulse_start: Union[int, float] = 300,
-        # pulse_end: Union[int, float] = 1000,
-        # ramp_start: Union[int, float] = 300,
-        # ramp_end: Union[int, float] = 4000,
         threshold: Union[int, float] = -15,
         threshold_method: Literal[
             "third_derivative", "max_curvature", "legacy"
-        ] = "max_curvature",
+        ] = "third_derivative",
         min_spikes: int = 2,
     ):
-        self.baseline_start = int(baseline_start * self.s_r_c)
-        self.baseline_end = int(baseline_end * self.s_r_c)
         if self._pulse_start == 0:
-            self._pulse_start = self.baseline_end
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
+            if self._baseline_end == self.array.size:
+                self._pulse_start = 0
+            else:
+                self._pulse_start = self._baseline_end
+                self.pulse_start = self.baseline_end
         self.threshold = threshold
         self.threshold_method = threshold_method
         self.min_spikes = min_spikes

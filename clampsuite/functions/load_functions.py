@@ -73,8 +73,9 @@ def find_pulse_data(data_string, component):
     amp = 0.0
     start = 0.0
     end = 0.0
-    ramp = 0
-    duration = 0
+    ramp = "0"
+    duration = 0.0
+    width = 0.0
     if len(temp_string) == 1:
         temp_string = temp_string[0]
         amp_temp = re.findall("amplitude=(.*?);", temp_string)
@@ -90,8 +91,6 @@ def find_pulse_data(data_string, component):
         if len(width_temp) == 1:
             width = float(width_temp[0])
             end = start + width
-        else:
-            end = 0
         ramp_temp = re.findall(r"ramp=(.*?);", temp_string)
         if len(width_temp) == 1:
             ramp = ramp_temp[0]
@@ -135,15 +134,10 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
         acq_dict["_pulse_end"] = int(end * acq_dict["s_r_c"])
     else:
         acq_dict["_pulse_end"] = int(duration * acq_dict["s_r_c"])
+        acq_dict["pulse_end"] = duration
     acq_dict["ramp"] = ramp
-    acq_dict["_duration"] = int(duration * acq_dict["s_r_c"])
     acq_dict["pulse_amp"] = amp
     acq_dict["pulse_start"] = acq_dict["s_r_c"]
-    if end > 0:
-        acq_dict["pulse_end"] = acq_dict["s_r_c"]
-    else:
-        acq_dict["pulse_end"] = acq_dict["s_r_c"]
-    acq_dict["duration"] = acq_dict["s_r_c"]
 
     rc_amp, rc_start, rc_end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
     acq_dict["_rc_amp"] = rc_amp
@@ -158,15 +152,27 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
 def load_neo_acq(analog_sig, acq_num):
     acq_dict = {}
     acq_dict["sample_rate"] = int(analog_sig.sampling_rate)
+    acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
     acq_dict["acq_num"] = acq_num
     name = re.findall(r"\((.*)\)", analog_sig.name)[0]
     acq_dict["name"] = name
     acq_dict["time_stamp"] = acq_num * len(analog_sig) / analog_sig.sampling_rate
+    acq_dict["array"] = analog_sig.as_array().flatten()
+
+    # Other stuff that neo file does not include
     acq_dict["pulse_pattern"] = "0"
     acq_dict["epoch"] = 0
-    acq_dict["ramp"] = 0
+    acq_dict["ramp"] = "0"
     acq_dict["pulse_amp"] = 0
-    acq_dict["array"] = analog_sig.as_array().flatten()
+    acq_dict["pulse_start"] = 0
+    acq_dict["pulse_end"] = 0
+    acq_dict["_pulse_start"] = 0
+    acq_dict["_pulse_end"] = 0
+    acq_dict["rc_amp"] = 0
+    acq_dict["rc_start"] = 0
+    acq_dict["rc_end"] = 0
+    acq_dict["_rc_start"] = 0
+    acq_dict["_rc_end"] = 0
     return acq_dict
 
 

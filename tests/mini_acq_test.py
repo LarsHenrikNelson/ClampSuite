@@ -1,20 +1,13 @@
 from typing import Literal
 
-from numpy.random import default_rng
 import numpy as np
-from scipy import fft
 
+from clampsuite.acq import (
+    Acquisition,
+    MiniAnalysisAcq,
+)
 from clampsuite.functions.template_psc import create_template
-
-
-def white_noise_psd(N):
-    rng = default_rng(42)
-    X_white = fft.rfft(rng.standard_normal(N))
-    S = fft.rfftfreq(N)
-    # Normalize S
-    S = S / np.sqrt(np.mean(S**2))
-    X_shaped = X_white * S
-    return fft.irfft(X_shaped)
+from .test_utils import white_noise_array
 
 
 def create_event_array(
@@ -24,7 +17,7 @@ def create_event_array(
     direction: Literal["positive", "negative"] = "positive",
 ):
     # rng = default_rng(42)
-    event_array = white_noise_psd(length * sample_rate)
+    event_array = white_noise_array(length * sample_rate)
 
     # events = rng.integers(0, 10000 * 10, size=10)
     events = np.array(
@@ -84,3 +77,8 @@ def create_event_array(
         temp_event = create_template(amp, rise, tau, length=event_length)
         event_array[event_index : event_index + temp_event.size] += temp_event
     return event_array
+
+
+def test_mini_acq():
+    mini = Acquisition("mini")
+    assert isinstance(mini, MiniAnalysisAcq)
