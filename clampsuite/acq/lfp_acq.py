@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Union
 
 import numpy as np
 from scipy import signal
@@ -8,63 +8,6 @@ from . import filter_acq
 
 
 class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
-    """
-    This class creates a LFP acquisition. This class subclasses the
-    Acquisition class and takes input specific for LFP analysis.
-    """
-
-    def set_filter(
-        self,
-        baseline_start: Union[int, float] = 0,
-        baseline_end: Union[int, float] = 800,
-        filter_type: Literal[
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "ewma",
-            "ewma_a",
-            "savgol",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ] = "fir_zero_2",
-        order: Union[int, None] = 301,
-        high_pass: Union[int, float, None] = None,
-        high_width: Union[int, float, None] = None,
-        low_pass: Union[int, float] = 300,
-        low_width: Union[int, float] = 100,
-        window: Literal[
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ] = "hann",
-        polyorder: Union[int, None] = None,
-    ) -> None:
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
-        self.baseline_start = baseline_start
-        self.baseline_end = baseline_end
-        self._baseline_start = int(baseline_start * self.s_r_c)
-        self._baseline_end = int(baseline_end * (self.s_r_c))
-
     def analyze(
         self,
         pulse_start: Union[int, float] = 1000,

@@ -11,67 +11,6 @@ from .postsynaptic_event import MiniEvent
 
 
 class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
-    def set_filter(
-        self,
-        baseline_start: Union[int, float] = 0,
-        baseline_end: Union[int, float] = 80,
-        filter_type: Literal[
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "ewma",
-            "ewma_a",
-            "savgol",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ] = "fir_zero_2",
-        order: int = 201,
-        high_pass: Union[int, float] = None,
-        high_width: Union[int, float] = None,
-        low_pass: Union[int, float] = 600,
-        low_width: Union[int, float] = 300,
-        window: Literal[
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ] = "hann",
-        polyorder: Union[str, None] = None,
-        rc_check: bool = True,
-        rc_check_start: Union[int, float] = 10000,
-        rc_check_end: Union[int, float] = 10300,
-        baseline_corr: bool = False,
-    ):
-        self._baseline_start = int(baseline_start * (self.sample_rate / 1000))
-        self._baseline_end = int(baseline_end * (self.sample_rate / 1000))
-        self.baseline_start = baseline_start
-        self.baseline_end = baseline_end
-        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
-        self.rc_check = rc_check
-        self.rc_check_start = int(rc_check_start * self.s_r_c)
-        self.rc_check_end = int(rc_check_end * self.s_r_c)
-        self.baseline_corr = baseline_corr
-
     def set_template(
         self,
         tmp_amplitude: Union[int, float] = -20,
@@ -102,6 +41,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         decon_type: Literal["fft", "wiener", "convolution"] = "wiener",
         curve_fit_decay: bool = False,
         curve_fit_type: Literal["s_exp", "db_exp"] = "s_exp",
+        baseline_corr: bool = False,
+        rc_check: bool = True,
+        rc_check_start: Union[int, float] = 10000,
+        rc_check_end: Union[int, float] = 10300,
     ):
         # Set the attributes for the acquisition
         self.sensitivity = sensitivity
@@ -117,6 +60,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.decon_type = decon_type
         self.curve_fit_type = curve_fit_type
         self.deleted_events = 0
+        self.baseline_corr = baseline_corr
+        self.rc_check = rc_check
+        self.rc_check_start = int(rc_check_start * self.s_r_c)
+        self.rc_check_end = int(rc_check_end * self.s_r_c)
         self.run_analysis()
 
     def run_analysis(self):

@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Union
 
 import numpy as np
 from scipy import integrate, optimize
@@ -8,59 +8,6 @@ from . import filter_acq
 
 
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
-    def set_filter(
-        self,
-        baseline_start: Union[int, float] = 800,
-        baseline_end: Union[int, float] = 1000,
-        filter_type: Literal[
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "ewma",
-            "ewma_a",
-            "savgol",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ] = "fir_zero_2",
-        order=None,
-        high_pass: Union[int, float, None] = None,
-        high_width: Union[int, float, None] = None,
-        low_pass: Union[int, float, None] = None,
-        low_width: Union[int, float, None] = None,
-        window: Literal[
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ] = "hann",
-        polyorder: Union[int, None] = None,
-    ):
-        self._baseline_start = int(baseline_start * self.s_r_c)
-        self._baseline_end = int(baseline_end * self.s_r_c)
-        self.baseline_start = baseline_start
-        self.baseline_end = baseline_end
-        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
-
     def analyze(
         self,
         n_window_start: Union[int, float] = 1001,

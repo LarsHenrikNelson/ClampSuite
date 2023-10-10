@@ -867,10 +867,6 @@ class MiniAnalysisWidget(DragDropWidget):
                 "low_width": self.low_width_edit.toFloat(),
                 "window": window,
                 "polyorder": self.polyorder_edit.toInt(),
-                "rc_check": self.rc_checkbox.isChecked(),
-                "rc_check_start": self.rc_check_start_edit.toFloat(),
-                "rc_check_end": self.rc_check_end_edit.toFloat(),
-                "baseline_corr": self.baseline_corr_choice.isChecked(),
             },
             analysis_args={
                 "sensitivity": self.sensitivity_edit.toFloat(),
@@ -885,6 +881,10 @@ class MiniAnalysisWidget(DragDropWidget):
                 "decon_type": self.decon_type_edit.currentText(),
                 "curve_fit_decay": self.curve_fit_decay.isChecked(),
                 "curve_fit_type": self.curve_fit_edit.currentText(),
+                "baseline_corr": self.baseline_corr_choice.isChecked(),
+                "rc_check": self.rc_checkbox.isChecked(),
+                "rc_check_start": self.rc_check_start_edit.toFloat(),
+                "rc_check_end": self.rc_check_end_edit.toFloat(),
             },
             template_args={
                 "tmp_amplitude": self.amplitude_edit.toFloat(),
