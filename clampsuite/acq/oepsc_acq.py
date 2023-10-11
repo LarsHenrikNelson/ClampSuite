@@ -10,6 +10,7 @@ from . import filter_acq
 class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def analyze(
         self,
+        pulse_start: Union[int, float] = 1000,
         n_window_start: Union[int, float] = 1001,
         n_window_end: Union[int, float] = 1050,
         p_window_start: Union[int, float] = 1045,
@@ -20,11 +21,17 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         curve_fit_type: str = "s_exp",
     ):
         # Set all the attributes
+        self.pulse_start = pulse_start
+        self._pulse_start = int(pulse_start * self.s_r_c)
         self.x_array = np.arange(len(self.array)) / (self.sample_rate / 1000)
-        self.n_window_start = int(n_window_start * self.s_r_c)
-        self.n_window_end = int(n_window_end * self.s_r_c)
-        self.p_window_start = int(p_window_start * self.s_r_c)
-        self.p_window_end = int(p_window_end * self.s_r_c)
+        self._n_window_start = int(n_window_start * self.s_r_c)
+        self.n_window_start = n_window_start
+        self._n_window_end = int(n_window_end * self.s_r_c)
+        self.n_window_end = n_window_end
+        self._p_window_start = int(p_window_start * self.s_r_c)
+        self.p_window_start = p_window_start
+        self._p_window_end = int(p_window_end * self.s_r_c)
+        self.p_window_end = p_window_end
         self.find_ct = find_ct
         self.find_edecay = find_est_decay
         self.find_fdecay = curve_fit_decay
@@ -58,19 +65,23 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def find_amplitude(self):
         if self.peak_direction == "positive":
             self.peak_y = np.max(
-                self.filtered_array[self.p_window_start : self.p_window_end]
+                self.filtered_array[self._p_window_start : self._p_window_end]
             )
             self._peak_x = (
-                np.argmax(self.filtered_array[self.p_window_start : self.p_window_end])
-                + self.p_window_start
+                np.argmax(
+                    self.filtered_array[self._p_window_start : self._p_window_end]
+                )
+                + self._p_window_start
             )
         elif self.peak_direction == "negative":
             self.peak_y = np.min(
-                self.filtered_array[self.n_window_start : self.n_window_end]
+                self.filtered_array[self._n_window_start : self._n_window_end]
             )
             self._peak_x = (
-                np.argmin(self.filtered_array[self.n_window_start : self.n_window_end])
-                + self.n_window_start
+                np.argmin(
+                    self.filtered_array[self._n_window_start : self._n_window_end]
+                )
+                + self._n_window_start
             )
 
     def zero_crossing(self):
