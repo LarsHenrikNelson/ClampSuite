@@ -10,7 +10,7 @@ authors = [{ name = "Lars Henrik Nelson", email = "larshnelson@protonmail.com" }
 dynamic = ["version"]
 keywords = ["electrophysiology", "analysis"]
 dependencies = [
-    "bottleneck>=1.3.5",
+    "Bottleneck>=1.3.5",
     "KDEpy",
     "numpy>=1.23.3",
     "openpyxl>=3.0.10",
