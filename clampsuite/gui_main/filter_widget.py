@@ -205,7 +205,7 @@ class filterWidget(QWidget):
             # without it.
             self.load_widget.clearSelection()
 
-        if len(self.load_widget.model().acq_dict) == 0:
+        if len(self.exp_manager.exp_dict[self.analysis_type]) == 0:
             self.plot_list = 0
             self.pencil_list = []
             self.p1.clear()

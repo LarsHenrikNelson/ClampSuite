@@ -229,7 +229,7 @@ class NumpyDecoder(json.JSONDecoder):
         return json.JSONDecoder.default(self, obj)
 
 
-def load_json_file(path: Union[PurePath, str]) -> dict:
+def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
@@ -261,4 +261,27 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
         data["pulse_amp"] = float(data["pulse_amp"])
     if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
         data["s_r_c"] = data.get("sample_rate_correction")
+    return data
+
+
+def load_json_file(path: Union[PurePath, str]) -> dict:
+    """
+    This function loads a json file and sets each key: value pair
+    as an attribute of the an obj. The function has to catch a lot
+    things that I have changed over the course of the program so
+    that all of our saved files can be loaded.
+    """
+    with open(path, "r") as rf:
+        data = json.load(rf, cls=NumpyDecoder)
+    if data["analysis"] == "oepsc":
+        if not data.get("find_ct"):
+            data["find_ct"] = False
+        if not data.get("find_est_deay"):
+            data["find_est_deay"] = False
+        if not data.get("find_ct"):
+            data["curve_fit_decay"] = False
+    for key in data.keys():
+        if isinstance(data[key], list):
+            if key not in ["postsynaptic_events", "final_events"]:
+                data[key] = np.array(data[key])
     return data

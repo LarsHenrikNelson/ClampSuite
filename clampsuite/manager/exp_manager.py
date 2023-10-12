@@ -177,8 +177,10 @@ class ExpManager:
                 file_paths = list(file_path.glob("*.*"))
         else:
             file_paths = [PurePath(i) for i in file_path]
-        file_paths_edit = [i for i in file_paths if i.name[0] != "."]
-        for path in file_paths_edit:
+        file_paths_edit = [
+            i for i in file_paths if (i.suffix == ".json") & (i.name[0] != ".")
+        ]
+        for path in file_paths:
             if path.suffix == ".yaml":
                 self.ui_prefs = self.load_ui_prefs(path)
                 can_load_data = True
