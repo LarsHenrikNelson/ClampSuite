@@ -382,11 +382,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Tab 2 layouts
         self.d1 = Dock("Overview")
-        self.d2 = Dock("mini")
+        self.d2 = Dock("Event")
         self.d3 = Dock("Acq view")
-        self.d1.hideTitleBar()
-        self.d2.hideTitleBar()
-        self.d3.hideTitleBar()
         self.dock_area2.addDock(self.d1, "left")
         self.dock_area2.addDock(self.d2, "right")
         self.dock_area2.addDock(self.d3, "bottom")
@@ -647,12 +644,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.d2.layout.setColumnStretch(1, 10)
 
         # Tab 3 layouts and setup
-        self.table_dock = Dock("Table")
-        self.table_dock.hideTitleBar()
-        self.ave_event_dock = Dock("mini")
-        self.ave_event_dock.hideTitleBar()
-        self.data_dock = Dock("Data")
-        self.data_dock.hideTitleBar()
+        self.table_dock = Dock("Data (table)")
+        self.ave_event_dock = Dock("Average Event")
+        self.data_dock = Dock("Data (visualization)")
         self.dock_area3.addDock(self.table_dock, position="left")
         self.dock_area3.addDock(self.ave_event_dock, position="right")
         self.dock_area3.addDock(self.data_dock, position="bottom")

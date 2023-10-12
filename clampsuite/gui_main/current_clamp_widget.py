@@ -267,9 +267,16 @@ class currentClampWidget(DragDropWidget):
         self.analysis_buttons.addRow(self.calculate_params_2)
         self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
 
+        self.tab2_dock = DockArea()
+        self.plot_layout.addWidget(self.tab2_dock)
+        self.d1 = Dock("oEPSC")
+        self.d2 = Dock("LFP")
+        self.tab2_dock.addDock(self.d1, "left")
+        self.tab2_dock.addDock(self.d2, "right")
+
         self.plot_widget = pg.PlotWidget(useOpenGL=True)
         self.plot_widget.setMinimumWidth(300)
-        self.plot_layout.addWidget(self.plot_widget)
+        self.d1.addWidget(self.plot_widget)
 
         self.delete_acq_action = QAction("Delete acq")
         self.delete_acq_action.triggered.connect(self.deleteAcq)
@@ -282,7 +289,7 @@ class currentClampWidget(DragDropWidget):
 
         self.spike_plot = pg.PlotWidget(useOpenGL=True)
         self.spike_plot.setMinimumWidth(300)
-        self.plot_layout.addWidget(self.spike_plot)
+        self.d2.addWidget(self.spike_plot)
 
         # Tab 3 layout
         self.tab3_dock = DockArea()

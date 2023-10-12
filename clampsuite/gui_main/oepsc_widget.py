@@ -416,11 +416,9 @@ class oEPSCWidget(DragDropWidget):
 
         self.tab2_dock = DockArea()
         self.tab2_layout.addWidget(self.tab2_dock, 1)
-        self.oepsc_dock = Dock("")
-        self.oepsc_dock.hideTitleBar()
+        self.oepsc_dock = Dock("oEPSC")
         self.tab2_dock.addDock(self.oepsc_dock, "left")
-        self.lfp_dock = Dock("")
-        self.oepsc_dock.hideTitleBar()
+        self.lfp_dock = Dock("LFP")
         self.tab2_dock.addDock(self.lfp_dock, "right")
         self.oepsc_plot_layout = QHBoxLayout()
         self.oepsc_plot_widget = QWidget()
