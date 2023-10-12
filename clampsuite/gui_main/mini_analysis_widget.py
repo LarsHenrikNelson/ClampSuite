@@ -1877,7 +1877,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.ui_prefs["Acq_number"])
         logger.info("Experiment successfully loaded.")
-        self.pbar("Experiment successfully loaded")
+        self.pbar.setFormat("Experiment successfully loaded")
 
     def saveAs(self, save_filename):
         if not self.exp_manager.acqs_exist("mini"):

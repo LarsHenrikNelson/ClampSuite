@@ -270,8 +270,12 @@ class ExpManager:
 
     def _set_deleted_acqs(self) -> None:
         for exp, acqs in self.exp_dict.items():
-            for acq in acqs:
-                self.delete_acq(exp, acq)
+            for acq, value in acqs.items():
+                deleted_acqs = []
+                if not value.accepted:
+                    deleted_acqs.append(acq)
+            for i in deleted_acqs:
+                self.delete_acq(exp, i)
 
     def set_callback(self, func: Callable[[int, str], None]):
         self.callback_func = func

@@ -371,13 +371,12 @@ class MiniEvent:
                 value = np.array(item)
             else:
                 value = item
-            if key in {"event_tau_x", "event_peak_x", "event_start_x"}:
-                key = "_" + key
             if key not in (
                 "mini_plot_x",
                 "mini_plot_y",
                 "mini_comp_y",
                 "mini_comp_x",
+                "x_array",
             ):
                 setattr(self, key, value)
 

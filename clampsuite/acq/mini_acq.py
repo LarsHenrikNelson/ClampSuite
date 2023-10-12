@@ -446,7 +446,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         """
         self.saved_events_dict = []
         for i in self.postsynaptic_events:
-            i.x_array = "saved"
             i.event_array = "saved"
             self.saved_events_dict += [i.__dict__]
         self.postsynaptic_events = "saved"
