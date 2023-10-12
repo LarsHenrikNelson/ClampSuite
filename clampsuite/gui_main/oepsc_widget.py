@@ -602,6 +602,8 @@ class oEPSCWidget(DragDropWidget):
         self.table_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
+        self.on_x_set = False
+        self.op_x_set = False
 
         logger.info("Event oEPSC/LFP GUI created.")
 
@@ -690,18 +692,14 @@ class oEPSCWidget(DragDropWidget):
         peak_dir = self.exp_manager.exp_dict["oepsc"][
             self.acquisition_number.value()
         ].peak_direction
-        print(peak_dir)
         if peak_dir == "positive":
-            print("yes")
             self.op_x_axis = XAxisCoord(x[0], x[1])
             self.op_x_set = True
         else:
-            print("yes")
             self.on_x_axis = XAxisCoord(x[0], x[1])
             self.on_x_set = True
 
     def setOEPSCLimits(self, oepsc_object):
-        print(self.on_x_set)
         if not self.on_x_set:
             self.on_x_axis = XAxisCoord(
                 oepsc_object.pulse_start - 100,
@@ -1315,7 +1313,7 @@ class oEPSCWidget(DragDropWidget):
 
     def finishedSaving(self):
         self.pbar.setFormat("Finished saving")
-        self.logger.info("Finished saving.")
+        logger.info("Finished saving.")
 
     def loadExperiment(self, directory):
         logger.info(f"Loading experiment from {directory}.")
@@ -1331,14 +1329,14 @@ class oEPSCWidget(DragDropWidget):
         QThreadPool.globalInstance().start(self.worker)
 
     def createExperiment(self, urls):
-        self.pbar("Creating experiment")
+        self.pbar.setFormat("Creating experiment")
         self.choose_analysis_type.exec()
         if self.choose_analysis_type.clickedButton() == self.oepsc_type_button:
             self.oepsc_view.model().addData(urls)
-            self.pbar("oEPSC experiment created")
+            self.pbar.setFormat("oEPSC experiment created")
         else:
             self.lfp_view.model().addData(urls)
-            self.pbar("LFP experiment created")
+            self.pbar.setFormat("LFP experiment created")
 
     def setLoadData(self):
         if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
@@ -1346,7 +1344,7 @@ class oEPSCWidget(DragDropWidget):
         ):
             self.acquisition_number.setMaximum(self.exp_manager.start_acq)
             self.acquisition_number.setMinimum(self.exp_manager.end_acq)
-        if self.exp_manager.ui_pref:
+        if self.exp_manager.ui_prefs:
             self.setPreferences(self.exp_manager.ui_prefs)
         if self.exp_manager.acqs_exist("oepsc"):
             self.oepsc_view.setData(self.exp_manager)
@@ -1370,7 +1368,7 @@ class oEPSCWidget(DragDropWidget):
             for key, df in fa.df_dict.items():
                 table = pg.TableWidget()
                 self.table_dict[key] = table
-                self.tab3.addTab(table)
+                self.tab3.addTab(table, key)
                 table.setData(df.T.to_dict("dict"))
         self.pbar.setFormat("Data loaded")
         self.analyze_acq_button.setEnabled(True)
@@ -1378,7 +1376,7 @@ class oEPSCWidget(DragDropWidget):
         self.acquisition_number.setEnabled(True)
         self.final_analysis_button.setEnabled(True)
         logger.info("Experiment successfullzsy loaded.")
-        self.pbar("Experiment successfully loaded")
+        self.pbar.setFormat("Experiment successfully loaded")
 
     def createPrefDict(self):
         logger.info("Creating preferences dictionary.")
