@@ -1,8 +1,8 @@
 # Clampsuite <img src="clampsuite/logo/d_logo.png" width="100" title="clampsuite" align="right">
 
-&nbsp;&nbsp;&nbsp;&nbsp;ClampSuite is a suite of programs for analyzing slice electrophysiology data. The program can analyze data from ScanImage files (.mat) for current clamp, s/mEPSC, and o/eEPSC experiments. The program runs on both PC and intel-based Macs. ClampSuite has not been tested on M1 Mac or Linux. ClampSuite should run on both newer and older computers (it runs well on my 9 year old MacBook Pro and iMac). In addition to providing a GUI for analysis you can call the acquisition classes used by the program to load your data into a Python script which is convient for creating figures for publication or for further analyzing your data. The program is not currently able to analyze other common electrophysiology file types however if you would like to use the program and have a file type that is not supported please send me some files and I can probably add support within a couple weeks. If want to test ClampSuite before you commit to using ClampSuite you can download some test files here: https://gin.g-node.org/LarsHenrikNelson/ClampSuite. Each folder contains example ScanImage acquisitions and a preferences file.
+&nbsp;&nbsp;&nbsp;&nbsp;ClampSuite (v0.0.3) is a suite of programs for analyzing slice electrophysiology data. The program can analyze data from ScanImage files (.mat) for current clamp, s/mEPSC, and o/eEPSC experiments. The program runs on both PC and intel-based Macs. ClampSuite has not been tested on M1 Mac or Linux. ClampSuite should run on both newer and older computers (it runs well on my 9 year old MacBook Pro and iMac). In addition to providing a GUI for analysis you can call the acquisition classes used by the program to load your data into a Python script which is convient for creating figures for publication or for further analyzing your data. The program is not currently able to analyze other common electrophysiology file types however if you would like to use the program and have a file type that is not supported please send me some files and I can probably add support within a couple weeks. If want to test ClampSuite before you commit to using ClampSuite you can download some test files here: https://gin.g-node.org/LarsHenrikNelson/ClampSuite. Each folder contains example ScanImage acquisitions and a preferences file.
 
-&nbsp;&nbsp;&nbsp;&nbsp;There are currently four different modules: MiniAnalysis, Current Clamp, oEPSC/LFP and Filter design. The program exports user settings for the interface, an individual JSON file for each acquisition, and an Excel file for the raw and processed data. Each module is built to allow the user to delete acquisitions, events or modify baselines or peak values. Each module allows for drag and drop to loading of files for analysis or to reload already analyzed files.
+&nbsp;&nbsp;&nbsp;&nbsp;There are currently four different modules: MiniAnalysis, Current Clamp, oEPSC/LFP and Filter design. The program exports user settings for the interface, an individual JSON file for each acquisition, and an Excel file for the raw and processed data. Each module is built to allow the user to delete acquisitions, events or modify baselines or peak values. Each module allows for drag and drop to loading of files for analysis or to reload already analyzed files. As of now older ClampSuite json files may load but the data limit may not show correctly.
 
 ## Installation for Anaconda
 1. Install an [Anaconda](https://www.anaconda.com/download/) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) distribution of Python and your operating system. Note you will need to use an anaconda prompt if you did not add anaconda to the path.
@@ -72,12 +72,3 @@ settings specific to each analysis session are also exported when the data is sa
 ---
 
 <br/>
-
-## To Do
-- Add multi-peak finding for o/eEPSC module.
-- Add acquisition manager to make it easier to integrate other file types and add load data for publication or further analysis
-- Improve mini analysis decay curve fit.
-- Save last used user settings.
-- Add more color themes.
-- Add performance stats to monitor memory and CPU usage.
-- Integrate logging for debugging and performance issues.
