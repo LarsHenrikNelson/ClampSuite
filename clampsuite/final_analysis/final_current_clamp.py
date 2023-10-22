@@ -194,7 +194,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                     value.to_excel(writer, index=False, sheet_name=key)
 
     def pulse_averages(self, raw_df: pd.DataFrame) -> pd.DataFrame:
-        # raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
+        raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
         df_pulse = raw_df.loc[raw_df["Ramp"] == 0]
         if df_pulse.empty:
             return df_pulse
