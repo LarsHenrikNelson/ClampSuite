@@ -255,7 +255,7 @@ class FinalCurrentClampAnalysis:
 
     def membrane_resistance(self, df):
         df1 = df[df[("Ramp", "")] == 0]
-        if df1.empty == True:
+        if df1.empty:
             return df
         else:
             df2 = df1["Delta_v"].copy()
