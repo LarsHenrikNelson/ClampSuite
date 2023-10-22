@@ -268,7 +268,7 @@ class currentClampWidget(DragDropWidget):
         self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
 
         self.tab2_dock = DockArea()
-        self.plot_layout.addWidget(self.tab2_dock)
+        self.plot_layout.addWidget(self.tab2_dock, 1)
         self.d1 = Dock("Acquisition")
         self.d2 = Dock("First spike")
         self.tab2_dock.addDock(self.d1, "left")
