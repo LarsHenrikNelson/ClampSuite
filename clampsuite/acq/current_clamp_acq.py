@@ -367,7 +367,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         The idea for the function was initially inspired by a program called
         Easy Electropysiology (https://github.com/easy-electrophysiology).
         """
-        self.sfa_divisor = self.iei[0] / self.iei[-1]
+        if len(self.iei) > 1 or self.iei is np.nan:
+            self.sfa_divisor = self.iei[0] / self.iei[-1]
+        else:
+            self.sfa_divisor = np.nan
 
     def find_AHP_peak(self):
         """
