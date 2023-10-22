@@ -9,17 +9,19 @@ from . import final_analysis
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):
-    def analyze(self, acq_dict: dict, iv_start: int = 1, iv_end: int = 6):
+    def analyze(self, acq_dict: dict, iv_start: int = 1, iv_end: int = 6, debug=False):
         self.iv_start = iv_start
         self.iv_end = iv_end
         self.df_dict = {}
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
-        self._analyze(acq_dict)
+        if not debug:
+            self._analyze(acq_dict)
 
     def _analyze(self, acq_dict: dict):
         self.create_raw_data(acq_dict)
+        self.create_average_data()
         self.final_data_pulse()
         self.final_data_ramp()
         self.create_first_ap_dfs(acq_dict, self.pulse_indexes, self.ramp_indexes)
@@ -48,6 +50,15 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
         raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
         self.df_dict["Raw data"] = raw_df
+
+    def create_average_data(self):
+        ave_df = (
+            self.df_dict["Raw data"]
+            .groupby(["Epoch", "Pulse_amp"])
+            .mean()
+            .reset_index()
+        )
+        self.df_dict["Average data"] = ave_df
 
     def create_first_ap_dfs(
         self,
@@ -182,7 +193,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                     value.to_excel(writer, index=False, sheet_name=key)
 
     def pulse_averages(self, raw_df: pd.DataFrame) -> pd.DataFrame:
-        raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
+        # raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
         df_pulse = raw_df.loc[raw_df["Ramp"] == 0]
         if df_pulse.empty:
             return df_pulse
@@ -204,6 +215,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
     def final_data_pulse(self):
         self.pulse_indexes = []
         raw_df = self.df_dict["Raw data"]
+        raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
         df_pulses = raw_df[raw_df["Ramp"] == 0]
         resistance = self.membrane_resistance(df_pulses)
         if len(df_pulses["Spike_threshold (mV)"].unique()) == 1 and np.isnan(
