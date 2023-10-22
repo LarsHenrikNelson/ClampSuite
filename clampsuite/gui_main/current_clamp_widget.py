@@ -269,8 +269,8 @@ class currentClampWidget(DragDropWidget):
 
         self.tab2_dock = DockArea()
         self.plot_layout.addWidget(self.tab2_dock)
-        self.d1 = Dock("oEPSC")
-        self.d2 = Dock("LFP")
+        self.d1 = Dock("Acquisition")
+        self.d2 = Dock("First spike")
         self.tab2_dock.addDock(self.d1, "left")
         self.tab2_dock.addDock(self.d2, "right")
 
