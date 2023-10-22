@@ -204,10 +204,16 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
     def final_data_pulse(self):
         self.pulse_indexes = []
         raw_df = self.df_dict["Raw data"]
-        df_ave_spike = self.pulse_averages(raw_df)
         df_pulses = raw_df[raw_df["Ramp"] == 0]
-        if not df_pulses.empty:
-            resistance = self.membrane_resistance(df_pulses)
+        resistance = self.membrane_resistance(df_pulses)
+        if len(df_pulses["Spike_threshold (mV)"].unique()) == 1 and np.isnan(
+            df_pulses["Spike_threshold (mV)"].unique()[0]
+        ):
+            temp = df_pulses.groupby(["Epoch"]).mean()
+            temp.rename(columns={"Pulse_amp": "Rheobase"}, inplace=True)
+            self.df_dict["Final data (pulse)"] = temp
+        else:
+            df_ave_spike = self.pulse_averages(raw_df)
             iei = self.extract_features(df_pulses, "IEI").reset_index()
             self.df_dict["IEI"] = iei
             hertz = self.extract_features(df_pulses, "Hertz").reset_index()
@@ -217,12 +223,10 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                 names="Epoch"
             )
             df_concat.sort_values(by="Epoch")
-
+            df_concat.rename(columns={"Pulse_amp": "Rheobase"}, inplace=True)
             self.df_dict["Final data (pulse)"] = df_concat
             self.hertz = True
             self.pulse_ap = True
-        else:
-            self.df_dict["Final data (pulse)"] = df_ave_spike
 
     def extract_features(self, df: pd.DataFrame, values: str) -> pd.DataFrame:
         df_average = df.groupby(
