@@ -210,7 +210,8 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             df_pulses["Spike_threshold (mV)"].unique()[0]
         ):
             temp = df_pulses.groupby(["Epoch"]).mean()
-            temp.rename(columns={"Pulse_amp": "Rheobase"}, inplace=True)
+            temp.rename(columns={"Pulse_amp": "Rheobase (pA)"}, inplace=True)
+            temp = pd.concat([temp, resistance], axis=1).reset_index(names="Epoch")
             self.df_dict["Final data (pulse)"] = temp
         else:
             df_ave_spike = self.pulse_averages(raw_df)
@@ -223,7 +224,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                 names="Epoch"
             )
             df_concat.sort_values(by="Epoch")
-            df_concat.rename(columns={"Pulse_amp": "Rheobase"}, inplace=True)
+            df_concat.rename(columns={"Pulse_amp": "Rheobase (pA)"}, inplace=True)
             self.df_dict["Final data (pulse)"] = df_concat
             self.hertz = True
             self.pulse_ap = True
