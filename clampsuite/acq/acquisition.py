@@ -72,6 +72,9 @@ class Acquisition:
     def set_pulse_pattern(self, pulse_pattern):
         self.pulse_pattern = pulse_pattern
 
+    def set_cycle(self, cycle):
+        self.cycle = cycle
+
     def plot_acq_y(self):
         raise NotImplementedError
 

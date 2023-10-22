@@ -204,9 +204,16 @@ class ExpManager:
         if isinstance(file_path, (str, Path, PurePath)):
             file_path = list(file_path)
         num_of_acqs = len(file_path)
+        # cycle_dict = {}
         for count, i in enumerate(file_path):
             if Path(i).exists():
                 acq = self.load_acq(analysis, i)
+                # if acq is not None and acq.pulse_amp not in cycle_dict:
+                #     cycle_dict[acq.pulse_amp] = 0
+                #     acq.set_cycle(0)
+                # elif acq is not None:
+                #     cycle_dict[acq.pulse_amp] += 1
+                #     acq.set_cycle(cycle_dict[acq.pulse_amp])
                 self._set_acq(acq)
             self.callback_func(int((100 * (count + 1) / num_of_acqs)))
         self.callback_func("Loaded acquisitions")

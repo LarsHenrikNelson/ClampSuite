@@ -49,6 +49,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
         raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
+        raw_df.sort_values("Acquisition", inplace=True)
         self.df_dict["Raw data"] = raw_df
 
     def create_average_data(self):
