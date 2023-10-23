@@ -49,7 +49,21 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
         raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
-        raw_df.sort_values("Acquisition", inplace=True)
+        # raw_df.sort_values("Acquisition", inplace=True)
+        # cycle = np.zeros(raw_df["Pulse_amp"].size, np.int64)
+        # count = 0
+        # current_epoch = raw_df["Epoch"].iloc[0]
+        # for i in range(1, raw_df["Pulse_amp"].size):
+        #     if current_epoch != raw_df["Epoch"].iloc[i]:
+        #         count = 0
+        #     if raw_df["Pulse_amp"].iloc[i - 1] > 0 and raw_df["Pulse_amp"].iloc[i] < 0:
+        #         count += 1
+        #         cycle[i] = count
+        #     else:
+        #         cycle[i] = count
+
+        # raw_df["Cycle"] = cycle
+        # raw_df.sort_values(["Epoch", "Cycle", "Pulse_amp"], inplace=True)
         self.df_dict["Raw data"] = raw_df
 
     def create_average_data(self):
@@ -194,7 +208,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                     value.to_excel(writer, index=False, sheet_name=key)
 
     def pulse_averages(self, raw_df: pd.DataFrame) -> pd.DataFrame:
-        raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
         df_pulse = raw_df.loc[raw_df["Ramp"] == 0]
         if df_pulse.empty:
             return df_pulse
@@ -216,7 +229,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
     def final_data_pulse(self):
         self.pulse_indexes = []
         raw_df = self.df_dict["Raw data"]
-        raw_df["Cycle"] = raw_df.groupby(["Pulse_amp", "Epoch"]).cumcount()
         df_pulses = raw_df[raw_df["Ramp"] == 0]
         resistance = self.membrane_resistance(df_pulses)
         if len(df_pulses["Spike_threshold (mV)"].unique()) == 1 and np.isnan(

@@ -6,6 +6,7 @@ from pathlib import Path, PurePath
 from typing import Callable, Literal, Union
 
 import yaml
+import numpy as np
 
 from ..acq import Acquisition
 from ..final_analysis import FinalAnalysis
@@ -299,6 +300,15 @@ class ExpManager:
             self.deleted_acqs[exp] = OrderedDict()
             self.deleted_acqs[exp][acq] = item
         self.acqs_deleted += 1
+
+    def set_cycle(self, exp):
+        # IN progress
+        rows = len(self.exp_dict[exp])
+        temp_data = np.zeros((rows, 3))
+        for index, key in enumerate(self.exp_dict[exp]):
+            temp_data[index, 0] = self.exp_dict[exp][key].acq_number
+            temp_data[index, 0] = self.exp_dict[exp][key].acquisition_number
+            temp_data[index, 0] = self.exp_dict[exp][key].acquisition_number
 
     def reset_deleted_acqs(self, exp: str) -> int:
         if self.deleted_acqs[exp]:

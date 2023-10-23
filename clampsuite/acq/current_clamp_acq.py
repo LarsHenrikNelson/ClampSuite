@@ -110,7 +110,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             baseline_std = np.std(dv[self.baseline_start : self.baseline_end])
 
             # Calculate the IEI and correction for sample rate
-            if not np.isnan(self.peaks[0]):
+            if not np.isnan(self.peaks[0]) and len(self.peaks) > 1:
                 self.iei = np.diff(self.peaks) / self.s_r_c
                 self.iei_mean = self.iei.mean()
             else:
