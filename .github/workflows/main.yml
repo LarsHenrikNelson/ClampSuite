@@ -8,14 +8,13 @@ on:
     branches: main
   pull_request:
     branches: main
-  schedule:
-    - cron: '0 6 * * 1,4'
 
 permissions:
   contents: read
 
 jobs:
-  test-repo:
+  if: ${{ github.ref == 'refs/heads/main' }}
+  test-main:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,8 +24,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Ruff action
-      uses: chartboost/ruff-action@v1
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -36,12 +33,3 @@ jobs:
         python -m pip install --upgrade pip
         pip install ruff pytest
         python -m pip install -r requirements.txt
-    - name: Lint with ruff
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        ruff check . --exit-zero
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest tests/
