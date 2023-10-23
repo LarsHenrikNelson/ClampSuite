@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  if: github.ref == 'refs/heads/main'
   test-main:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
