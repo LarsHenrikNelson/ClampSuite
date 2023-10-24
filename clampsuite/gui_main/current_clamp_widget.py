@@ -222,6 +222,12 @@ class currentClampWidget(DragDropWidget):
         )
         self.analysis_buttons.addRow("Pulse pattern", self.pulse_pattern)
 
+        self.cycle = LineEdit()
+        self.cycle.editingFinished.connect(
+            lambda: self.editAttr("cycle", self.cycle.toInt())
+        )
+        self.analysis_buttons.addRow("Cycle", self.cycle)
+
         self.baseline_mean_edit = QLineEdit()
         self.analysis_buttons.addRow("Baseline mean (mV)", self.baseline_mean_edit)
 
@@ -494,6 +500,7 @@ class currentClampWidget(DragDropWidget):
             self.epoch_number.setText(acq_object.epoch)
             self.pulse_amp_num.setText(str(acq_object.pulse_amp))
             self.pulse_pattern.setText(acq_object.pulse_pattern)
+            self.cycle.setText(str(acq_object.cycle))
             self.baseline_mean_edit.setText(
                 str(round_sig(acq_object.baseline_mean, sig=4))
             )

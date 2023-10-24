@@ -505,6 +505,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         current_clamp_dict = {
             "Acquisition": self.acq_number,
+            "Cycle": self.cycle,
             "Pulse_pattern": self.pulse_pattern,
             "Pulse_amp": self.pulse_amp,
             "Ramp": self.ramp,

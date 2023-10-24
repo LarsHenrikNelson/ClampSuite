@@ -52,6 +52,12 @@ class AcqInspectionWidget(QWidget):
         )
         self.props_layout.addRow("Pulse pattern", self.pulse_pattern)
 
+        self.cycle = LineEdit()
+        self.cycle.editingFinished.connect(
+            lambda: self.editAttr("cycle", self.cycle.toInt())
+        )
+        self.props_layout.addRow("Cycle", self.cycle)
+
         self.ramp = QLineEdit()
         self.ramp.editingFinished.connect(
             lambda: self.editAttr("ramp", self.ramp.text())
@@ -83,6 +89,7 @@ class AcqInspectionWidget(QWidget):
             self.ramp.setText(self.acq_dict[number].ramp)
             self.pulse_pattern.setText(self.acq_dict[number].pulse_pattern)
             self.pulse_amp.setText(str(self.acq_dict[number].pulse_amp))
+            self.cycle.setText(str(self.acq_dict[number].cycle))
             self.epoch.setText(self.acq_dict[number].epoch)
 
         else:

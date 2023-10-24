@@ -35,6 +35,8 @@ class ExpManager:
         self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
     ) -> None:
         self._load_acqs(analysis, file)
+        for key in self.exp_dict.keys():
+            self.set_cycle(key)
         self._set_start_end_acq()
 
     def analyze_exp(
@@ -209,12 +211,6 @@ class ExpManager:
         for count, i in enumerate(file_path):
             if Path(i).exists():
                 acq = self.load_acq(analysis, i)
-                # if acq is not None and acq.pulse_amp not in cycle_dict:
-                #     cycle_dict[acq.pulse_amp] = 0
-                #     acq.set_cycle(0)
-                # elif acq is not None:
-                #     cycle_dict[acq.pulse_amp] += 1
-                #     acq.set_cycle(cycle_dict[acq.pulse_amp])
                 self._set_acq(acq)
             self.callback_func(int((100 * (count + 1) / num_of_acqs)))
         self.callback_func("Loaded acquisitions")
@@ -302,7 +298,6 @@ class ExpManager:
         self.acqs_deleted += 1
 
     def set_cycle(self, exp):
-        # IN progress
         rows = len(self.exp_dict[exp])
         temp_data = np.zeros((rows, 4))
         for index, key in enumerate(self.exp_dict[exp]):
@@ -318,6 +313,7 @@ class ExpManager:
         for i in range(1, rows):
             if current_epoch != temp_data[i, 1]:
                 count = 0
+                current_epoch = temp_data[i, 1]
             if temp_data[i - 1, 2] > 0 and temp_data[i, 2] < 0:
                 count += 1
                 temp_data[i, 3] = count

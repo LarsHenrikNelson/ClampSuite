@@ -49,6 +49,8 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
         raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
+        raw_df.sort_values(["Epoch", "Cycle", "Pulse_amp"], inplace=True)
+        raw_df.reset_index(drop=True)
         self.df_dict["Raw data"] = raw_df
 
     def create_average_data(self):
