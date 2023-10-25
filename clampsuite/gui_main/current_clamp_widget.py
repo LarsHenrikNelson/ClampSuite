@@ -708,7 +708,7 @@ class currentClampWidget(DragDropWidget):
                 brush = pg.mkBrush(color=pg.intColor(int(i)))
                 iv_curve_plot.plot(iv_x[i].to_numpy(), iv_y[i].to_numpy(), pen=pencil)
                 iv_curve_plot.plot(
-                    deltav_df["Pulse_amp"].to_numpy(),
+                    deltav_df["Pulse_amp (pA)"].to_numpy(),
                     deltav_df[i].to_numpy(),
                     pen=None,
                     symbol="o",
@@ -721,7 +721,7 @@ class currentClampWidget(DragDropWidget):
         spike_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.plot_tabs.addTab(spike_curve_plot, "Spike curve")
-        pulse_amp = hertz.pop("Pulse_amp").to_numpy()
+        pulse_amp = hertz.pop("Pulse_amp (pA)").to_numpy()
         plot_epochs = hertz.columns.to_list()
         spike_curve_plot.addLegend()
         for i in plot_epochs:

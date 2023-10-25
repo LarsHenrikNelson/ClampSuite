@@ -46,18 +46,18 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         raw_df = pd.DataFrame([acq_dict[i].acq_data() for i in acq_dict.keys()])
         raw_df["Epoch"] = pd.to_numeric(raw_df["Epoch"])
         raw_df["Pulse_pattern"] = pd.to_numeric(raw_df["Pulse_pattern"])
-        raw_df["Pulse_amp"] = pd.to_numeric(raw_df["Pulse_amp"])
+        raw_df["Pulse_amp (pA)"] = pd.to_numeric(raw_df["Pulse_amp (pA)"])
         raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
         raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
-        raw_df.sort_values(["Epoch", "Ramp", "Cycle", "Pulse_amp"], inplace=True)
+        raw_df.sort_values(["Epoch", "Ramp", "Cycle", "Pulse_amp (pA)"], inplace=True)
         raw_df.reset_index(drop=True, inplace=True)
         self.df_dict["Raw data"] = raw_df
 
     def create_average_data(self):
         ave_df = (
             self.df_dict["Raw data"]
-            .groupby(["Epoch", "Pulse_amp"])
-            .mean()
+            .groupby(["Epoch", "Pulse_amp (pA)"])
+            .mean(numeric_only=True)
             .reset_index()
         )
         self.df_dict["Average data"] = ave_df
@@ -143,7 +143,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         return average
 
     def membrane_resistance(self, df: pd.DataFrame) -> pd.DataFrame:
-        df_pivot = self.extract_features(df, "Delta_v")
+        df_pivot = self.extract_features(df, "Delta_v (mV)")
         slopes = []
         iv_lines = []
         iv_xs = []
@@ -203,7 +203,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             temp = df_pulse.loc[df_pulse["Epoch"] == i]
             for j in temp["Cycle"].unique():
                 temp_2 = temp.loc[df_pulse["Cycle"] == j]
-                ind = temp_2["IEI"].first_valid_index()
+                ind = temp_2["Num spikes"].first_valid_index()
                 if ind is None:
                     pass
                 else:
@@ -222,7 +222,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
             df_pulses["Spike_threshold (mV)"].unique()[0]
         ):
             temp = df_pulses.groupby(["Epoch"]).mean()
-            temp.rename(columns={"Pulse_amp": "Rheobase (pA)"}, inplace=True)
+            temp.rename(columns={"Pulse_amp (pA)": "Rheobase (pA)"}, inplace=True)
             temp = pd.concat([temp, resistance], axis=1).reset_index(names="Epoch")
             self.df_dict["Final data (pulse)"] = temp
         else:
@@ -236,18 +236,20 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                 names="Epoch"
             )
             df_concat.sort_values(by="Epoch")
-            df_concat.rename(columns={"Pulse_amp": "Rheobase (pA)"}, inplace=True)
+            df_concat.rename(columns={"Pulse_amp (pA)": "Rheobase (pA)"}, inplace=True)
             self.df_dict["Final data (pulse)"] = df_concat
             self.hertz = True
             self.pulse_ap = True
 
     def extract_features(self, df: pd.DataFrame, values: str) -> pd.DataFrame:
         df_average = df.groupby(
-            ["Epoch", "Pulse_amp", "Pulse_pattern"],
+            ["Epoch", "Pulse_amp (pA)", "Pulse_pattern"],
             as_index=False,
             group_keys="Epoch",
         ).mean(numeric_only=True)
-        df_pivot = df_average.pivot(index="Pulse_amp", values=values, columns="Epoch")
+        df_pivot = df_average.pivot(
+            index="Pulse_amp (pA)", values=values, columns="Epoch"
+        )
         return df_pivot
 
     def final_data_ramp(self):

@@ -503,30 +503,35 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         Returns:
             dict: dictionary of acquisition attributes
         """
+        if np.isnan(self.peaks[0]):
+            num_spks = np.nan
+        else:
+            num_spks = (len(self.peaks),)
         current_clamp_dict = {
             "Acquisition": self.acq_number,
             "Cycle": self.cycle,
             "Pulse_pattern": self.pulse_pattern,
-            "Pulse_amp": self.pulse_amp,
+            "Pulse_amp (pA)": self.pulse_amp,
             "Ramp": self.ramp,
             "Epoch": self.epoch,
-            "Baseline": self.baseline_mean,
-            "Pulse_start": self._pulse_start / self.s_r_c,
-            "Delta_v": self.delta_v,
+            "Baseline mean (pA)": self.baseline_mean,
+            "Pulse_start (ms)": self._pulse_start / self.s_r_c,
+            "Delta_v (mV)": self.delta_v,
             "Spike_threshold (mV)": self.spike_threshold,
             "Spike_threshold_time (ms)": self.spike_threshold_x(),
             "Spike_peak_volt": self.peak_volt,
             "Spike_time (ms)": self.first_peak_time(),
             "Hertz": self.hertz_exact(),
             "IEI": self.iei_mean,
-            "Spike_width": self.spike_width(),
+            "Num spikes": num_spks,
+            "Spike_width (ms)": self.spike_width(),
             "Max_AP_vel": self.ap_v,
             "Spike_freq_adapt": self.spike_adapt,
             "Local_sfa": self.local_var,
             "Divisor_sfa": self.sfa_divisor,
             "Peak_AHP (mV)": self.ahp_y,
             "Peak_AHP (ms)": self.ahp_x,
-            "Ramp_rheobase": self.ramp_rheo,
+            "Ramp_rheobase (pA)": self.ramp_rheo,
             "Baseline_stability": self.baseline_stability,
         }
         return current_clamp_dict
