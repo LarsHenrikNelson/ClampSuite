@@ -33,7 +33,13 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from ..functions.kde import create_kde
 from ..functions.template_psc import create_template
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
+from ..gui_widgets.qtwidgets import (
+    DragDropWidget,
+    LineEdit,
+    ListView,
+    ThreadWorker,
+    WorkerSignals,
+)
 from ..manager import ExpManager
 from .acq_inspection import AcqInspectionWidget, DeconInspectionWidget
 
@@ -47,11 +53,12 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def initUI(self):
         self.plot_dict = {}
+        self.signals = WorkerSignals()
 
         logger.info("Creating Mini analysis GUI")
         # Create tabs for part of the analysis program
         self.signals.file.connect(self.loadPreferences)
-        self.signals.path.connect(self.loadExperiment)
+        self.signals.file_path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.tab_widget = QTabWidget()
@@ -113,6 +120,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_layout.addWidget(self.load_acq_label)
         self.load_widget = ListView()
         self.load_widget.model().signals.progress.connect(self.updateProgress)
+        self.load_widget.model().signals.dir_path.connect(self.setWorkingDirectory)
         self.load_widget.setAnalysisType(self.analysis_type)
         self.load_layout.addWidget(self.load_widget)
 
@@ -2010,3 +2018,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
+
+    def setWorkingDirectory(self, path):
+        self.signals.dir_path.emit(path)

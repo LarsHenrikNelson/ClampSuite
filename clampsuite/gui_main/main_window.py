@@ -18,6 +18,8 @@ from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
 
+# from ..gui_widgets.qtwidgets import WorkerSignals
+
 logger = logging.getLogger(__name__)
 
 
@@ -98,12 +100,15 @@ class MainWindow(QMainWindow):
         logger.info("Creating analysis widgets")
         logger.info("Creating MiniAnalysisWidget")
         self.mini_widget = MiniAnalysisWidget()
+        self.mini_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.mini_widget)
         logger.info("Creating oEPSCWidget")
         self.oepsc_widget = oEPSCWidget()
+        self.oepsc_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.oepsc_widget)
         logger.info("Creating currentClampWidget")
         self.current_clamp_widget = currentClampWidget()
+        self.current_clamp_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.current_clamp_widget)
         logger.info("Creating filterWidget")
         self.filter_widget = filterWidget()
@@ -111,7 +116,8 @@ class MainWindow(QMainWindow):
         logger.info("Analysis widgets created")
 
         self.setComboBoxSpacing()
-        self.working_dir = str(Path().cwd())
+        self.working_dir = str(Path().home())
+        logger.info(f"Working directory set to: {self.working_dir}")
 
     def setComboBoxSpacing(self):
         combo_boxes = self.findChildren(QComboBox)
@@ -141,6 +147,7 @@ class MainWindow(QMainWindow):
         if save_filename:
             logger.info("Saving analysis.")
             self.working_dir = str(Path(PurePath(save_filename).parent))
+            logger.info(f"Working directory set to: {self.working_dir}")
             self.central_widget.currentWidget().saveAs(save_filename)
             logger.info("Analysis saved.")
 
@@ -168,6 +175,7 @@ class MainWindow(QMainWindow):
         if len(directory) > 0:
             logger.info("Creating/appending new experiment.")
             self.working_dir = str(PurePath(directory[0]).parent)
+            logger.info(f"Working directory set to: {self.working_dir}")
             self.central_widget.currentWidget().createExperiment(directory)
             logger.info("Experiment created/appended.")
 
@@ -208,3 +216,7 @@ class MainWindow(QMainWindow):
             if ret == QMessageBox.Save:
                 self.saveAs()
         event.accept()
+
+    def setWorkingDirectory(self, path):
+        self.working_dir = path
+        logger.info(f"Working directory set to: {self.working_dir}")

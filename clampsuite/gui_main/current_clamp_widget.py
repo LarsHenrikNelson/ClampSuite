@@ -60,7 +60,7 @@ class currentClampWidget(DragDropWidget):
         self.inspection_widget = AcqInspectionWidget()
 
         self.signals.file.connect(self.loadPreferences)
-        self.signals.path.connect(self.loadExperiment)
+        self.signals.file_path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.main_widget = QTabWidget()
@@ -89,6 +89,7 @@ class currentClampWidget(DragDropWidget):
         self.input_layout.addRow(self.load_acq_label)
         self.acq_view = ListView()
         self.acq_view.model().signals.progress.connect(self.updateProgress)
+        self.acq_view.model().signals.dir_path.connect(self.setWorkingDirectory)
         self.analysis_type = "current_clamp"
         self.acq_view.setAnalysisType(self.analysis_type)
         self.acq_layout.addWidget(self.acq_view)
@@ -153,7 +154,7 @@ class currentClampWidget(DragDropWidget):
         )
 
         self.threshold_method = QComboBox()
-        methods = ["max_curvature", "third_derivative", "legacy"]
+        methods = ["third_derivative", "max_curvature", "legacy"]
         self.threshold_method.addItems(methods)
         self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
 
@@ -163,7 +164,7 @@ class currentClampWidget(DragDropWidget):
         self.min_spikes_label = QLabel("Min spikes")
         self.min_spikes_edit = LineEdit()
         self.min_spikes_edit.setObjectName("min_spikes")
-        self.min_spikes_edit.setText("2")
+        self.min_spikes_edit.setText("1")
         self.min_spikes_edit.setValidator(QIntValidator())
         self.input_layout.addRow(self.min_spikes_label, self.min_spikes_edit)
 
@@ -894,6 +895,5 @@ class currentClampWidget(DragDropWidget):
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 
-
-if __name__ == "__main__":
-    currentClampWidget()
+    def setWorkingDirectory(self, path):
+        self.signals.dir_path.emit(path)

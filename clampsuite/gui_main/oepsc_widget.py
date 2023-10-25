@@ -46,7 +46,7 @@ class oEPSCWidget(DragDropWidget):
     def initUI(self):
         logger.info("Creating oEPSC/LFP GUI")
         self.signals.file.connect(self.loadPreferences)
-        self.signals.path.connect(self.loadExperiment)
+        self.signals.file_path.connect(self.loadExperiment)
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
         self.parent_layout.addLayout(self.main_layout)
@@ -81,6 +81,7 @@ class oEPSCWidget(DragDropWidget):
         self.input_layout_2 = QFormLayout()
         self.oepsc_view = ListView()
         self.oepsc_view.model().signals.progress.connect(self.updateProgress)
+        self.oepsc_view.model().signals.dir_path.connect(self.setWorkingDirectory)
         self.oepsc_analysis = "oepsc"
         self.oepsc_view.setAnalysisType(self.oepsc_analysis)
         self.acq_label_1 = QLabel("Acquisition(s)")
@@ -101,6 +102,7 @@ class oEPSCWidget(DragDropWidget):
         self.form_layouts.addLayout(self.input_layout_3)
         self.lfp_view = ListView()
         self.lfp_view.model().signals.progress.connect(self.updateProgress)
+        self.lfp_view.model().signals.dir_path.connect(self.setWorkingDirectory)
         self.lfp_analysis = "lfp"
         self.lfp_view.setAnalysisType(self.lfp_analysis)
         self.acq_label_2 = QLabel("Acquisition(s)")
@@ -1472,6 +1474,5 @@ class oEPSCWidget(DragDropWidget):
         # self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
 
-
-if __name__ == "__main__":
-    oEPSCWidget()
+    def setWorkingDirectory(self, path):
+        self.signals.dir_path.emit(path)

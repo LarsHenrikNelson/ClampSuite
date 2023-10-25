@@ -86,7 +86,8 @@ class WorkerSignals(QObject):
     file = pyqtSignal(object)
     progress = pyqtSignal(object)
     finished = pyqtSignal(str)
-    path = pyqtSignal(object)
+    file_path = pyqtSignal(object)
+    dir_path = pyqtSignal(object)
 
 
 class ListModel(QAbstractListModel):
@@ -144,6 +145,7 @@ class ListModel(QAbstractListModel):
         worker = ThreadWorker(
             self.exp_manager, "create_exp", analysis=self.analysis_type, file=urls
         )
+        self.signals.dir_path.emit(str(Path(urls[0]).parent))
         worker.signals.progress.connect(self.updateProgress)
         worker.signals.finished.connect(self.acqsAdded)
         QThreadPool.globalInstance().start(worker)
@@ -178,6 +180,7 @@ class ListView(QListView):
         self.setSelectionMode(self.MultiSelection)
         self.setDropIndicatorShown(True)
         self.setModel(ListModel())
+        self.signals = WorkerSignals()
 
     def dragEnterEvent(self, e):
         """
@@ -291,7 +294,7 @@ class DragDropWidget(QWidget):
             if fname.suffix == ".yaml":
                 self.signals.file.emit(fname)
             elif Path(fname).is_dir():
-                self.signals.path.emit(Path(fname))
+                self.signals.file_path.emit(Path(fname))
             else:
                 e.ignore()
         else:
