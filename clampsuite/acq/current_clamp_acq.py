@@ -506,7 +506,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         if np.isnan(self.peaks[0]):
             num_spks = np.nan
         else:
-            num_spks = (len(self.peaks),)
+            num_spks = len(self.peaks)
         current_clamp_dict = {
             "Acquisition": self.acq_number,
             "Cycle": self.cycle,
