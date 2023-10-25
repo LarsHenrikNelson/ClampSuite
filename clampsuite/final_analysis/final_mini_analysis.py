@@ -58,7 +58,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         ) * 1000
         raw_df["Real time"] = raw_df["Acq time stamp"] + raw_df["Event time (ms)"]
         raw_df.sort_values("Acquisition", inplace=True)
-        raw_df.reset_index(drop=True)
+        raw_df.reset_index(drop=True, inplace=True)
         self.df_dict["Raw data"] = raw_df
 
         self.events_deleted = np.sum([i.deleted_events for i in acq_dict.values()])

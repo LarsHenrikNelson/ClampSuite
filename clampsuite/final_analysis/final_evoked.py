@@ -35,7 +35,7 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
             raw_df = o_raw_df
         raw_df["Epoch"] = pd.to_numeric(raw_df["Epoch"])
         raw_df.sort_values("Acquisition", inplace=True)
-        raw_df.reset_index(drop=True)
+        raw_df.reset_index(drop=True, inplace=True)
         self.df_dict["Raw data"] = raw_df
 
     def final_data(self):

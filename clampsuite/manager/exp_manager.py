@@ -299,11 +299,12 @@ class ExpManager:
 
     def set_cycle(self, exp):
         rows = len(self.exp_dict[exp])
-        temp_data = np.zeros((rows, 4))
+        temp_data = np.zeros((rows, 5))
         for index, key in enumerate(self.exp_dict[exp]):
             temp_data[index, 0] = self.exp_dict[exp][key].acq_number
             temp_data[index, 1] = self.exp_dict[exp][key].epoch
             temp_data[index, 2] = self.exp_dict[exp][key].pulse_amp
+            temp_data[index, 3] = int(self.exp_dict[exp][key].ramp)
 
         temp_data = temp_data[temp_data[:, 1].argsort()]
         temp_data = temp_data[temp_data[:, 0].argsort()]
@@ -312,15 +313,17 @@ class ExpManager:
         count = 0
         for i in range(1, rows):
             if current_epoch != temp_data[i, 1]:
-                count = 0
+                count = -1
                 current_epoch = temp_data[i, 1]
             if temp_data[i - 1, 2] > 0 and temp_data[i, 2] < 0:
                 count += 1
-                temp_data[i, 3] = count
+                temp_data[i, 4] = count
             else:
-                temp_data[i, 3] = count
+                temp_data[i, 4] = count
+            if temp_data[i, 3] == 1:
+                temp_data[i, 4] = 0
         for i in range(rows):
-            self.exp_dict[exp][int(temp_data[i, 0])].set_cycle(int(temp_data[i, 3]))
+            self.exp_dict[exp][int(temp_data[i, 0])].set_cycle(int(temp_data[i, 4]))
 
     def reset_deleted_acqs(self, exp: str) -> int:
         if self.deleted_acqs[exp]:
