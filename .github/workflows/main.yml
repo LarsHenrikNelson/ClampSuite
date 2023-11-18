@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test-main:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: github.ref_name == 'main'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
