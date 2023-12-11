@@ -41,7 +41,7 @@ def test_input_acq():
     )
 
 
-def test_analyze_negative_events():
+def test_analyze_negative_events_no_rc():
     mini = Acquisition("mini")
     data = create_acq_data()
     data["array"] = create_event_array(
@@ -90,7 +90,7 @@ def test_analyze_negative_events():
         assert i.amplitude > 4
 
 
-def test_analyze_positive_events():
+def test_analyze_positive_events_no_rc():
     mini = Acquisition("mini")
     data = create_acq_data()
     data["array"] = create_event_array(

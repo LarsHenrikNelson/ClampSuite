@@ -141,11 +141,11 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
 
     rc_amp, rc_start, rc_end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
     acq_dict["_rc_amp"] = rc_amp
-    acq_dict["_rc_start"] = int(rc_start * acq_dict["s_r_c"])
-    acq_dict["_rc_end"] = int(rc_end * acq_dict["s_r_c"])
+    acq_dict["_rc_check_start"] = int(rc_start * acq_dict["s_r_c"])
+    acq_dict["_rc_check_end"] = int(rc_end * acq_dict["s_r_c"])
     acq_dict["rc_amp"] = rc_amp
-    acq_dict["rc_start"] = rc_start
-    acq_dict["rc_end"] = rc_end
+    acq_dict["rc_check_start"] = rc_start
+    acq_dict["rc_check_end"] = rc_end
     return acq_dict
 
 

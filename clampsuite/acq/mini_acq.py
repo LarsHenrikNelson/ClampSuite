@@ -62,8 +62,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.deleted_events = 0
         self.baseline_corr = baseline_corr
         self.rc_check = rc_check
-        self.rc_check_start = int(rc_check_start * self.s_r_c)
-        self.rc_check_end = int(rc_check_end * self.s_r_c)
+        self.rc_check_start = rc_check_start
+        self.rc_check_end = rc_check_end
+        self._rc_check_start = int(rc_check_start * self.s_r_c)
+        self._rc_check_end = int(rc_check_end * self.s_r_c)
         self.run_analysis()
 
     def run_analysis(self):
@@ -85,12 +87,12 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             temp_array = self.array
             self.rc_check_array = np.array([])
         elif self.rc_check is True:
-            if self.rc_check_end == len(self.array):
-                temp_array = np.copy(self.array[: self.rc_check_start])
-                self.rc_check_array = np.copy(self.array[self.rc_check_start :])
+            if self._rc_check_end == len(self.array):
+                temp_array = np.copy(self.array[: self._rc_check_start])
+                self.rc_check_array = np.copy(self.array[self._rc_check_start :])
             else:
-                temp_array = np.copy(self.array[self.rc_check_end :])
-                self.rc_check_array = np.copy(self.array[self.rc_check_end :])
+                temp_array = np.copy(self.array[self._rc_check_end :])
+                self.rc_check_array = np.copy(self.array[self._rc_check_end :])
         return temp_array
 
     def set_array(self):
