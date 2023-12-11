@@ -2,7 +2,7 @@ from clampsuite.acq import (
     Acquisition,
     CurrentClampAcq,
 )
-from .test_utils import create_acq_data
+from clampsuite.functions.utilities import create_acq_data
 
 
 def test_current_clamp_acq_creation():
