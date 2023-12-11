@@ -82,7 +82,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         is filtered.
         """
         if self.rc_check is False:
-            pass
+            temp_array = self.array
+            self.rc_check_array = np.array([])
         elif self.rc_check is True:
             if self.rc_check_end == len(self.array):
                 temp_array = np.copy(self.array[: self.rc_check_start])
