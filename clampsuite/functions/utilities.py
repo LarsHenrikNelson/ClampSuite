@@ -77,6 +77,7 @@ def create_event_array(
     direction: Literal["positive", "negative"] = "positive",
     num_events: int = 10,
     random_events: bool = False,
+    white_noise_amp: int = 1,
 ):
     if random_events:
         rng = np.random.default_rng(42)
@@ -87,6 +88,8 @@ def create_event_array(
 
     else:
         event_array = white_noise_array(10 * sample_rate)
+
+        event_array *= white_noise_amp
 
         events = np.array(
             [77395, 65457, 43887, 43301, 85859, 8594, 69736, 20146, 9417, 52647]
