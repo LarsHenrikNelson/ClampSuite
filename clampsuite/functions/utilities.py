@@ -81,10 +81,12 @@ def create_event_array(
 ):
     if random_events:
         rng = np.random.default_rng(42)
-        events = rng.integers(0, num_events, size=10)
-        amplitudes = rng.lognormal(2.5, 0.5, 10)
-        taus = rng.normal(5, 1.2, 10)
-        rises = rng.normal(0.3, 0.05, 10)
+        events = rng.integers(
+            0, 10 * sample_rate - (30 * sample_rate / 1000), size=num_events
+        )
+        amplitudes = rng.lognormal(2.5, 0.5, size=num_events)
+        taus = rng.normal(5, 1.2, size=num_events)
+        rises = rng.normal(0.3, 0.05, size=num_events)
 
     else:
         event_array = white_noise_array(10 * sample_rate)
