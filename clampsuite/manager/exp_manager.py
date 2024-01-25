@@ -327,11 +327,11 @@ class ExpManager:
 
     def reset_deleted_acqs(self, exp: str) -> int:
         if self.deleted_acqs[exp]:
-            del_dict = dict(self.deleted_acqs)[exp]
+            del_dict = self.deleted_acqs[exp]
             for i in del_dict.values():
                 i.accept()
             self.exp_dict[exp].update(del_dict)
-            self.deleted_acqs = {}
+            self.deleted_acqs[exp] = OrderedDict()
             self.acqs_deleted = 0
             return 1
         else:
@@ -340,7 +340,7 @@ class ExpManager:
     def reset_recent_deleted_acq(self, exp: str):
         if self.deleted_acqs[exp]:
             item = self.deleted_acqs[exp].popitem()
-            item.accept()
+            item[1].accept()
             self.exp_dict[exp][item[0]] = item[1]
             self.acqs_deleted -= 1
             return item[0]
