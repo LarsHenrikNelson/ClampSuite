@@ -27,11 +27,11 @@ def main(logger):
         QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
         QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    app = QApplication([])
+
     pg.setConfigOptions(antialias=True)
     pg.setConfigOption("foreground", "#C9CDD0")
     os.environ["QT_API"] = "pyqt5"
-
-    app = QApplication([])
 
     wdir = PurePath(__file__).parent
     logo_path = str(wdir / "logo/d_logo.png")
