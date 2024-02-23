@@ -9,7 +9,7 @@
 project = "ClampSuite"
 copyright = "2022, Lars Henrik Nelson"
 author = "Lars Henrik Nelson"
-release = "0.0.3"
+release = "0.0.4"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
