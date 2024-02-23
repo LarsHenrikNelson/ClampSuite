@@ -450,10 +450,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             return []
 
-    def plot_sp_x(self) -> list:
+    def plot_st_x(self) -> list:
         return [self.rheo_x / self.s_r_c]
 
-    def plot_sp_y(self) -> list:
+    def plot_st_y(self) -> list:
         return [self.spike_threshold]
 
     def plot_ahp_y(self) -> list:

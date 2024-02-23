@@ -400,8 +400,8 @@ class currentClampWidget(DragDropWidget):
             self.analyze_acq_button.setEnabled(False)
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            self.worker = ThreadWorker(
-                self.exp_manager,
+            self.worker = ThreadWorker(self.exp_manager)
+            self.worker.addAnalysis(
                 "analyze",
                 exp="current_clamp",
                 filter_args={
@@ -534,6 +534,25 @@ class currentClampWidget(DragDropWidget):
                         symbol="o",
                         symbolBrush="y",
                     )
+                    self.plot_widget.plot(
+                        x=acq_object.spike_width_x(),
+                        y=acq_object.spike_width_y(),
+                        pen=pg.mkPen("g", width=4),
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="b",
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_ahp_x(),
+                        y=acq_object.plot_ahp_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="m",
+                    )
 
                     self.spike_plot.plot(
                         x=acq_object.spike_x_array(),
@@ -545,8 +564,8 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_sp_x(),
-                        y=acq_object.plot_sp_y(),
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
@@ -570,6 +589,25 @@ class currentClampWidget(DragDropWidget):
                         symbol="o",
                         symbolBrush="y",
                     )
+                    self.plot_widget.plot(
+                        x=acq_object.spike_width_x(),
+                        y=acq_object.spike_width_y(),
+                        pen=pg.mkPen("g", width=4),
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="b",
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_ahp_x(),
+                        y=acq_object.plot_ahp_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="m",
+                    )
                     self.spike_plot.plot(
                         x=acq_object.spike_x_array(),
                         y=acq_object.first_ap,
@@ -580,8 +618,8 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_sp_x(),
-                        y=acq_object.plot_sp_y(),
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
@@ -783,8 +821,8 @@ class currentClampWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         self.exp_manger = ExpManager()
-        self.worker = ThreadWorker(
-            self.exp_manager,
+        self.worker = ThreadWorker(self.exp_manager)
+        self.worker.addAnalysis(
             function="load",
             analysis="current_clamp",
             file_path=directory,
@@ -865,7 +903,8 @@ class currentClampWidget(DragDropWidget):
             pref_dict["Final Analysis"] = self.calc_param_clicked
             pref_dict["Acq_number"] = self.acquisition_number.value()
             self.exp_manager.set_ui_prefs(pref_dict)
-            self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
+            self.worker = ThreadWorker(self.exp_manager)
+            self.worker.addAnalysis("save", file_path=file_path)
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.finishedSaving)
             QThreadPool.globalInstance().start(self.worker)

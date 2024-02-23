@@ -761,9 +761,9 @@ class oEPSCWidget(DragDropWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         threadpool = QThreadPool().globalInstance()
+        worker = ThreadWorker(self.exp_manager)
         if self.exp_manager.acqs_exist("oepsc"):
-            worker_1 = ThreadWorker(
-                self.exp_manager,
+            worker.addAnalysis(
                 "analyze",
                 exp="oepsc",
                 filter_args={
@@ -791,12 +791,8 @@ class oEPSCWidget(DragDropWidget):
                     "curve_fit_type": self.curve_fit_type_edit.currentText(),
                 },
             )
-            worker_1.signals.progress.connect(self.updateProgress)
-            worker_1.signals.finished.connect(self.setAcquisition)
-            threadpool.start(worker_1)
         if self.exp_manager.acqs_exist("lfp"):
-            worker_2 = ThreadWorker(
-                self.exp_manager,
+            worker.addAnalysis(
                 "analyze",
                 exp="lfp",
                 filter_args={
@@ -816,14 +812,14 @@ class oEPSCWidget(DragDropWidget):
                     "pulse_start": self.lfp_pulse_start_edit.toFloat(),
                 },
             )
-            worker_2.signals.progress.connect(self.updateProgress)
-            worker_2.signals.finished.connect(self.setAcquisition)
-            threadpool.start(worker_2)
-            if not lfp_x_set:
-                self.lfp_x_axis = XAxisCoord(
-                    self.lfp_pulse_start_edit.toInt() - 10,
-                    self.lfp_b_start_edit.toInt() + 250,
-                )
+        worker.signals.progress.connect(self.updateProgress)
+        worker.signals.finished.connect(self.setAcquisition)
+        threadpool.start(worker)
+        if not lfp_x_set:
+            self.lfp_x_axis = XAxisCoord(
+                self.lfp_pulse_start_edit.toInt() - 10,
+                self.lfp_b_start_edit.toInt() + 250,
+            )
 
     def setAcquisition(self):
         if QThreadPool.globalInstance().activeThreadCount() == 0:
@@ -1306,7 +1302,8 @@ class oEPSCWidget(DragDropWidget):
         self.exp_manager.set_ui_prefs(pref_dict)
         self.pbar_count = 0
         self.pbar.setFormat("Saving files...")
-        self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
+        self.worker = ThreadWorker(self.exp_manager)
+        self.worker.addAnalysis("save", file_path=file_path)
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.finishedSaving)
         QThreadPool.globalInstance().start(self.worker)
@@ -1323,9 +1320,8 @@ class oEPSCWidget(DragDropWidget):
         self.pbar.setFormat("Loading...")
         self.pbar.setValue(0)
         self.exp_manager = ExpManager()
-        self.worker = ThreadWorker(
-            self.exp_manager, function="load", analysis="oepsc", file_path=directory
-        )
+        self.worker = ThreadWorker(self.exp_manager)
+        self.worker.addAnalysis(function="load", analysis="oepsc", file_path=directory)
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
         QThreadPool.globalInstance().start(self.worker)

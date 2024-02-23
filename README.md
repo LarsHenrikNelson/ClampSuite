@@ -15,9 +15,11 @@
 8. Running the command `pip show clampsuite` in the terminal will print the details of the version of clampsuite you installed.
 
 ## Venv installation
-1. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch. I recommend installing Clampsuite into a virtual environment.
-2. On windows run `py -m clampsuite` otherwise run `python -m clampsuite`
-2. Running the command `pip show clampsuite` in the terminal will print the details of the version of clampsuite you installed.
+1. Open a shell or terminal.
+2. Create a virtual environment. On Windows I recommend using the Py installer so you can specify the Python version. If you are using Linux or Mac I recommend [Pyenv](https://github.com/pyenv/pyenv).
+3. Activate the virtual environment.
+4.There are a couple ways to install ClampSuite. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
+5. On Windows run `py -m clampsuite` otherwise run `python -m clampsuite`
 
 
 <br/>
@@ -38,20 +40,27 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp; Mini Analysis analyzes the amplitude, rise time (time from baseline to the peak), rise rate (10-90%) and the estimated tau (2/3 peak amplitude or amplitude/e^1) for each event. The program can curve fit taus however, the curve fit function is not fully functional is mostly for visual inspection. 
 
+<img src="clampsuite/images/mini-analysis.png" title="mini analysis widget" align="right">
+
+
 <br/>
 
 ### oEPSC/LFP
 &nbsp;&nbsp;&nbsp;&nbsp; The oEPSC/LFP module analyzes optically/electrically evoked intracellular currents and/or LFP signals. For I/EPSCs the program finds the maximum current within a specified window. Windowed peak finding is necessary for NMDA current analysis if AMPAR . The program can also find the charge transfer, estimate the tau and curve-fit to find the tau. For LFPs the program finds the peak fiber volley, field potential, and the field potential rise slope. Future additions to the program will include multi-peak analysis.
+<img src="clampsuite/images/oepsc-lfp.png" title="oepsc-lfp widget" align="right">
 
 <br/>
 
 ### Current Clamp
 &nbsp;&nbsp;&nbsp;&nbsp; The current clamp module analyzes evoked potentials. The program analyzes the delta-V, spike frequency, rheobase, and spike-threshold. Additional analysis on the first spike of acquisitions that contain spikes include, peak spike voltage, first spike peak velocity, peak afterhyperpolarization potential. The program can compile all the data for ease of analysis if the pulse amplitude is include in the analysis file. The program can analyze upwards of 400 acquisitions in around a minute.
+<img src="clampsuite/images/current-clamp.png" title="current clamp widget" align="right">
 
 <br/>
 
 ### Filter design
-&nbsp;&nbsp;&nbsp;&nbsp; The last module is a filter design tool. I initially built the GUI to experiment with different filtering techniques since filtering can have a huge impact on the quality of the analysis. 
+&nbsp;&nbsp;&nbsp;&nbsp; The last module is a filter design tool. This tool allows you to compare different filter types. Filtering has a huge impact on signal analysis.
+
+<img src="clampsuite/images/filter-widget.png" title="filter-widget" align="right">
 
 <br/>
 
