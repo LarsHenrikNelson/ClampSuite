@@ -16,9 +16,9 @@
 
 ## Venv installation
 1. Open a shell or terminal.
-2. Create a virtual environment. On Windows I recommend using the Py installer so you can specify the Python version. If you are using Linux or Mac I recommend [Pyenv](https://github.com/pyenv/pyenv).
+2. Create a virtual environment. On Windows I recommend using the Py installer so you can specify the Python version. If you are using Linux or Mac I recommend [Pyenv](https://github.com/pyenv/pyenv) to specify the Python version.
 3. Activate the virtual environment.
-4.There are a couple ways to install ClampSuite. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
+4. There are a couple ways to install ClampSuite. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
 5. On Windows run `py -m clampsuite` otherwise run `python -m clampsuite`
 
 
