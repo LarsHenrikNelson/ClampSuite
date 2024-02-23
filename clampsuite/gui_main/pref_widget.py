@@ -1,21 +1,24 @@
-from PyQt5.QtWidgets import (
-    QPushButton,
-    QHBoxLayout,
-    QComboBox,
-    QWidget,
-    QLabel,
-    QFormLayout,
-    QApplication,
-    QLayout,
-    QListWidget,
-    QColorDialog,
-    QStackedLayout,
-    QGridLayout,
-)
+import logging
 
+import qdarkstyle
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-import qdarkstyle
+from PyQt5.QtWidgets import (
+    QApplication,
+    QColorDialog,
+    QComboBox,
+    QFormLayout,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QListWidget,
+    QPushButton,
+    QStackedLayout,
+    QWidget,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class PreferencesWidget(QWidget):
@@ -42,7 +45,8 @@ class PreferencesWidget(QWidget):
             # "Tomorrow night blue": qtvsc.load_stylesheet(
             #     qtvsc.Theme.TOMORROW_NIGHT_BLUE
             # ),
-            # "Dark high contrast": qtvsc.load_stylesheet(qtvsc.Theme.DARK_HIGH_CONTRAST),
+            # "Dark high contrast": qtvsc.load_stylesheet /
+            # (qtvsc.Theme.DARK_HIGH_CONTRAST),
         }
 
     def initUI(self):

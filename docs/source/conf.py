@@ -9,12 +9,12 @@
 project = "ClampSuite"
 copyright = "2022, Lars Henrik Nelson"
 author = "Lars Henrik Nelson"
-release = "0.0.2"
+release = "0.0.3"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
+extensions = ["sphinx_design", "sphinx.ext.intersphinx"]
 
 templates_path = ["_templates"]
 exclude_patterns = []

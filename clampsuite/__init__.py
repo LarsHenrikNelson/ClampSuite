@@ -1,12 +1,5 @@
-from .acq import Acq
-from .final_analysis import (
-    FinalCurrentClampAnalysis,
-    FinalEvokedCurrent,
-    FinalMiniAnalysis,
-)
-from .load_analysis import (
-    LoadCurrentClampData,
-    LoadEvokedCurrentData,
-    LoadCurrentClampData,
-    LoadMiniSaveData,
-)
+__version__ = "0.0.4"
+
+from .acq import Acquisition  # noqa: F401
+from .final_analysis import FinalAnalysis  # noqa: F401
+from .manager import ExpManager  # noqa: F401

@@ -1,26 +1,23 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr  3 12:20:28 2022
+import logging
 
-@author: Lars
-"""
-from PyQt5.QtWidgets import (
-    QPushButton,
-    QHBoxLayout,
-    QComboBox,
-    QWidget,
-    QLabel,
-    QFormLayout,
-    QSpinBox,
-    QDoubleSpinBox,
-)
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtCore import QSize
 import pyqtgraph as pg
-
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QWidget,
+)
 
 from ..gui_widgets.qtwidgets import LineEdit, ListView
+from ..manager import ExpManager
+
+logger = logging.getLogger(__name__)
 
 
 class filterWidget(QWidget):
@@ -29,7 +26,6 @@ class filterWidget(QWidget):
     """
 
     def __init__(self):
-
         super().__init__()
 
         self.analysis_type = "filter"
@@ -48,7 +44,7 @@ class filterWidget(QWidget):
         self.plot_layout.addLayout(self.filt_layout, 0)
 
         self.plot_widget = pg.GraphicsLayoutWidget()
-        self.p1 = self.plot_widget.addPlot(row=0, col=0)
+        self.p1 = self.plot_widget.addPlot(row=0, col=0, useOpenGL=True)
         pg.setConfigOptions(antialias=True)
         self.plot_layout.addWidget(self.plot_widget, 1)
         self.p1.setMinimumWidth(500)
@@ -99,21 +95,7 @@ class filterWidget(QWidget):
 
         self.filter_type_label = QLabel("Filter Type")
 
-        filters = [
-            "None",
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "savgol",
-            "ewma",
-            "ewma_a",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-        ]
+        filters = ExpManager.filters
         self.filter_selection = QComboBox(self)
         self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
         self.filter_selection.addItems(filters)
@@ -151,18 +133,7 @@ class filterWidget(QWidget):
         self.filt_layout.addRow(self.low_width_label, self.low_width_edit)
 
         self.window_label = QLabel("Window type")
-        windows = [
-            "hann",
-            "hamming",
-            "blackmmaharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-        ]
+        windows = ExpManager.windows
         self.window_edit = QComboBox(self)
         self.window_edit.addItems(windows)
         self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
@@ -190,6 +161,8 @@ class filterWidget(QWidget):
         self.clear_plot.setMaximumSize(QSize(300, 25))
         self.filt_layout.addRow(self.clear_plot)
 
+        self.exp_manager = ExpManager()
+        self.load_widget.setData(self.exp_manager)
         self.plot_list = 0
         self.pencil_list = []
         self.counter = 0
@@ -217,14 +190,12 @@ class filterWidget(QWidget):
             self.polyorder_label.setText("Polyorder")
 
     def setAcqSpinbox(self):
-        x = len(self.load_widget.model().acq_dict)
-        self.acq_number.setMaximum(x)
+        self.acq_number.setMaximum(self.exp_manager.end_acq)
 
     def delSelection(self):
         # Deletes the selected acquisitions from the list
         indexes = self.load_widget.selectedIndexes()
         if len(indexes) > 0:
-
             # Delete selections from model
             self.load_widget.deleteSelection(indexes)
             self.load_widget.clearSelection()
@@ -234,7 +205,7 @@ class filterWidget(QWidget):
             # without it.
             self.load_widget.clearSelection()
 
-        if len(self.load_widget.model().acq_dict) == 0:
+        if len(self.exp_manager.exp_dict[self.analysis_type]) == 0:
             self.plot_list = 0
             self.pencil_list = []
             self.p1.clear()
@@ -249,12 +220,11 @@ class filterWidget(QWidget):
             window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
             window = self.window_edit.currentText()
-        key = list(self.load_widget.model().acq_dict.keys())[
+        key = list(self.exp_manager.exp_dict["filter"].keys())[
             self.acq_number.value() - 1
         ]
-        h = self.load_widget.model().acq_dict[key].deep_copy()
-        h.analyze(
-            sample_rate=self.sample_rate_edit.toInt(),
+        h = self.exp_manager.exp_dict["filter"][key]
+        h.set_filter(
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
             filter_type=self.filter_selection.currentText(),
@@ -266,8 +236,8 @@ class filterWidget(QWidget):
             window=window,
             polyorder=self.polyorder_edit.toFloat(),
         )
+        h.analyze()
         filter_dict = {
-            "sample_rate": self.sample_rate_edit.toInt(),
             "baseline_start": self.b_start_edit.toInt(),
             "baseline_end": self.b_end_edit.toInt(),
             "filter_type": self.filter_selection.currentText(),
@@ -282,8 +252,8 @@ class filterWidget(QWidget):
         self.filter_list += [filter_dict]
         pencil = pg.mkPen(color=pg.intColor(self.counter))
         plot_item = self.p1.plot(
-            x=h.plot_x_array(),
-            y=h.filtered_array,
+            x=h.plot_acq_x(),
+            y=h.plot_acq_y(),
             pen=pencil,
             name=(self.filter_selection.currentText() + "_" + str(self.counter)),
         )
@@ -298,8 +268,8 @@ class filterWidget(QWidget):
         if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                key = list(self.load_widget.model().acq_dict.keys())[number - 1]
-                h = self.load_widget.model().acq_dict[key]
+                key = list(self.exp_manager.exp_dict["filter"].keys())[number - 1]
+                h = self.exp_manager.exp_dict["filter"][key]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],
@@ -313,7 +283,7 @@ class filterWidget(QWidget):
                     window=i["window"],
                     polyorder=i["polyorder"],
                 )
-                self.p1.plot(x=h.plot_x_array(), y=h.filtered_array, pen=j)
+                self.p1.plot(x=h.plot_acq_x(), y=h.plot_acq_y(), pen=j)
         else:
             pass
 
@@ -327,6 +297,9 @@ class filterWidget(QWidget):
 
     def removeLastPlotted(self):
         pass
+
+    def createExperiment(self, urls):
+        self.load_widget.model().addData(urls)
 
 
 if __name__ == "__main__":

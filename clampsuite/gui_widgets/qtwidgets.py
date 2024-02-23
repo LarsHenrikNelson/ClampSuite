@@ -1,25 +1,16 @@
-from copy import deepcopy
-from glob import glob
-import json
-from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath
+from pathlib import Path, PurePath
 
-from PyQt5.QtWidgets import (
-    QLineEdit,
-    QWidget,
-    QListView,
-    QSpinBox,
-)
 from PyQt5.QtCore import (
-    QRunnable,
-    pyqtSlot,
-    QObject,
-    pyqtSignal,
-    Qt,
     QAbstractListModel,
+    QMutex,
+    QObject,
+    QRunnable,
+    Qt,
+    QThreadPool,
+    pyqtSignal,
+    pyqtSlot,
 )
-
-from .utility_classes import NumpyEncoder, YamlWorker
-from ..acq import Acq
+from PyQt5.QtWidgets import QLineEdit, QListView, QSpinBox, QWidget
 
 
 class LineEdit(QLineEdit):
@@ -54,58 +45,40 @@ class LineEdit(QLineEdit):
         return x
 
 
-class SaveWorker(QRunnable):
+class ThreadWorker(QRunnable):
     """
     This class is used to create a 'runner' in a different thread than the
     main GUI. This prevents that GUI from freezing during saving.
     """
 
-    def __init__(self, save_filename, dictionary):
+    def __init__(self, exp_manager):
         super().__init__()
 
-        self.save_filename = save_filename
-        self.dictionary = dictionary
+        self.exp_manager = exp_manager
         self.signals = WorkerSignals()
+        self.mutex = QMutex()
+        self.function = []
+        self.kwargs = []
+
+    def addAnalysis(self, function, **kwargs):
+        self.function.append(function)
+        self.kwargs.append(kwargs)
 
     @pyqtSlot()
     def run(self):
-        for i, key in enumerate(self.dictionary.keys()):
-            x = self.dictionary[key]
-            with open(f"{self.save_filename}_{x.name}.json", "w") as write_file:
-                json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-            self.signals.progress.emit(
-                int((100 * (i + 1) / len(self.dictionary.keys())))
-            )
-        self.signals.finished.emit("Saved")
-
-
-class MiniSaveWorker(QRunnable):
-    """
-    This class is used to create a 'runner' in a different thread than the
-    main GUI. This prevents that GUI from freezing during saving. This is a
-    variant of the SaveWorker class used for the MiniAnalysisWidgit since a
-    specific function needs to be run on the mini-dictionary to prevent it
-    from taking up a lot of space in the json file.
-    """
-
-    def __init__(self, save_filename, dictionary):
-        super().__init__()
-
-        self.save_filename = save_filename
-        self.dictionary = dictionary
-        self.signals = WorkerSignals()
-
-    @pyqtSlot()
-    def run(self):
-        for i, key in enumerate(self.dictionary.keys()):
-            x = deepcopy(self.dictionary[key])
-            x.save_postsynaptic_events()
-            with open(f"{self.save_filename}_{x.name}.json", "w") as write_file:
-                json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-            self.signals.progress.emit(
-                int((100 * (i + 1) / len(self.dictionary.keys())))
-            )
-        self.signals.finished.emit("Saved")
+        self.mutex.lock()
+        for func, args in zip(self.function, self.kwargs):
+            self.exp_manager.set_callback(self.signals.progress.emit)
+            if func == "save":
+                self.exp_manager.save_data(**args)
+            elif func == "analyze":
+                self.exp_manager.analyze_exp(**args)
+            elif func == "load":
+                self.exp_manager.load_exp(**args)
+            elif func == "create_exp":
+                self.exp_manager.create_exp(**args)
+        self.mutex.unlock()
+        self.signals.finished.emit("Finished")
 
 
 class WorkerSignals(QObject):
@@ -115,10 +88,88 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    dictionary = pyqtSignal(dict)
-    progress = pyqtSignal(int)
+    file = pyqtSignal(object)
+    progress = pyqtSignal(object)
     finished = pyqtSignal(str)
-    path = pyqtSignal(object)
+    file_path = pyqtSignal(object)
+    dir_path = pyqtSignal(object)
+
+
+class ListModel(QAbstractListModel):
+    """
+    The model contains all the load data for the list view. Qt works using a
+    model-view-controller framework so the view should not contain any data
+    analysis or loading, it just facilities the transfer of the data to the model.
+    The model is used to add, remove, and modify the data through the use of a
+    controller which in Qt is often built into the models.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.acq_names = []
+        self.signals = WorkerSignals()
+
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            x = self.acq_names[index.row()]
+            return x
+
+    def rowCount(self, index):
+        return len(self.acq_names)
+
+    def setAnalysisType(self, analysis):
+        """
+        This function sets the analysis type for the model which is used to set the
+        acquisition type that is created in dropEvent().
+        """
+        self.analysis_type = analysis
+
+    def deleteSelection(self, index):
+        keys = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        keys.sort()
+
+        # Need to catch cases where the index does not exist anymore.
+        # I cannot figure out why Qt keeps returning the extra index.
+        if index > len(keys):
+            pass
+        else:
+            self.removeRow(index)
+            key = keys[index]
+            del self.exp_manager.exp_dict[self.analysis_type][key]
+            self.layoutChanged.emit()
+            self.sortNames()
+
+    def clearData(self):
+        self.acq_dict = {}
+        self.acq_names = []
+        self.exp_manager = None
+
+    def addData(self, urls):
+        if not isinstance(urls[0], str):
+            urls = [str(url.toLocalFile()) for url in urls]
+        worker = ThreadWorker(self.exp_manager)
+        worker.addAnalysis("create_exp", analysis=self.analysis_type, file=urls)
+        self.signals.dir_path.emit(str(Path(urls[0]).parent))
+        worker.signals.progress.connect(self.updateProgress)
+        worker.signals.finished.connect(self.acqsAdded)
+        QThreadPool.globalInstance().start(worker)
+
+    def acqsAdded(self, value):
+        self.sortNames()
+        self.layoutChanged.emit()
+
+    def updateProgress(self, value):
+        self.signals.progress.emit(value)
+
+    def sortNames(self):
+        acq_list = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        acq_list.sort()
+        self.acq_names = [
+            self.exp_manager.exp_dict[self.analysis_type][i].name for i in acq_list
+        ]
+
+    def setLoadData(self, exp_manager):
+        self.exp_manager = exp_manager
 
 
 class ListView(QListView):
@@ -133,6 +184,7 @@ class ListView(QListView):
         self.setSelectionMode(self.MultiSelection)
         self.setDropIndicatorShown(True)
         self.setModel(ListModel())
+        self.signals = WorkerSignals()
 
     def dragEnterEvent(self, e):
         """
@@ -162,7 +214,7 @@ class ListView(QListView):
         if e.mimeData().hasUrls:
             e.setDropAction(Qt.CopyAction)
             e.accept()
-            self.model().addAcq(e.mimeData().urls())
+            self.model().addData(e.mimeData().urls())
         else:
             e.ignore()
 
@@ -179,97 +231,14 @@ class ListView(QListView):
             self.clearSelection()
 
     def addAcq(self, urls):
-        self.model().addAcq(urls)
+        self.model().addData(urls)
         self.model().layoutChanged.emit()
 
     def setAnalysisType(self, analysis):
         self.model().setAnalysisType(analysis)
 
-    def setLoadData(self, acq_dict):
-        self.model().setLoadData(acq_dict)
-
-
-class ListModel(QAbstractListModel):
-    """
-    The model contains all the load data for the list view. Qt works using a
-    model-view-controller framework so the view should not contain any data
-    analysis or loading, it just facilities the transfer of the data to the model.
-    The model is used to add, remove, and modify the data through the use of a
-    controller which in Qt is often built into the models.
-    """
-
-    def __init__(
-        self,
-        acq_dict=None,
-        fname_list=None,
-    ):
-        super().__init__()
-        self.acq_dict = acq_dict or {}
-        self.fname_list = fname_list or []
-        self.acq_names = []
-
-    def data(self, index, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            x = self.acq_names[index.row()]
-            return x
-
-    def rowCount(self, index):
-        return len(self.acq_dict)
-
-    def setAnalysisType(self, analysis):
-        """
-        This function sets the analysis type for the model which is used to set the
-        acquisition type that is created in dropEvent().
-        """
-        self.analysis_type = analysis
-
-    def deleteSelection(self, index):
-        keys = list(self.acq_dict.keys())
-
-        # Need to catch cases where the index does not exist anymore.
-        # I cannot figure out why Qt keeps returning the extra index.
-        if index > len(keys):
-            pass
-        else:
-            self.removeRow(index)
-            key = keys[index]
-            del self.acq_dict[key]
-            del self.fname_list[index]
-            self.layoutChanged.emit()
-            self.acq_names = [i.name for i in self.acq_dict.values()]
-
-    def clearData(self):
-        self.acq_dict = {}
-        self.fname_list = []
-        self.acq_names = []
-
-    def addAcq(self, urls):
-        for url in urls:
-            fname = PurePath(str(url.toLocalFile()))
-            if fname not in self.fname_list and not Path(fname).is_dir():
-                obj = Acq(self.analysis_type, fname)
-                obj.load_acq()
-
-                # Add the acquisition to the model dictionary. This
-                # dictionary will be be added to the gui widget when
-                # the analysis is run.
-                self.acq_dict[obj.acq_number] = obj
-                self.fname_list += [obj.path]
-                self.acq_names += [obj.name]
-        self.sortDict()
-        self.layoutChanged.emit()
-
-    def sortDict(self):
-        acq_list = list(self.acq_dict.keys())
-        acq_list.sort(key=lambda x: int(x))
-        self.acq_dict = {i: self.acq_dict[i] for i in acq_list}
-        self.acq_names = [i.name for i in self.acq_dict.values()]
-        self.fname_list.sort(key=lambda x: int(x.stem.split("_")[1]))
-
-    def setLoadData(self, acq_dict):
-        self.acq_dict = acq_dict
-        self.acq_names = [i.name for i in acq_dict.values()]
-        self.layoutChanged.emit()
+    def setData(self, exp_manager):
+        self.model().setLoadData(exp_manager)
 
 
 class StringBox(QSpinBox):
@@ -285,7 +254,6 @@ class StringBox(QSpinBox):
         self.setRange(0, len(strings) - 1)
 
     def textFromValue(self, value):
-
         # returning string from index
         # _string = tuple
         return self._strings[value]
@@ -328,10 +296,9 @@ class DragDropWidget(QWidget):
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
             if fname.suffix == ".yaml":
-                pref_dict = YamlWorker.load_yaml(fname)
-                self.signals.dictionary.emit(pref_dict)
+                self.signals.file.emit(fname)
             elif Path(fname).is_dir():
-                self.signals.path.emit(Path(fname))
+                self.signals.file_path.emit(Path(fname))
             else:
                 e.ignore()
         else:

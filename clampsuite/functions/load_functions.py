@@ -1,25 +1,21 @@
 import json
-from math import floor, log10, nan
-from pathlib import PurePath, PurePosixPath, PureWindowsPath
 import re
-from typing import Tuple
+from math import nan
+from pathlib import PurePath, PurePosixPath, PureWindowsPath
+from typing import Union
 
 import numpy as np
 from scipy.io import loadmat, matlab
 
 
-"""
-This function loads a matlab file and puts it into a dictionary that is easy
-to use in python. The function was written by  on Stack Overflow.
-"""
-
-
 def load_mat(filename: str) -> dict:
     """
+    This function loads a matlab file and puts it into a dictionary that is
+    easy to use in python. The function was written by  on Stack Overflow.
     This function should be called instead of direct scipy.io.loadmat
     as it cures the problem of not properly recovering python dictionaries
     from mat files. It calls the function check keys to cure all entries
-    which are still mat-objects
+    which are still mat-objects.
     """
 
     def _check_vars(d):
@@ -72,34 +68,145 @@ def load_mat(filename: str) -> dict:
     return _check_vars(data)
 
 
-def load_scanimage_file(
-    path: PurePath,
-) -> Tuple[np.array, str, str, str, str, str, str]:
+def find_pulse_data(data_string, component):
+    temp_string = re.findall(component, data_string)
+    amp = 0.0
+    start = 0.0
+    end = 0.0
+    ramp = "0"
+    duration = 0.0
+    width = 0.0
+    if len(temp_string) == 1:
+        temp_string = temp_string[0]
+        amp_temp = re.findall("amplitude=(.*?);", temp_string)
+        if len(amp_temp) == 1:
+            amp = float(amp_temp[0])
+        start_temp = re.findall("delay=(.*?);", temp_string)
+        if len(start_temp) == 1:
+            start = float(start_temp[0])
+        duration_temp = re.findall("duration=(.*?);", temp_string)
+        if len(duration_temp) == 1:
+            duration = float(duration_temp[0])
+        width_temp = re.findall("pulseWidth=(.*?);", temp_string)
+        if len(width_temp) == 1:
+            width = float(width_temp[0])
+            end = start + width
+        ramp_temp = re.findall(r"ramp=(.*?);", temp_string)
+        if len(width_temp) == 1:
+            ramp = ramp_temp[0]
+    return amp, start, end, ramp, duration
+
+
+def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     """
-    This function takes pathlib.PurePath object as the input.
+    This function takes pathlib.PurePath object or string as the input.
+    All the data that is in time is converted to samples.
     """
-    name = path.stem
-    acq_number = name.split("_")[-1]
+    acq_dict = {}
+    name = PurePath(path).stem
+    acq_dict["name"] = name
+    acq_dict["acq_number"] = name.split("_")[-1]
     matfile1 = load_mat(path)
-    array = matfile1[name]["data"]
+    acq_dict["array"] = matfile1[name]["data"]
     data_string = matfile1[name]["UserData"]["headerString"]
-    epoch = re.findall("epoch=(\D?\d*)", data_string)[0]
+    acq_dict["epoch"] = re.findall("epoch=(\D?\d*)", data_string)[0]
     analog_input = matfile1[name]["UserData"]["ai"]
-    time_stamp = matfile1[name]["timeStamp"]
+    acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
+    acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
+    acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
+    acq_dict["pulse_amp"] = 0.0
     if analog_input == 0:
-        r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
-        pulse_pattern = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
+        acq_dict["pulse_pattern"] = re.findall("pulseToUse0=(\D?\d*)", data_string)[0]
+        amp, start, end, ramp, duration = find_pulse_data(
+            data_string, "pulseString_ao0=(.*?)state"
+        )
+
     elif analog_input == 1:
-        r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
-        pulse_pattern = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
-    ramp = re.findall(r"ramp=(\D?\d*);", r[0])
-    if ramp:
-        ramp = ramp[0]
-        pulse_amp = re.findall("amplitude=(\D?\d*)", r[0])[0]
+        # r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
+        acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        amp, start, end, ramp, duration = find_pulse_data(
+            data_string, "pulseString_ao1=(.*?)state"
+        )
+    acq_dict["pulse_amp"] = amp
+    acq_dict["_pulse_start"] = int(start * acq_dict["s_r_c"])
+    if end > 0:
+        acq_dict["_pulse_end"] = int(end * acq_dict["s_r_c"])
     else:
-        ramp = "0"
-        pulse_amp = "0"
-    return (name, acq_number, array, epoch, pulse_pattern, ramp, pulse_amp, time_stamp)
+        acq_dict["_pulse_end"] = int(duration * acq_dict["s_r_c"])
+        acq_dict["pulse_end"] = duration
+    acq_dict["ramp"] = ramp
+    acq_dict["pulse_amp"] = amp
+    acq_dict["pulse_start"] = acq_dict["s_r_c"]
+
+    rc_amp, rc_start, rc_end, _, _ = find_pulse_data(data_string, "RCCheck='(.*);'")
+    acq_dict["_rc_amp"] = rc_amp
+    acq_dict["_rc_check_start"] = int(rc_start * acq_dict["s_r_c"])
+    acq_dict["_rc_check_end"] = int(rc_end * acq_dict["s_r_c"])
+    acq_dict["rc_amp"] = rc_amp
+    acq_dict["rc_check_start"] = rc_start
+    acq_dict["rc_check_end"] = rc_end
+    return acq_dict
+
+
+def load_neo_acq(analog_sig, acq_num):
+    acq_dict = {}
+    acq_dict["sample_rate"] = int(analog_sig.sampling_rate)
+    acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
+    acq_dict["acq_num"] = acq_num
+    name = re.findall(r"\((.*)\)", analog_sig.name)[0]
+    acq_dict["name"] = name
+    acq_dict["time_stamp"] = acq_num * len(analog_sig) / analog_sig.sampling_rate
+    acq_dict["array"] = analog_sig.as_array().flatten()
+
+    # Other stuff that neo file does not include
+    acq_dict["pulse_pattern"] = "0"
+    acq_dict["epoch"] = 0
+    acq_dict["ramp"] = "0"
+    acq_dict["pulse_amp"] = 0
+    acq_dict["pulse_start"] = 0
+    acq_dict["pulse_end"] = 0
+    acq_dict["_pulse_start"] = 0
+    acq_dict["_pulse_end"] = 0
+    acq_dict["rc_amp"] = 0
+    acq_dict["rc_start"] = 0
+    acq_dict["rc_end"] = 0
+    acq_dict["_rc_start"] = 0
+    acq_dict["_rc_end"] = 0
+    return acq_dict
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """
+    Special json encoder for numpy types. Numpy types are not accepted by the
+    json encoder and need to be converted to python types.
+    """
+
+    def default(self, obj):
+        if isinstance(
+            obj,
+            (
+                np.int_,
+                np.intc,
+                np.intp,
+                np.int8,
+                np.int16,
+                np.int32,
+                np.int64,
+                np.uint8,
+                np.uint16,
+                np.uint32,
+                np.uint64,
+            ),
+        ):
+            return int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+            return float(obj)
+        elif isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 class NumpyDecoder(json.JSONDecoder):
@@ -122,38 +229,59 @@ class NumpyDecoder(json.JSONDecoder):
         return json.JSONDecoder.default(self, obj)
 
 
-def load_json_file(obj, path: PurePath or str):
+def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
     things that I have changed over the course of the program so
     that all of our saved files can be loaded.
     """
-    with open(path) as file:
-        data = json.load(file, cls=NumpyDecoder)
-        obj.sample_rate_correction = None
-        if data["analysis"] == "oepsc":
-            obj.find_ct = False
-            obj.find_est_decay = False
-            obj.curve_fit_decay = False
-        for key in data:
-            x = data[key]
-            if key in ("fv_x", "fp_x", "pulse_start"):
-                key = "_" + key
-            if key == "peak_x":
-                key = "_" + key
-                x = x * 10
-            if key == "slope" or key == "slope_x":
-                key = "_" + key
-            if isinstance(x, list):
-                if key not in ["postsynaptic_events", "final_events"]:
-                    x = np.array(x)
-            setattr(obj, key, x)
-    if obj.sample_rate_correction is not None:
-        obj.s_r_c = obj.sample_rate_correction
-    if obj.analysis == "mini":
-        obj.create_postsynaptic_events()
-        obj.x_array = np.arange(len(obj.final_array)) / obj.s_r_c
-        obj.event_arrays = [
-            i.event_array - i.event_start_y for i in obj.postsynaptic_events
-        ]
+    with open(path, "r") as rf:
+        data = json.load(rf, cls=NumpyDecoder)
+    if data["analysis"] == "oepsc":
+        if not data.get("find_ct"):
+            data["find_ct"] = False
+        if not data.get("find_est_deay"):
+            data["find_est_deay"] = False
+        if not data.get("find_ct"):
+            data["curve_fit_decay"] = False
+    altered_keys = {"fv_x", "fp_x", "pulse_start", "slope", "slope_x"}
+    for key in data:
+        if key in altered_keys:
+            new_key = "_" + key
+            data[new_key] = data.pop(key)
+        if key == "peak_x":
+            new_key = "_" + key
+            data[key] = data[key] * 10
+            data[new_key] = data.pop(key)
+        if isinstance(data[key], list):
+            if key not in ["postsynaptic_events", "final_events"]:
+                data[key] = np.array(data[key])
+    if "pulse_amp" in data:
+        data["pulse_amp"] = float(data["pulse_amp"])
+    if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
+        data["s_r_c"] = data.get("sample_rate_correction")
+    return data
+
+
+def load_json_file(path: Union[PurePath, str]) -> dict:
+    """
+    This function loads a json file and sets each key: value pair
+    as an attribute of the an obj. The function has to catch a lot
+    things that I have changed over the course of the program so
+    that all of our saved files can be loaded.
+    """
+    with open(path, "r") as rf:
+        data = json.load(rf, cls=NumpyDecoder)
+    if data["analysis"] == "oepsc":
+        if not data.get("find_ct"):
+            data["find_ct"] = False
+        if not data.get("find_est_deay"):
+            data["find_est_deay"] = False
+        if not data.get("find_ct"):
+            data["curve_fit_decay"] = False
+    for key in data.keys():
+        if isinstance(data[key], list):
+            if key not in ["postsynaptic_events", "final_events"]:
+                data[key] = np.array(data[key])
+    return data

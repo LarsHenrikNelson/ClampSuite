@@ -37,22 +37,22 @@
 
 /* If the active version has the name "dev", style it orange */
 #version_switcher_button[data-active-version-name*="dev"] {
-    background-color: #E69F00;
-    border-color: #E69F00;
+    background-color: #1be600;
+    border-color: #26e600;
     color: white;
 }
 
 /* green for `stable` */
 #version_switcher_button[data-active-version-name*="stable"] {
-    background-color: #009E73;
-    border-color: #009E73;
+    background-color: #ff8f26;
+    border-color: #ff8f26;
     color: white;
 }
 
 /* red for `old` */
 #version_switcher_button:not([data-active-version-name*="stable"]):not([data-active-version-name*="dev"]):not([data-active-version-name*="pull"]) {
-    background-color: #980F0F;
-    border-color: #980F0F;
+    background-color: #9e0091;
+    border-color: #91009e;
     color: white;
 }
 
