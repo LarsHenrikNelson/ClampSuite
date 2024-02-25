@@ -12,13 +12,13 @@ copyright = "2022, Lars Henrik Nelson"
 author = "Lars Henrik Nelson"
 release = "0.0.4"
 
-html_logo = "images/logo.png"
+html_logo = "./images/logo.png"
 
 html_theme_options = {
     "logo": {
         "text": "ClampSuite documentation",
-        "image_light": "images/logo.png",
-        "image_dark": "images/logo.png",
+        "image_light": "./images/logo.png",
+        "image_dark": "./images/logo.png",
     }
 }
 
