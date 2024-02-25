@@ -14,3 +14,4 @@ share
 .ruff_cache
 .mypy_cache
 .pytest_cache
+docs/build
