@@ -21,6 +21,14 @@ exclude_patterns = []
 
 html_logo = "images/logo.png"
 
+html_theme_options = {
+    "logo": {
+        "text": "ClampSuite documentation",
+        "image_light": "images/logo.png",
+        "image_dark": "images/logo.png",
+    }
+}
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 

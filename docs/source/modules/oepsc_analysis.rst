@@ -11,6 +11,10 @@ Setup
 To begin analyzing data just drap and drop your files into into the acquistion part of
 the GUI.
 
+.. image:: _static/oepsc-lfp-setup.png
+    :scale: 50
+    :align: center
+
 Filtering
 --------------
 For an in-depth discussion of filtering see the :doc:`filtering tutorial </analysis_methods/filtering>`.
@@ -70,7 +74,7 @@ is for LFPs. Both windows share the **Acquisition** spinbox
 
 .. image:: _static/oepsc-lfp.png
     :scale: 50
-    :align: right
+    :align: center
 
 * **Acquisition**: This spinbox is used to select the acquisition you want to view. Values
   can be changed using the arrow buttons or by inputing a number and hitting enter.
@@ -106,3 +110,7 @@ LFP
 Final data
 ~~~~~~~~~~~~~~~
 The Final data tab contains the raw and final data. 
+
+.. image:: _static/oepsc-lfp-final.png
+    :scale: 50
+    :align: center
