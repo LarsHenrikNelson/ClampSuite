@@ -17,6 +17,10 @@ minis you will need to specify the filtering, the criteria for selecting minis a
 creating a temp. The default settings should work for most cells that have a decay tau
 around 5 ms.
 
+.. image:: _static/mini-analysis-setup.png
+    :scale: 50
+    :align: center
+
 Filtering
 ---------------
 For an in-depth discussion of filtering see :doc:`filtering tutorial </analysis_methods/filtering>`.
@@ -71,6 +75,10 @@ Analysis
 The Analysis tab has three different windows. Each of the windows can be resized but not
 moved around. You can hide a window by dragging it in on direction. Note that the two
 top windows will both be hidden even if you drag just one window up.
+
+.. image:: _static/mini-analysis.png
+    :scale: 50
+    :align: center
 
 Overview window (top left)
 ----------------------------------
@@ -133,3 +141,7 @@ The Final Data tab has four different windows. The top left window holds the dat
 right window shows the averaged mini with a curve fit for the tau, the bottom window consists
 of a drop down menu to display the values of the raw data over time (except for IEI) and in
 a smoothed distribution.
+
+.. image:: _static/mini-analysis-final.png
+    :scale: 50
+    :align: center

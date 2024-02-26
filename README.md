@@ -10,8 +10,8 @@
 3. Create a new environment with `conda create --name clampsuite python=3.10`.
 4. To activate this new environment, run `conda activate clampsuite`
 5. Anaconda has an experimental option for [pip interoperability](https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html) that makes it easier to install packages using pip.
-6. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
-7. Now run `clampsuite` and you're all set.
+6. To install run `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
+7. Now run `python - m clampsuite` and you're all set.
 8. Running the command `pip show clampsuite` in the terminal will print the details of the version of clampsuite you installed.
 
 ## Venv installation
@@ -19,7 +19,7 @@
 2. Create a virtual environment. On Windows I recommend using the Py installer so you can specify the Python version. If you are using Linux or Mac I recommend [Pyenv](https://github.com/pyenv/pyenv) to specify the Python version.
 3. Activate the virtual environment.
 4. There are a couple ways to install ClampSuite. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
-5. On Windows run `py -m clampsuite` otherwise run `python -m clampsuite`
+5. Run `python -m clampsuite`
 
 
 <br/>

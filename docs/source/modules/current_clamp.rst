@@ -10,6 +10,10 @@ Setup
 To begin analyzing data just drap and drop your files into into the acquistion part of
 the GUI.
 
+.. image:: _static/current-clamp-setup.png
+    :scale: 50
+    :align: center
+
 * **Baseline start (ms)**: Sets the starting point to measure the baseline.
 * **Baseline end (ms)**: Sets the ending point of the baseline.
 * **Sample rate (Hz)**: Set the sample rate of the data.
@@ -38,6 +42,10 @@ Analysis
 ~~~~~~~~~~~~~~
 The Analysis contains the acquisition information on the left, the acquisition plot in the
 middle and the first spike plot on the right.
+
+.. image:: _static/current-clamp.png
+    :scale: 50
+    :align: center
 
 * **Acquisition**: This spinbox is used to select the acquisition you want to view. Values
   can be changed using the arrow buttons or by inputing a number and hitting enter.
@@ -70,3 +78,8 @@ Final Data
 ~~~~~~~~~~~~~~
 The Final data tab contains the raw and final data and plots for IV curves, FI curves and averaged first
 action potentials.
+
+
+.. image:: _static/current-clamp-final.png
+    :scale: 50
+    :align: center
