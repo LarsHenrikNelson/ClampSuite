@@ -68,6 +68,10 @@ Analysis
 The analysis tab has two main windows. The left window is for evoked PSCs and the right window
 is for LFPs. Both windows share the **Acquisition** spinbox
 
+.. image:: _static/oepsc-lfp.png
+    :scale: 50
+    :align: right
+
 * **Acquisition**: This spinbox is used to select the acquisition you want to view. Values
   can be changed using the arrow buttons or by inputing a number and hitting enter.
 * **Epoch**: Shows the epoch of the aquisition. Epoch is using by ScanImage to define when

@@ -1,6 +1,6 @@
 # Clampsuite <img src="clampsuite/logo/d_logo.png" width="100" title="clampsuite" align="right">
 
-&nbsp;&nbsp;&nbsp;&nbsp;ClampSuite (v0.0.5) is a suite of programs for analyzing slice electrophysiology data. The program can analyze data from ScanImage files (.mat) for current clamp, s/mEPSC, and o/eEPSC experiments. The program runs on both PC and intel-based Macs. ClampSuite has not been tested on M1 Mac or Linux. ClampSuite should run on both newer and older computers (it runs well on my 9 year old MacBook Pro and iMac). In addition to providing a GUI for analysis you can call the acquisition classes used by the program to load your data into a Python script which is convient for creating figures for publication or for further analyzing your data. The program is not currently able to analyze other common electrophysiology file types however if you would like to use the program and have a file type that is not supported please send me some files and I can probably add support within a couple weeks. If want to test ClampSuite before you commit to using ClampSuite you can download some test files here: https://gin.g-node.org/LarsHenrikNelson/ClampSuite. Each folder contains example ScanImage acquisitions and a preferences file.
+&nbsp;&nbsp;&nbsp;&nbsp;ClampSuite (v0.0.4) is a suite of programs for analyzing slice electrophysiology data. The program can analyze data from ScanImage files (.mat) for current clamp, s/mEPSC, and o/eEPSC experiments. The program runs on both PC and intel-based Macs. ClampSuite has not been tested on M1 Mac or Linux. ClampSuite should run on both newer and older computers (it runs well on my 9 year old MacBook Pro and iMac). In addition to providing a GUI for analysis you can call the acquisition classes used by the program to load your data into a Python script which is convient for creating figures for publication or for further analyzing your data. The program is not currently able to analyze other common electrophysiology file types however if you would like to use the program and have a file type that is not supported please send me some files and I can probably add support within a couple weeks. If want to test ClampSuite before you commit to using ClampSuite you can download some test files here: https://gin.g-node.org/LarsHenrikNelson/ClampSuite. Each folder contains example ScanImage acquisitions and a preferences file.
 
 &nbsp;&nbsp;&nbsp;&nbsp;There are currently four different modules: MiniAnalysis, Current Clamp, oEPSC/LFP and Filter design. The program exports user settings for the interface, an individual JSON file for each acquisition, and an Excel file for the raw and processed data. Each module is built to allow the user to delete acquisitions, events or modify baselines or peak values. Each module allows for drag and drop to loading of files for analysis or to reload already analyzed files. As of now older ClampSuite json files may load but the data limit may not show correctly.
 
@@ -10,8 +10,8 @@
 3. Create a new environment with `conda create --name clampsuite python=3.10`.
 4. To activate this new environment, run `conda activate clampsuite`
 5. Anaconda has an experimental option for [pip interoperability](https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/pip-interoperability.html) that makes it easier to install packages using pip.
-6. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
-7. Now run `clampsuite` and you're all set.
+6. To install run `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
+7. Now run `python - m clampsuite` and you're all set.
 8. Running the command `pip show clampsuite` in the terminal will print the details of the version of clampsuite you installed.
 
 ## Venv installation
@@ -19,7 +19,7 @@
 2. Create a virtual environment. On Windows I recommend using the Py installer so you can specify the Python version. If you are using Linux or Mac I recommend [Pyenv](https://github.com/pyenv/pyenv) to specify the Python version.
 3. Activate the virtual environment.
 4. There are a couple ways to install ClampSuite. To install run `pip install clampsuite` or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git` for the stable branch (main) or `pip install git+https://github.com/LarsHenrikNelson/Clampsuite.git@develop` for the development branch.
-5. On Windows run `py -m clampsuite` otherwise run `python -m clampsuite`
+5. Run `python -m clampsuite`
 
 
 <br/>

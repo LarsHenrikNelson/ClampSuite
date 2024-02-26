@@ -209,7 +209,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def acq_data(self) -> dict:
         oepsc_dict = {
             "Epoch": self.epoch,
-            "Acq number": self.acq_number,
+            "Acquisition": self.acq_number,
             "Peak direction": self.peak_direction,
             "Amplitude": abs(self.peak_y),
             "Peak time (ms)": self.peak_x(),

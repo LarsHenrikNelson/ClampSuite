@@ -39,6 +39,10 @@ Analysis
 The Analysis contains the acquisition information on the left, the acquisition plot in the
 middle and the first spike plot on the right.
 
+.. image:: _static/current-clamp.png
+    :scale: 50
+    :align: right
+
 * **Acquisition**: This spinbox is used to select the acquisition you want to view. Values
   can be changed using the arrow buttons or by inputing a number and hitting enter.
 * **Epoch**: Shows the epoch of the aquisition. Epoch is using by ScanImage to define when

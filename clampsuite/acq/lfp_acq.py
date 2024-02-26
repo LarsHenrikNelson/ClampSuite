@@ -241,9 +241,6 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         else:
             return self._fv_x
 
-    def pulse_start(self) -> Union[int, float]:
-        return self._pulse_start / self.s_r_c
-
     def slope(self) -> float:
         if not np.isnan(self._slope):
             return self._slope * self.s_r_c
@@ -276,8 +273,8 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                 "FP_time (ms)": self.fp_x(),
                 "FP_slope (mV/ms)": self.slope(),
                 "Epoch": self.epoch,
-                "Acq number": self.acq_number,
-                "LFP Pulse start (ms)": self.pulse_start(),
+                "Acquisition": self.acq_number,
+                "LFP Pulse start (ms)": self.pulse_start,
             }
         else:
             lfp_dict = {
@@ -287,7 +284,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                 "FP time (ms)": np.nan,
                 "FP slope (mV/ms)": np.nan,
                 "Epoch": self.epoch,
-                "Acq number": self.acq_number,
-                "LFP Pulse start (ms)": self.pulse_start(),
+                "Acquisition": self.acq_number,
+                "LFP Pulse start (ms)": self.pulse_start,
             }
         return lfp_dict

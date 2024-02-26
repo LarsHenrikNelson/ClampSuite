@@ -72,6 +72,10 @@ The Analysis tab has three different windows. Each of the windows can be resized
 moved around. You can hide a window by dragging it in on direction. Note that the two
 top windows will both be hidden even if you drag just one window up.
 
+.. image:: _static/mini-analysis.png
+    :scale: 50
+    :align: right
+
 Overview window (top left)
 ----------------------------------
 The top left window is general overview window. The event are highlighted in green.
