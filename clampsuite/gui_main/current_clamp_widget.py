@@ -929,7 +929,7 @@ class currentClampWidget(DragDropWidget):
 
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
-            self.pbar.setValue(value)
+            self.pbar.setFormat(f"Acquisition {value} analyzed")
             # self.pbar.setFormat(f"{value}")
         elif isinstance(value, str):
             self.pbar.setFormat(value)

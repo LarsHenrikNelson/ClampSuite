@@ -51,14 +51,13 @@ class ExpManager:
                 pref_dict.update(template_args)
             pref_dict.update(analysis_args)
             self.analysis_prefs = pref_dict
-            total = len(acq_dict)
-            for count, i in enumerate(acq_dict.values()):
+            for i in acq_dict.values():
                 if filter_args is not None:
                     i.set_filter(**filter_args)
                 if template_args is not None:
                     i.set_template(**template_args)
                 i.analyze(**analysis_args)
-                self.callback_func(int((100 * (count + 1) / total)))
+                self.callback_func(i.acq_number)
             self.analyzed = True
             self.callback_func(f"Analyzed {exp} acquisitions")
 
@@ -113,12 +112,12 @@ class ExpManager:
             for acq in i.values():
                 self.save_acq(acq, file_path)
                 saved += 1
-                self.callback_func(int((100 * (saved) / count)))
+                self.callback_func(acq.acq_number)
         for i in self.deleted_acqs.values():
             for acq in i.values():
                 self.save_acq(acq, file_path)
                 saved += 1
-                self.callback_func(int((100 * (saved) / count)))
+                self.callback_func(acq.acq_number)
         self.callback_func("Saved acqs")
 
     def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs) -> None:

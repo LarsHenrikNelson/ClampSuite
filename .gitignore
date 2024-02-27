@@ -15,3 +15,4 @@ share
 .mypy_cache
 .pytest_cache
 docs/build
+docs/source/_build
