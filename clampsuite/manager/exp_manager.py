@@ -57,7 +57,7 @@ class ExpManager:
                 if template_args is not None:
                     i.set_template(**template_args)
                 i.analyze(**analysis_args)
-                self.callback_func(i.acq_number)
+                self.callback_func(f"Acquisition {i.acq_number} analyzed")
             self.analyzed = True
             self.callback_func(f"Analyzed {exp} acquisitions")
 
@@ -112,12 +112,12 @@ class ExpManager:
             for acq in i.values():
                 self.save_acq(acq, file_path)
                 saved += 1
-                self.callback_func(acq.acq_number)
+                self.callback_func(f"Saved acquisition {acq.acq_number}")
         for i in self.deleted_acqs.values():
             for acq in i.values():
                 self.save_acq(acq, file_path)
                 saved += 1
-                self.callback_func(acq.acq_number)
+                self.callback_func(f"Saved acquisition {acq.acq_number}")
         self.callback_func("Saved acqs")
 
     def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs) -> None:
@@ -211,7 +211,7 @@ class ExpManager:
             if Path(i).exists():
                 acq = self.load_acq(analysis, i)
                 self._set_acq(acq)
-            self.callback_func(int((100 * (count + 1) / num_of_acqs)))
+            self.callback_func(f"Acquisition {count} of {num_of_acqs} loaded")
         self.callback_func("Loaded acquisitions")
 
     @staticmethod
