@@ -149,7 +149,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
             peaks, _ = signal.find_peaks(
                 dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
-                height=2,
+                height=1,
             )
             # if peaks.size == 0:
             #     peaks, _ = signal.find_peaks(
