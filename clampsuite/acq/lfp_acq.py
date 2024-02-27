@@ -195,7 +195,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self._slope = np.nan
             self.reg_line = np.nan
 
-    def change_fv(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_fv(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fv_x = x
         self.fv_y = y
@@ -203,14 +203,14 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.find_slope_array()
         self.regression()
 
-    def change_fp(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_fp(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fp_x = x
         self.fp_y = y
         self.find_slope_array()
         self.regression()
 
-    def change_slope_start(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_slope_start(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self.max_x = x
         self.max_y = y

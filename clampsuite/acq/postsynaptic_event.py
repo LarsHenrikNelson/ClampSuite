@@ -338,7 +338,7 @@ class MiniEvent:
     def x_array(self):
         return np.arange(self._array_start, self._array_end, 1)
 
-    def change_amplitude(self, x: Union[int, float], y: Union[int, float]):
+    def set_amplitude(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._event_peak_x = x
         self.event_peak_y = y
@@ -350,7 +350,7 @@ class MiniEvent:
             self.fit_decay(fit_type=self.curve_fit_type)
         self.peak_align_value = self._event_peak_x - self._array_start
 
-    def change_baseline(self, x: Union[int, float], y: Union[int, float]):
+    def set_baseline(self, x: Union[int, float], y: Union[int, float]):
         x = int(x * self.s_r_c)
         self._event_start_x = x
         self.event_start_y = y

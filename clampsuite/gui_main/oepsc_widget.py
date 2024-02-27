@@ -1049,7 +1049,7 @@ class oEPSCWidget(DragDropWidget):
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
 
-        acq.change_fv(x, y)
+        acq.set_fv(x, y)
 
         self.lfp_points.setData(
             x=acq.plot_elements_x(),
@@ -1109,7 +1109,7 @@ class oEPSCWidget(DragDropWidget):
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
 
-        acq.change_slope_start(x, y)
+        acq.set_slope_start(x, y)
 
         self.lfp_points.setData(
             x=acq.plot_elements_x(),
@@ -1163,7 +1163,7 @@ class oEPSCWidget(DragDropWidget):
         y = self.last_lfp_point_clicked.pos()[1]
 
         acq = self.exp_manager.exp_dict["lfp"][self.acquisition_number.value()]
-        acq.change_fp(x, y)
+        acq.set_fp(x, y)
         self.lfp_points.setData(
             x=acq.plot_elements_x(),
             y=acq.plot_elements_y(),
@@ -1214,7 +1214,7 @@ class oEPSCWidget(DragDropWidget):
         self.need_to_save = True
         x = self.last_oepsc_point_clicked.pos()[0]
         y = self.last_oepsc_point_clicked.pos()[1]
-        acq.change_peak(x, y)
+        acq.set_peak(x, y)
         self.oepsc_peak_plot.setData(
             x=acq.plot_x_comps(),
             y=acq.plot_y_comps(),

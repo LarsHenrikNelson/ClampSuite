@@ -1361,7 +1361,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Pass the x and y points to the change amplitude function
         # for the postsynaptic event.
-        event.change_amplitude(x, y)
+        event.set_amplitude(x, y)
 
         # Redraw the events on p1 and p2 plots. Note that the last
         # event clicked provides a "pointed" to the correct plot
@@ -1440,7 +1440,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Pass the x and y points to the change baseline function
             # for the postsynaptic event.
-            event.change_baseline(x, y)
+            event.set_baseline(x, y)
 
             # Redraw the events on p1 and p2 plots. Note that the last
             # event clicked provides a "pointed" to the correct plot

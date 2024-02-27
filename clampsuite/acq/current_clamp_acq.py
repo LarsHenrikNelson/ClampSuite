@@ -393,6 +393,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ahp_y = np.nan
 
     # Helper functions that correct x-values for plotting
+
+    def set_spike_threshold(self, x: Union[float, int], y: Union[float, int]):
+        self.rheo_x = self.s_r_c * x
+        self.rheo = y
+
     def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:
             return self.width_comp[0][0] / self.s_r_c
