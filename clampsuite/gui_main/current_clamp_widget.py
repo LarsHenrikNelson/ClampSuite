@@ -592,8 +592,20 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="m",
                     )
             elif acq_object.ramp == "1":
+                self.acq_plot = pg.PlotDataItem(
+                    x=acq_object.plot_acq_x(),
+                    y=acq_object.plot_acq_y(),
+                    symbol="o",
+                    symbolSize=8,
+                    symbolBrush=(0, 0, 0, 0),
+                    symbolPen=(0, 0, 0, 0),
+                )
+                self.acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
+                self.plot_widget.addItem(self.acq_plot)
                 self.plot_widget.plot(
-                    x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
+                    x=acq_object.plot_deltav_x(),
+                    y=acq_object.plot_deltav_y(),
+                    pen="r",
                 )
                 if not np.isnan(acq_object.peaks[0]):
                     self.plot_widget.plot(
