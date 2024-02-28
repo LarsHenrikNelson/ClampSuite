@@ -854,8 +854,8 @@ class MiniAnalysisWidget(DragDropWidget):
             window = self.window_edit.currentText()
         # I need to just put all the settings into a dictionary,
         # so the functions are not called for every acquisition
-        worker = ThreadWorker(
-            self.exp_manager,
+        worker = ThreadWorker(self.exp_manager)
+        worker.addAnalysis(
             "analyze",
             exp=self.analysis_type,
             filter_args={
@@ -1361,7 +1361,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Pass the x and y points to the change amplitude function
         # for the postsynaptic event.
-        event.change_amplitude(x, y)
+        event.set_amplitude(x, y)
 
         # Redraw the events on p1 and p2 plots. Note that the last
         # event clicked provides a "pointed" to the correct plot
@@ -1440,7 +1440,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Pass the x and y points to the change baseline function
             # for the postsynaptic event.
-            event.change_baseline(x, y)
+            event.set_baseline(x, y)
 
             # Redraw the events on p1 and p2 plots. Note that the last
             # event clicked provides a "pointed" to the correct plot
@@ -1847,9 +1847,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.reset()
         self.pbar.setFormat("Loading...")
         self.exp_manger = ExpManager()
-        self.worker = ThreadWorker(
-            self.exp_manager, "load", analysis="mini", file_path=directory
-        )
+        self.worker = ThreadWorker(self.exp_manager)
+        self.worker.addAnalysis("load", analysis="mini", file_path=directory)
         self.worker.signals.progress.connect(self.updateProgress)
         self.worker.signals.finished.connect(self.setLoadData)
         QThreadPool.globalInstance().start(self.worker)
@@ -1900,9 +1899,8 @@ class MiniAnalysisWidget(DragDropWidget):
             pref_dict["Final Analysis"] = self.calc_param_clicked
             pref_dict["Acq_number"] = self.acquisition_number.value()
             self.exp_manager.set_ui_prefs(pref_dict)
-            self.worker = ThreadWorker(
-                self.exp_manager, "save", file_path=save_filename
-            )
+            self.worker = ThreadWorker(self.exp_manager)
+            self.worker.addAnalysis("save", file_path=save_filename)
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.finishedSaving)
             QThreadPool.globalInstance().start(self.worker)
@@ -1998,7 +1996,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
-            self.pbar.setValue(value)
+            self.pbar.setFormat(f"Acquisition {value} analyzed")
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 

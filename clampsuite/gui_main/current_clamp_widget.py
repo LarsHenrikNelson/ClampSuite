@@ -255,6 +255,10 @@ class currentClampWidget(DragDropWidget):
             self.baseline_stability_label, self.baseline_stability_edit
         )
 
+        self.set_spike_threshold = QPushButton("Set spike threshold")
+        self.set_spike_threshold.clicked.connect(self.setSpikeThreshold)
+        self.analysis_buttons.addRow(self.set_spike_threshold)
+
         self.delete_event_button = QPushButton("Delete acquisition")
         self.delete_event_button.clicked.connect(self.deleteAcq)
         self.analysis_buttons.addRow(self.delete_event_button)
@@ -326,6 +330,8 @@ class currentClampWidget(DragDropWidget):
         self.main_layout.addWidget(self.pbar, 0)
 
         self.dlg = QMessageBox(self)
+
+        self.last_acq_point_clicked = None
 
         self.exp_manager = ExpManager()
         self.acq_view.setData(self.exp_manager)
@@ -400,8 +406,8 @@ class currentClampWidget(DragDropWidget):
             self.analyze_acq_button.setEnabled(False)
             self.pbar.setFormat("Analyzing...")
             self.pbar.setValue(0)
-            self.worker = ThreadWorker(
-                self.exp_manager,
+            self.worker = ThreadWorker(self.exp_manager)
+            self.worker.addAnalysis(
                 "analyze",
                 exp="current_clamp",
                 filter_args={
@@ -454,6 +460,7 @@ class currentClampWidget(DragDropWidget):
         self.plot_widget.clear()
         self.spike_plot.clear()
         self.exp_manager = ExpManager()
+        self.last_acq_point_clicked = None
         self.acq_view.setData(self.exp_manager)
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
@@ -518,9 +525,16 @@ class currentClampWidget(DragDropWidget):
                 str(round_sig(acq_object.baseline_stability, sig=4))
             )
             if acq_object.ramp == "0":
-                self.plot_widget.plot(
-                    x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
+                self.acq_plot = pg.PlotDataItem(
+                    x=acq_object.plot_acq_x(),
+                    y=acq_object.plot_acq_y(),
+                    symbol="o",
+                    symbolSize=8,
+                    symbolBrush=(0, 0, 0, 0),
+                    symbolPen=(0, 0, 0, 0),
                 )
+                self.acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
+                self.plot_widget.addItem(self.acq_plot)
                 self.plot_widget.plot(
                     x=acq_object.plot_deltav_x(),
                     y=acq_object.plot_deltav_y(),
@@ -534,6 +548,25 @@ class currentClampWidget(DragDropWidget):
                         symbol="o",
                         symbolBrush="y",
                     )
+                    self.plot_widget.plot(
+                        x=acq_object.spike_width_x(),
+                        y=acq_object.spike_width_y(),
+                        pen=pg.mkPen("g", width=4),
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="b",
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_ahp_x(),
+                        y=acq_object.plot_ahp_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="m",
+                    )
 
                     self.spike_plot.plot(
                         x=acq_object.spike_x_array(),
@@ -545,8 +578,8 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_sp_x(),
-                        y=acq_object.plot_sp_y(),
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
@@ -559,8 +592,20 @@ class currentClampWidget(DragDropWidget):
                         symbolBrush="m",
                     )
             elif acq_object.ramp == "1":
+                self.acq_plot = pg.PlotDataItem(
+                    x=acq_object.plot_acq_x(),
+                    y=acq_object.plot_acq_y(),
+                    symbol="o",
+                    symbolSize=8,
+                    symbolBrush=(0, 0, 0, 0),
+                    symbolPen=(0, 0, 0, 0),
+                )
+                self.acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
+                self.plot_widget.addItem(self.acq_plot)
                 self.plot_widget.plot(
-                    x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y()
+                    x=acq_object.plot_deltav_x(),
+                    y=acq_object.plot_deltav_y(),
+                    pen="r",
                 )
                 if not np.isnan(acq_object.peaks[0]):
                     self.plot_widget.plot(
@@ -569,6 +614,25 @@ class currentClampWidget(DragDropWidget):
                         pen=None,
                         symbol="o",
                         symbolBrush="y",
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.spike_width_x(),
+                        y=acq_object.spike_width_y(),
+                        pen=pg.mkPen("g", width=4),
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="b",
+                    )
+                    self.plot_widget.plot(
+                        x=acq_object.plot_ahp_x(),
+                        y=acq_object.plot_ahp_y(),
+                        pen=None,
+                        symbol="o",
+                        symbolBrush="m",
                     )
                     self.spike_plot.plot(
                         x=acq_object.spike_x_array(),
@@ -580,8 +644,8 @@ class currentClampWidget(DragDropWidget):
                         pen=pg.mkPen("g", width=4),
                     )
                     self.spike_plot.plot(
-                        x=acq_object.plot_sp_x(),
-                        y=acq_object.plot_sp_y(),
+                        x=acq_object.plot_st_x(),
+                        y=acq_object.plot_st_y(),
                         pen=None,
                         symbol="o",
                         symbolBrush="b",
@@ -600,6 +664,57 @@ class currentClampWidget(DragDropWidget):
             self.plot_widget.setRange(xRange=(-30, 30), yRange=(-30, 30))
             self.plot_widget.addItem(text)
         self.acquisition_number.setEnabled(True)
+
+    def acqPlotClicked(self, item, points):
+        logger.info(
+            f"Current clamp acquisition {self.acquisition_number.value()} point clicked."
+        )
+        if self.last_acq_point_clicked:
+            self.last_acq_point_clicked.resetPen()
+            self.last_acq_point_clicked.resetBrush()
+            self.last_acq_point_clicked.setSize(size=3)
+        points[0].setPen("g", width=2)
+        points[0].setBrush("b")
+        points[0].setSize(size=8)
+        self.last_acq_point_clicked = points[0]
+        logger.info(
+            f"Point {self.last_acq_point_clicked.pos()[0]}"
+            "set as spike point clicked."
+        )
+
+    def setSpikeThreshold(self):
+        if (
+            not self.exp_manager.acqs_exist("current_clamp")
+            or self.acquisition_number.value()
+            not in self.exp_manager.exp_dict["current_clamp"]
+        ):
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
+            self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
+            return None
+
+        if self.last_acq_point_clicked is None:
+            logger.info("No oEPSC point was selected, peak not set.")
+            self.fileDoesNotExist("No oEPSC point was selected, peak not set.")
+            return None
+
+        acq = self.exp_manager.exp_dict["oepsc"][self.acquisition_number.value()]
+        self.need_to_save = True
+        x = self.last_acq_point_clicked.pos()[0]
+        y = self.last_acq_point_clicked.pos()[1]
+        acq.set_spike_threshold(x, y)
+        self.oepsc_peak_plot.setData(
+            x=acq.plot_x_comps(),
+            y=acq.plot_y_comps(),
+            symbol="o",
+            symbolSize=8,
+            symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m")],
+            pen=None,
+        )
+        self.oepsc_amp_edit.setText(str(round_sig(acq.peak_y)))
+        self.last_acq_point_clicked.resetPen()
+        self.last_acq_point_clicked.resetBrush()
+        self.last_acq_point_clicked = None
+        logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
 
     def deleteAcq(self):
         if (
@@ -783,8 +898,8 @@ class currentClampWidget(DragDropWidget):
         self.analyze_acq_button.setEnabled(False)
         self.calculate_parameters.setEnabled(False)
         self.exp_manger = ExpManager()
-        self.worker = ThreadWorker(
-            self.exp_manager,
+        self.worker = ThreadWorker(self.exp_manager)
+        self.worker.addAnalysis(
             function="load",
             analysis="current_clamp",
             file_path=directory,
@@ -865,7 +980,8 @@ class currentClampWidget(DragDropWidget):
             pref_dict["Final Analysis"] = self.calc_param_clicked
             pref_dict["Acq_number"] = self.acquisition_number.value()
             self.exp_manager.set_ui_prefs(pref_dict)
-            self.worker = ThreadWorker(self.exp_manager, "save", file_path=file_path)
+            self.worker = ThreadWorker(self.exp_manager)
+            self.worker.addAnalysis("save", file_path=file_path)
             self.worker.signals.progress.connect(self.updateProgress)
             self.worker.signals.finished.connect(self.finishedSaving)
             QThreadPool.globalInstance().start(self.worker)
@@ -890,7 +1006,7 @@ class currentClampWidget(DragDropWidget):
 
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
-            self.pbar.setValue(value)
+            self.pbar.setFormat(f"Acquisition {value} analyzed")
             # self.pbar.setFormat(f"{value}")
         elif isinstance(value, str):
             self.pbar.setFormat(value)

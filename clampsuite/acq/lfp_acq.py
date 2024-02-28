@@ -195,7 +195,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             self._slope = np.nan
             self.reg_line = np.nan
 
-    def change_fv(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_fv(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fv_x = x
         self.fv_y = y
@@ -203,14 +203,14 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
         self.find_slope_array()
         self.regression()
 
-    def change_fp(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_fp(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self._fp_x = x
         self.fp_y = y
         self.find_slope_array()
         self.regression()
 
-    def change_slope_start(self, x: Union[int, float], y: Union[int, float]) -> None:
+    def set_slope_start(self, x: Union[int, float], y: Union[int, float]) -> None:
         x = int(x * self.s_r_c)
         self.max_x = x
         self.max_y = y
@@ -240,9 +240,6 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
             return self._fv_x / self.s_r_c
         else:
             return self._fv_x
-
-    def pulse_start(self) -> Union[int, float]:
-        return self._pulse_start / self.s_r_c
 
     def slope(self) -> float:
         if not np.isnan(self._slope):
@@ -276,8 +273,8 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                 "FP_time (ms)": self.fp_x(),
                 "FP_slope (mV/ms)": self.slope(),
                 "Epoch": self.epoch,
-                "Acq number": self.acq_number,
-                "LFP Pulse start (ms)": self.pulse_start(),
+                "Acquisition": self.acq_number,
+                "LFP Pulse start (ms)": self.pulse_start,
             }
         else:
             lfp_dict = {
@@ -287,7 +284,7 @@ class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
                 "FP time (ms)": np.nan,
                 "FP slope (mV/ms)": np.nan,
                 "Epoch": self.epoch,
-                "Acq number": self.acq_number,
-                "LFP Pulse start (ms)": self.pulse_start(),
+                "Acquisition": self.acq_number,
+                "LFP Pulse start (ms)": self.pulse_start,
             }
         return lfp_dict

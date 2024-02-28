@@ -27,7 +27,7 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
             )
         if self.lfp_acq_dict is not None and self.o_acq_dict is not None:
             raw_df = pd.merge(
-                lfp_raw_df, o_raw_df, on=["Acq number", "Epoch"], suffixes=["", ""]
+                lfp_raw_df, o_raw_df, on=["Acquisition", "Epoch"], suffixes=["", ""]
             )
         elif self.o_acq_dict is None and self.lfp_acq_dict is not None:
             raw_df = lfp_raw_df

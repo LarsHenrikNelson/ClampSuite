@@ -149,7 +149,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
             peaks, _ = signal.find_peaks(
                 dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
-                height=2,
+                height=1,
             )
             # if peaks.size == 0:
             #     peaks, _ = signal.find_peaks(
@@ -393,6 +393,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ahp_y = np.nan
 
     # Helper functions that correct x-values for plotting
+
+    def set_spike_threshold(self, x: Union[float, int], y: Union[float, int]):
+        self.rheo_x = self.s_r_c * x
+        self.rheo = y
+
     def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:
             return self.width_comp[0][0] / self.s_r_c
@@ -450,10 +455,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             return []
 
-    def plot_sp_x(self) -> list:
+    def plot_st_x(self) -> list:
         return [self.rheo_x / self.s_r_c]
 
-    def plot_sp_y(self) -> list:
+    def plot_st_y(self) -> list:
         return [self.spike_threshold]
 
     def plot_ahp_y(self) -> list:

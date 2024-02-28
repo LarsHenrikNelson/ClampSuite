@@ -156,7 +156,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             amp_1, self.fit_tau = popt
             self.fit_decay_y = s_exp_decay(self.decay_x, amp_1, self.fit_tau)
 
-    def change_peak(self, x: Union[float, int], y: Union[float, int]):
+    def set_peak(self, x: Union[float, int], y: Union[float, int]):
         x = int(x * self.s_r_c)
         self._peak_x = x
         self.peak_y = y
@@ -209,7 +209,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
     def acq_data(self) -> dict:
         oepsc_dict = {
             "Epoch": self.epoch,
-            "Acq number": self.acq_number,
+            "Acquisition": self.acq_number,
             "Peak direction": self.peak_direction,
             "Amplitude": abs(self.peak_y),
             "Peak time (ms)": self.peak_x(),

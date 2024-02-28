@@ -51,29 +51,34 @@ class ThreadWorker(QRunnable):
     main GUI. This prevents that GUI from freezing during saving.
     """
 
-    def __init__(self, exp_manager, function: str, **kwargs):
+    def __init__(self, exp_manager):
         super().__init__()
 
         self.exp_manager = exp_manager
         self.signals = WorkerSignals()
-        self.function = function
-        self.kwargs = kwargs
         self.mutex = QMutex()
+        self.function = []
+        self.kwargs = []
+
+    def addAnalysis(self, function, **kwargs):
+        self.function.append(function)
+        self.kwargs.append(kwargs)
 
     @pyqtSlot()
     def run(self):
         self.mutex.lock()
-        self.exp_manager.set_callback(self.signals.progress.emit)
-        if self.function == "save":
-            self.exp_manager.save_data(**self.kwargs)
-        elif self.function == "analyze":
-            self.exp_manager.analyze_exp(**self.kwargs)
-        elif self.function == "load":
-            self.exp_manager.load_exp(**self.kwargs)
-        elif self.function == "create_exp":
-            self.exp_manager.create_exp(**self.kwargs)
-        self.signals.finished.emit("Finished")
+        for func, args in zip(self.function, self.kwargs):
+            self.exp_manager.set_callback(self.signals.progress.emit)
+            if func == "save":
+                self.exp_manager.save_data(**args)
+            elif func == "analyze":
+                self.exp_manager.analyze_exp(**args)
+            elif func == "load":
+                self.exp_manager.load_exp(**args)
+            elif func == "create_exp":
+                self.exp_manager.create_exp(**args)
         self.mutex.unlock()
+        self.signals.finished.emit("Finished")
 
 
 class WorkerSignals(QObject):
@@ -142,9 +147,8 @@ class ListModel(QAbstractListModel):
     def addData(self, urls):
         if not isinstance(urls[0], str):
             urls = [str(url.toLocalFile()) for url in urls]
-        worker = ThreadWorker(
-            self.exp_manager, "create_exp", analysis=self.analysis_type, file=urls
-        )
+        worker = ThreadWorker(self.exp_manager)
+        worker.addAnalysis("create_exp", analysis=self.analysis_type, file=urls)
         self.signals.dir_path.emit(str(Path(urls[0]).parent))
         worker.signals.progress.connect(self.updateProgress)
         worker.signals.finished.connect(self.acqsAdded)
