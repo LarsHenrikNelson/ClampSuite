@@ -357,7 +357,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.sample_rate_edit.setText("10000")
         self.template_form.addRow("Sample rate", self.sample_rate_edit)
 
-        self.template_button = QPushButton("Create template")
+        self.template_button = QPushButton("Show template")
         self.template_form.addRow(self.template_button)
         # self.template_button.setMinimumWidth(250)
         self.template_button.clicked.connect(self.createTemplate)
