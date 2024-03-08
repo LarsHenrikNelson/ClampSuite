@@ -670,17 +670,30 @@ class currentClampWidget(DragDropWidget):
             f"Current clamp acquisition {self.acquisition_number.value()} point clicked."
         )
         if self.last_acq_point_clicked:
-            self.last_acq_point_clicked.resetPen()
-            self.last_acq_point_clicked.resetBrush()
-            self.last_acq_point_clicked.setSize(size=3)
-        points[0].setPen("g", width=2)
-        points[0].setBrush("b")
-        points[0].setSize(size=8)
-        self.last_acq_point_clicked = points[0]
-        logger.info(
-            f"Point {self.last_acq_point_clicked.pos()[0]}"
-            "set as spike point clicked."
+            self.plot_widget.removeItem(self.last_acq_point_clicked[0])
+            self.spike_plot.removeItem(self.last_spike_point_clicked[0])
+
+        acq_point_clicked = pg.PlotDataItem(
+            x=[points[0].pos()[0]],
+            y=[points[0].pos()[1]],
+            pen=None,
+            symbol="o",
+            symbolPen=pg.mkPen("#E867E8", width=3),
         )
+        self.plot_widget.addItem(acq_point_clicked)
+        self.last_acq_point_clicked = (acq_point_clicked, points[0].pos())
+
+        spike_point_clicked = pg.PlotDataItem(
+            x=[points[0].pos()[0]],
+            y=[points[0].pos()[1]],
+            pen=None,
+            symbol="o",
+            symbolPen=pg.mkPen("#E867E8", width=3),
+        )
+        self.spike_plot.addItem(spike_point_clicked)
+        self.last_spike_point_clicked = (spike_point_clicked, points[0].pos())
+
+        logger.info(f"Point {self.last_event_point_clicked[1][0]} clicked.")
 
     def setSpikeThreshold(self):
         if (
@@ -699,21 +712,12 @@ class currentClampWidget(DragDropWidget):
 
         acq = self.exp_manager.exp_dict["oepsc"][self.acquisition_number.value()]
         self.need_to_save = True
-        x = self.last_acq_point_clicked.pos()[0]
-        y = self.last_acq_point_clicked.pos()[1]
+        x = self.last_acq_point_clicked[1][0]
+        y = self.last_acq_point_clicked[1][1]
         acq.set_spike_threshold(x, y)
-        self.oepsc_peak_plot.setData(
-            x=acq.plot_x_comps(),
-            y=acq.plot_y_comps(),
-            symbol="o",
-            symbolSize=8,
-            symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m")],
-            pen=None,
-        )
-        self.oepsc_amp_edit.setText(str(round_sig(acq.peak_y)))
-        self.last_acq_point_clicked.resetPen()
-        self.last_acq_point_clicked.resetBrush()
-        self.last_acq_point_clicked = None
+
+        self.plot_widget.removeItem(self.last_acq_point_clicked[0])
+        self.spike_plot.removeItem(self.last_spike_point_clicked[0])
         logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
 
     def deleteAcq(self):
