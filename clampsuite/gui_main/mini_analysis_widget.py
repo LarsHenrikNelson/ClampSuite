@@ -1313,7 +1313,10 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Set the color and size of the new event point that
         # was clicked.
-        points[0].setPen("#E867E8", width=4)
+        # There is PyQtGraph bug where the point will disapeer when resizing 
+        # the plot. I need to plot an actual point on the plot instead of 
+        # modifying a point on the line.
+        points[0].setPen({"color": "#E867E8", "width": 4})
         self.last_event_point_clicked = points[0]
 
         logger.info(f"Point {self.last_event_point_clicked.pos()[0]} clicked.")
@@ -1784,7 +1787,9 @@ class MiniAnalysisWidget(DragDropWidget):
     def plotAveEvent(self, x, y, decay_x, decay_y):
         self.ave_event_plot.clear()
         self.ave_event_plot.plot(x=x, y=y, pen=pg.mkPen(width=2))
-        self.ave_event_plot.plot(x=decay_x, y=decay_y, pen=pg.mkPen({"color": "#34E44B", "width":2}))
+        self.ave_event_plot.plot(
+            x=decay_x, y=decay_y, pen=pg.mkPen({"color": "#34E44B", "width": 2})
+        )
 
     def plotRawData(self, y: str):
         if self.exp_manager.final_analysis is not None and y != "":
