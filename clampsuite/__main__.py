@@ -30,7 +30,7 @@ def main(logger):
     app = QApplication([])
 
     pg.setConfigOptions(antialias=True)
-    pg.setConfigOption("foreground", "#C9CDD0")
+    pg.setConfigOption("foreground", "#FCFCFC")
 
     wdir = PurePath(__file__).parent
     logo_path = str(wdir / "logo/d_logo.png")

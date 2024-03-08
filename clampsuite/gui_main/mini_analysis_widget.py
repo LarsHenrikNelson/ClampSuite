@@ -579,14 +579,14 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_number.valueChanged.connect(self.eventSpinbox)
 
         self.event_baseline_label = QLabel("Baseline (pA)")
-        self.event_baseline_label.setStyleSheet("""color:#00ff00; font-weight:bold""")
+        self.event_baseline_label.setStyleSheet("""color:#34E44B; font-weight:bold""")
         self.event_baseline = QLineEdit()
         self.event_baseline.setMaximumWidth(70)
         self.event_baseline.setReadOnly(True)
         self.event_layout.addRow(self.event_baseline_label, self.event_baseline)
 
         self.event_amplitude_label = QLabel("Amplitude (pA)")
-        self.event_amplitude_label.setStyleSheet("""color:#ff00ff; font-weight:bold""")
+        self.event_amplitude_label.setStyleSheet("""color:#E867E8; font-weight:bold""")
         self.event_amplitude = QLineEdit()
         self.event_amplitude.setMaximumWidth(70)
         self.event_amplitude.setReadOnly(True)
@@ -596,7 +596,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_tau = QLineEdit()
         self.event_tau.setMaximumWidth(70)
         self.event_tau.setReadOnly(True)
-        self.event_tau_label.setStyleSheet("""color:#0000ff; font-weight: bold;""")
+        self.event_tau_label.setStyleSheet("""color:#2A82DA; font-weight: bold;""")
         self.event_layout.addRow(self.event_tau_label, self.event_tau)
 
         self.event_rise_time_label = QLabel("Rise time (ms)")
@@ -809,7 +809,9 @@ class MiniAnalysisWidget(DragDropWidget):
             sample_rate,
         )
         s_r_c = sample_rate / 1000
-        self.template_plot.plot(x=(np.arange(len(template)) / s_r_c), y=template)
+        self.template_plot.plot(
+            x=(np.arange(len(template)) / s_r_c), y=template, pen=pg.mkPen(width=2)
+        )
         logger.info("Event template created and plotted.")
 
     def analyze(self):
@@ -1042,7 +1044,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     event_plot = pg.PlotCurveItem(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
-                        pen="g",
+                        pen="#34E44B",
                         name=i,
                         clickable=True,
                     )
@@ -1056,7 +1058,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     self.p2.plot(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
-                        pen="g",
+                        pen="#34E44B",
                     )
 
                 # Set the event spinbox to the first event and sets the min
@@ -1154,7 +1156,7 @@ class MiniAnalysisWidget(DragDropWidget):
         if self.last_acq_point_clicked is not None:
             self.last_acq_point_clicked.resetPen()
             self.last_acq_point_clicked.setSize(size=3)
-        points[0].setPen("g", width=2)
+        points[0].setPen("#34E44B", width=2)
         points[0].setSize(size=12)
         self.last_acq_point_clicked = points[0]
         logger.info(
@@ -1209,8 +1211,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # easy to modify Qt graphics objects without having to find them
         # under their original parent.
         if self.last_event_clicked_1:
-            self.last_event_clicked_1.setPen("g")
-            self.last_event_clicked_2.setPen("g")
+            self.last_event_clicked_1.setPen("#34E44B")
+            self.last_event_clicked_2.setPen("#34E44B")
 
         # Clear the event plot
         self.event_view_plot.clear()
@@ -1253,7 +1255,11 @@ class MiniAnalysisWidget(DragDropWidget):
             y=event.event_y_comp(),
             pen=None,
             symbol="o",
-            symbolBrush=[pg.mkBrush("g"), pg.mkBrush("m"), pg.mkBrush("b")],
+            symbolBrush=[
+                pg.mkBrush("#34E44B"),
+                pg.mkBrush("#E867E8"),
+                pg.mkBrush("#2A82DA"),
+            ],
             symbolSize=12,
         )
 
@@ -1272,8 +1278,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Sets the color of the events on p1 and p2 so that the event
         # selected with the spinbox or the event that was clicked is shown.
-        self.p2.listDataItems()[event_index + 1].setPen("m", width=2)
-        self.p1.listDataItems()[event_index + 1].setPen("m", width=2)
+        self.p2.listDataItems()[event_index + 1].setPen("#E867E8", width=2)
+        self.p1.listDataItems()[event_index + 1].setPen("#E867E8", width=2)
 
         # Creating a reference to the clicked events.
         self.last_event_clicked_2 = self.p2.listDataItems()[event_index + 1]
@@ -1307,7 +1313,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Set the color and size of the new event point that
         # was clicked.
-        points[0].setPen("m", width=4)
+        points[0].setPen("#E867E8", width=4)
         self.last_event_point_clicked = points[0]
 
         logger.info(f"Point {self.last_event_point_clicked.pos()[0]} clicked.")
@@ -1370,13 +1376,13 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_event_clicked_1.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            color="m",
+            color="#E867E8",
             width=2,
         )
         self.last_event_clicked_2.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            color="m",
+            color="#E867E8",
             width=2,
         )
 
@@ -1449,13 +1455,13 @@ class MiniAnalysisWidget(DragDropWidget):
             self.last_event_clicked_1.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
-                color="m",
+                color="#E867E8",
                 width=2,
             )
             self.last_event_clicked_2.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
-                color="m",
+                color="#E867E8",
                 width=2,
             )
 
@@ -1607,7 +1613,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 event_plot = pg.PlotCurveItem(
                     x=event.event_x_comp()[:2],
                     y=event.event_y_comp()[:2],
-                    pen="g",
+                    pen="#34E44B",
                     name=id_value,
                     clickable=True,
                 )
@@ -1616,7 +1622,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.p2.plot(
                     x=event.event_x_comp()[:2],
                     y=event.event_y_comp()[:2],
-                    pen="g",
+                    pen="#34E44B",
                     name=id_value,
                 )
 
@@ -1777,8 +1783,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def plotAveEvent(self, x, y, decay_x, decay_y):
         self.ave_event_plot.clear()
-        self.ave_event_plot.plot(x=x, y=y)
-        self.ave_event_plot.plot(x=decay_x, y=decay_y, pen="g")
+        self.ave_event_plot.plot(x=x, y=y, pen=pg.mkPen(width=2))
+        self.ave_event_plot.plot(x=decay_x, y=decay_y, pen=pg.mkPen({"color": "#34E44B", "width":2}))
 
     def plotRawData(self, y: str):
         if self.exp_manager.final_analysis is not None and y != "":
