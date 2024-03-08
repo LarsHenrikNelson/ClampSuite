@@ -1154,14 +1154,19 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         logger.info(f"Acquisition {self.acquisition_number.value()} point clicked.")
         if self.last_acq_point_clicked is not None:
-            self.last_acq_point_clicked.resetPen()
-            self.last_acq_point_clicked.setSize(size=3)
-        points[0].setPen("#34E44B", width=2)
-        points[0].setSize(size=12)
-        self.last_acq_point_clicked = points[0]
-        logger.info(
-            f"Point {self.last_acq_point_clicked.pos()[0]} set as point clicked."
+            self.p1.removeItem(self.last_acq_point_clicked)
+
+        acq_point_clicked = pg.PlotDataItem(
+            x=[points[0].pos()[0]],
+            y=[points[0].pos()[1]],
+            pen=None,
+            symbol="o",
+            symbolPen=pg.mkPen({"color": "#34E44B", "width": 2}),
         )
+        self.p1.addItem(acq_point_clicked)
+        self.last_acq_point_clicked = (acq_point_clicked, points[0].pos())
+
+        logger.info(f"Point {self.last_acq_point_clicked[1][0]} set as point clicked.")
 
     def eventClicked(self, item):
         """
@@ -1308,18 +1313,23 @@ class MiniAnalysisWidget(DragDropWidget):
 
         logger.info(f"Point clicked on event {event_index}.")
         if self.last_event_point_clicked:
-            self.last_event_point_clicked.resetPen()
-            self.last_event_point_clicked = None
+            # self.last_event_point_clicked.resetPen()
+            # self.last_event_point_clicked = None
+            self.event_view_plot.removeItem(self.last_event_point_clicked[0])
 
         # Set the color and size of the new event point that
         # was clicked.
-        # There is PyQtGraph bug where the point will disapeer when resizing 
-        # the plot. I need to plot an actual point on the plot instead of 
-        # modifying a point on the line.
-        points[0].setPen({"color": "#E867E8", "width": 4})
-        self.last_event_point_clicked = points[0]
+        event_point_clicked = pg.PlotDataItem(
+            x=[points[0].pos()[0]],
+            y=[points[0].pos()[1]],
+            pen=None,
+            symbol="o",
+            symbolPen=pg.mkPen("#E867E8", width=3),
+        )
+        self.event_view_plot.addItem(event_point_clicked)
+        self.last_event_point_clicked = (event_point_clicked, points[0].pos())
 
-        logger.info(f"Point {self.last_event_point_clicked.pos()[0]} clicked.")
+        logger.info(f"Point {self.last_event_point_clicked[1][0]} clicked.")
 
     def setPointAsPeak(self):
         """
@@ -1365,8 +1375,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # x point needs to be adjusted back to samples for the
         # change amplitude function in the postsynaptic event
         # object.
-        x = self.last_event_point_clicked.pos()[0]
-        y = self.last_event_point_clicked.pos()[1]
+        x = self.last_event_point_clicked[1][0]
+        y = self.last_event_point_clicked[1][1]
 
         # Pass the x and y points to the change amplitude function
         # for the postsynaptic event.
@@ -1393,6 +1403,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.eventSpinbox(int(self.event_number.text()))
 
         # Reset the last point clicked.
+        self.event_view_plot.removeItem(self.last_event_point_clicked)
         self.last_event_point_clicked = None
 
         logger.info(
@@ -1444,8 +1455,8 @@ class MiniAnalysisWidget(DragDropWidget):
             # x point needs to be adjusted back to samples for the
             # change amplitude function in the postsynaptic event
             # object.
-            x = self.last_event_point_clicked.pos()[0]
-            y = self.last_event_point_clicked.pos()[1]
+            x = self.last_event_point_clicked[1][0]
+            y = self.last_event_point_clicked[1][1]
 
             # Pass the x and y points to the change baseline function
             # for the postsynaptic event.
@@ -1472,6 +1483,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.eventSpinbox(int(self.event_number.text()))
 
             # Reset the last point clicked.
+            self.event_view_plot.removeItem(self.last_event_point_clicked)
             self.last_event_point_clicked = None
         # else:
         #     pass
@@ -1584,7 +1596,7 @@ class MiniAnalysisWidget(DragDropWidget):
             logger.info(
                 f"Creating event on acquisition {self.acquisition_number.value()}."
             )
-            x = self.last_acq_point_clicked.pos()[0]
+            x = self.last_acq_point_clicked[1][0]
 
             # The event needs a baseline of at least 2 milliseconds long.
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
@@ -1635,7 +1647,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.eventSpinbox(self.sort_index.index(id_value))
 
                 # Reset the clicked point so a new point is not accidentally created.
-                self.last_acq_point_clicked.resetPen()
+                self.p1.removeItem(self.last_acq_point_clicked)
                 self.last_acq_point_clicked = None
 
                 logger.info(
