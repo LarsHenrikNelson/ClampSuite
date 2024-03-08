@@ -1,6 +1,6 @@
 import logging
 
-import qdarkstyle
+from ..gui_widgets.palettes import DarkPalette, LightPalette
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -29,8 +29,8 @@ class PreferencesWidget(QWidget):
 
     def create_style_dict(self):
         self.style_dict = {
-            "Dark style": qdarkstyle.dark.palette.DarkPalette,
-            "Light style": qdarkstyle.light.palette.LightPalette,
+            "Dark style": DarkPalette(),
+            "Light style": LightPalette(),
             # "Darker style": qdarkstyle.darker.palette.DarkerPalette,
             # "Dark VSC": qtvsc.load_stylesheet(qtvsc.Theme.DARK_VS),z
             # "Light VSC": qtvsc.load_stylesheet(qtvsc.Theme.LIGHT_VS),
@@ -103,7 +103,9 @@ class PreferencesWidget(QWidget):
     def style_choice(self, text):
         palette = self.style_dict.get(text)
         app = QApplication.instance()
-        app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=palette))
+        app.setPalette(palette)
+        for i in app.allWidgets():
+            i.setPalette(palette)
 
 
 class MiniAnalysisSettings(QWidget):

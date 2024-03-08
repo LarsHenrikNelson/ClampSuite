@@ -114,6 +114,12 @@ class MainWindow(QMainWindow):
         self.filter_widget = filterWidget()
         self.central_widget.addWidget(self.filter_widget)
         logger.info("Analysis widgets created")
+        self.gui_widgets = [
+            self.mini_widget,
+            self.oepsc_widget,
+            self.current_clamp_widget,
+            self.filter_widget,
+        ]
 
         self.setComboBoxSpacing()
         self.working_dir = str(Path().home())

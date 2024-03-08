@@ -1,16 +1,16 @@
 import logging
-import os
+
 import sys
 from pathlib import Path, PurePath
 
 import pyqtgraph as pg
-import qdarkstyle
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QApplication, QSplashScreen
-from qdarkstyle.dark.palette import DarkPalette
 
 from .gui_main.main_window import MainWindow
+from .gui_widgets.palettes import DarkPalette
 
 
 def check_dir():
@@ -31,7 +31,6 @@ def main(logger):
 
     pg.setConfigOptions(antialias=True)
     pg.setConfigOption("foreground", "#C9CDD0")
-    os.environ["QT_API"] = "pyqt5"
 
     wdir = PurePath(__file__).parent
     logo_path = str(wdir / "logo/d_logo.png")
@@ -39,8 +38,8 @@ def main(logger):
     splash = QSplashScreen(pic)
     splash.show()
 
-    dark_stylesheet = qdarkstyle.load_stylesheet(qt_api="pyqt5", palette=DarkPalette)
-    app.setStyleSheet(dark_stylesheet)
+    app.setStyle("Fusion")
+    app.setPalette(DarkPalette())
     app.setWindowIcon(QIcon(pic))
     window = MainWindow()
     window.setWindowTitle("ClampSuite")
