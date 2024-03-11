@@ -9,7 +9,7 @@ ClampSuite: a python package for analyzing slice electrophysiology data.
 ========================================================================
 
 **ClampSuite** is a Python package to analyze to slice electrophysiology data. ClampSuite
-can be used to analyze data through the GUI and import previously analyzed data through python
+can be used to analyze data through the GUI and import previously analyzed data through Python
 
 
 .. toctree::
@@ -20,6 +20,21 @@ can be used to analyze data through the GUI and import previously analyzed data 
    modules/index
    analysis_methods/index
    script_usage/index
+
+.. card-carousel:: 2
+
+    .. card::
+        :img-background: _static/mini_analysis_snippet1.png
+
+    .. card::
+        :img-background: _static/cc_analysis_snippet1.png
+
+    .. card::
+      :img-background: _static/oepsc_analysis_snippet1.png
+
+    .. card::
+      :img-background: _static/lfp_analysis_snippet1.png
+
 
 .. grid:: 2
 
