@@ -524,139 +524,87 @@ class currentClampWidget(DragDropWidget):
             self.baseline_stability_edit.setText(
                 str(round_sig(acq_object.baseline_stability, sig=4))
             )
-            if acq_object.ramp == "0":
-                self.acq_plot = pg.PlotDataItem(
-                    x=acq_object.plot_acq_x(),
-                    y=acq_object.plot_acq_y(),
-                    symbol="o",
-                    symbolSize=8,
-                    symbolBrush=(0, 0, 0, 0),
-                    symbolPen=(0, 0, 0, 0),
-                )
-                self.acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
-                self.plot_widget.addItem(self.acq_plot)
+            self.acq_plot = pg.PlotDataItem(
+                x=acq_object.plot_acq_x(),
+                y=acq_object.plot_acq_y(),
+                symbol="o",
+                symbolSize=8,
+                symbolBrush=(0, 0, 0, 0),
+                symbolPen=(0, 0, 0, 0),
+            )
+            self.acq_plot.sigPointsClicked.connect(self.plotClicked)
+            self.plot_widget.addItem(self.acq_plot)
+            self.plot_widget.plot(
+                x=acq_object.plot_deltav_x(),
+                y=acq_object.plot_deltav_y(),
+                pen="r",
+            )
+            if not np.isnan(acq_object.peaks[0]):
                 self.plot_widget.plot(
-                    x=acq_object.plot_deltav_x(),
-                    y=acq_object.plot_deltav_y(),
-                    pen="r",
+                    x=acq_object.spike_peaks_x(),
+                    y=acq_object.spike_peaks_y(),
+                    pen=None,
+                    symbol="o",
+                    symbolBrush="y",
                 )
-                if not np.isnan(acq_object.peaks[0]):
-                    self.plot_widget.plot(
-                        x=acq_object.spike_peaks_x(),
-                        y=acq_object.spike_peaks_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="y",
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.spike_width_x(),
-                        y=acq_object.spike_width_y(),
-                        pen=pg.mkPen("g", width=4),
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_st_x(),
-                        y=acq_object.plot_st_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_ahp_x(),
-                        y=acq_object.plot_ahp_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="m",
-                    )
+                self.spk_width_acq_plot = pg.PlotDataItem(
+                    x=acq_object.spike_width_x(),
+                    y=acq_object.spike_width_y(),
+                    pen=pg.mkPen("g", width=4),
+                )
+                self.plot_widget.addItem(self.spk_width_acq_plot)
 
-                    self.spike_plot.plot(
-                        x=acq_object.spike_x_array(),
-                        y=acq_object.first_ap,
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.spike_width_x(),
-                        y=acq_object.spike_width_y(),
-                        pen=pg.mkPen("g", width=4),
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.plot_st_x(),
-                        y=acq_object.plot_st_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.plot_ahp_x(),
-                        y=acq_object.plot_ahp_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="m",
-                    )
-            elif acq_object.ramp == "1":
-                self.acq_plot = pg.PlotDataItem(
-                    x=acq_object.plot_acq_x(),
-                    y=acq_object.plot_acq_y(),
+                self.st_data_acq_plot = pg.PlotDataItem(
+                    x=acq_object.plot_st_x(),
+                    y=acq_object.plot_st_y(),
+                    pen=None,
+                    symbol="o",
+                    symbolBrush="b",
+                )
+
+                self.plot_widget.addItem(self.st_data_acq_plot)
+                self.plot_widget.plot(
+                    x=acq_object.plot_ahp_x(),
+                    y=acq_object.plot_ahp_y(),
+                    pen=None,
+                    symbol="o",
+                    symbolBrush="m",
+                )
+
+                self.clickable_spike_data = pg.PlotDataItem(
+                    x=acq_object.spike_x_array(),
+                    y=acq_object.first_ap,
                     symbol="o",
                     symbolSize=8,
                     symbolBrush=(0, 0, 0, 0),
                     symbolPen=(0, 0, 0, 0),
                 )
-                self.acq_plot.sigPointsClicked.connect(self.acqPlotClicked)
-                self.plot_widget.addItem(self.acq_plot)
-                self.plot_widget.plot(
-                    x=acq_object.plot_deltav_x(),
-                    y=acq_object.plot_deltav_y(),
-                    pen="r",
+                self.clickable_spike_data.sigPointsClicked.connect(self.plotClicked)
+                self.spike_plot.addItem(self.clickable_spike_data)
+
+                self.spk_width_spk_plot = pg.PlotDataItem(
+                    x=acq_object.spike_width_x(),
+                    y=acq_object.spike_width_y(),
+                    pen=pg.mkPen("g", width=4),
                 )
-                if not np.isnan(acq_object.peaks[0]):
-                    self.plot_widget.plot(
-                        x=acq_object.spike_peaks_x(),
-                        y=acq_object.spike_peaks_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="y",
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.spike_width_x(),
-                        y=acq_object.spike_width_y(),
-                        pen=pg.mkPen("g", width=4),
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_st_x(),
-                        y=acq_object.plot_st_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
-                    )
-                    self.plot_widget.plot(
-                        x=acq_object.plot_ahp_x(),
-                        y=acq_object.plot_ahp_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="m",
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.spike_x_array(),
-                        y=acq_object.first_ap,
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.spike_width_x(),
-                        y=acq_object.spike_width_y(),
-                        pen=pg.mkPen("g", width=4),
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.plot_st_x(),
-                        y=acq_object.plot_st_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="b",
-                    )
-                    self.spike_plot.plot(
-                        x=acq_object.plot_ahp_x(),
-                        y=acq_object.plot_ahp_y(),
-                        pen=None,
-                        symbol="o",
-                        symbolBrush="m",
-                    )
+                self.spike_plot.addItem(self.spk_width_spk_plot)
+
+                self.st_data_spk_plot = pg.PlotDataItem(
+                    x=acq_object.plot_st_x(),
+                    y=acq_object.plot_st_y(),
+                    pen=None,
+                    symbol="o",
+                    symbolBrush="b",
+                )
+
+                self.spike_plot.addItem(self.st_data_spk_plot)
+                self.spike_plot.plot(
+                    x=acq_object.plot_ahp_x(),
+                    y=acq_object.plot_ahp_y(),
+                    pen=None,
+                    symbol="o",
+                    symbolBrush="m",
+                )
         else:
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
@@ -665,7 +613,7 @@ class currentClampWidget(DragDropWidget):
             self.plot_widget.addItem(text)
         self.acquisition_number.setEnabled(True)
 
-    def acqPlotClicked(self, item, points):
+    def plotClicked(self, item, points):
         logger.info(
             f"Current clamp acquisition {self.acquisition_number.value()} point clicked."
         )
@@ -693,7 +641,7 @@ class currentClampWidget(DragDropWidget):
         self.spike_plot.addItem(spike_point_clicked)
         self.last_spike_point_clicked = (spike_point_clicked, points[0].pos())
 
-        logger.info(f"Point {self.last_event_point_clicked[1][0]} clicked.")
+        logger.info(f"Point {self.last_spike_point_clicked[1][0]} clicked.")
 
     def setSpikeThreshold(self):
         if (
@@ -706,11 +654,13 @@ class currentClampWidget(DragDropWidget):
             return None
 
         if self.last_acq_point_clicked is None:
-            logger.info("No oEPSC point was selected, peak not set.")
-            self.fileDoesNotExist("No oEPSC point was selected, peak not set.")
+            logger.info("No point was selected, peak not set.")
+            self.fileDoesNotExist("No point was selected, peak not set.")
             return None
 
-        acq = self.exp_manager.exp_dict["oepsc"][self.acquisition_number.value()]
+        acq = self.exp_manager.exp_dict["current_clamp"][
+            self.acquisition_number.value()
+        ]
         self.need_to_save = True
         x = self.last_acq_point_clicked[1][0]
         y = self.last_acq_point_clicked[1][1]
@@ -718,7 +668,35 @@ class currentClampWidget(DragDropWidget):
 
         self.plot_widget.removeItem(self.last_acq_point_clicked[0])
         self.spike_plot.removeItem(self.last_spike_point_clicked[0])
-        logger.info(f"Peak setzs on oEPSC {self.acquisition_number.value()}.")
+
+        self.st_data_spk_plot.setData(
+            x=acq.plot_st_x(),
+            y=acq.plot_st_y(),
+            pen=None,
+            symbol="o",
+            symbolBrush="b",
+        )
+        self.st_data_acq_plot.setData(
+            x=acq.plot_st_x(),
+            y=acq.plot_st_y(),
+            pen=None,
+            symbol="o",
+            symbolBrush="b",
+        )
+
+        self.spk_width_acq_plot.setData(
+            x=acq.spike_width_x(),
+            y=acq.spike_width_y(),
+            pen=pg.mkPen("g", width=4),
+        )
+
+        self.spk_width_spk_plot.setData(
+            x=acq.spike_width_x(),
+            y=acq.spike_width_y(),
+            pen=pg.mkPen("g", width=4),
+        )
+
+        logger.info(f"Spike threshold set {self.acquisition_number.value()}.")
 
     def deleteAcq(self):
         if (
