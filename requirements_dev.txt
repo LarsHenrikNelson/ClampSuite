@@ -1,3 +1,6 @@
+sphinx
+sphinx-pydata-theme
+sphinx-design
 black
 pytest
 pytest-cov
