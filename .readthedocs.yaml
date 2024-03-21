@@ -10,6 +10,9 @@ sphinx:
   fail_on_warning: true
   configuration: docs/source/conf.py
 
+formats:
+  - pdf
+
 python:
   install:
     - requirements: docs/requirements.txt
