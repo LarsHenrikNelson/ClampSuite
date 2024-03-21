@@ -7,8 +7,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 
-import pydata_sphinx_theme
-
 project = "ClampSuite"
 copyright = "2022, Lars Henrik Nelson"
 author = "Lars Henrik Nelson"
@@ -18,7 +16,7 @@ html_logo = "images/logo.png"
 
 json_url = "https://clampsuite.readthedocs.io/en/latest/_static/switcher.json"
 version_match = os.environ.get("READTHEDOCS_VERSION")
-release = pydata_sphinx_theme.__version__
+release = "0.0.5"
 # If READTHEDOCS_VERSION doesn't exist, we're not on RTD
 # If it is an integer, we're in a PR build and the version isn't correct.
 # If it's "latest" → change to "dev" (that's what we want the switcher to call it)

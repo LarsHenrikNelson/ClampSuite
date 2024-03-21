@@ -395,8 +395,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     # Helper functions that correct x-values for plotting
 
     def set_spike_threshold(self, x: Union[float, int], y: Union[float, int]):
-        self.rheo_x = self.s_r_c * x
-        self.rheo = y
+        self.rheo_x = int(self.s_r_c * x)
+        self.spike_threshold = y
+        self.find_spike_width()
 
     def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:
@@ -404,7 +405,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             return np.nan
 
-    def hertz_exact(self):
+    def hertz_exact(self) -> float:
         if self.ramp == "0":
             # Calculates the exact hertz by dividing the number peaks by
             # length of the pulse. If there is only one spike the hertz
@@ -480,7 +481,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             plot_x = [np.nan]
         return plot_x
 
-    def plot_deltav_y(self):
+    def plot_deltav_y(self) -> list:
         if self.ramp == "0":
             voltage_response = self.delta_v + self.baseline_mean
             plot_y = [self.baseline_mean, voltage_response]
@@ -494,10 +495,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def first_peak_time(self) -> list:
         return self.peaks[0] / self.s_r_c
 
-    def plot_acq_y(self):
+    def plot_acq_y(self) -> np.ndarray:
         return self.array
 
-    def plot_acq_x(self):
+    def plot_acq_x(self) -> np.ndarray:
         return np.arange(0, len(self.array)) / self.s_r_c
 
     def acq_data(self) -> dict:

@@ -1,0 +1,13 @@
+[
+    {
+      "name": "0.0.4 (stable)",
+      "version": "v0.0.4",
+      "url": "https://clampsuite.readthedocs.io/en/stable/",
+      "preferred": true
+    },
+    {
+      "name": "0.0.5 (develop)",
+      "version": "v0.0.5",
+      "url": "https://clampsuite.readthedocs.io/en/develop/"
+    }
+  ]
