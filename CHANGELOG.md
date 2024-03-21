@@ -4,12 +4,13 @@
 
 #### Added
 
-- Added ability to change spike threshold on current clamp widget
+- Added ability to change spike threshold on current clamp widget.
+- Export documentation as PDF.
 
 #### Changed
 
-- Replaced qtdarkstyle with custom palette
+- Replaced qtdarkstyle with custom palette.
 
 ### Fixed
 
-- Fixed threading issue on oEPSC widget
+- Fixed threading issue on oEPSC widget.
