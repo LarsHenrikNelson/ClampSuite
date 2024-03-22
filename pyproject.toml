@@ -23,7 +23,7 @@ dependencies = [
     "xlsxwriter>=3.0.3",
 ]
 requires-python = ">=3.9"
-license = {text = 'GNU General Public License v3 (GPLv3)'}
+license = {file = "LICENSE"}
 
 [project.optional-dependencies]
 plotting = [
@@ -42,6 +42,7 @@ testing = [
 
 [project.urls]
 Homepage = "https://github.com/LarsHenrikNelson/ClampSuite"
+Documentation = "https://clampsuite.readthedocs.io/"
 
 [project.gui-scripts]
 clampsuite = "clampsuite.__main__:main"
@@ -53,3 +54,9 @@ version = {attr = "clampsuite.__version__"}
 mypy_path = "clampsuite"
 check_untyped_defs = true
 ignore_missing_imports = true
+
+[tool.setuptools.packages.find]
+where = ["clampsuite"]
+
+[tool.setuptools.package-data]
+logo = ["*.png"]

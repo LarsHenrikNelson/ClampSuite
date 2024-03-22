@@ -1451,7 +1451,7 @@ class oEPSCWidget(DragDropWidget):
         load_dict = self.exp_manager.load_ui_prefs(file_name)
         self.setPreferences(load_dict)
 
-    def savePrefences(self, file_path):
+    def savePreferences(self, file_path):
         pref_dict = self.createPrefDict()
         if pref_dict:
             self.exp_manager.save_ui_prefs(file_path, pref_dict)
