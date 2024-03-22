@@ -54,9 +54,3 @@ version = {attr = "clampsuite.__version__"}
 mypy_path = "clampsuite"
 check_untyped_defs = true
 ignore_missing_imports = true
-
-[tool.setuptools.packages.find]
-where = ["clampsuite"]
-
-[tool.setuptools.package-data]
-logo = ["*.png"]
