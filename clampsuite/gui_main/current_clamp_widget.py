@@ -335,6 +335,99 @@ class currentClampWidget(DragDropWidget):
 
         self.exp_manager = ExpManager()
         self.acq_view.setData(self.exp_manager)
+
+        # Create PlotDataItems for easy reuse
+        self.acq_plot = pg.PlotDataItem(
+            x=[],
+            y=[],
+            symbol="o",
+            symbolSize=8,
+            symbolBrush=(0, 0, 0, 0),
+            symbolPen=(0, 0, 0, 0),
+        )
+
+        self.acq_plot.sigPointsClicked.connect(self.plotClicked)
+        self.plot_widget.addItem(self.acq_plot)
+
+        self.delta_v_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen="r",
+        )
+        self.plot_widget.addItem(self.delta_v_data)
+
+        self.spike_peaks_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolBrush="y",
+        )
+        self.plot_widget.addItem(self.spike_peaks_data)
+
+        self.ahp_acq_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolBrush="m",
+        )
+        self.plot_widget.addItem(self.ahp_acq_data)
+
+        self.ahp_spike_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolBrush="m",
+        )
+        self.plot_widget.addItem(self.ahp_spike_data)
+
+        self.st_data_spk_plot = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolBrush="b",
+        )
+        self.spike_plot.addItem(self.st_data_spk_plot)
+
+        self.st_data_acq_plot = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolBrush="b",
+        )
+        self.plot_widget.addItem(self.st_data_acq_plot)
+
+        self.spk_width_acq_plot = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=pg.mkPen("g", width=4),
+        )
+        self.plot_widget.addItem(self.spk_width_acq_plot)
+
+        self.spk_width_spk_plot = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=pg.mkPen("g", width=4),
+        )
+        self.spike_plot.addItem(self.spk_width_spk_plot)
+
+        self.clickable_spike_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            symbol="o",
+            symbolSize=8,
+            symbolBrush=(0, 0, 0, 0),
+            symbolPen=(0, 0, 0, 0),
+        )
+        self.clickable_spike_data.sigPointsClicked.connect(self.plotClicked)
+        self.spike_plot.addItem(self.clickable_spike_data)
+
+        self.spk_data_plots_cleared = True
+
         self.pbar.setFormat("Ready to analyze")
         self.setWidth()
         logger.info("Current clamp UI created.")
@@ -438,6 +531,69 @@ class currentClampWidget(DragDropWidget):
         self.pbar.setFormat("Analysis finished")
         logger.info("Firsts acquisition set.")
 
+    def clearAcqPlots(self):
+        if not self.spk_data_plots_cleared:
+            self.spike_peaks_data.setData(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolBrush="y",
+            )
+            self.spk_width_acq_plot.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen("g", width=4),
+            )
+
+            self.st_data_acq_plot.setData(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolBrush="b",
+            )
+
+            self.ahp_acq_data.setData(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolBrush="m",
+            )
+
+            self.clickable_spike_data.setData(
+                x=[],
+                y=[],
+                symbol="o",
+                symbolSize=8,
+                symbolBrush=(0, 0, 0, 0),
+                symbolPen=(0, 0, 0, 0),
+            )
+
+            self.spk_width_spk_plot.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen("g", width=4),
+            )
+
+            self.st_data_spk_plot.setData(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolBrush="b",
+            )
+
+            self.ahp_spike_data.setData(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolBrush="m",
+            )
+            self.spk_data_plots_cleared = True
+
     def reset(self):
         logger.info("Resetting UI.")
         self.need_to_save = False
@@ -457,8 +613,22 @@ class currentClampWidget(DragDropWidget):
         self.plot_dict = {}
         self.table_dict = {}
         self.inspection_widget.clearData()
-        self.plot_widget.clear()
-        self.spike_plot.clear()
+        self.clearAcqPlots()
+        self.acq_plot.setData(
+            x=[],
+            y=[],
+            pen=pg.mkPen("w"),
+            symbol="o",
+            symbolSize=8,
+            symbolBrush=(0, 0, 0, 0),
+            symbolPen=(0, 0, 0, 0),
+        )
+
+        self.delta_v_data.setData(
+            x=[],
+            y=[],
+            pen="r",
+        )
         self.exp_manager = ExpManager()
         self.last_acq_point_clicked = None
         self.acq_view.setData(self.exp_manager)
@@ -493,9 +663,9 @@ class currentClampWidget(DragDropWidget):
         logger.info("Preparing UI for plotting.")
         self.acquisition_number.setEnabled(False)
         self.need_to_save = True
-        self.plot_widget.clear()
+        # self.plot_widget.clear()
         self.plot_widget.enableAutoRange()
-        self.spike_plot.clear()
+        # self.spike_plot.clear()
         self.spike_plot.enableAutoRange()
         if (
             self.acquisition_number.value()
@@ -524,37 +694,36 @@ class currentClampWidget(DragDropWidget):
             self.baseline_stability_edit.setText(
                 str(round_sig(acq_object.baseline_stability, sig=4))
             )
-            self.acq_plot = pg.PlotDataItem(
+            self.acq_plot.setData(
                 x=acq_object.plot_acq_x(),
                 y=acq_object.plot_acq_y(),
+                pen=pg.mkPen("w"),
                 symbol="o",
                 symbolSize=8,
                 symbolBrush=(0, 0, 0, 0),
                 symbolPen=(0, 0, 0, 0),
             )
-            self.acq_plot.sigPointsClicked.connect(self.plotClicked)
-            self.plot_widget.addItem(self.acq_plot)
-            self.plot_widget.plot(
+
+            self.delta_v_data.setData(
                 x=acq_object.plot_deltav_x(),
                 y=acq_object.plot_deltav_y(),
                 pen="r",
             )
             if not np.isnan(acq_object.peaks[0]):
-                self.plot_widget.plot(
+                self.spike_peaks_data.setData(
                     x=acq_object.spike_peaks_x(),
                     y=acq_object.spike_peaks_y(),
                     pen=None,
                     symbol="o",
                     symbolBrush="y",
                 )
-                self.spk_width_acq_plot = pg.PlotDataItem(
+                self.spk_width_acq_plot.setData(
                     x=acq_object.spike_width_x(),
                     y=acq_object.spike_width_y(),
                     pen=pg.mkPen("g", width=4),
                 )
-                self.plot_widget.addItem(self.spk_width_acq_plot)
 
-                self.st_data_acq_plot = pg.PlotDataItem(
+                self.st_data_acq_plot.setData(
                     x=acq_object.plot_st_x(),
                     y=acq_object.plot_st_y(),
                     pen=None,
@@ -562,8 +731,7 @@ class currentClampWidget(DragDropWidget):
                     symbolBrush="b",
                 )
 
-                self.plot_widget.addItem(self.st_data_acq_plot)
-                self.plot_widget.plot(
+                self.ahp_acq_data.setData(
                     x=acq_object.plot_ahp_x(),
                     y=acq_object.plot_ahp_y(),
                     pen=None,
@@ -571,7 +739,7 @@ class currentClampWidget(DragDropWidget):
                     symbolBrush="m",
                 )
 
-                self.clickable_spike_data = pg.PlotDataItem(
+                self.clickable_spike_data.setData(
                     x=acq_object.spike_x_array(),
                     y=acq_object.first_ap,
                     symbol="o",
@@ -579,17 +747,14 @@ class currentClampWidget(DragDropWidget):
                     symbolBrush=(0, 0, 0, 0),
                     symbolPen=(0, 0, 0, 0),
                 )
-                self.clickable_spike_data.sigPointsClicked.connect(self.plotClicked)
-                self.spike_plot.addItem(self.clickable_spike_data)
 
-                self.spk_width_spk_plot = pg.PlotDataItem(
+                self.spk_width_spk_plot.setData(
                     x=acq_object.spike_width_x(),
                     y=acq_object.spike_width_y(),
                     pen=pg.mkPen("g", width=4),
                 )
-                self.spike_plot.addItem(self.spk_width_spk_plot)
 
-                self.st_data_spk_plot = pg.PlotDataItem(
+                self.st_data_spk_plot.setData(
                     x=acq_object.plot_st_x(),
                     y=acq_object.plot_st_y(),
                     pen=None,
@@ -597,15 +762,33 @@ class currentClampWidget(DragDropWidget):
                     symbolBrush="b",
                 )
 
-                self.spike_plot.addItem(self.st_data_spk_plot)
-                self.spike_plot.plot(
+                self.ahp_spike_data.setData(
                     x=acq_object.plot_ahp_x(),
                     y=acq_object.plot_ahp_y(),
                     pen=None,
                     symbol="o",
                     symbolBrush="m",
                 )
+                self.spk_data_plots_cleared = False
+            else:
+                self.clearPlots()
         else:
+            self.clearPlots()
+            self.acq_plot.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen("w"),
+                symbol="o",
+                symbolSize=8,
+                symbolBrush=(0, 0, 0, 0),
+                symbolPen=(0, 0, 0, 0),
+            )
+
+            self.delta_v_data.setData(
+                x=[],
+                y=[],
+                pen="r",
+            )
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             text.setFont(QFont("Helvetica", 20))
