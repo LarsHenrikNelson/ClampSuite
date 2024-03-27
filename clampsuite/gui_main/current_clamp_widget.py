@@ -381,7 +381,7 @@ class currentClampWidget(DragDropWidget):
             symbol="o",
             symbolBrush="m",
         )
-        self.plot_widget.addItem(self.ahp_spike_data)
+        self.spike_plot.addItem(self.ahp_spike_data)
 
         self.st_data_spk_plot = pg.PlotDataItem(
             x=[],
@@ -662,10 +662,12 @@ class currentClampWidget(DragDropWidget):
 
         logger.info("Preparing UI for plotting.")
         self.acquisition_number.setEnabled(False)
+        if self.last_acq_point_clicked:
+            self.plot_widget.removeItem(self.last_acq_point_clicked[0])
+            self.spike_plot.removeItem(self.last_spike_point_clicked[0])
+
         self.need_to_save = True
-        # self.plot_widget.clear()
         self.plot_widget.enableAutoRange()
-        # self.spike_plot.clear()
         self.spike_plot.enableAutoRange()
         if (
             self.acquisition_number.value()
@@ -771,9 +773,9 @@ class currentClampWidget(DragDropWidget):
                 )
                 self.spk_data_plots_cleared = False
             else:
-                self.clearPlots()
+                self.clearAcqPlots()
         else:
-            self.clearPlots()
+            self.clearAcqPlots()
             self.acq_plot.setData(
                 x=[],
                 y=[],
