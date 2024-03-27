@@ -77,6 +77,9 @@ class ExpManager:
             self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
 
     def save_data(self, file_path: Union[Path, PurePath, str]) -> None:
+        file_path = Path(file_path)
+        file_path.mkdir()
+        file_path = file_path / file_path.parts[-1]
         if self.ui_prefs is not None:
             for key, data in self.deleted_acqs.items():
                 self.ui_prefs["Deleted acqs"] = {key: list(data.keys())}
