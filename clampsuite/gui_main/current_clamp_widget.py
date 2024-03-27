@@ -840,7 +840,7 @@ class currentClampWidget(DragDropWidget):
 
         if self.last_acq_point_clicked is None:
             logger.info("No point was selected, peak not set.")
-            self.fileDoesNotExist("No point was selected, peak not set.")
+            self.errorDialog("No point was selected, peak not set.")
             return None
 
         acq = self.exp_manager.exp_dict["current_clamp"][
@@ -1054,9 +1054,9 @@ class currentClampWidget(DragDropWidget):
             ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def createExperiment(self, urls):
-        self.pbar("Creating experiment")
+        self.pbar.setFormat("Creating experiment")
         self.load_widget.model().addData(urls)
-        self.pbar("Experiment created")
+        self.pbar.setFormat("Experiment created")
 
     def loadExperiment(self, directory: Union[str, PurePath]):
         logger.info(f"Loading experiment from {directory}.")
@@ -1093,15 +1093,16 @@ class currentClampWidget(DragDropWidget):
                 self.plotPulseAP(fa.df_dict["Pulse APs"])
             if fa.ramp_ap:
                 self.plotRampAP(fa.df_dict["Ramp APs"])
-            self.pbar.setFormat("Loaded")
-            self.acquisition_number.setMaximum(self.exp_manager.start_acq)
-            self.acquisition_number.setMinimum(self.exp_manager.end_acq)
-            self.acquisition_number.setValue(self.exp_manager.start_acq)
-            self.spinbox(self.exp_manager.start_acq)
-            self.calculate_parameters.setEnabled(True)
-            self.analyze_acq_button.setEnabled(True)
+            self.pbar.setFormat("Final data loaded")
+        self.calculate_parameters.setEnabled(True)
+        self.analyze_acq_button.setEnabled(True)
+        self.acquisition_number.setEnabled(True)
+        self.acquisition_number.setMaximum(self.exp_manager.start_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.spinbox(self.exp_manager.start_acq)
         logger.info("Experiment successfully loaded.")
-        self.pbar("Experiment successfully loaded")
+        self.pbar.setFormat("Experiment successfully loaded")
 
     def setPreferences(self, pref_dict: dict):
         logger.info("Setting CurrentClamp preferences.")
@@ -1114,6 +1115,7 @@ class currentClampWidget(DragDropWidget):
 
     def createPrefDict(self):
         logger.info("Creating preferences dictionary.")
+        self.pbar.setFormat("Creating preferences dictionary.")
         pref_dict = {}
         line_edits = self.findChildren(QLineEdit)
         line_edit_dict = {}
@@ -1128,6 +1130,7 @@ class currentClampWidget(DragDropWidget):
                 combo_box_dict[i.objectName()] = i.currentText()
         pref_dict["combo_boxes"] = combo_box_dict
         logger.info("Preferences dictionary created.")
+        self.pbar.setFormat("Preferences dictionary created.")
         return pref_dict
 
     def errorDialog(self, text):
