@@ -1358,6 +1358,8 @@ class oEPSCWidget(DragDropWidget):
                 self.lfp_b_start_edit.toInt() + 250,
             )
         self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setEnabled(True)
         fa = self.exp_manager.final_analysis
         if fa is not None:
