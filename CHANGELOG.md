@@ -5,11 +5,12 @@
 #### Added
 
 - Added ability to change spike threshold on current clamp widget.
-- Export documentation as PDF.
+- Export documentation as PDF on Readthedocs.
 
 #### Changed
 
 - Replaced qtdarkstyle with custom palette.
+- Save function now creates a directory to save the data in.
 
 ### Fixed
 
