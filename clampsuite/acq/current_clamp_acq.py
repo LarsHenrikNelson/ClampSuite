@@ -52,9 +52,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             )
             max_value = np.max(self.array[self._pulse_start : self._pulse_end])
             if max_value < self.threshold:
-                size = int((self._pulse_end - self.pulse_start) / 2)
                 self.delta_v = (
-                    np.mean(self.array[self._pulse_start - size : self._pulse_end])
+                    np.mean(self.array[self._pulse_start : self._pulse_end])
                     - self.baseline_mean
                 )
             else:
