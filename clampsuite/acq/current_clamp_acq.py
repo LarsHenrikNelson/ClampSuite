@@ -28,7 +28,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.min_spikes = min_spikes
 
         # Analysis functions
-        if debug:
+        if not debug:
             self.get_delta_v()
             self.find_voltage_sag()
             self.find_baseline_stability()
@@ -389,15 +389,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
     def find_voltage_sag(self):
         if self.pulse_amp < 0:
-            size = int((self._pulse_end - self.pulse_start) * 0.20)
-            start = np.min(
+            size = int((self._pulse_end - self._pulse_start) * 0.20)
+            start = self._pulse_start + np.argmin(
                 self.array[self._pulse_start : int(self._pulse_start + size)]
             )
             end = np.min(self.array[int(self._pulse_end - size) : self._pulse_end])
-            self.voltage_sag = end - start
-            self._voltage_sag_x = self._pulse_start + np.argmin(
-                self.array[self._pulse_start : int(self._pulse_start + size)]
-            )
+            self.voltage_sag = end - self.array[start]
+            self._voltage_sag_x = start
         else:
             self.voltage_sag = np.nan
             self._voltage_sag_x = np.nan
@@ -539,28 +537,29 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         current_clamp_dict = {
             "Acquisition": self.acq_number,
             "Cycle": self.cycle,
-            "Pulse_pattern": self.pulse_pattern,
-            "Pulse_amp (pA)": self.pulse_amp,
+            "Pulse pattern": self.pulse_pattern,
+            "Pulse amp (pA)": self.pulse_amp,
             "Ramp": self.ramp,
             "Epoch": self.epoch,
             "Baseline mean (pA)": self.baseline_mean,
-            "Pulse_start (ms)": self._pulse_start / self.s_r_c,
-            "Delta_v (mV)": self.delta_v,
-            "Spike_threshold (mV)": self.spike_threshold,
-            "Spike_threshold_time (ms)": self.spike_threshold_x(),
-            "Spike_peak_volt": self.peak_volt,
-            "Spike_time (ms)": self.first_peak_time(),
+            "Pulse start (ms)": self._pulse_start / self.s_r_c,
+            "Delta V (mV)": self.delta_v,
+            "Voltage sag (mV)": self.voltage_sag,
+            "Spike threshold (mV)": self.spike_threshold,
+            "Spike threshold (ms)": self.spike_threshold_x(),
+            "Spike peak volt (mV)": self.peak_volt,
+            "Spike time (ms)": self.first_peak_time(),
             "Hertz": self.hertz_exact(),
             "IEI": self.iei_mean,
             "Num spikes": num_spks,
-            "Spike_width (ms)": self.spike_width(),
-            "Max_AP_vel": self.ap_v,
-            "Spike_freq_adapt": self.spike_adapt,
-            "Local_sfa": self.local_var,
-            "Divisor_sfa": self.sfa_divisor,
-            "Peak_AHP (mV)": self.ahp_y,
-            "Peak_AHP (ms)": self.ahp_x,
-            "Ramp_rheobase (pA)": self.ramp_rheo,
-            "Baseline_stability": self.baseline_stability,
+            "Spike width (ms)": self.spike_width(),
+            "Max AP vel (mV/mS)": self.ap_v,
+            "Spike freq adapt": self.spike_adapt,
+            "Local sfa": self.local_var,
+            "Divisor sfa": self.sfa_divisor,
+            "Peak AHP (mV)": self.ahp_y,
+            "Peak AHP (ms)": self.ahp_x,
+            "Ramp rheobase (pA)": self.ramp_rheo,
+            "Baseline stability": self.baseline_stability,
         }
         return current_clamp_dict

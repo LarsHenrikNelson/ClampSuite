@@ -3,6 +3,7 @@ from pathlib import PurePath
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QThreadPool
 from PyQt5.QtGui import QFont, QIntValidator
@@ -235,6 +236,9 @@ class currentClampWidget(DragDropWidget):
         self.delta_v_edit = QLineEdit()
         self.analysis_buttons.addRow("Delta V (mV)", self.delta_v_edit)
 
+        self.voltage_sag_edit = QLineEdit()
+        self.analysis_buttons.addRow("Voltage sag (mV)", self.voltage_sag_edit)
+
         self.spike_threshold_edit = QLineEdit()
         self.analysis_buttons.addRow("Spike threshold (mV)", self.spike_threshold_edit)
 
@@ -356,6 +360,13 @@ class currentClampWidget(DragDropWidget):
         )
         self.plot_widget.addItem(self.delta_v_data)
 
+        self.vsag_data = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen="#fcbb2f",
+        )
+        self.plot_widget.addItem(self.vsag_data)
+
         self.spike_peaks_data = pg.PlotDataItem(
             x=[],
             y=[],
@@ -370,7 +381,7 @@ class currentClampWidget(DragDropWidget):
             y=[],
             pen=None,
             symbol="o",
-            symbolBrush="m",
+            symbolBrush="#E867E8",
         )
         self.plot_widget.addItem(self.ahp_acq_data)
 
@@ -627,7 +638,12 @@ class currentClampWidget(DragDropWidget):
         self.delta_v_data.setData(
             x=[],
             y=[],
-            pen="r",
+            pen=pg.mkPen(color="r", width=2),
+        )
+        self.vsag_data.setData(
+            x=[],
+            y=[],
+            pen=pg.mkPen(color="m", width=2),
         )
         self.exp_manager = ExpManager()
         self.last_acq_point_clicked = None
@@ -648,7 +664,7 @@ class currentClampWidget(DragDropWidget):
             i.hide()
             i.deleteLater()
 
-    def spinbox(self, h):
+    def spinbox(self, _):
         if not self.exp_manager.analyzed:
             logger.info(
                 "No acquisitions analyzed,"
@@ -685,6 +701,7 @@ class currentClampWidget(DragDropWidget):
                 str(round_sig(acq_object.baseline_mean, sig=4))
             )
             self.delta_v_edit.setText(str(round_sig(acq_object.delta_v, sig=4)))
+            self.voltage_sag_edit.setText(str(round_sig(acq_object.voltage_sag, sig=4)))
             self.spike_threshold_edit.setText(
                 str(round_sig(acq_object.spike_threshold, sig=4))
             )
@@ -709,7 +726,13 @@ class currentClampWidget(DragDropWidget):
             self.delta_v_data.setData(
                 x=acq_object.plot_deltav_x(),
                 y=acq_object.plot_deltav_y(),
-                pen="r",
+                pen=pg.mkPen(color="r", width=2),
+            )
+
+            self.vsag_data.setData(
+                x=acq_object.plot_voltage_sag_x(),
+                y=acq_object.plot_voltage_sag_y(),
+                pen=pg.mkPen(color="m", width=2),
             )
             if not np.isnan(acq_object.peaks[0]):
                 self.spike_peaks_data.setData(
@@ -790,6 +813,11 @@ class currentClampWidget(DragDropWidget):
                 x=[],
                 y=[],
                 pen="r",
+            )
+            self.vsag_data.setData(
+                x=[],
+                y=[],
+                pen="m",
             )
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
@@ -959,27 +987,28 @@ class currentClampWidget(DragDropWidget):
             self.table_dict["key"] = table
             self.df_tabs.addTab(table, key)
         logger.info("Set final data into tables.")
-        self.plotIVCurve()
+        self.plotIVCurve("Delta V (mV)")
+        self.plotIVCurve("Voltage sag (mV)")
         if fi_an.hertz:
             self.plotSpikeFrequency(fi_an.df_dict["Hertz"].copy())
         if fi_an.pulse_ap:
-            self.plotPulseAP(fi_an.df_dict["Pulse APs"].copy())
+            self.plotAP(fi_an.df_dict["Pulse APs"].copy(), "Pulse")
         if fi_an.ramp_ap:
-            self.plotRampAP(fi_an.df_dict["Ramp APs"].copy())
+            self.plotAP(fi_an.df_dict["Ramp APs"].copy(), "Ramp")
         self.calculate_parameters.setEnabled(True)
         self.main_widget.setCurrentIndex(2)
         logger.info("Plotted final data.")
         logger.info("Finished analyzing.")
         self.pbar.setFormat("Final analysis finished")
 
-    def plotIVCurve(self):
+    def plotIVCurve(self, column: str):
         iv_curve_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["iv_curve_plot"] = iv_curve_plot
-        self.plot_tabs.addTab(iv_curve_plot, "IV curve")
+        self.plot_dict[f"{column} iv_curve_plot"] = iv_curve_plot
+        self.plot_tabs.addTab(iv_curve_plot, f"{column} IV curve")
         fa = self.exp_manager.final_analysis
-        deltav_df = fa.df_dict["Delta V"]
-        iv_x = fa.df_dict["iv_x"]
-        iv_y = fa.df_dict["IV lines"]
+        deltav_df = fa.df_dict[column]
+        iv_x = fa.df_dict[f"{column} IV x"]
+        iv_y = fa.df_dict[f"{column} IV lines"]
         iv_curve_plot.addLegend()
         epochs = iv_y.columns.to_list()
         for i in epochs:
@@ -990,7 +1019,7 @@ class currentClampWidget(DragDropWidget):
                 brush = pg.mkBrush(color=pg.intColor(int(i)))
                 iv_curve_plot.plot(iv_x[i].to_numpy(), iv_y[i].to_numpy(), pen=pencil)
                 iv_curve_plot.plot(
-                    deltav_df["Pulse_amp (pA)"].to_numpy(),
+                    deltav_df["Pulse amp (pA)"].to_numpy(),
                     deltav_df[i].to_numpy(),
                     pen=None,
                     symbol="o",
@@ -1003,7 +1032,7 @@ class currentClampWidget(DragDropWidget):
         spike_curve_plot = pg.PlotWidget(useOpenGL=True)
         self.plot_dict["spike_curve_plot"] = spike_curve_plot
         self.plot_tabs.addTab(spike_curve_plot, "Spike curve")
-        pulse_amp = hertz.pop("Pulse_amp (pA)").to_numpy()
+        pulse_amp = hertz.pop("Pulse amp (pA)").to_numpy()
         plot_epochs = hertz.columns.to_list()
         spike_curve_plot.addLegend()
         for i in plot_epochs:
@@ -1019,10 +1048,10 @@ class currentClampWidget(DragDropWidget):
                 symbolBrush=brush,
             )
 
-    def plotPulseAP(self, df):
+    def plotAP(self, df: pd.DataFrame, ap_type: str):
         pulse_ap_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["pulse_ap_plot"] = pulse_ap_plot
-        self.plot_tabs.addTab(pulse_ap_plot, "Pulse AP")
+        self.plot_dict[f"{ap_type}_ap_plot"] = pulse_ap_plot
+        self.plot_tabs.addTab(pulse_ap_plot, f"{ap_type} AP")
         pulse_ap_plot.addLegend()
         if len(df.columns) > 1:
             for i in df.columns:
@@ -1035,23 +1064,6 @@ class currentClampWidget(DragDropWidget):
             i = df.columns[0]
             array = df[i]
             pulse_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
-
-    def plotRampAP(self, df):
-        ramp_ap_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["ramp_ap_plot"] = ramp_ap_plot
-        self.plot_tabs.addTab(ramp_ap_plot, "Ramp AP")
-        ramp_ap_plot.addLegend()
-        if len(df.columns) > 1:
-            for i in df.columns:
-                array = df[i].to_numpy()
-                pencil = pg.mkPen(color=pg.intColor(i))
-                ramp_ap_plot.plot(
-                    np.arange(len(array)) / 10, array, pen=pencil, name=f"Epoch {i}"
-                )
-        else:
-            i = df.columns[0]
-            array = df[i]
-            ramp_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def createExperiment(self, urls):
         self.pbar.setFormat("Creating experiment")
