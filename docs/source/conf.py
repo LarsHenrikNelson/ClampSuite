@@ -32,7 +32,43 @@ if not version_match or version_match.isdigit() or version_match == "latest":
 elif version_match == "stable":
     version_match = f"v{release}"
 
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = ["sphinx_design", "sphinx.ext.intersphinx"]
+
+templates_path = ["_templates"]
+exclude_patterns = []
+
+html_logo = "images/logo.png"
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_theme = "pydata_sphinx_theme"
+html_static_path = ["_static"]
+html_js_files = ["custom-icon.js"]
+html_css_files = [
+    "custom.css",
+]
+
 html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/LarsHenrikNelson/ClampSuite",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/clampsuite",
+            "icon": "fa-custom fa-pypi",
+        },
+    ],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "use_edit_page_button": False,
+    "secondary_sidebar_items": ["page-toc"],
+    "navigation_with_keys": False,
     "logo": {
         "text": "ClampSuite documentation",
         "image_light": "images/logo.png",
@@ -44,39 +80,4 @@ html_theme_options = {
         "version_match": version_match,
     },
     "navbar_center": ["version-switcher", "navbar-nav"],
-}
-
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-extensions = ["sphinx_design", "sphinx.ext.intersphinx"]
-
-templates_path = ["_templates"]
-exclude_patterns = []
-
-html_logo = "images/logo.png"
-
-html_theme_options = {
-    "logo": {
-        "text": "ClampSuite documentation",
-        "image_light": "images/logo.png",
-        "image_dark": "images/logo.png",
-    }
-}
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = "pydata_sphinx_theme"
-html_static_path = ["_static"]
-html_css_files = [
-    "custom.css",
-]
-
-html_theme_options = {
-    "github_url": "https://github.com/LarsHenrikNelson/ClampSuite",
-    "navbar_end": ["theme-switcher", "navbar-icon-links"],
-    "use_edit_page_button": False,
-    "secondary_sidebar_items": ["page-toc"],
-    "navigation_with_keys": False,
 }
