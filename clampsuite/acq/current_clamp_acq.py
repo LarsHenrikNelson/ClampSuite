@@ -15,6 +15,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "third_derivative", "max_curvature", "legacy"
         ] = "third_derivative",
         min_spikes: int = 2,
+        debug=False,
     ):
         if self._pulse_start == 0:
             if self._baseline_end == self.array.size:
@@ -27,16 +28,18 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.min_spikes = min_spikes
 
         # Analysis functions
-        self.get_delta_v()
-        self.find_baseline_stability()
-        self.find_spike_parameters()
-        self.first_spike_parameters()
-        self.get_ramp_rheo()
-        self.find_spike_width()
-        self.find_AHP_peak()
-        self.spike_adaptation()
-        self.calculate_sfa_local_var()
-        self.calculate_sfa_divisor()
+        if debug:
+            self.get_delta_v()
+            self.find_voltage_sag()
+            self.find_baseline_stability()
+            self.find_spike_parameters()
+            self.first_spike_parameters()
+            self.get_ramp_rheo()
+            self.find_spike_width()
+            self.find_AHP_peak()
+            self.spike_adaptation()
+            self.calculate_sfa_local_var()
+            self.calculate_sfa_divisor()
 
     def get_delta_v(self):
         """This function finds the delta-v for a pulse. It simply takes the mean
@@ -49,8 +52,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             )
             max_value = np.max(self.array[self._pulse_start : self._pulse_end])
             if max_value < self.threshold:
+                size = int((self._pulse_end - self.pulse_start) / 2)
                 self.delta_v = (
-                    np.mean(self.array[self._pulse_start : self._pulse_end])
+                    np.mean(self.array[self._pulse_start - size : self._pulse_end])
                     - self.baseline_mean
                 )
             else:
@@ -269,15 +273,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.width_comp = None
 
     def find_baseline_stability(self):
-        if self.ramp == "0":
-            if self._pulse_end != self.array.size:
-                self.baseline_stability = np.abs(
-                    np.mean(self.array[: self._pulse_start])
-                    - np.mean(self.array[self._pulse_end :])
-                )
-            else:
-                self.baseline_stability = 0.0
-        elif self.ramp == "1":
+        if self._pulse_end != self.array.size:
             self.baseline_stability = np.abs(
                 np.mean(self.array[: self._pulse_start])
                 - np.mean(self.array[self._pulse_end :])
@@ -392,6 +388,21 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.ahp_x = np.nan
             self.ahp_y = np.nan
 
+    def find_voltage_sag(self):
+        if self.pulse_amp < 0:
+            size = int((self._pulse_end - self.pulse_start) * 0.20)
+            start = np.min(
+                self.array[self._pulse_start : int(self._pulse_start + size)]
+            )
+            end = np.min(self.array[int(self._pulse_end - size) : self._pulse_end])
+            self.voltage_sag = end - start
+            self._voltage_sag_x = self._pulse_start + np.argmin(
+                self.array[self._pulse_start : int(self._pulse_start + size)]
+            )
+        else:
+            self.voltage_sag = np.nan
+            self._voltage_sag_x = np.nan
+
     # Helper functions that correct x-values for plotting
 
     def set_spike_threshold(self, x: Union[float, int], y: Union[float, int]):
@@ -488,6 +499,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         elif self.ramp == "1":
             plot_y = [np.nan]
         return plot_y
+
+    def plot_voltage_sag_y(self) -> list:
+        if not np.isnan(self.voltage_sag):
+            voltage_response = self.voltage_sag + self.array[self._voltage_sag_x]
+            return [voltage_response, self.array[self._voltage_sag_x]]
+        else:
+            return [np.nan]
+
+    def plot_voltage_sag_x(self) -> list:
+        if not np.isnan(self._voltage_sag_x):
+            return [self._voltage_sag_x / self.s_r_c, self._voltage_sag_x / self.s_r_c]
+        else:
+            return [np.nan]
 
     def plot_ahp_x(self) -> list:
         return [self.ahp_x]

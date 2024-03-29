@@ -30,7 +30,8 @@ start with a signal such as the one below.
 The signal still needs to be filtered. Filtering has a large effect on deconvolution so be sure 
 to filter your signal. See the :doc:`filtering tutorial </analysis_methods/filtering>` for more
 for more information on filtering a signal. Esssentially the more noise your signal has
-the worse the FFT deconvolution works. Here a well filtered version of the signal above:
+the worse the FFT deconvolution works because FFT deconvolution is a noise method. Here is a well 
+filtered version of the signal above:
 
 .. image:: _static/filtered_array.png
     :scale: 50
@@ -62,7 +63,11 @@ array needs to be filtered otherwise the peaks can be hidden in the noise.
     :scale: 50
 
 The you can use use a peak finding function like the find_peaks provided on by Scipy to 
-find all the events. The events still need to be checked and analyzed. Sometimes the
+find all the events. One change I made from the original method in the paper (Pernia-Andrade et al)
+is to take the root mean square (rms) of the middle 95% of the points. When you deconvolve signals
+with large peaks, the resulting delta functions are also large which skews the standard deviation.
+This makes is hard to 
+The events still need to be checked and analyzed. Sometimes the
 deconvolved peaks overlap leading to duplicated events, however this can be easily be
 checked during analysis.
 

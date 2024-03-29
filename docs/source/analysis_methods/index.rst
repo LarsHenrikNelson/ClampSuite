@@ -14,3 +14,4 @@ to the ease of using GitHub as a repository for software code.
 
     filtering
     mini_methods
+    current_clamp_methods
