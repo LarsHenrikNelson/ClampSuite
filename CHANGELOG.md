@@ -5,6 +5,7 @@
 #### Added
 
 - Added ability to change spike threshold on current clamp widget.
+- Added voltage sag measurement and resulting IV slope to current clamp analysis
 - Export documentation as PDF on Readthedocs.
 
 #### Changed
@@ -15,3 +16,5 @@
 ### Fixed
 
 - Fixed threading issue on oEPSC widget.
+- Cleaned up current clamp column names. No more underscores. 
+
