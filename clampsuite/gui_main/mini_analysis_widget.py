@@ -428,12 +428,21 @@ class MiniAnalysisWidget(DragDropWidget):
         self.epoch_edit.setMaximumWidth(70)
         self.acq_buttons.addWidget(self.epoch_edit, 1, 1)
 
-        self.baseline_mean_label = QLabel("Baseline mean")
-        self.baseline_mean_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.acq_buttons.addWidget(self.baseline_mean_label, 2, 0)
-        self.baseline_mean_edit = QLineEdit()
-        self.baseline_mean_edit.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.baseline_mean_edit, 2, 1)
+        self.voltage_offset_label = QLabel("Voltage offset")
+        self.voltage_offset_label.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Minimum
+        )
+        self.acq_buttons.addWidget(self.voltage_offset_label, 2, 0)
+        self.voltage_offset_edit = QLineEdit()
+        self.voltage_offset_edit.setMaximumWidth(70)
+        self.acq_buttons.addWidget(self.voltage_offset_edit, 2, 1)
+
+        self.rs_label = QLabel("Rs")
+        self.rs_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.acq_buttons.addWidget(self.rs_label, 3, 0)
+        self.rs_edit = QLineEdit()
+        self.rs_edit.setMaximumWidth(70)
+        self.acq_buttons.addWidget(self.rs_edit, 3, 1)
 
         self.left_button = QToolButton()
         self.left_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -443,7 +452,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.left_button.setAutoRepeatInterval(50)
         self.left_button.setMinimumWidth(70)
         self.left_button.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.left_button, 3, 0)
+        self.acq_buttons.addWidget(self.left_button, 4, 0)
 
         self.right_button = QToolButton()
         self.right_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -453,45 +462,45 @@ class MiniAnalysisWidget(DragDropWidget):
         self.right_button.setAutoRepeatInterval(50)
         self.right_button.setMinimumWidth(70)
         self.right_button.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.right_button, 3, 1)
+        self.acq_buttons.addWidget(self.right_button, 4, 1)
 
         self.slider_sensitivity = QSlider()
         self.slider_sensitivity.setObjectName("event plot slider")
         self.slider_sensitivity.setOrientation(Qt.Horizontal)
         self.slider_sensitivity.setValue(20)
         self.slider_sensitivity.valueChanged.connect(self.slider_value)
-        self.acq_buttons.addWidget(self.slider_sensitivity, 4, 0, 1, 2)
+        self.acq_buttons.addWidget(self.slider_sensitivity, 5, 0, 1, 2)
 
         self.create_event_button = QPushButton("Create new event")
         self.create_event_button.clicked.connect(self.createEvent)
         self.create_event_action = QAction("Create new event")
         self.create_event_action.triggered.connect(self.createEvent)
-        self.acq_buttons.addWidget(self.create_event_button, 5, 0, 1, 2)
+        self.acq_buttons.addWidget(self.create_event_button, 6, 0, 1, 2)
 
-        self.acq_buttons.setRowStretch(6, 10)
+        self.acq_buttons.setRowStretch(7, 10)
 
         self.delete_acq_button = QPushButton("Delete acquisition")
         self.delete_acq_button.clicked.connect(self.deleteAcq)
-        self.acq_buttons.addWidget(self.delete_acq_button, 7, 0, 1, 2)
+        self.acq_buttons.addWidget(self.delete_acq_button, 8, 0, 1, 2)
 
         self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
         self.reset_recent_acq_button.clicked.connect(self.resetRecentRejectedAcq)
-        self.acq_buttons.addWidget(self.reset_recent_acq_button, 8, 0, 1, 2)
+        self.acq_buttons.addWidget(self.reset_recent_acq_button, 9, 0, 1, 2)
 
         self.reset_acq_button = QPushButton("Reset deleted acqs")
         self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
-        self.acq_buttons.addWidget(self.reset_acq_button, 9, 0, 1, 2)
+        self.acq_buttons.addWidget(self.reset_acq_button, 10, 0, 1, 2)
 
         self.decon_acq_button = QPushButton("Plot deconvolution")
         self.decon_acq_button.clicked.connect(self.plotDeconvolution)
-        self.acq_buttons.addWidget(self.decon_acq_button, 10, 0, 1, 2)
+        self.acq_buttons.addWidget(self.decon_acq_button, 11, 0, 1, 2)
 
-        self.acq_buttons.setRowStretch(11, 10)
+        self.acq_buttons.setRowStretch(12, 10)
 
         self.calculate_parameters_2 = QPushButton("Final analysis")
         self.acq_buttons.addWidget(self.calculate_parameters_2)
         self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
-        self.acq_buttons.addWidget(self.calculate_parameters_2, 12, 0, 1, 2)
+        self.acq_buttons.addWidget(self.calculate_parameters_2, 13, 0, 1, 2)
 
         self.delete_acq_action = QAction("Delete acq")
         self.delete_acq_action.triggered.connect(self.deleteAcq)
@@ -978,6 +987,12 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Set the epoch
             self.epoch_edit.setText(acq_object.epoch)
+
+            # Set baseline mean or voltage offset
+            self.voltage_offset_edit.setText(str(round_sig(acq_object.offset, 4)))
+
+            # Set Rs from Rc check
+            self.rs_edit.setText(str(round_sig(acq_object.rs, 4)))
 
             # Create the acquisitions plot item for the main acquisition plot
             acq_plot = pg.PlotDataItem(

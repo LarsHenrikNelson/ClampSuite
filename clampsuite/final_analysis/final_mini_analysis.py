@@ -70,6 +70,8 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             "Est tau (ms)",
             "Rise rate (pA/ms)",
             "Rise time (ms)",
+            "Voltage offset (mV)",
+            "Rs (MOhm)",
         ]
         raw_df = self.df_dict["Raw data"]
         if "Curve fit tau (ms)" in list(raw_df.columns):

@@ -6,6 +6,7 @@ from scipy.fft import fft, ifft
 
 from ..functions.filtering_functions import fir_zero_1
 from ..functions.template_psc import create_template
+from ..functions.rc_check import calc_rs
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
 
@@ -45,6 +46,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         rc_check: bool = True,
         rc_check_start: Union[int, float] = 10000,
         rc_check_end: Union[int, float] = 10300,
+        debug: bool = False,
     ):
         # Set the attributes for the acquisition
         self.sensitivity = sensitivity
@@ -62,38 +64,51 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.deleted_events = 0
         self.baseline_corr = baseline_corr
         self.rc_check = rc_check
+        self._rc_check_offset = self._rc_check_start - int(rc_check_start * self.s_r_c)
+
+        # User must specify rc check start b/c due to how scanimage saves rc check info
         self.rc_check_start = rc_check_start
         self.rc_check_end = rc_check_end
         self._rc_check_start = int(rc_check_start * self.s_r_c)
         self._rc_check_end = int(rc_check_end * self.s_r_c)
-        self.run_analysis()
+
+        if not debug:
+            self.run_analysis()
 
     def run_analysis(self):
         # Runs the functions to analyze the acquisition
         # if self.baseline_corr:
         #     self.baseline_correction()
-        temp_array = self.create_mespc_array()
-        self.filter_array(temp_array)
+        self.create_mespc_array()
+        # self.filter_array(temp_array)
         self.set_array()
         self.set_sign()
         self.create_events()
+        self.analyze_rc_check()
 
     def create_mespc_array(self):
         """The function creates the mEPSC array by removing the RC
         check if there is one. The functions runs before the array
         is filtered.
         """
-        if self.rc_check is False:
+        if not self.rc_check:
             temp_array = self.array
-            self.rc_check_array = np.array([])
-        elif self.rc_check is True:
+            # self.rc_check_array = np.array([])
+        elif self.rc_check:
             if self._rc_check_end == len(self.array):
                 temp_array = np.copy(self.array[: self._rc_check_start])
-                self.rc_check_array = np.copy(self.array[self._rc_check_start :])
+                # self.rc_check_array = np.copy(self.array[self._rc_check_start :])
             else:
                 temp_array = np.copy(self.array[self._rc_check_end :])
-                self.rc_check_array = np.copy(self.array[self._rc_check_end :])
-        return temp_array
+                # self.rc_check_array = np.copy(self.array[self._rc_check_end :])
+        self.filter_array(temp_array)
+
+    def get_rc_check(self):
+        if self._rc_check_end == len(self.array):
+            rc_check_array = self.array[self._rc_check_start :]
+        else:
+            rc_check_array = self.array[self._rc_check_end :]
+        return rc_check_array
 
     def set_array(self):
         """Used to reduce the memory load of the class
@@ -110,6 +125,18 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.final_array = self.final_array * 1
         else:
             self.final_array = self.final_array * -1
+
+    def analyze_rc_check(self):
+        if self.rc_check:
+            rc_check_array = self.get_rc_check()
+            self.rs = calc_rs(
+                rc_check_array,
+                self._rc_check_offset,
+                self._rc_check_duration,
+                self.rc_amp,
+            )
+        else:
+            self.rs = 0.0
 
     def baseline_correction(self):
         end = len(self.array)
@@ -391,6 +418,10 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             final_dict["Acq time stamp"] = [
                 self.time_stamp for i in self.postsynaptic_events
             ]
+            final_dict["Voltage offset (mV)"] = [
+                self.offset for i in self.postsynaptic_events
+            ]
+            final_dict["Rs (MOhm)"] = [self.rs for i in self.postsynaptic_events]
             final_dict["Rise time (ms)"] = [
                 i.rise_time for i in self.postsynaptic_events
             ]

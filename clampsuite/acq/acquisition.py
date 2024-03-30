@@ -27,6 +27,7 @@ class Acquisition:
         obj.version = clampsuite.__version__
         for key, value in kwargs.items():
             setattr(obj, key, value)
+        setattr(obj, "offset", 0.0)
         setattr(obj, "accepted", True)
         return obj
 
