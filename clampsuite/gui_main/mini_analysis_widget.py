@@ -1640,7 +1640,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 event_plot = pg.PlotCurveItem(
                     x=event.event_x_comp()[:2],
                     y=event.event_y_comp()[:2],
-                    pen="#34E44B",
+                    pen=pg.mkPen("#34E44B", width=3),
                     name=id_value,
                     clickable=True,
                 )
@@ -1649,8 +1649,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.globalPlot.plot(
                     x=event.event_x_comp()[:2],
                     y=event.event_y_comp()[:2],
-                    symbol=None,
-                    pen="#34E44B",
+                    pen=pg.mkPen("#34E44B", width=3),
                     name=id_value,
                 )
 
@@ -1658,6 +1657,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.event_number.setMaximum(self.event_spinbox_list[-1])
                 self.event_number.setValue(self.sort_index.index(id_value))
                 self.eventSpinbox(self.sort_index.index(id_value))
+                self.eventSpinbox(id_value)
 
                 # Reset the clicked point so a new point is not accidentally created.
                 self.acq_point_clicked.setData(
