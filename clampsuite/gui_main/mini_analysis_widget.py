@@ -512,55 +512,55 @@ class MiniAnalysisWidget(DragDropWidget):
         self.reset_acq_action.triggered.connect(self.resetRejectedAcqs)
 
         # Filling the plot layout.
-        self.p1 = pg.PlotWidget(
+        self.localPlot = pg.PlotWidget(
             useOpenGL=True,
         )
-        self.plot_dict["p1"] = self.p1
-        self.p1.setLabel(
+        self.plot_dict["p1"] = self.localPlot
+        self.localPlot.setLabel(
             "bottom",
             text="Time (ms)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.p1.setLabel(
+        self.localPlot.setLabel(
             "left",
             text="Amplitude (pA)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.p1.setObjectName("p1")
-        p1pi = self.p1.getViewBox()
+        self.localPlot.setObjectName("p1")
+        p1pi = self.localPlot.getViewBox()
         p1pi.menu.addSeparator()
         p1pi.menu.addAction(self.create_event_action)
         p1pi.menu.addAction(self.delete_acq_action)
         p1pi.menu.addAction(self.reset_recent_acq_action)
         p1pi.menu.addAction(self.reset_acq_action)
-        self.d3.addWidget(self.p1, 0, 1)
+        self.d3.addWidget(self.localPlot, 0, 1)
         self.d3.layout.setColumnStretch(1, 10)
 
-        self.p2 = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["p2"] = self.p2
-        self.p2.setLabel(
+        self.globalPlot = pg.PlotWidget(useOpenGL=True)
+        self.plot_dict["globalPlot"] = self.globalPlot
+        self.globalPlot.setLabel(
             "bottom",
             text="Time (ms)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.p2.setLabel(
+        self.globalPlot.setLabel(
             "left",
             text="Amplitude (pA)",
             **{"color": "#C9CDD0", "font-size": "10pt"},
         )
-        self.p2.setObjectName("p2")
-        p2pi = self.p2.getViewBox()
-        p2pi.menu.addSeparator()
-        p2pi.menu.addAction(self.delete_acq_action)
-        p2pi.menu.addAction(self.reset_recent_acq_action)
-        p2pi.menu.addAction(self.reset_acq_action)
-        self.d1.addWidget(self.p2)
+        self.globalPlot.setObjectName("globalPlot")
+        globalPlotpi = self.globalPlot.getViewBox()
+        globalPlotpi.menu.addSeparator()
+        globalPlotpi.menu.addAction(self.delete_acq_action)
+        globalPlotpi.menu.addAction(self.reset_recent_acq_action)
+        globalPlotpi.menu.addAction(self.reset_acq_action)
+        self.d1.addWidget(self.globalPlot)
 
         self.region = pg.LinearRegionItem()
 
         # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
         self.region.sigRegionChanged.connect(self.update)
-        self.p1.sigRangeChanged.connect(self.updateRegion)
+        self.localPlot.sigRangeChanged.connect(self.updateRegion)
 
         # Set the initial bounds of the region and its layer
         # position.
@@ -701,8 +701,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_event_point_clicked = None
         self.last_acq_point_clicked = None
         self.event_spinbox_list = []
-        self.last_event_clicked_1 = []
-        self.last_event_clicked_2 = []
+        self.last_event_clicked_global = None
+        self.last_event_clicked_local = None
         self.sort_index = []
         self.template = []
         self.event_spinbox_list = []
@@ -729,6 +729,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
         self.setWidth()
+
         logger.info("Event analysis GUI created.")
 
     def windowChanged(self, text):
@@ -841,10 +842,10 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Analyzing...")
         self.pbar.setValue(0)
 
-        self.p1.clear()
-        self.p2.clear()
-        self.p1.setAutoVisible(y=True)
-        self.p2.enableAutoRange()
+        self.localPlot.clear()
+        self.globalPlot.clear()
+        self.localPlot.setAutoVisible(y=True)
+        self.globalPlot.enableAutoRange()
         self.event_view_plot.clear()
 
         self.need_to_save = True
@@ -943,8 +944,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 f" acquisition {self.acquisition_number.value()} not set."
             )
             self.errorDialog(
-                "No acquisitions analyzed,\n"
-                f"acquisition {self.acquisition_number.value()} not set."
+                f"No acquisitions analyzed, acquisition {self.acquisition_number.value()} not set."
             )
             return None
 
@@ -952,17 +952,17 @@ class MiniAnalysisWidget(DragDropWidget):
         # the plot.
         logger.info("Preparing UI for plotting.")
         self.need_to_save = True
-        self.p1.clear()
-        self.p2.clear()
-        self.p1.setAutoVisible(y=True)
-        self.p2.enableAutoRange()
+        self.localPlot.clear()
+        self.globalPlot.clear()
+        self.localPlot.setAutoVisible(y=True)
+        self.globalPlot.enableAutoRange()
         self.event_view_plot.clear()
 
         # Reset the clicked points since we do not want to accidentally
         # adjust plot items on the new acquisition
         self.last_acq_point_clicked = None
-        self.last_event_clicked_1 = []
-        self.last_event_clicked_2 = []
+        self.last_event_clicked_global = None
+        self.last_event_clicked_local = None
         self.last_event_point_clicked = None
 
         # sort_index and event_spinbox_list are used to reference the correct
@@ -1013,20 +1013,20 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Add the plot item to the plot. Need to do it this way since
             # the ability to the click on specific points is need.
-            self.p1.addItem(acq_plot)
-            self.p1.setYRange(
+            self.localPlot.addItem(acq_plot)
+            self.localPlot.setYRange(
                 min(acq_object.final_array),
                 max(acq_object.final_array),
                 padding=0.1,
             )
 
-            # Add the draggable region to p2.
-            self.p2.addItem(self.region, ignoreBounds=True)
+            # Add the draggable region to globalPlot.
+            self.globalPlot.addItem(self.region, ignoreBounds=True)
 
             # Create the plot with the draggable region. Since there is
             # no interactivity with this plot there is no need to create
             # a plot item.
-            self.p2.plot(x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y())
+            self.globalPlot.plot(x=acq_object.plot_acq_x(), y=acq_object.plot_acq_y())
 
             # Enabled the acquisition number since it was disabled earlier.
             self.acquisition_number.setEnabled(True)
@@ -1060,20 +1060,22 @@ class MiniAnalysisWidget(DragDropWidget):
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
                         pen="#34E44B",
+                        width=2,
                         name=i,
                         clickable=True,
                     )
                     # Adds the clicked functionality to the event plot item.
                     event_plot.sigClicked.connect(self.eventClicked)
-                    self.p1.addItem(event_plot)
+                    self.localPlot.addItem(event_plot)
 
-                    # Events plotted on p2 do not need any interactivity. You have
+                    # Events plotted on globalPlot do not need any interactivity. You have
                     # create new event plot items for each plot because one graphic
                     # item cannot be used in multiple parts of a GUI in Qt.
-                    self.p2.plot(
+                    self.globalPlot.plot(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
                         pen="#34E44B",
+                        width=2,
                     )
 
                 # Set the event spinbox to the first event and sets the min
@@ -1084,19 +1086,27 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.event_number.setValue(0)
                 self.eventSpinbox(0)
                 logger.info(
-                    f"Acquisition {self.acquisition_number.value()} has no events to\
-                         plot."
+                    f"Acquisition {self.acquisition_number.value()} has no events to plot."
                 )
             else:
                 logger.info(
                     f"Acquisition {self.acquisition_number.value()}: Events plotted."
                 )
+            self.acq_point_clicked = pg.PlotDataItem(
+                x=[],
+                y=[],
+                pen=None,
+                symbol="o",
+                symbolPen=pg.mkPen({"color": "#34E44B", "width": 2}),
+            )
+
+            self.localPlot.addItem(self.acq_point_clicked)
         else:
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             text.setFont(QFont("Helvetica", 20))
-            self.p2.setRange(xRange=(-30, 30), yRange=(-30, 30))
-            self.p2.addItem(text)
+            self.globalPlot.setRange(xRange=(-30, 30), yRange=(-30, 30))
+            self.globalPlot.addItem(text)
             self.acquisition_number.setEnabled(True)
 
     def reset(self):
@@ -1105,17 +1115,24 @@ class MiniAnalysisWidget(DragDropWidget):
         This function resets all the variables and clears all the plots.
         It takes a while to run.
         """
-        self.p1.clear()
-        self.p2.clear()
+        self.localPlot.clear()
+        self.globalPlot.clear()
         self.template_plot.clear()
         self.load_widget.clearData()
         self.calc_param_clicked = False
         self.event_view_plot.clear()
         self.last_event_point_clicked = None
         self.last_acq_point_clicked = None
-        self.last_event_clicked_1 = []
-        self.last_event_clicked_2 = []
+        self.last_event_clicked_global = None
+        self.last_event_clicked_local = None
         self.event_spinbox_list = []
+        self.acq_point_clicked = pg.PlotDataItem(
+            x=[],
+            y=[],
+            pen=None,
+            symbol="o",
+            symbolPen=pg.mkPen({"color": "#34E44B", "width": 2}),
+        )
         self.sort_index = []
         self.stem_plot.clear()
         self.amp_dist.clear()
@@ -1140,7 +1157,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         self.region.setZValue(10)
         minX, maxX = self.region.getRegion()
-        self.p1.setXRange(minX, maxX, padding=0)
+        self.localPlot.setXRange(minX, maxX, padding=0)
 
     def updateRegion(self, window, viewRange):
         """
@@ -1168,20 +1185,17 @@ class MiniAnalysisWidget(DragDropWidget):
         Returns the points clicked in the acquisition plot window.
         """
         logger.info(f"Acquisition {self.acquisition_number.value()} point clicked.")
-        if self.last_acq_point_clicked is not None:
-            self.p1.removeItem(self.last_acq_point_clicked)
 
-        acq_point_clicked = pg.PlotDataItem(
+        self.acq_point_clicked.setData(
             x=[points[0].pos()[0]],
             y=[points[0].pos()[1]],
             pen=None,
             symbol="o",
             symbolPen=pg.mkPen({"color": "#34E44B", "width": 2}),
         )
-        self.p1.addItem(acq_point_clicked)
-        self.last_acq_point_clicked = (acq_point_clicked, points[0].pos())
+        self.last_acq_point_clicked = points[0].pos()
 
-        logger.info(f"Point {self.last_acq_point_clicked[1][0]} set as point clicked.")
+        logger.info(f"Point {self.last_acq_point_clicked} set as point clicked.")
 
     def eventClicked(self, item):
         """
@@ -1192,21 +1206,19 @@ class MiniAnalysisWidget(DragDropWidget):
         index = self.sort_index.index(int(item.name()))
         self.event_number.setValue(index)
         self.eventSpinbox(index)
-        logger.info(f"Event {index} set a current event.")
+        logger.info(f"Event {index} set as current event.")
 
     def eventSpinbox(self, h):
         """
         Function to plot a event in the event plot.
         """
-
         if not self.exp_manager.acqs_exist("mini"):
             logger.info(
                 "Event was not plotted, acquisition"
                 f" {self.acquisition_number.value()} does not exist."
             )
             self.errorDialog(
-                "Event was not plotted,\n"
-                f" {self.acquisition_number.value()} does not exist."
+                f"Event was not plotted, {self.acquisition_number.value()} does not exist."
             )
             return None
 
@@ -1215,8 +1227,7 @@ class MiniAnalysisWidget(DragDropWidget):
         event_index = self.sort_index[h]
 
         logger.info(
-            f"Plotting event {event_index} on acquisition \
-                  {self.acquisition_number.value()}."
+            f"Plotting event {event_index} on acquisition {self.acquisition_number.value()}."
         )
 
         self.need_to_save = True
@@ -1225,14 +1236,14 @@ class MiniAnalysisWidget(DragDropWidget):
         # Clear the last event_point_clicked
         self.last_event_point_clicked = None
 
-        # Resets the color of the events on p1 and p2. In python
+        # Resets the color of the events on p1 and globalPlot. In python
         # when you create an object it is given a position in the memory
         # you can create new "pointers" to the object. This makes it
         # easy to modify Qt graphics objects without having to find them
         # under their original parent.
-        if self.last_event_clicked_1:
-            self.last_event_clicked_1.setPen("#34E44B")
-            self.last_event_clicked_2.setPen("#34E44B")
+        if self.last_event_clicked_global is not None:
+            self.last_event_clicked_global.setPen("#34E44B", width=2)
+            self.last_event_clicked_local.setPen("#34E44B", width=2)
 
         # Clear the event plot
         self.event_view_plot.clear()
@@ -1269,6 +1280,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # Add clickable functionality to the event plot item.
         event_item.sigPointsClicked.connect(self.eventPlotClicked)
 
+        self.event_view_plot.addItem(event_item)
+
         # Plot item for the baseline, peak and estimated tau.
         event_plot_items = pg.PlotDataItem(
             x=event.event_x_comp(),
@@ -1284,7 +1297,6 @@ class MiniAnalysisWidget(DragDropWidget):
         )
 
         # Add the plot items to the event view widget.
-        self.event_view_plot.addItem(event_item)
         self.event_view_plot.addItem(event_plot_items)
 
         # Plot the fit taus if curve fit was selected.
@@ -1296,14 +1308,16 @@ class MiniAnalysisWidget(DragDropWidget):
             )
             self.event_view_plot.addItem(event_decay_items)
 
-        # Sets the color of the events on p1 and p2 so that the event
-        # selected with the spinbox or the event that was clicked is shown.
-        self.p2.listDataItems()[event_index + 1].setPen("#E867E8", width=2)
-        self.p1.listDataItems()[event_index + 1].setPen("#E867E8", width=2)
-
         # Creating a reference to the clicked events.
-        self.last_event_clicked_2 = self.p2.listDataItems()[event_index + 1]
-        self.last_event_clicked_1 = self.p1.listDataItems()[event_index + 1]
+        self.last_event_clicked_global = self.globalPlot.listDataItems()[
+            event_index + 1
+        ]
+        self.last_event_clicked_local = self.localPlot.listDataItems()[event_index + 1]
+
+        # Sets the color of the events on p1 and globalPlot so that the event
+        # selected with the spinbox or the event that was clicked is shown.
+        self.last_event_clicked_global.setPen("#E867E8", width=2)
+        self.last_event_clicked_local.setPen("#E867E8", width=2)
 
         # Set the attributes of the event on the GUI.
         self.event_amplitude.setText(str(round_sig(event.amplitude, sig=4)))
@@ -1362,8 +1376,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 f" {self.acquisition_number.value()} does not exist."
             )
             self.errorDialog(
-                "Event peak was not set, acquisition\n"
-                f" {self.acquisition_number.value()} does not exist."
+                f"Event peak was not set, acquisition {self.acquisition_number.value()} does not exist."
             )
             return None
 
@@ -1381,8 +1394,7 @@ class MiniAnalysisWidget(DragDropWidget):
         event = acq.postsynaptic_events[event_index]
 
         logger.info(
-            f"Setting peak on event {event_index} on \
-                acquisition {self.acquisition_number.value()}."
+            f"Setting peak on event {event_index} on acquisition {self.acquisition_number.value()}."
         )
 
         # if len(self.last_event_point_clicked) > 0:
@@ -1397,21 +1409,25 @@ class MiniAnalysisWidget(DragDropWidget):
         # for the postsynaptic event.
         event.set_amplitude(x, y)
 
-        # Redraw the events on p1 and p2 plots. Note that the last
+        # Redraw the events on p1 and globalPlot plots. Note that the last
         # event clicked provides a "pointed" to the correct plot
-        # object on p1 and p2 so that it does not have to be
+        # object on p1 and globalPlot so that it does not have to be
         # referenced again.
-        self.last_event_clicked_1.setData(
+        self.last_event_clicked_global.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            color="#E867E8",
-            width=2,
+            pen=pg.mkPen("#E867E8", width=2),
+            symbol=None,
+            # color="#E867E8",
+            # width=2,
         )
-        self.last_event_clicked_2.setData(
+        self.last_event_clicked_local.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            color="#E867E8",
-            width=2,
+            pen=pg.mkPen("#E867E8", width=2),
+            symbol=None,
+            # color="#E867E8",
+            # width=2,
         )
 
         # This is need to redraw the event in the event view.
@@ -1419,11 +1435,9 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Reset the last point clicked.
         self.event_view_plot.removeItem(self.last_event_point_clicked)
-        self.last_event_point_clicked = None
 
         logger.info(
-            f"Peak set on event {event_index} on \
-                acquisition {self.acquisition_number.value()}."
+            f"Peak set on event {event_index} on acquisition {self.acquisition_number.value()}."
         )
 
     def setPointAsBaseline(self):
@@ -1442,8 +1456,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 f" acquisition {self.acquisition_number.value()} does not exist."
             )
             self.errorDialog(
-                "Event baseline was not set,\n"
-                f"acquisition {self.acquisition_number.value()} does not exist."
+                f"Event baseline was not set, acquisition {self.acquisition_number.value()} does not exist."
             )
             return None
 
@@ -1463,8 +1476,7 @@ class MiniAnalysisWidget(DragDropWidget):
             event = acq.postsynaptic_events[event_index]
 
             logger.info(
-                f"Setting point as peak on event {event_index} on \
-                    acquisition {self.acquisition_number.value()}."
+                f"Setting point as peak on event {event_index} on acquisition {self.acquisition_number.value()}."
             )
             # X and Y point of the event point that was clicked. The
             # x point needs to be adjusted back to samples for the
@@ -1477,21 +1489,23 @@ class MiniAnalysisWidget(DragDropWidget):
             # for the postsynaptic event.
             event.set_baseline(x, y)
 
-            # Redraw the events on p1 and p2 plots. Note that the last
+            # Redraw the events on p1 and globalPlot plots. Note that the last
             # event clicked provides a "pointed" to the correct plot
-            # object on p1 and p2 so that it does not have to be
+            # object on p1 and globalPlot so that it does not have to be
             # referenced again.
-            self.last_event_clicked_1.setData(
+            self.last_event_clicked_global.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
                 color="#E867E8",
                 width=2,
+                symbol=None,
             )
-            self.last_event_clicked_2.setData(
+            self.last_event_clicked_local.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
                 color="#E867E8",
                 width=2,
+                symbol=None,
             )
 
             # This is need to redraw the event in the event view.
@@ -1499,13 +1513,9 @@ class MiniAnalysisWidget(DragDropWidget):
 
             # Reset the last point clicked.
             self.event_view_plot.removeItem(self.last_event_point_clicked)
-            self.last_event_point_clicked = None
-        # else:
-        #     pass
 
         logger.info(
-            f"Baseline set on event {event_index} on \
-                acquisition {self.acquisition_number.value()}."
+            f"Baseline set on event {event_index} on acquisition {self.acquisition_number.value()}."
         )
 
     def deleteEvent(self):
@@ -1523,8 +1533,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 "does not exist."
             )
             self.errorDialog(
-                "No event deleted, acquisition\n"
-                f"{self.acquisition_number.value()} does not exist."
+                f"No event deleted, acquisition {self.acquisition_number.value()} does not exist."
             )
             return None
         self.need_to_save = True
@@ -1546,8 +1555,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Remove the event from the plots. +1 is added because the first plot
         # item is the acquisition.
-        self.p1.removeItem(self.p1.listDataItems()[event_index + 1])
-        self.p2.removeItem(self.p2.listDataItems()[event_index + 1])
+        self.localPlot.removeItem(self.localPlot.listDataItems()[event_index + 1])
+        self.globalPlot.removeItem(self.globalPlot.listDataItems()[event_index + 1])
 
         # Deleted the event from the postsynaptic events and final events.
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
@@ -1564,15 +1573,15 @@ class MiniAnalysisWidget(DragDropWidget):
         # Rename the plotted event's
         for num, i, j in zip(
             self.event_spinbox_list,
-            self.p1.listDataItems()[1:],
-            self.p2.listDataItems()[1:],
+            self.localPlot.listDataItems()[1:],
+            self.globalPlot.listDataItems()[1:],
         ):
             i.opts["name"] = num
             j.opts["name"] = num
 
-        # Clear the last_event_clicked_1 to prevent erros
-        self.last_event_clicked_1 = []
-        self.last_event_clicked_2 = []
+        # Clear the last_event_clicked_global to prevent errors
+        self.last_event_clicked_global = None
+        self.last_event_clicked_local = None
 
         # Reset the maximum spinbox value
         self.event_number.setMaximum(self.event_spinbox_list[-1])
@@ -1611,7 +1620,7 @@ class MiniAnalysisWidget(DragDropWidget):
             logger.info(
                 f"Creating event on acquisition {self.acquisition_number.value()}."
             )
-            x = self.last_acq_point_clicked[1][0]
+            x = self.last_acq_point_clicked[0]
 
             # The event needs a baseline of at least 2 milliseconds long.
             acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
@@ -1648,10 +1657,11 @@ class MiniAnalysisWidget(DragDropWidget):
                     clickable=True,
                 )
                 event_plot.sigClicked.connect(self.eventClicked)
-                self.p1.addItem(event_plot)
-                self.p2.plot(
+                self.localPlot.addItem(event_plot)
+                self.globalPlot.plot(
                     x=event.event_x_comp()[:2],
                     y=event.event_y_comp()[:2],
+                    symbol=None,
                     pen="#34E44B",
                     name=id_value,
                 )
@@ -1662,7 +1672,13 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.eventSpinbox(self.sort_index.index(id_value))
 
                 # Reset the clicked point so a new point is not accidentally created.
-                self.p1.removeItem(self.last_acq_point_clicked)
+                self.acq_point_clicked.setData(
+                    x=[],
+                    y=[],
+                    pen=None,
+                    symbol="o",
+                    symbolPen=pg.mkPen({"color": "#34E44B", "width": 2}),
+                )
                 self.last_acq_point_clicked = None
 
                 logger.info(
@@ -1721,8 +1737,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.exp_manager.delete_acq("mini", self.acquisition_number.value())
 
         # Clear plots
-        self.p1.clear()
-        self.p2.clear()
+        self.localPlot.clear()
+        self.globalPlot.clear()
         self.event_view_plot.clear()
 
         # Reset the analysis list and change the acquisition to the next
@@ -2039,16 +2055,16 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setFormat(value)
 
     def setAppearancePreferences(self, pref_dict):
-        self.p1.setBackground(pref_dict[0])
-        self.p1.getAxis("left").setPen(pref_dict[1])
-        self.p1.getAxis("left").setTextPen(pref_dict[1])
-        self.p1.getAxis("bottom").setPen(pref_dict[1])
-        self.p1.getAxis("bottom").setTextPen(pref_dict[1])
-        self.p2.setBackground(pref_dict[2])
-        self.p2.getAxis("left").setPen(pref_dict[3])
-        self.p2.getAxis("left").setTextPen(pref_dict[3])
-        self.p2.getAxis("bottom").setPen(pref_dict[3])
-        self.p2.getAxis("bottom").setTextPen(pref_dict[3])
+        self.localPlot.setBackground(pref_dict[0])
+        self.localPlot.getAxis("left").setPen(pref_dict[1])
+        self.localPlot.getAxis("left").setTextPen(pref_dict[1])
+        self.localPlot.getAxis("bottom").setPen(pref_dict[1])
+        self.localPlot.getAxis("bottom").setTextPen(pref_dict[1])
+        self.globalPlot.setBackground(pref_dict[2])
+        self.globalPlot.getAxis("left").setPen(pref_dict[3])
+        self.globalPlot.getAxis("left").setTextPen(pref_dict[3])
+        self.globalPlot.getAxis("bottom").setPen(pref_dict[3])
+        self.globalPlot.getAxis("bottom").setTextPen(pref_dict[3])
         self.event_view_plot.setBackground(pref_dict[4])
         self.event_view_plot.getAxis("left").setPen(pref_dict[5])
         self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
