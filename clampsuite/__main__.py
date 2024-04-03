@@ -37,8 +37,10 @@ def main(logger):
     pic = QPixmap(logo_path)
     splash = QSplashScreen(pic)
     splash.show()
-
     app.setStyle("Fusion")
+    font = app.font()
+    font.setPointSize(10)
+    app.setFont(font)
     app.setPalette(DarkPalette())
     app.setWindowIcon(QIcon(pic))
     window = MainWindow()
