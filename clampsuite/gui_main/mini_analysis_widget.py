@@ -820,7 +820,7 @@ class MiniAnalysisWidget(DragDropWidget):
         )
         s_r_c = sample_rate / 1000
         self.template_plot.plot(
-            x=(np.arange(len(template)) / s_r_c), y=template, pen=pg.mkPen(width=2)
+            x=(np.arange(len(template)) / s_r_c), y=template, pen=pg.mkPen(width=3)
         )
         logger.info("Event template created and plotted.")
 
@@ -1059,8 +1059,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     event_plot = pg.PlotCurveItem(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
-                        pen="#34E44B",
-                        width=2,
+                        pen=pg.mkPen("#34E44B", width=3),
                         name=i,
                         clickable=True,
                     )
@@ -1074,8 +1073,7 @@ class MiniAnalysisWidget(DragDropWidget):
                     self.globalPlot.plot(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
-                        pen="#34E44B",
-                        width=2,
+                        pen=pg.mkPen("#34E44B", width=3),
                     )
 
                 # Set the event spinbox to the first event and sets the min
@@ -1242,8 +1240,8 @@ class MiniAnalysisWidget(DragDropWidget):
         # easy to modify Qt graphics objects without having to find them
         # under their original parent.
         if self.last_event_clicked_global is not None:
-            self.last_event_clicked_global.setPen("#34E44B", width=2)
-            self.last_event_clicked_local.setPen("#34E44B", width=2)
+            self.last_event_clicked_global.setPen("#34E44B", width=3)
+            self.last_event_clicked_local.setPen("#34E44B", width=3)
 
         # Clear the event plot
         self.event_view_plot.clear()
@@ -1316,8 +1314,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Sets the color of the events on p1 and globalPlot so that the event
         # selected with the spinbox or the event that was clicked is shown.
-        self.last_event_clicked_global.setPen("#E867E8", width=2)
-        self.last_event_clicked_local.setPen("#E867E8", width=2)
+        self.last_event_clicked_global.setPen("#E867E8", width=3)
+        self.last_event_clicked_local.setPen("#E867E8", width=3)
 
         # Set the attributes of the event on the GUI.
         self.event_amplitude.setText(str(round_sig(event.amplitude, sig=4)))
@@ -1416,18 +1414,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.last_event_clicked_global.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            pen=pg.mkPen("#E867E8", width=2),
-            symbol=None,
-            # color="#E867E8",
-            # width=2,
+            pen=pg.mkPen("#E867E8", width=3),
         )
         self.last_event_clicked_local.setData(
             x=event.event_x_comp()[:2],
             y=event.event_y_comp()[:2],
-            pen=pg.mkPen("#E867E8", width=2),
-            symbol=None,
-            # color="#E867E8",
-            # width=2,
+            pen=pg.mkPen("#E867E8", width=3),
         )
 
         # This is need to redraw the event in the event view.
@@ -1496,23 +1488,19 @@ class MiniAnalysisWidget(DragDropWidget):
             self.last_event_clicked_global.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
-                color="#E867E8",
-                width=2,
-                symbol=None,
+                pen=pg.mkPen("#E867E8", width=3),
             )
             self.last_event_clicked_local.setData(
                 x=event.event_x_comp()[:2],
                 y=event.event_y_comp()[:2],
-                color="#E867E8",
-                width=2,
-                symbol=None,
+                pen=pg.mkPen("#E867E8", width=3),
             )
-
-            # This is need to redraw the event in the event view.
-            self.eventSpinbox(int(self.event_number.text()))
 
             # Reset the last point clicked.
             self.event_view_plot.removeItem(self.last_event_point_clicked)
+
+            # This is need to redraw the event in the event view.
+            self.eventSpinbox(int(self.event_number.text()))
 
         logger.info(
             f"Baseline set on event {event_index} on acquisition {self.acquisition_number.value()}."
@@ -1555,8 +1543,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Remove the event from the plots. +1 is added because the first plot
         # item is the acquisition.
-        self.localPlot.removeItem(self.localPlot.listDataItems()[event_index + 1])
-        self.globalPlot.removeItem(self.globalPlot.listDataItems()[event_index + 1])
+        self.localPlot.removeItem(self.last_event_clicked_local)
+        self.globalPlot.removeItem(self.last_event_clicked_global)
 
         # Deleted the event from the postsynaptic events and final events.
         acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
@@ -1829,7 +1817,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def plotAveEvent(self, x, y, decay_x, decay_y):
         self.ave_event_plot.clear()
-        self.ave_event_plot.plot(x=x, y=y, pen=pg.mkPen(width=2))
+        self.ave_event_plot.plot(x=x, y=y, pen=pg.mkPen(width=3))
         self.ave_event_plot.plot(
             x=decay_x, y=decay_y, pen=pg.mkPen({"color": "#34E44B", "width": 2})
         )
