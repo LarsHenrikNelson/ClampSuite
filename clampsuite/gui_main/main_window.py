@@ -81,12 +81,14 @@ class MainWindow(QMainWindow):
         self.widget_chooser.currentTextChanged.connect(self.setWidget)
 
         self.save_button = QPushButton()
+        self.save_button.clicked.connect(self.saveAs)
         style = self.save_button.style()
         icon = style.standardIcon(style.SP_DialogSaveButton)
         self.save_button.setIcon(icon)
         self.tool_bar.addWidget(self.save_button)
 
         self.open_button = QPushButton()
+        self.open_button.clicked.connect(self.loadData)
         style = self.open_button.style()
         icon = style.standardIcon(style.SP_DirOpenIcon)
         self.open_button.setIcon(icon)
@@ -123,6 +125,8 @@ class MainWindow(QMainWindow):
 
         self.setComboBoxSpacing()
         self.working_dir = str(Path().home())
+
+        self.load_dialog_open = False
         logger.info(f"Working directory set to: {self.working_dir}")
 
     def setComboBoxSpacing(self):
@@ -184,6 +188,24 @@ class MainWindow(QMainWindow):
             logger.info(f"Working directory set to: {self.working_dir}")
             self.central_widget.currentWidget().createExperiment(directory)
             logger.info("Experiment created/appended.")
+
+    def loadData(self):
+        self.load_dialog_open = True
+        self.dlg = QMessageBox()
+        self.dlg.setText("Create or load exp?")
+        self.dlg.setWindowTitle("Experiment")
+        self.dlg.setText("Create or load exp?")
+        self.dlg_open_button = QPushButton("Create exp")
+        # open_button.clicked.connect(self.createExperiment)
+        self.dlg_load_button = QPushButton("Load exp")
+        # load_button.clicked.connect(self.loadExperiment)
+        self.dlg.addButton(self.dlg_open_button, QMessageBox.ActionRole)
+        self.dlg.addButton(self.dlg_load_button, QMessageBox.ActionRole)
+        self.dlg.exec()
+        if self.dlg.clickedButton() == self.dlg_open_button:
+            self.createExperiment()
+        else:
+            self.loadExperiment()
 
     def loadPreferences(self):
         file_name, _ = QFileDialog.getOpenFileName(
