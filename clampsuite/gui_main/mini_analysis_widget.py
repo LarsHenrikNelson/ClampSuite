@@ -1194,7 +1194,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         if len(points) > 0:
             logger.info(f"Acquisition {self.acquisition_number.value()} point clicked.")
-        if self.acq_point_clicked is not None:
+        if self.acq_point_clicked is None:
             self.acq_point_clicked = pg.PlotDataItem(
                 x=[points[0].pos()[0]],
                 y=[points[0].pos()[1]],

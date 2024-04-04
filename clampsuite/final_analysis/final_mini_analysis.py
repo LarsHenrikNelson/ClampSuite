@@ -54,7 +54,7 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
         raw_df = pd.concat(df_list, axis=0, ignore_index=True)
 
         raw_df["Acq time stamp"] = (
-            raw_df["Acq time stamp"] - raw_df["Acq time stamp"].unique()[0]
+            raw_df["Acq time stamp"] - np.sort(raw_df["Acq time stamp"].unique())[0]
         ) * 1000
         raw_df["Real time"] = raw_df["Acq time stamp"] + raw_df["Event time (ms)"]
         raw_df.sort_values("Acquisition", inplace=True)
