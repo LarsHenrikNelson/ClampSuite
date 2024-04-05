@@ -1,7 +1,7 @@
 import logging
 
 import sys
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
 import pyqtgraph as pg
 
@@ -11,15 +11,7 @@ from PyQt5.QtWidgets import QApplication, QSplashScreen
 
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
-
-
-def check_dir():
-    p = Path.home()
-    h = ".clampsuite"
-    prog_dir = Path(p / h)
-    if not prog_dir.exists():
-        prog_dir.mkdir()
-    return prog_dir
+from .functions.startup import check_dir
 
 
 def main(logger):
@@ -45,6 +37,8 @@ def main(logger):
     app.setWindowIcon(QIcon(pic))
     window = MainWindow()
     window.setWindowTitle("ClampSuite")
+    window.setProgramDirectory()
+    window.loadPresets()
     window.show()
     splash.finish(window)
     app.aboutToQuit.connect(lambda: logger.info("Closing ClampSuite"))

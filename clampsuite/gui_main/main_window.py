@@ -17,6 +17,7 @@ from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
+from ..functions.startup import check_dir
 
 # from ..gui_widgets.qtwidgets import WorkerSignals
 
@@ -116,13 +117,14 @@ class MainWindow(QMainWindow):
         self.filter_widget = filterWidget()
         self.central_widget.addWidget(self.filter_widget)
         logger.info("Analysis widgets created")
-        self.gui_widgets = [
-            self.mini_widget,
-            self.oepsc_widget,
-            self.current_clamp_widget,
-            self.filter_widget,
-        ]
 
+        self.gui_widgets = {
+            "MiniAnalysisWidget": self.mini_widget,
+            "oEPSCWidget": self.oepsc_widget,
+            "CurrentClampWidget": self.current_clamp_widget,
+            # "FilterWidget": self.filter_widget,
+        }
+        self.current_widget = ""
         self.setComboBoxSpacing()
         self.working_dir = str(Path().home())
 
@@ -137,15 +139,19 @@ class MainWindow(QMainWindow):
     def setWidget(self, text):
         if text == "Mini analysis":
             self.central_widget.setCurrentWidget(self.mini_widget)
-            logger.info("Central widget set as miniAnalysisWidget")
+            self.current_widget = "MiniAnalysisWidget"
+            logger.info("Central widget set as MiniAnalysisWidget")
         elif text == "oEPSC/LFP":
             self.central_widget.setCurrentWidget(self.oepsc_widget)
+            self.current_widget = "oEPSCWidget"
             logger.info("Central widget set as oEPSCWidget")
         elif text == "Current clamp":
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
+            self.current_widget = "CurrentClampWidget"
             logger.info("Central widget set as currentClampWidget")
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
+            self.current_widget = "FilterWidget"
             logger.info("Central widget set as filterWidget")
 
     def saveAs(self):
@@ -225,6 +231,9 @@ class MainWindow(QMainWindow):
         if save_filename:
             logger.info("Saving preferences")
             self.central_widget.currentWidget().savePreferences(save_filename)
+            self.gui_widgets[self.current_widget].savePreferences(
+                self.program_directory / self.current_widget
+            )
             logger.info("Preferences saved")
         else:
             logger.info("No preferences saved")
@@ -248,3 +257,15 @@ class MainWindow(QMainWindow):
     def setWorkingDirectory(self, path):
         self.working_dir = path
         logger.info(f"Working directory set to: {self.working_dir}")
+
+    def setProgramDirectory(self):
+        self.program_directory = check_dir()
+        logger.info(f"Program directory set as {self.program_directory}")
+
+    def loadPresets(self):
+        for key, value in self.gui_widgets.items():
+            temp_path = self.program_directory / key
+            if temp_path.exists():
+                value.loadPreferences(temp_path)
+            else:
+                value.savePreferences(temp_path)

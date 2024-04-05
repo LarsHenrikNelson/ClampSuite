@@ -1,6 +1,15 @@
 from pathlib import Path
 
 
+def check_dir():
+    p = Path.home()
+    h = ".clampsuite"
+    prog_dir = Path(p / h)
+    if not prog_dir.exists():
+        prog_dir.mkdir()
+    return prog_dir
+
+
 def startup_function():
     p = Path.home()
     h = "ClampSuite"
