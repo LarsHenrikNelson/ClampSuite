@@ -594,6 +594,7 @@ class oEPSCWidget(DragDropWidget):
 
         # Lists
         self.exp_manager = ExpManager()
+        self.exp_manager.set_callback(self.updateProgress)
         self.oepsc_view.setData(self.exp_manager)
         self.lfp_view.setData(self.exp_manager)
         self.inspection_widget = AcqInspectionWidget()

@@ -695,6 +695,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.data_dock.addWidget(self.amp_dist, 0, 2)
 
         self.exp_manager = ExpManager()
+        self.exp_manager.set_callback(self.updateProgress)
         self.load_widget.setData(self.exp_manager)
         self.last_event_deleted = {}
         self.last_event_deleted = []
@@ -1688,6 +1689,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 )
                 logger.info("No event created, selected point to close to beginning.")
         self.last_acq_point_clicked = None
+        self.acq_point_clicked = None
 
     def plotDeconvolution(self):
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):

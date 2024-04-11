@@ -338,6 +338,7 @@ class currentClampWidget(DragDropWidget):
         self.last_acq_point_clicked = None
 
         self.exp_manager = ExpManager()
+        self.exp_manager.set_callback(self.updateProgress)
         self.acq_view.setData(self.exp_manager)
 
         # Create PlotDataItems for easy reuse
