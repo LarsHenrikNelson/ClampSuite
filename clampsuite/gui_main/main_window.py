@@ -264,8 +264,10 @@ class MainWindow(QMainWindow):
 
     def loadPresets(self):
         for key, value in self.gui_widgets.items():
-            temp_path = self.program_directory / key
+            temp_path = self.program_directory / (key + ".yaml")
             if temp_path.exists():
-                value.loadPreferences(temp_path)
+                logger.info(f"Loading {key} preferences from {temp_path}")
+                value.loadPreferences(self.program_directory / (key + ".yaml"))
             else:
-                value.savePreferences(temp_path)
+                logger.info(f"Loading {key} preferences to {temp_path}")
+                value.savePreferences(self.program_directory / key)
