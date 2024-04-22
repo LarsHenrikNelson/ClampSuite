@@ -8,6 +8,7 @@
 - Added voltage sag measurement and resulting IV slope to current clamp analysis.
 - Added Rs calculation for RC check on the mini analysis.
 - Export documentation as PDF on Readthedocs.
+- Autoload most recently used preferences.
 
 #### Changed
 
