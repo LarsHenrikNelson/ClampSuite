@@ -15,6 +15,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         n_window_end: Union[int, float] = 1050,
         p_window_start: Union[int, float] = 1045,
         p_window_end: Union[int, float] = 1055,
+        multiple_peaks: bool = False,
         find_ct: bool = False,
         find_est_decay: bool = False,
         curve_fit_decay: bool = False,
@@ -36,6 +37,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.find_edecay = find_est_decay
         self.find_fdecay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
+        self.multiple_peaks = multiple_peaks
 
         self.run_analysis()
 

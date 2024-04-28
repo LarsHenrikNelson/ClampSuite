@@ -58,7 +58,6 @@ class MiniEvent:
     def create_event_array(self, y_array: Union[np.ndarray, list]):
         self.event_array = y_array[self._array_start : self._array_end]
 
-    # Fix the find peak to scipy find peaks
     def find_peak(self):
         peaks_1, _ = signal.find_peaks(
             -1 * self.event_array,
