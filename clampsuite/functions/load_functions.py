@@ -11,7 +11,7 @@ from scipy.io import loadmat, matlab
 from .startup import check_dir
 
 
-PARENT_URL = "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master"
+PARENT_URL = "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master/ScanImage"
 URLS = {
     "interneuron_current_clamp": ([281, 332], "AD0_"),
     "msn_current_clamp": ([1, 56], "AD0_"),
@@ -38,7 +38,7 @@ def load_mat(filename: str) -> dict:
         todict is called to change them to nested dictionaries
         """
         for key in d:
-            if isinstance(d[key], matlab.mio5_params.mat_struct):
+            if isinstance(d[key], matlab.mat_struct):
                 d[key] = _todict(d[key])
             elif isinstance(d[key], np.ndarray):
                 d[key] = _toarray(d[key])
@@ -51,7 +51,7 @@ def load_mat(filename: str) -> dict:
         d = {}
         for strg in matobj._fieldnames:
             elem = matobj.__dict__[strg]
-            if isinstance(elem, matlab.mio5_params.mat_struct):
+            if isinstance(elem, matlab.mat_struct):
                 d[strg] = _todict(elem)
             elif isinstance(elem, np.ndarray):
                 d[strg] = _toarray(elem)
@@ -68,7 +68,7 @@ def load_mat(filename: str) -> dict:
         if ndarray.dtype != "float64":
             elem_list = []
             for sub_elem in ndarray:
-                if isinstance(sub_elem, matlab.mio5_params.mat_struct):
+                if isinstance(sub_elem, matlab.mat_struct):
                     elem_list.append(_todict(sub_elem))
                 elif isinstance(sub_elem, np.ndarray):
                     elem_list.append(_toarray(sub_elem))
