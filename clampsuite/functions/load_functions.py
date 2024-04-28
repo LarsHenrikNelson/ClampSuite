@@ -3,9 +3,23 @@ import re
 from math import nan
 from pathlib import PurePath, PurePosixPath, PureWindowsPath
 from typing import Union
+import urllib.request as request
 
 import numpy as np
 from scipy.io import loadmat, matlab
+
+from .startup import check_dir
+
+
+PARENT_URL = "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master"
+URLS = {
+    "interneuron_current_clamp": ([281, 332], "AD0_"),
+    "msn_current_clamp": ([1, 56], "AD0_"),
+    "msn_mepsc": ([61, 70], "AD0_"),
+    "msn_olfp": ([1, 10], "AD1_"),
+    "msn_oepsc": ([1, 10], "AD0_"),
+    "interneuron_mepsc": ([1, 10], "AD0_"),
+}
 
 
 def load_mat(filename: str) -> dict:
@@ -109,7 +123,7 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     matfile1 = load_mat(path)
     acq_dict["array"] = matfile1[name]["data"]
     data_string = matfile1[name]["UserData"]["headerString"]
-    acq_dict["epoch"] = re.findall("epoch=(\D?\d*)", data_string)[0]
+    acq_dict["epoch"] = re.findall(r"epoch=(\D?\d*)", data_string)[0]
     analog_input = matfile1[name]["UserData"]["ai"]
     acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
     acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
@@ -117,14 +131,14 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     acq_dict["pulse_amp"] = 0.0
     if analog_input == 0:
         # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
-        acq_dict["pulse_pattern"] = re.findall("pulseToUse0=(\D?\d*)", data_string)[0]
+        acq_dict["pulse_pattern"] = re.findall(r"pulseToUse0=(\D?\d*)", data_string)[0]
         amp, start, end, ramp, duration = find_pulse_data(
             data_string, "pulseString_ao0=(.*?)state"
         )
 
     elif analog_input == 1:
         # r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
-        acq_dict["pulse_pattern"] = re.findall("pulseToUse1=(\D?\d*)", data_string)[0]
+        acq_dict["pulse_pattern"] = re.findall(r"pulseToUse1=(\D?\d*)", data_string)[0]
         amp, start, end, ramp, duration = find_pulse_data(
             data_string, "pulseString_ao1=(.*?)state"
         )
@@ -145,7 +159,9 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     acq_dict["rc_amp"] = rc_amp
     acq_dict["rc_check_start"] = rc_start
     acq_dict["rc_check_end"] = rc_end
-    acq_dict["_rc_check_duration"] = int(acq_dict["_rc_check_end"]-acq_dict["_rc_check_start"])
+    acq_dict["_rc_check_duration"] = int(
+        acq_dict["_rc_check_end"] - acq_dict["_rc_check_start"]
+    )
     return acq_dict
 
 
@@ -285,3 +301,20 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
             if key not in ["postsynaptic_events", "final_events"]:
                 data[key] = np.array(data[key])
     return data
+
+
+def download_scanimage_test_acquisitions(
+    parent_url: str, acq_type: str, acq_prefix: str, acqs: list[int], cache_path=None
+):
+    if cache_path is None:
+        download_dir = check_dir()
+    cache_path = download_dir / acq_type
+    if not cache_path.exists():
+        cache_path.mkdir()
+    files = []
+    for i in range(acqs[0], acqs[1] + 1):
+        temp_url = f"{parent_url}/{acq_type}/{acq_prefix}{i}.mat"
+        temp_cache = cache_path / f"{acq_prefix}{i}.mat"
+        files.append(temp_cache)
+        _ = request.urlretrieve(temp_url, temp_cache)
+    return files

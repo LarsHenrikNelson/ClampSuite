@@ -64,13 +64,13 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.deleted_events = 0
         self.baseline_corr = baseline_corr
         self.rc_check = rc_check
-        self._rc_check_offset = self._rc_check_start - int(rc_check_start * self.s_r_c)
 
         # User must specify rc check start b/c due to how scanimage saves rc check info
         self.rc_check_start = rc_check_start
         self.rc_check_end = rc_check_end
         self._rc_check_start = int(rc_check_start * self.s_r_c)
         self._rc_check_end = int(rc_check_end * self.s_r_c)
+        self._rc_check_offset = self._rc_check_start - int(rc_check_start * self.s_r_c)
 
         if not debug:
             self.run_analysis()
