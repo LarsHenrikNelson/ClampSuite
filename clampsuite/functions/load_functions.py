@@ -2,7 +2,7 @@ import json
 import re
 from math import nan
 from pathlib import PurePath, PurePosixPath, PureWindowsPath
-from typing import Union
+from typing import Union, Literal
 import urllib.request as request
 
 import numpy as np
@@ -11,7 +11,12 @@ from scipy.io import loadmat, matlab
 from .startup import check_dir
 
 
-PARENT_URL = "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master/ScanImage"
+SCANIMAGE_DATA_URL = (
+    "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master/ScanImage"
+)
+CSJSON_DATA_URL = (
+    "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master/CS_JSON"
+)
 URLS = {
     "interneuron_current_clamp": ([281, 332], "AD0_"),
     "msn_current_clamp": ([1, 56], "AD0_"),
@@ -303,8 +308,13 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
     return data
 
 
-def download_scanimage_test_acquisitions(
-    parent_url: str, acq_type: str, acq_prefix: str, acqs: list[int], cache_path=None
+def download_test_acquisitions(
+    parent_url: str,
+    acq_type: str,
+    acq_prefix: str,
+    acqs: list[int],
+    cache_path=None,
+    filetype: Literal["json", "mat"] = "mat",
 ):
     if cache_path is None:
         download_dir = check_dir()
@@ -313,7 +323,7 @@ def download_scanimage_test_acquisitions(
         cache_path.mkdir()
     files = []
     for i in range(acqs[0], acqs[1] + 1):
-        temp_url = f"{parent_url}/{acq_type}/{acq_prefix}{i}.mat"
+        temp_url = f"{parent_url}/{acq_type}/{acq_prefix}{i}.{filetype}"
         temp_cache = cache_path / f"{acq_prefix}{i}.mat"
         files.append(temp_cache)
         if not temp_cache.exists():
