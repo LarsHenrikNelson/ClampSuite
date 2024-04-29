@@ -179,19 +179,19 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
             stems_x = np.stack([array_x, array_x], axis=-1).flatten()
             return array_x, array_y, stems_x, stems_y
 
-    def save_data(self, save_filename: str):
-        """
-        This function saves the resulting pandas data frames to an excel file.
-        The function saves the data to the current directory so all that is
-        needed is a name for the excel file.
-        """
-        prog_data = pd.DataFrame(self.program_data, index=None)
-        with pd.ExcelWriter(
-            f"{save_filename}.xlsx", mode="w", engine="openpyxl"
-        ) as writer:
-            for key, df in self.df_dict.items():
-                df.to_excel(writer, index=False, sheet_name=key)
-            prog_data.to_excel(writer, index=False, sheet_name="Program data")
+    # def save_data(self, save_filename: str):
+    #     """
+    #     This function saves the resulting pandas data frames to an excel file.
+    #     The function saves the data to the current directory so all that is
+    #     needed is a name for the excel file.
+    #     """
+    #     prog_data = pd.DataFrame(self.program_data, index=None)
+    #     with pd.ExcelWriter(
+    #         f"{save_filename}.xlsx", mode="w", engine="openpyxl"
+    #     ) as writer:
+    #         for key, df in self.df_dict.items():
+    #             df.to_excel(writer, index=False, sheet_name=key)
+    #         prog_data.to_excel(writer, index=False, sheet_name="Program data")
 
     def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)

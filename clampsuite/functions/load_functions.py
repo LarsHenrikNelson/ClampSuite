@@ -316,5 +316,6 @@ def download_scanimage_test_acquisitions(
         temp_url = f"{parent_url}/{acq_type}/{acq_prefix}{i}.mat"
         temp_cache = cache_path / f"{acq_prefix}{i}.mat"
         files.append(temp_cache)
-        _ = request.urlretrieve(temp_url, temp_cache)
+        if not temp_cache.exists():
+            _ = request.urlretrieve(temp_url, temp_cache)
     return files

@@ -187,20 +187,17 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         df.columns = columns
         self.df_dict[name] = df
 
-    def save_data(self, save_filename: str):
-        """
-        This function saves the resulting pandas data frames to an excel file.
-        The function saves the data to the current directory so all that is
-        needed is a name for the excel file.
-        """
-        with pd.ExcelWriter(
-            f"{save_filename}.xlsx", mode="w", engine="xlsxwriter"
-        ) as writer:
-            for key, value in self.df_dict.items():
-                if key == "Final data":
-                    value.to_excel(writer, sheet_name=key)
-                else:
-                    value.to_excel(writer, index=False, sheet_name=key)
+    # def save_data(self, save_filename: str):
+    #     """
+    #     This function saves the resulting pandas data frames to an excel file.
+    #     The function saves the data to the current directory so all that is
+    #     needed is a name for the excel file.
+    #     """
+    #     with pd.ExcelWriter(
+    #         f"{save_filename}.xlsx", mode="w", engine="xlsxwriter"
+    #     ) as writer:
+    #         for key, value in self.df_dict.items():
+    #             value.to_excel(writer, index=False, sheet_name=key)
 
     def pulse_averages(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         df_pulse = raw_df.loc[raw_df["Ramp"] == 0]

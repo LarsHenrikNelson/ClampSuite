@@ -55,17 +55,17 @@ class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
             final_df.reset_index(inplace=True)
         self.df_dict["Final data"] = final_df
 
-    def save_data(self, save_filename: str):
-        """
-        This function saves the resulting pandas data frames to an excel file.
-        The function saves the data to the current directory so all that is
-        needed is a name for the excel file.
-        """
-        with pd.ExcelWriter(
-            f"{save_filename}.xlsx", mode="w", engine="openpyxl"
-        ) as writer:
-            for key, df in self.df_dict.items():
-                df.to_excel(writer, index=False, sheet_name=key)
+    # def save_data(self, save_filename: str):
+    #     """
+    #     This function saves the resulting pandas data frames to an excel file.
+    #     The function saves the data to the current directory so all that is
+    #     needed is a name for the excel file.
+    #     """
+    #     with pd.ExcelWriter(
+    #         f"{save_filename}.xlsx", mode="w", engine="openpyxl"
+    #     ) as writer:
+    #         for key, df in self.df_dict.items():
+    #             df.to_excel(writer, index=False, sheet_name=key)
 
     def load_data(self, file_path: str):
         self.df_dict = pd.read_excel(file_path, sheet_name=None)
