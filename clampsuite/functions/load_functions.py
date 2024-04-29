@@ -134,19 +134,14 @@ def load_scanimage_file(path: Union[str, PurePath]) -> dict:
     acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
     acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
     acq_dict["pulse_amp"] = 0.0
-    if analog_input == 0:
-        # r = re.findall(r"pulseString_ao0=(.*?)state", data_string)
-        acq_dict["pulse_pattern"] = re.findall(r"pulseToUse0=(\D?\d*)", data_string)[0]
-        amp, start, end, ramp, duration = find_pulse_data(
-            data_string, "pulseString_ao0=(.*?)state"
-        )
 
-    elif analog_input == 1:
-        # r = re.findall(r"pulseString_ao1=(.*?)state", data_string)
-        acq_dict["pulse_pattern"] = re.findall(r"pulseToUse1=(\D?\d*)", data_string)[0]
-        amp, start, end, ramp, duration = find_pulse_data(
-            data_string, "pulseString_ao1=(.*?)state"
-        )
+    acq_dict["pulse_pattern"] = re.findall(
+        rf"pulseToUse{analog_input}=(\D?\d*)", data_string
+    )[0]
+    amp, start, end, ramp, duration = find_pulse_data(
+        data_string, f"pulseString_ao{analog_input}=(.*?)state"
+    )
+
     acq_dict["pulse_amp"] = amp
     acq_dict["_pulse_start"] = int(start * acq_dict["s_r_c"])
     if end > 0:

@@ -2,7 +2,8 @@ import pytest
 
 from clampsuite.functions.load_functions import (
     download_test_acquisitions,
-    PARENT_URL,
+    SCANIMAGE_DATA_URL,
+    CSJSON_DATA_URL,
     URLS,
 )
 
@@ -13,7 +14,7 @@ def current_clamp_data_scanimage():
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
     files = download_test_acquisitions(
-        parent_url=PARENT_URL,
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[-1] - 23],
@@ -27,7 +28,7 @@ def current_clamp_data_json():
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
     files = download_test_acquisitions(
-        parent_url=PARENT_URL,
+        parent_url=CSJSON_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[-1] - 23],
@@ -42,7 +43,7 @@ def msn_mepsc_data_scanimage():
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
     files = download_test_acquisitions(
-        parent_url=PARENT_URL,
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[-1] - 5],
@@ -57,7 +58,7 @@ def olfp_data_scanimage():
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
     files = download_test_acquisitions(
-        parent_url=PARENT_URL,
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[-1]],
@@ -72,7 +73,7 @@ def oepsc_data_scanimage():
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
     files = download_test_acquisitions(
-        parent_url=PARENT_URL,
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[-1]],
