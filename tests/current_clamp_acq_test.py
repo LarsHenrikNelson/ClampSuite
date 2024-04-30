@@ -5,9 +5,9 @@ from clampsuite.acq import (
     CurrentClampAcq,
 )
 from clampsuite.functions.load_functions import (
-    download_scanimage_test_acquisitions,
+    download_test_acquisitions,
     load_scanimage_file,
-    PARENT_URL,
+    SCANIMAGE_DATA_URL,
     URLS,
 )
 
@@ -21,8 +21,8 @@ def test_current_clamp_no_spikes():
     acq_type = "interneuron_current_clamp"
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
-    files = download_scanimage_test_acquisitions(
-        parent_url=PARENT_URL,
+    files = download_test_acquisitions(
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[0], test_files[0]],
@@ -41,11 +41,12 @@ def test_current_clamp_spikes():
     acq_type = "interneuron_current_clamp"
     prefix = URLS[acq_type][1]
     test_files = URLS[acq_type][0]
-    files = download_scanimage_test_acquisitions(
-        parent_url=PARENT_URL,
+    files = download_test_acquisitions(
+        parent_url=SCANIMAGE_DATA_URL,
         acq_type=acq_type,
         acq_prefix=prefix,
         acqs=[test_files[-1], test_files[-1]],
+        filetype="mat",
     )
     data = load_scanimage_file(files[0])
 
