@@ -8,7 +8,7 @@ on:
     - cron: '0 6 * * 1'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-develop:
