@@ -33,7 +33,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.find_voltage_sag()
             self.find_baseline_stability()
             self.find_spike_parameters()
-            self.first_spike_parameters()
+            self.find_first_spike()
             self.get_ramp_rheo()
             self.find_spike_width()
             self.find_AHP_peak()
@@ -120,11 +120,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 self.iei = [np.nan]
                 self.iei_mean = np.nan
 
-            # While many papers use a single threshold to find the threshold
-            # potential this does not work if you want to analyze both
-            # interneurons and other neuron types. I have created a shifting
-            # threshold based on where the maximum velocity occurs of the first
-            # spike occurs.
             if self.ramp == "0":
                 # This takes the last value of an array of values that are
                 # less than the threshold of the second derivative. It was
@@ -152,17 +147,18 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
             peaks, _ = signal.find_peaks(
                 dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
-                height=1,
+                height=2,
             )
-            # if peaks.size == 0:
-            #     peaks, _ = signal.find_peaks(
-            #         dddv_zscored[self._pulse_start :], prominence=5
-            #     )
             peaks = peaks - 1 + self._pulse_start + int(1 * self.s_r_c)
         elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
         elif self.threshold_method == "legacy":
+            # While many papers use a single threshold to find the threshold
+            # potential this does not work if you want to analyze both
+            # interneurons and other neuron types. I have created a shifting
+            # threshold based on where the maximum velocity occurs of the first
+            # spike occurs.
             peak_dv, _ = signal.find_peaks(dv, height=6)
             try:
                 peaks = (
@@ -180,7 +176,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         rheo_x = peaks[0]
         return rheo_x
 
-    def first_spike_parameters(self):
+    def find_first_spike(self):
         """This function analyzes the parameter of the first action potential in
         a pulse that contains at least one action potential.
         """
@@ -224,6 +220,22 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
                 # Extract the first action potential based on the ap_index.
                 self.first_ap = np.split(self.array, self.ap_index)[1]
+
+                # dv = np.gradient(
+                #     self.array[self._pulse_start + int(1 * self.s_r_c) : self.peaks[2]]
+                # )
+                # ddv = np.gradient(dv)
+                # dddv = np.gradient(ddv)
+                # dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
+                # peaks, _ = signal.find_peaks(
+                #     dddv_zscored,
+                #     height=2,
+                # )
+                # peaks += self._pulse_start + int(1 * self.s_r_c)
+
+                # start = int(5 * self.s_r_c) - peaks[0]
+                # end = peaks[2]
+                # self.first_ap = self.array[start:end].copy()
 
             elif self.ramp == "1":
                 # To extract the first action potential and to find the

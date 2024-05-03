@@ -1099,13 +1099,15 @@ class currentClampWidget(DragDropWidget):
                 table.setData(value.T.to_dict())
                 self.table_dict["key"] = table
                 self.df_tabs.addTab(table, key)
-            self.plotIVCurve()
+            self.plotIVCurve("Delta V (mV)")
+            if "Voltage sag (mV)" in fa.df_dict.keys():
+                self.plotIVCurve("Voltage sag (mV)")
             if fa.hertz:
-                self.plotSpikeFrequency(fa.df_dict["Hertz"])
+                self.plotSpikeFrequency(fa.df_dict["Hertz"].copy())
             if fa.pulse_ap:
-                self.plotPulseAP(fa.df_dict["Pulse APs"])
+                self.plotAP(fa.df_dict["Pulse APs"].copy(), "Pulse")
             if fa.ramp_ap:
-                self.plotRampAP(fa.df_dict["Ramp APs"])
+                self.plotAP(fa.df_dict["Ramp APs"].copy(), "Ramp")
             self.pbar.setFormat("Final data loaded")
         self.calculate_parameters.setEnabled(True)
         self.analyze_acq_button.setEnabled(True)
