@@ -27,8 +27,9 @@ def test_download():
 
 def test_load_scanimage(current_clamp_data_scanimage):
     out = load_scanimage_file(current_clamp_data_scanimage[0])
-    assert out
+    assert out["array"].size > 0
 
 
-# def test_load_json():
-#     out = load_json_file()
+def test_load_json(current_clamp_data_json):
+    out = load_json_file(current_clamp_data_json[0])
+    assert out["array"].size > 0

@@ -23,6 +23,7 @@ def current_clamp_data_scanimage():
     return files
 
 
+@pytest.fixture(scope="session")
 def current_clamp_data_json():
     acq_type = "msn_current_clamp"
     prefix = URLS[acq_type][1]

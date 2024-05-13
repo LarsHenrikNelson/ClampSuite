@@ -319,7 +319,7 @@ def download_test_acquisitions(
     files = []
     for i in range(acqs[0], acqs[1] + 1):
         temp_url = f"{parent_url}/{acq_type}/{acq_prefix}{i}.{filetype}"
-        temp_cache = cache_path / f"{acq_prefix}{i}.mat"
+        temp_cache = cache_path / f"{acq_prefix}{i}.{filetype}"
         files.append(temp_cache)
         if not temp_cache.exists():
             _ = request.urlretrieve(temp_url, temp_cache)
