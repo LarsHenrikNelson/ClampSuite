@@ -24,6 +24,7 @@ URLS = {
     "msn_olfp": ([1, 10], "AD1_"),
     "msn_oepsc": ([1, 10], "AD0_"),
     "interneuron_mepsc": ([1, 10], "AD0_"),
+    "paired_pulse": ([1, 10], "AD0_"),
 }
 
 
@@ -87,6 +88,16 @@ def load_mat(filename: str) -> dict:
     return _check_vars(data)
 
 
+def find_stim_pulses(data_string):
+    m = re.findall("lastLinesUsed={(.*?)}\rstate", data_string)
+    pulse_output = 0
+    if len(m) == 1:
+        m = m[0].split()
+        pulse_output = [i.replace("'", "") for i in m]
+        pulse_output = [i for i in pulse_output if i not in {"ao1", "ao0"}]
+    return pulse_output
+
+
 def find_pulse_data(data_string, component):
     temp_string = re.findall(component, data_string)
     amp = 0.0
@@ -114,6 +125,29 @@ def find_pulse_data(data_string, component):
         if len(width_temp) == 1:
             ramp = ramp_temp[0]
     return amp, start, end, ramp, duration
+
+
+def find_stim_pulse_data(data_string, component):
+    temp_string = re.findall(f"pulseString_{component}=(.*?)state", data_string)
+    pulse_width = 0.0
+    num_pulses = 0
+    pulse_start = 0.0
+    isi = 0.0
+    if len(temp_string) == 1:
+        temp_string = temp_string[0]
+        pulse_start = re.findall("delay=(.*?);", temp_string)
+        if len(pulse_start) == 1:
+            pulse_start = float(pulse_start[0])
+        pulse_width = re.findall("pulseWidth=(.*?);", temp_string)
+        if len(pulse_width) == 1:
+            pulse_width = float(pulse_width[0])
+        num_pulses = re.findall("numPulses=(.*?);", temp_string)
+        if len(num_pulses) == 1:
+            num_pulses = int(num_pulses[0])
+        isi = re.findall("isi=(.*?);", temp_string)
+        if len(isi) == 1:
+            isi = float(isi[0])
+    return num_pulses, isi, pulse_start
 
 
 def load_scanimage_file(path: Union[str, PurePath]) -> dict:

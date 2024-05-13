@@ -81,3 +81,18 @@ def oepsc_data_scanimage():
         filetype="mat",
     )
     return files
+
+
+@pytest.fixture(scope="session")
+def paired_pulse_data_scanimage():
+    acq_type = "paired_pulse"
+    prefix = URLS[acq_type][1]
+    test_files = URLS[acq_type][0]
+    files = download_test_acquisitions(
+        parent_url=SCANIMAGE_DATA_URL,
+        acq_type=acq_type,
+        acq_prefix=prefix,
+        acqs=[test_files[0], test_files[-1]],
+        filetype="mat",
+    )
+    return files
