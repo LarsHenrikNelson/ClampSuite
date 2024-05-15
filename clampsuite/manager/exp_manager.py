@@ -32,7 +32,9 @@ class ExpManager:
         self.analyzed = False
 
     def create_exp(
-        self, analysis: Union[str, None], file: Union[list, tuple, str, Path, PurePath]
+        self,
+        analysis: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"],
+        file: Union[list, tuple, str, Path, PurePath],
     ) -> None:
         self._load_acqs(analysis, file)
         for key in self.exp_dict.keys():
@@ -219,7 +221,7 @@ class ExpManager:
 
     @staticmethod
     def load_acq(
-        analysis: Union[Literal["mini", "current_clamp", "lfp", "oepsc"], None],
+        analysis: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"],
         path: Union[str, Path, PurePath],
     ) -> Acquisition:
         path_obj = PurePath(path)
