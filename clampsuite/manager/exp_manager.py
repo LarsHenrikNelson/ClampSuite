@@ -291,7 +291,9 @@ class ExpManager:
     def get_acqs(self, exp: str) -> list:
         return [i.name for i in self.exp_dict[exp].values()]
 
-    def delete_acq(self, exp: str, acq: int) -> None:
+    def delete_acq(
+        self, exp: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"], acq: int
+    ) -> None:
         item = self.exp_dict[exp].pop(acq)
         if exp in self.deleted_acqs:
             item.delete()
