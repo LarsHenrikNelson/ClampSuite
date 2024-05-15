@@ -188,54 +188,15 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.indices = np.nan
         else:
             if self.ramp == "0":
-                # To extract the first action potential and to find the
-                # half-width of the spike you have create an array whose value
-                # is the spike threshold wherever the value drops below the
-                # spike threshold. This is used because of how scipy.find_peaks
-                # works and was a robust way to find the first
-                # action_potential.
-                self.array.copy()
-                mask = np.array(self.array > self.spike_threshold)
-
-                # First using a mask to find the indices of each action
-                # potential.
-                self.indices = np.nonzero(mask[1:] != mask[:-1])[0]
-                if self.indices.size > 2:
-                    self.indices = self.indices[self.indices >= self.rheo_x]
-                    if self.indices.size > 2:
-                        self.ap_index = [
-                            self.indices[0] - int(5 * self.s_r_c),
-                            self.indices[2],
-                        ]
-                    else:
-                        self.ap_index = [
-                            self.indices[0] - int(5 * self.s_r_c),
-                            self._pulse_end,
-                        ]
+                if len(self.peaks) > 1:
+                    temp_array = self.array[self.peaks[0] : self.peaks[1]]
                 else:
-                    self.ap_index = [
-                        self.indices[0] - int(5 * self.s_r_c),
-                        self._pulse_end,
-                    ]
-
-                # Extract the first action potential based on the ap_index.
-                self.first_ap = np.split(self.array, self.ap_index)[1]
-
-                # dv = np.gradient(
-                #     self.array[self._pulse_start + int(1 * self.s_r_c) : self.peaks[2]]
-                # )
-                # ddv = np.gradient(dv)
-                # dddv = np.gradient(ddv)
-                # dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
-                # peaks, _ = signal.find_peaks(
-                #     dddv_zscored,
-                #     height=2,
-                # )
-                # peaks += self._pulse_start + int(1 * self.s_r_c)
-
-                # start = int(5 * self.s_r_c) - peaks[0]
-                # end = peaks[2]
-                # self.first_ap = self.array[start:end].copy()
+                    temp_array = self.array[self.peaks[0] : self._pulse_end]
+                indexes = np.where(temp_array < self.spike_threshold)[0] + self.peaks[0]
+                start = self.rheo_x - int(5 * self.s_r_c)
+                end = indexes[-1]
+                self.ap_index = [start, end]
+                self.first_ap = self.array[start:end]
 
             elif self.ramp == "1":
                 # To extract the first action potential and to find the
