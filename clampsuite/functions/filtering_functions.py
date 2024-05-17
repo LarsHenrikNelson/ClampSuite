@@ -87,7 +87,7 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_ra
         if low_pass == 0:
             return FilterError(False, "Low_pass must be greater than 0.")
     if high_pass is not None:
-        if high_pass < (sample_rate / 2):
+        if high_pass > (sample_rate / 2):
             return FilterError(
                 False, "High pass must be greater than half the sample_rate"
             )

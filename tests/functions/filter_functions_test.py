@@ -14,7 +14,7 @@ from clampsuite.functions.filtering_functions import (
 @pytest.mark.parametrize(
     "high_pass, high_width, low_pass, low_width, sample_rate, error",
     [
-        (300, 300, 600, 300, 10000, True),
+        (300, 100, 600, 300, 10000, True),
         (None, 300, 600, 300, 10000, False),
         (300, None, 600, 300, 10000, False),
         (300, 300, None, 300, 10000, False),
