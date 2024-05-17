@@ -364,9 +364,9 @@ class ExpManager:
 
     def num_of_del_acqs(self) -> int:
         del_acqs = 0
-        for i in self.deleted_acqs.values():
-            del_acqs += len(i)
-        return i
+        for i in self.deleted_acqs.keys():
+            del_acqs += len(self.deleted_acqs[i].values())
+        return del_acqs
 
     def set_current_acq(self) -> int:
         if self.ui_prefs is not None:
