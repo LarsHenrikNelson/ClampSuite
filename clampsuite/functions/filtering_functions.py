@@ -1,7 +1,13 @@
-from typing import Literal, Union
+from typing import Literal, Union, NamedTuple
 
 import numpy as np
 from scipy import signal
+
+
+class FilterError(NamedTuple):
+    passed: bool
+    error_message: str
+
 
 Filters = Literal[
     "remez_2",
@@ -43,29 +49,66 @@ def median_filter(array: Union[np.ndarray, list], order: int):
 def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate):
     if high_pass is not None and high_width is not None:
         if high_pass < high_width:
-            raise AttributeError("high_pass must be large than high_width")
+            return FilterError(False, "High_pass must be large than high_width.")
+        if high_pass < 0 or high_width < 0:
+            return FilterError(False, "Filter settings cannot be less than 0.")
+        if high_pass > (sample_rate / 2) or high_width > (sample_rate / 2):
+            return FilterError(
+                False, "Filter settings cannot be greater than the sample rate."
+            )
     if low_pass is not None and low_width is not None:
-        if (low_pass + low_width) >= sample_rate:
-            raise AttributeError("low_pass + low_width must be < sample_rate")
+        if (low_pass + low_width) >= (sample_rate / 2):
+            return FilterError(
+                False, "Low_pass + low_width must be less than sample_rate"
+            )
+        if low_pass < 0 or low_width < 0:
+            return FilterError(False, "Filter settings cannot be less than 0.")
+        if low_pass > (sample_rate / 2) or low_width > (sample_rate / 2):
+            return FilterError(
+                False,
+                "Filter settings cannot be greater than the half the sample rate.",
+            )
     if high_pass is not None and high_width is None:
-        raise AttributeError("high_width must be provided is low_pass is provided")
+        return FilterError(
+            False, "High_width must be provided if high_pass is provided"
+        )
     if low_pass is not None and low_width is None:
-        raise AttributeError("low_width must be provided is low_pass is provided")
+        return FilterError(False, "Low_width must be provided if low_pass is provided")
     if high_width is not None and high_pass is None:
-        raise AttributeError("high_pass must be provided is high_width is provided")
+        return FilterError(
+            False, "High_pass must be provided if high_width is provided"
+        )
     if low_width is not None and low_pass is None:
-        raise AttributeError("low_pass must be provided is low_width is provided")
+        return FilterError(False, "Low_pass must be provided if low_width is provided")
     if low_pass is not None and high_pass is not None:
         if low_pass < high_pass:
-            raise AttributeError("low_pass must be > high_pass")
+            return FilterError(False, "Low_pass must be greater than high_pass.")
     if low_pass is not None:
         if low_pass == 0:
-            raise AttributeError("low_pass must be > 0")
+            return FilterError(False, "Low_pass must be greater than 0.")
     if high_pass is not None:
-        if high_pass == sample_rate:
-            raise AttributeError("high pass must be < sample_rate")
+        if high_pass < (sample_rate / 2):
+            return FilterError(
+                False, "High pass must be greater than half the sample_rate"
+            )
         if high_pass == 0:
-            raise AttributeError("high_pass must be > 0")
+            return FilterError(False, "High_pass must be greater than 0")
+    return FilterError(True, "")
+
+
+def check_iir_filter_input(high_pass, low_pass, sample_rate):
+    if high_pass is None and low_pass is None:
+        return FilterError(False, "High_pass or low_pass or both must be provided.")
+    if high_pass is not None:
+        if high_pass > sample_rate:
+            return FilterError(False, "High_pass must be less than sample_rate.")
+    if low_pass is not None:
+        if low_pass > sample_rate:
+            return FilterError(False, "High_pass must be less than sample_rate.")
+    if high_pass is not None and low_pass is not None:
+        if low_pass < high_pass:
+            return FilterError(False, "High_pass must be less than low_pass.")
+    return FilterError(True, "")
 
 
 def bessel(
