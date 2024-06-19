@@ -70,7 +70,6 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.rc_check_end = rc_check_end
         self._rc_check_start = int(rc_check_start * self.s_r_c)
         self._rc_check_end = int(rc_check_end * self.s_r_c)
-        self._rc_check_offset = self._rc_check_start - int(rc_check_start * self.s_r_c)
 
         if not debug:
             self.run_analysis()
@@ -104,10 +103,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
         self.filter_array(temp_array)
 
     def get_rc_check(self):
-        if self._rc_check_end == len(self.array):
-            rc_check_array = self.array[self._rc_check_start :]
-        else:
-            rc_check_array = self.array[self._rc_check_end :]
+        rc_check_array = self.array[self._rc_check_start : self._rc_check_end]
         return rc_check_array
 
     def set_array(self):
@@ -131,8 +127,8 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             rc_check_array = self.get_rc_check()
             self.rs = calc_rs(
                 rc_check_array,
-                self._rc_check_offset,
-                self._rc_check_duration,
+                int(self._rc_check_pulse_start - self._rc_check_start),
+                int(self._rc_check_pulse_end - self.rc_check_pulse_start),
                 self.rc_amp,
             )
         else:
