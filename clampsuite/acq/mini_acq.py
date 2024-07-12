@@ -128,7 +128,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
             self.rs = calc_rs(
                 rc_check_array,
                 int(self._rc_check_pulse_start - self._rc_check_start),
-                int(self._rc_check_pulse_end - self.rc_check_pulse_start),
+                int(self._rc_check_pulse_end - self._rc_check_pulse_start),
                 self.rc_amp,
             )
         else:
