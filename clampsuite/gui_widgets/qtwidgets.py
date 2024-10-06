@@ -10,7 +10,18 @@ from PyQt5.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
-from PyQt5.QtWidgets import QLineEdit, QListView, QSpinBox, QWidget
+from PyQt5.QtWidgets import QLineEdit, QListView, QSpinBox, QWidget, QFrame
+
+
+class FrameWidget(QFrame):
+
+    def __init__(self, parent=None):
+        super(FrameWidget, self).__init__(parent)
+
+        self.setObjectName("parent")
+
+        self.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        self.setStyleSheet(r"QFrame#parent {border: 1px solid; border-color: #404040}")
 
 
 class LineEdit(QLineEdit):

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QFont, QIntValidator, QKeySequence
+from PyQt5.QtGui import QFont, QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
     QCheckBox,
@@ -33,10 +33,13 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from ..functions.kde import create_kde
 from ..functions.template_psc import create_template
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import (
+from ..gui_widgets import (
+    BaselineWidget,
     DragDropWidget,
-    LineEdit,
+    FilterWidget,
+    MiniWidget,
     ListView,
+    RCCheckWidget,
     ThreadWorker,
     WorkerSignals,
 )
@@ -99,22 +102,49 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
-        self.extra_layout = QVBoxLayout()
-        self.other_layout = QHBoxLayout()
-        self.input_layout = QFormLayout()
-        self.load_layout = QVBoxLayout()
-        self.settings_layout = QFormLayout()
+
         self.template_form = QFormLayout()
         self.tab1.setLayout(self.setup_layout)
-        self.setup_layout.addLayout(self.input_layout, 0)
-        self.setup_layout.addLayout(self.extra_layout, 1)
-        self.setup_layout.addLayout(self.load_layout, 0)
-        self.extra_layout.addLayout(self.other_layout, 10)
-        self.other_layout.addLayout(self.settings_layout, 0)
-        self.other_layout.addLayout(self.template_form, 0)
-        self.setup_layout.addStretch(1)
 
-        # Tab1 input
+        self.input_layout = QVBoxLayout()
+        self.setup_layout.addLayout(self.input_layout, 0)
+
+        self.baseline_widget = BaselineWidget()
+        self.input_layout.addWidget(self.baseline_widget)
+
+        self.rc_widget = RCCheckWidget()
+        self.input_layout.addWidget(self.rc_widget)
+
+        self.filter_widget = FilterWidget()
+        self.input_layout.addWidget(self.filter_widget)
+
+        self.input_buttons_layout = QFormLayout()
+
+        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
+        self.input_buttons_layout.addRow(self.analyze_acq_button)
+        self.analyze_acq_button.setObjectName("analyze_acq_button")
+        self.analyze_acq_button.clicked.connect(self.analyze)
+
+        self.calculate_parameters = QPushButton("Final analysis")
+        self.input_buttons_layout.addRow(self.calculate_parameters)
+        self.calculate_parameters.setObjectName("calculate_parameters")
+        self.calculate_parameters.clicked.connect(self.runFinalAnalysis)
+
+        self.reset_button = QPushButton("Reset analysis")
+        self.input_buttons_layout.addRow(self.reset_button)
+        self.reset_button.clicked.connect(self.reset)
+        self.input_layout.addLayout(self.input_buttons_layout)
+        self.input_layout.addStretch()
+
+        self.reset_button.setObjectName("reset_button")
+
+        self.mini_settings = MiniWidget()
+        self.setup_layout.addLayout(self.mini_settings)
+
+        # Setup for the drag and drop load layout
+        self.load_layout = QVBoxLayout()
+        self.setup_layout.addLayout(self.load_layout, 0)
+
         self.analysis_type = "mini"
         self.load_acq_label = QLabel("Acquisition(s)")
         self.load_layout.addWidget(self.load_acq_label)
@@ -124,269 +154,15 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_widget.setAnalysisType(self.analysis_type)
         self.load_layout.addWidget(self.load_widget)
 
-        self.b_start_edit = LineEdit()
-        self.b_start_edit.setObjectName("b_start_edit")
-        self.b_start_edit.setEnabled(True)
-        self.b_start_edit.setText("0")
-        self.input_layout.addRow("Baseline start (ms)", self.b_start_edit)
-
-        self.b_end_edit = LineEdit()
-        self.b_end_edit.setObjectName("b_end_edit")
-        self.b_end_edit.setEnabled(True)
-        self.b_end_edit.setText("80")
-        self.input_layout.addRow("Baseline end (ms)", self.b_end_edit)
-
-        self.rc_checkbox = QCheckBox()
-        self.rc_checkbox.setObjectName("rc_checkbox")
-        self.rc_checkbox.setChecked(True)
-        self.rc_checkbox.setTristate(False)
-        self.input_layout.addRow("RC check", self.rc_checkbox)
-
-        self.rc_check_start_edit = LineEdit()
-        self.rc_check_start_edit.setEnabled(True)
-        self.rc_check_start_edit.setObjectName("rc_check_start_edit")
-        self.rc_check_start_edit.setText("10000")
-        self.input_layout.addRow("RC check start (ms)", self.rc_check_start_edit)
-
-        self.rc_check_end_edit = LineEdit()
-        self.rc_check_end_edit.setEnabled(True)
-        self.rc_check_end_edit.setObjectName("rc_check_end_edit")
-        self.rc_check_end_edit.setText("10300")
-        self.input_layout.addRow("RC check end (ms)", self.rc_check_end_edit)
-
-        filters = ExpManager.filters
-        self.filter_selection = QComboBox(self)
-        self.filter_selection.addItems(filters)
-        self.filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
-        self.filter_selection.currentTextChanged.connect(self.setFiltProp)
-        self.filter_selection.setObjectName("filter_selection")
-        self.input_layout.addRow("Filter type", self.filter_selection)
-
-        self.order_label = QLabel("Order")
-        self.order_edit = LineEdit()
-        self.order_edit.setValidator(QIntValidator())
-        self.order_edit.setObjectName("order_edit")
-        self.order_edit.setEnabled(True)
-        self.order_edit.setText("201")
-        self.input_layout.addRow(self.order_label, self.order_edit)
-
-        self.high_pass_edit = LineEdit()
-        self.high_pass_edit.setValidator(QIntValidator())
-        self.high_pass_edit.setObjectName("high_pass_edit")
-        self.high_pass_edit.setEnabled(True)
-        self.input_layout.addRow("High pass", self.high_pass_edit)
-
-        self.high_width_edit = LineEdit()
-        self.high_width_edit.setValidator(QIntValidator())
-        self.high_width_edit.setObjectName("high_width_edit")
-        self.high_width_edit.setEnabled(True)
-        self.input_layout.addRow("High width", self.high_width_edit)
-
-        self.low_pass_edit = LineEdit()
-        self.low_pass_edit.setValidator(QIntValidator())
-        self.low_pass_edit.setObjectName("low_pass_edit")
-        self.low_pass_edit.setEnabled(True)
-        self.low_pass_edit.setText("600")
-        self.input_layout.addRow("Low pass", self.low_pass_edit)
-
-        self.low_width_edit = LineEdit()
-        self.low_width_edit.setValidator(QIntValidator())
-        self.low_width_edit.setObjectName("low_width_edit")
-        self.low_width_edit.setEnabled(True)
-        self.low_width_edit.setText("600")
-        self.input_layout.addRow("Low width", self.low_width_edit)
-
-        windows = ExpManager.windows
-        self.window_edit = QComboBox(self)
-        self.window_edit.addItems(windows)
-        self.window_edit.setMinimumContentsLength(len(max(windows, key=len)))
-        self.window_edit.currentTextChanged.connect(self.windowChanged)
-        self.window_edit.setObjectName("window_edit")
-        self.input_layout.addRow("Window type", self.window_edit)
-
-        self.beta_sigma_label = QLabel("Beta")
-        self.beta_sigma = QDoubleSpinBox()
-        self.beta_sigma.setMinimumWidth(70)
-        self.beta_sigma.setObjectName("beta_sigma")
-        self.input_layout.addRow(self.beta_sigma_label, self.beta_sigma)
-
-        self.polyorder_label = QLabel("Polyorder")
-        self.polyorder_edit = LineEdit()
-        self.polyorder_edit.setValidator(QIntValidator())
-        self.polyorder_edit.setObjectName("polyorder_edit")
-        self.polyorder_edit.setEnabled(True)
-        self.input_layout.addRow(self.polyorder_label, self.polyorder_edit)
-
-        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
-        self.input_layout.addRow(self.analyze_acq_button)
-        self.analyze_acq_button.setObjectName("analyze_acq_button")
-        self.analyze_acq_button.clicked.connect(self.analyze)
-
-        self.calculate_parameters = QPushButton("Final analysis")
-        self.input_layout.addRow(self.calculate_parameters)
-        self.calculate_parameters.setObjectName("calculate_parameters")
-        self.calculate_parameters.clicked.connect(self.runFinalAnalysis)
-
-        self.reset_button = QPushButton("Reset analysis")
-        self.input_layout.addRow(self.reset_button)
-        self.reset_button.clicked.connect(self.reset)
-
-        self.reset_button.setObjectName("reset_button")
-
-        self.sensitivity_edit = LineEdit()
-        self.sensitivity_edit.setObjectName("sensitivity_edit")
-        self.sensitivity_edit.setEnabled(True)
-        self.sensitivity_edit.setText("4")
-        self.settings_layout.addRow("Deconvolution threshold", self.sensitivity_edit)
-
-        self.amp_thresh_edit = LineEdit()
-        self.amp_thresh_edit.setObjectName("amp_thresh_edit")
-        self.amp_thresh_edit.setEnabled(True)
-        self.amp_thresh_edit.setText("4")
-        self.settings_layout.addRow("Amplitude threshold (pA)", self.amp_thresh_edit)
-
-        self.event_spacing_edit = LineEdit()
-        self.event_spacing_edit.setObjectName("mini_spacing_edit")
-        self.event_spacing_edit.setEnabled(True)
-        self.event_spacing_edit.setText("2")
-        self.settings_layout.addRow("Min event spacing (ms)", self.event_spacing_edit)
-
-        self.min_rise_time = LineEdit()
-        self.min_rise_time.setObjectName("min_rise_time")
-        self.min_rise_time.setEnabled(True)
-        self.min_rise_time.setText("0.5")
-        self.settings_layout.addRow("Min rise time (ms)", self.min_rise_time)
-
-        self.max_rise_time = LineEdit()
-        self.max_rise_time.setObjectName("max_rise_time")
-        self.max_rise_time.setEnabled(True)
-        self.max_rise_time.setText("4")
-        self.settings_layout.addRow("Max rise time (ms)", self.max_rise_time)
-
-        self.min_decay = LineEdit()
-        self.min_decay.setObjectName("min_decay")
-        self.min_decay.setEnabled(True)
-        self.min_decay.setText("0.5")
-        self.settings_layout.addRow("Min decay time (ms)", self.min_decay)
-
-        self.event_length = LineEdit()
-        self.event_length.setObjectName("mini_length")
-        self.event_length.setText("30")
-        self.settings_layout.addRow("Max event length (ms)", self.event_length)
-
-        self.decay_rise = QCheckBox()
-        self.decay_rise.setObjectName("decay_rise")
-        self.decay_rise.setChecked(True)
-        self.decay_rise.setTristate(False)
-        self.settings_layout.addRow("Decay slower than rise time", self.decay_rise)
-
-        self.curve_fit_decay = QCheckBox(self)
-        self.curve_fit_decay.setObjectName("curve_fit_decay")
-        self.curve_fit_decay.setChecked(False)
-        self.curve_fit_decay.setTristate(False)
-        self.settings_layout.addRow("Curve fit decay", self.curve_fit_decay)
-
-        fit_types = ["exp", "db_exp"]
-        self.curve_fit_edit = QComboBox(self)
-        self.curve_fit_edit.addItems(fit_types)
-        self.curve_fit_edit.setMinimumContentsLength(len(max(fit_types, key=len)))
-        self.curve_fit_edit.setObjectName("curve_fit_type")
-        self.settings_layout.addRow("Curve fit type", self.curve_fit_edit)
-
-        self.invert_checkbox = QCheckBox(self)
-        self.invert_checkbox.setObjectName("invert_checkbox")
-        self.invert_checkbox.setChecked(False)
-        self.invert_checkbox.setTristate(False)
-        self.settings_layout.addRow(
-            "Invert (for positive currents)", self.invert_checkbox
-        )
-
-        self.decon_type_edit = QComboBox(self)
-        decon_list = ["wiener", "fft", "convolution"]
-        self.decon_type_edit.addItems(decon_list)
-        self.decon_type_edit.setMinimumContentsLength(len(max(decon_list, key=len)))
-        self.decon_type_edit.setObjectName("mini_finding_method_edit")
-        self.settings_layout.addRow("Event finding method", self.decon_type_edit)
-
-        self.baseline_corr_choice = QCheckBox()
-        self.baseline_corr_choice.setChecked(False)
-        self.baseline_corr_choice.setTristate(False)
-        # self.settings_layout.addRow(
-        #     "Baseline correction (experimental)", self.baseline_corr_choice
-        # )
-
-        self.tau_1_edit = LineEdit()
-        self.tau_1_edit.setObjectName("tau_1_edit")
-        self.tau_1_edit.setEnabled(True)
-        self.tau_1_edit.setText("0.3")
-        self.template_form.addRow("Rise tau (ms)", self.tau_1_edit)
-
-        self.tau_2_edit = LineEdit()
-        self.tau_2_edit.setObjectName("tau_2_edit")
-        self.tau_2_edit.setEnabled(True)
-        self.tau_2_edit.setText("5")
-        self.template_form.addRow("Decay tau (ms)", self.tau_2_edit)
-
-        self.amplitude_edit = LineEdit()
-        self.amplitude_edit.setObjectName("amplitude_edit")
-        self.amplitude_edit.setEnabled(True)
-        self.amplitude_edit.setText("-20")
-        self.template_form.addRow("Amplitude (pA)", self.amplitude_edit)
-
-        self.risepower_edit = LineEdit()
-        self.risepower_edit.setObjectName("risepower_edit")
-        self.risepower_edit.setEnabled(True)
-        self.risepower_edit.setText("0.5")
-        self.template_form.addRow("Risepower", self.risepower_edit)
-
-        self.temp_length_edit = LineEdit()
-        self.temp_length_edit.setObjectName("temp_length_edit")
-        self.temp_length_edit.setEnabled(True)
-        self.temp_length_edit.setText("30")
-        self.template_form.addRow("Template length (ms)", self.temp_length_edit)
-
-        self.spacer_edit = LineEdit()
-        self.spacer_edit.setObjectName("spacer_edit")
-        self.spacer_edit.setEnabled(True)
-        self.spacer_edit.setText("1.5")
-        self.template_form.addRow("Spacer (ms)", self.spacer_edit)
-
-        self.sample_rate_edit = LineEdit()
-        self.sample_rate_edit.setObjectName("sample_rate_edit")
-        self.sample_rate_edit.setEnabled(True)
-        self.sample_rate_edit.setText("10000")
-        self.template_form.addRow("Sample rate", self.sample_rate_edit)
-
-        self.template_button = QPushButton("Show template")
-        self.template_form.addRow(self.template_button)
-        # self.template_button.setMinimumWidth(250)
-        self.template_button.clicked.connect(self.createTemplate)
-        self.template_button.setObjectName("template_button")
-
-        self.template_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["Template plot"] = self.template_plot
-        self.template_plot.setLabel(
-            "bottom",
-            text="Time (ms)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.template_plot.setLabel(
-            "left",
-            text="Amplitude (pA)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.template_plot.setObjectName("Template plot")
-        self.template_plot.setMinimumHeight(300)
-        self.extra_layout.addWidget(self.template_plot, 10)
-
-        # Setup for the drag and drop load layout
         self.inspect_acqs_button = QPushButton("Inspect acq(s)")
-        self.load_layout.addWidget(self.inspect_acqs_button)
         self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
+        self.load_layout.addWidget(self.inspect_acqs_button)
 
         self.del_sel_button = QPushButton("Delete selection")
         self.load_layout.addWidget(self.del_sel_button)
         self.del_sel_button.clicked.connect(self.delSelection)
+
+        self.setup_layout.addStretch(1)
 
         # Tab 2 layouts
         self.d1 = Dock("Overview")
@@ -744,25 +520,6 @@ class MiniAnalysisWidget(DragDropWidget):
         }
 
         logger.info("Event analysis GUI created.")
-
-    def windowChanged(self, text):
-        if text == "Gaussian":
-            self.beta_sigma_label.setText("Sigma")
-        else:
-            self.beta_sigma_label.setText("Beta")
-
-    def setFiltProp(self, text):
-        if text == "median":
-            self.order_label.setText("Window size")
-        elif text == "savgol":
-            self.order_label.setText("Window size")
-            self.polyorder_label.setText("Polyorder")
-        elif text == "ewma":
-            self.order_label.setText("Window size")
-            self.polyorder_label.setText("Sum proportion")
-        else:
-            self.order_label.setText("Order")
-            self.polyorder_label.setText("Polyorder")
 
     def clearTables(self):
         if self.table_dict:
