@@ -32,7 +32,7 @@ class RCCheckWidget(FrameWidget):
         self.rc_check_end_edit.setText("10300")
         self.layout.addRow("RC check end (ms)", self.rc_check_end_edit)
 
-    def getRCSettings(self):
+    def getSettings(self):
         rc_args = {
             "baseline_start": self.b_start_edit.toInt(),
             "baseline_end": self.b_end_edit.toInt(),

@@ -81,7 +81,7 @@ class FilterWidget(FrameWidget):
         self.polyorder_edit.setEnabled(True)
         self.layout.addRow(self.polyorder_label, self.polyorder_edit)
 
-    def getFilterSettings(self):
+    def getSettings(self):
         if (
             self.window_edit.currentText() == "gaussian"
             or self.window_edit.currentText() == "kaiser"

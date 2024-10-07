@@ -31,20 +31,19 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.kde import create_kde
-from ..functions.template_psc import create_template
 from ..functions.utilities import round_sig
 from ..gui_widgets import (
     BaselineWidget,
     DragDropWidget,
     FilterWidget,
     MiniWidget,
-    ListView,
     RCCheckWidget,
     ThreadWorker,
     WorkerSignals,
+    DeconInspectionWidget,
+    LoadAcqWidget,
 )
 from ..manager import ExpManager
-from .acq_inspection import AcqInspectionWidget, DeconInspectionWidget
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +96,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.dlg = QMessageBox(self)
 
-        self.inspection_widget = AcqInspectionWidget()
         self.decon_plot = DeconInspectionWidget()
 
         # Tab 1 layouts
@@ -142,25 +140,12 @@ class MiniAnalysisWidget(DragDropWidget):
         self.setup_layout.addLayout(self.mini_settings)
 
         # Setup for the drag and drop load layout
-        self.load_layout = QVBoxLayout()
-        self.setup_layout.addLayout(self.load_layout, 0)
-
         self.analysis_type = "mini"
-        self.load_acq_label = QLabel("Acquisition(s)")
-        self.load_layout.addWidget(self.load_acq_label)
-        self.load_widget = ListView()
-        self.load_widget.model().signals.progress.connect(self.updateProgress)
-        self.load_widget.model().signals.dir_path.connect(self.setWorkingDirectory)
-        self.load_widget.setAnalysisType(self.analysis_type)
-        self.load_layout.addWidget(self.load_widget)
+        self.load_widget = LoadAcqWidget(analysis_type=self.analysis_type)
+        self.load_widget.signals.progress.connect(self.updateProgress)
+        self.load_widget.signals.dir_path.connect(self.setWorkingDirectory)
 
-        self.inspect_acqs_button = QPushButton("Inspect acq(s)")
-        self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
-        self.load_layout.addWidget(self.inspect_acqs_button)
-
-        self.del_sel_button = QPushButton("Delete selection")
-        self.load_layout.addWidget(self.del_sel_button)
-        self.del_sel_button.clicked.connect(self.delSelection)
+        self.setup_layout.addLayout(self.load_acq, 0)
 
         self.setup_layout.addStretch(1)
 
@@ -546,53 +531,6 @@ class MiniAnalysisWidget(DragDropWidget):
         for i in combo_boxes:
             i.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             i.adjustSize()
-
-    def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No acquisitions exist to inspect.")
-            self.errorDialog("No acquisitions exist to inspect.")
-        else:
-            logger.info("Opening acquisition inspection widget.")
-            self.inspection_widget.clearData()
-            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
-            self.inspection_widget.show()
-
-    def delSelection(self):
-        if not self.exp_manager.acqs_exist("mini"):
-            logger.info("No acquisitions exist to remove from analysis list.")
-            self.errorDialog("No acquisitions exist to remove from analysis list.")
-        else:
-            # Deletes the selected acquisitions from the list
-            indices = self.load_widget.selectedIndexes()
-            if len(indices) > 0:
-                self.load_widget.deleteSelection(indices)
-                self.load_widget.clearSelection()
-                logger.info("Removed acquisitions from analysis.")
-
-    def createTemplate(self):
-        logger.info("Creating event template.")
-        self.template_plot.clear()
-        amplitude = self.amplitude_edit.toFloat()
-        tau_1 = self.tau_1_edit.toFloat()
-        tau_2 = self.tau_2_edit.toFloat()
-        risepower = self.risepower_edit.toFloat()
-        length = self.temp_length_edit.toFloat()
-        spacer = self.spacer_edit.toFloat()
-        sample_rate = self.sample_rate_edit.toInt()
-        template = create_template(
-            amplitude,
-            tau_1,
-            tau_2,
-            risepower,
-            length,
-            spacer,
-            sample_rate,
-        )
-        s_r_c = sample_rate / 1000
-        self.template_plot.plot(
-            x=(np.arange(len(template)) / s_r_c), y=template, pen=pg.mkPen(width=3)
-        )
-        logger.info("Event template created and plotted.")
 
     def analyze(self):
         """
@@ -1722,7 +1660,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def createExperiment(self, urls):
         self.pbar("Creating experiment")
-        self.load_widget.model().addData(urls)
+        self.load_widget.addData(urls)
         self.pbar("Experiment created")
 
     def createPrefDict(self):
