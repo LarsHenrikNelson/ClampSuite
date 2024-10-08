@@ -30,7 +30,6 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
 from ..manager import ExpManager
-from .acq_inspection import AcqInspectionWidget
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
@@ -597,7 +596,6 @@ class oEPSCWidget(DragDropWidget):
         self.exp_manager.set_callback(self.updateProgress)
         self.oepsc_view.setData(self.exp_manager)
         self.lfp_view.setData(self.exp_manager)
-        self.inspection_widget = AcqInspectionWidget()
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
         self.last_lfp_point_clicked = []
@@ -619,16 +617,6 @@ class oEPSCWidget(DragDropWidget):
         push_buttons = self.findChildren(QPushButton)
         for i in push_buttons:
             i.setMinimumWidth(80)
-
-    def inspectAcqs(self, analysis_type):
-        if not self.exp_manager.acqs_exist("lfp") and not self.exp_manager.acqs_exist(
-            "oepsc"
-        ):
-            self.fileDoesNotExist()
-        else:
-            self.inspection_widget.clearData()
-            self.inspection_widget.setData(analysis_type, self.exp_manager)
-            self.inspection_widget.show()
 
     def oWindowChanged(self, text):
         if text == "Gaussian":

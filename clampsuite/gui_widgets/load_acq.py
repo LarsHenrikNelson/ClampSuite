@@ -1,16 +1,16 @@
 import logging
 from pathlib import Path
 
-from PyQt5.QtWidgets import QPushButton, QLabel, QVBoxLayout, QListView
 from PyQt5.QtCore import (
     QAbstractListModel,
     Qt,
     QThreadPool,
     pyqtSlot,
 )
+from PyQt5.QtWidgets import QLabel, QListView, QMessageBox, QPushButton, QVBoxLayout
 
 from .acq_inspection import AcqInspectionWidget
-from .qtwidgets import WorkerSignals, ThreadWorker
+from .qtwidgets import ThreadWorker, WorkerSignals
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +168,8 @@ class LoadAcqWidget(QVBoxLayout):
         self.signals = WorkerSignals()
 
         self.inspection_widget = AcqInspectionWidget()
+        self.exp_manager = None
+        self.dlg = QMessageBox()
 
         self.analysis_type = analysis_type
         self.load_acq_label = QLabel("Acquisition(s)")
@@ -186,10 +188,10 @@ class LoadAcqWidget(QVBoxLayout):
         self.addWidget(self.del_sel_button)
         self.del_sel_button.clicked.connect(self.delSelection)
 
-        self.setup_layout.addStretch(1)
-
     def delSelection(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if self.exp_manager is None or not self.exp_manager.acqs_exist(
+            self.analysis_type
+        ):
             logger.info("No acquisitions exist to remove from analysis list.")
             self.errorDialog("No acquisitions exist to remove from analysis list.")
         else:
@@ -201,7 +203,9 @@ class LoadAcqWidget(QVBoxLayout):
                 logger.info("Removed acquisitions from analysis.")
 
     def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if self.exp_manager is None or not self.exp_manager.acqs_exist(
+            self.analysis_type
+        ):
             logger.info("No acquisitions exist to inspect.")
             self.errorDialog("No acquisitions exist to inspect.")
         else:
@@ -228,4 +232,5 @@ class LoadAcqWidget(QVBoxLayout):
         self.load_widget.setData(exp_manager)
 
     def clearData(self):
+        self.inspection_widget.clearData()
         self.load_widget.clearData()

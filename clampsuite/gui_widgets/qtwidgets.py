@@ -104,6 +104,7 @@ class WorkerSignals(QObject):
     finished = pyqtSignal(str)
     file_path = pyqtSignal(object)
     dir_path = pyqtSignal(object)
+    clicked = pyqtSignal(object)
 
 
 class ListModel(QAbstractListModel):

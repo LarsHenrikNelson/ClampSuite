@@ -26,9 +26,8 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
+from ..gui_widgets import DragDropWidget, LineEdit, ThreadWorker, LoadAcqWidget
 from ..manager import ExpManager
-from .acq_inspection import AcqInspectionWidget
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,6 @@ class currentClampWidget(DragDropWidget):
         self.final_obj = None
         self.plot_dict = {}
         self.table_dict = {}
-        self.inspection_widget = AcqInspectionWidget()
 
         self.signals.file.connect(self.loadPreferences)
         self.signals.file_path.connect(self.loadExperiment)
@@ -86,22 +84,11 @@ class currentClampWidget(DragDropWidget):
         self.plot_layout.addLayout(self.analysis_buttons, 0)
 
         # Input widgets and labels (Tab 1)
-        self.load_acq_label = QLabel("Acquisition(s)")
-        self.input_layout.addRow(self.load_acq_label)
-        self.acq_view = ListView()
-        self.acq_view.model().signals.progress.connect(self.updateProgress)
-        self.acq_view.model().signals.dir_path.connect(self.setWorkingDirectory)
         self.analysis_type = "current_clamp"
-        self.acq_view.setAnalysisType(self.analysis_type)
-        self.acq_layout.addWidget(self.acq_view)
-
-        self.inspect_acqs_button = QPushButton("Inspect acq(s)")
-        self.acq_layout.addWidget(self.inspect_acqs_button)
-        self.inspect_acqs_button.clicked.connect(self.inspectAcqs)
-
-        self.del_selection_button = QPushButton("Delete selection")
-        self.del_selection_button.clicked.connect(self.deleteSelection)
-        self.acq_layout.addWidget(self.del_selection_button)
+        self.load_widget = LoadAcqWidget(self.analysis_type)
+        self.load_widget.signals.progress.connect(self.updateProgress)
+        self.load_widget.signals.dir_path.connect(self.setWorkingDirectory)
+        self.acq_layout.addLayout(self.load_widget)
 
         self.b_start_label = QLabel("Baseline start (ms)")
         self.b_start_edit = LineEdit()
@@ -339,7 +326,7 @@ class currentClampWidget(DragDropWidget):
 
         self.exp_manager = ExpManager()
         self.exp_manager.set_callback(self.updateProgress)
-        self.acq_view.setData(self.exp_manager)
+        self.load_widget.setData(self.exp_manager)
 
         # Create PlotDataItems for easy reuse
         self.acq_plot = pg.PlotDataItem(
@@ -477,29 +464,6 @@ class currentClampWidget(DragDropWidget):
         for i in push_buttons:
             i.setMinimumWidth(100)
 
-    def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
-            logger.info("No acquisitions exist to inspect.")
-            self.errorDialog("No acquisitions exist to inspect.")
-        else:
-            logger.info("Opening acquisition inspection widget.")
-            self.inspection_widget.clearData()
-            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
-            self.inspection_widget.show()
-
-    def deleteSelection(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
-            logger.info("No acquisitions exist to remove from analysis list.")
-            self.errorDialog("No acquisitions exist to remove from analysis list.")
-        else:
-            # Deletes the selected acquisitions from the list
-            indices = self.acq_view.selectedIndexes()
-
-            if len(indices) > 0:
-                self.acq_view.deleteSelection(indices)
-                self.acq_view.clearSelection()
-            logger.info("Removed acquisitions from analysis.")
-
     def analyze(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
             logger.info("No acquisitions loaded, analysis ended.")
@@ -610,7 +574,7 @@ class currentClampWidget(DragDropWidget):
         logger.info("Resetting UI.")
         self.need_to_save = False
         self.acq_dict = {}
-        self.acq_view.clearData()
+        self.load_widget.clearData()
         self.analyze_acq_button.setEnabled(True)
         self.calculate_parameters.setEnabled(True)
         self.deleted_acqs = {}
@@ -624,7 +588,6 @@ class currentClampWidget(DragDropWidget):
         self.clearTables()
         self.plot_dict = {}
         self.table_dict = {}
-        self.inspection_widget.clearData()
         self.clearAcqPlots()
         self.acq_plot.setData(
             x=[],
@@ -648,7 +611,7 @@ class currentClampWidget(DragDropWidget):
         )
         self.exp_manager = ExpManager()
         self.last_acq_point_clicked = None
-        self.acq_view.setData(self.exp_manager)
+        self.load_widget.setData(self.exp_manager)
         self.pbar.setValue(0)
         self.pbar.setFormat("Ready to analyze")
         logger.info("UI Reset. Ready to analyze.")
@@ -1068,7 +1031,7 @@ class currentClampWidget(DragDropWidget):
 
     def createExperiment(self, urls):
         self.pbar.setFormat("Creating experiment")
-        self.load_widget.model().addData(urls)
+        self.load_widget.addData(urls)
         self.pbar.setFormat("Experiment created")
 
     def loadExperiment(self, directory: Union[str, PurePath]):
@@ -1089,7 +1052,7 @@ class currentClampWidget(DragDropWidget):
         QThreadPool.globalInstance().start(self.worker)
 
     def setLoadData(self):
-        self.acq_view.setData(self.exp_manager)
+        self.load_widget.setData(self.exp_manager)
         if self.exp_manager.final_analysis is not None:
             logger.info("Setting previously analyzed data.")
             self.pbar.setFormat("Setting previously analyzed data.")

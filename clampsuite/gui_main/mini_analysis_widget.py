@@ -42,6 +42,7 @@ from ..gui_widgets import (
     WorkerSignals,
     DeconInspectionWidget,
     LoadAcqWidget,
+    AnalysisButtonsWidget,
 )
 from ..manager import ExpManager
 
@@ -116,25 +117,9 @@ class MiniAnalysisWidget(DragDropWidget):
         self.filter_widget = FilterWidget()
         self.input_layout.addWidget(self.filter_widget)
 
-        self.input_buttons_layout = QFormLayout()
-
-        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
-        self.input_buttons_layout.addRow(self.analyze_acq_button)
-        self.analyze_acq_button.setObjectName("analyze_acq_button")
-        self.analyze_acq_button.clicked.connect(self.analyze)
-
-        self.calculate_parameters = QPushButton("Final analysis")
-        self.input_buttons_layout.addRow(self.calculate_parameters)
-        self.calculate_parameters.setObjectName("calculate_parameters")
-        self.calculate_parameters.clicked.connect(self.runFinalAnalysis)
-
-        self.reset_button = QPushButton("Reset analysis")
-        self.input_buttons_layout.addRow(self.reset_button)
-        self.reset_button.clicked.connect(self.reset)
-        self.input_layout.addLayout(self.input_buttons_layout)
+        self.analysis_buttons = AnalysisButtonsWidget()
+        self.input_layout.addLayout(self.analysis_buttons)
         self.input_layout.addStretch()
-
-        self.reset_button.setObjectName("reset_button")
 
         self.mini_settings = MiniWidget()
         self.setup_layout.addLayout(self.mini_settings)
@@ -145,7 +130,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.load_widget.signals.progress.connect(self.updateProgress)
         self.load_widget.signals.dir_path.connect(self.setWorkingDirectory)
 
-        self.setup_layout.addLayout(self.load_acq, 0)
+        self.setup_layout.addLayout(self.load_widget, 0)
 
         self.setup_layout.addStretch(1)
 
