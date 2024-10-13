@@ -158,7 +158,7 @@ class MainWindow(QMainWindow):
     def saveAs(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
             self,
-            directory=self.working_dir,
+            dir=self.working_dir,
             caption="Save data as...",
         )
         if save_filename:
@@ -172,7 +172,7 @@ class MainWindow(QMainWindow):
         directory = str(
             QFileDialog.getExistingDirectory(
                 self,
-                directory=self.working_dir,
+                dir=self.working_dir,
                 caption="Open folder...",
             )
         )
@@ -186,7 +186,7 @@ class MainWindow(QMainWindow):
     def createExperiment(self):
         directory, _ = QFileDialog.getOpenFileNames(
             self,
-            directory=self.working_dir,
+            dir=self.working_dir,
             caption="Open files...",
         )
         if len(directory) > 0:

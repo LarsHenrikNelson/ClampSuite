@@ -49,6 +49,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def initUI(self):
         self.signals = WorkerSignals()
+        self.need_to_save = False
 
         logger.info("Creating Mini analysis GUI")
         # Create tabs for part of the analysis program
