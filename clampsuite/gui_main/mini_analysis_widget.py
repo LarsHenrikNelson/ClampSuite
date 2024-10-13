@@ -3,27 +3,21 @@ import logging
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QFont, QKeySequence
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
-    QAction,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
-    QGridLayout,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
-    QShortcut,
-    QSizePolicy,
     QSlider,
     QSpinBox,
     QTabWidget,
-    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -40,7 +34,6 @@ from ..gui_widgets import (
     RCCheckWidget,
     ThreadWorker,
     WorkerSignals,
-    DeconInspectionWidget,
     LoadAcqWidget,
     AnalysisButtonsWidget,
 )
@@ -74,8 +67,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1 = QWidget()
         self.tab1_scroll.setWidget(self.tab1)
 
-        self.dock_area2 = DockArea()
-
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -96,8 +87,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.main_layout.addWidget(self.pbar)
 
         self.dlg = QMessageBox(self)
-
-        self.decon_plot = DeconInspectionWidget()
 
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
@@ -133,278 +122,6 @@ class MiniAnalysisWidget(DragDropWidget):
         self.setup_layout.addLayout(self.load_widget, 0)
 
         self.setup_layout.addStretch(1)
-
-        # Tab 2 layouts
-        self.d1 = Dock("Overview")
-        self.d2 = Dock("Event")
-        self.d3 = Dock("Acq view")
-        self.dock_area2.addDock(self.d1, "left")
-        self.dock_area2.addDock(self.d2, "right")
-        self.dock_area2.addDock(self.d3, "bottom")
-        self.acq_scroll = QScrollArea()
-        self.acq_scroll.setContentsMargins(20, 20, 20, 20)
-        self.acq_widget = QWidget()
-        # self.acq_scroll.setMinimumWidth(250)
-        # self.acq_scroll.setWidget(self.acq_widget)
-        # self.acq_scroll.setWidgetResizable(True)
-        self.d3.addWidget(self.acq_widget, 0, 0)
-        self.d2.layout.setColumnMinimumWidth(0, 120)
-        self.acq_buttons = QGridLayout()
-        self.acq_widget.setLayout(self.acq_buttons)
-
-        # Tab2 acq_buttons layout
-        self.acquisition_number_label = QLabel("Acq number")
-        self.acquisition_number_label.setSizePolicy(
-            QSizePolicy.Minimum, QSizePolicy.Minimum
-        )
-        self.acquisition_number_label.setMaximumWidth(70)
-
-        self.acq_buttons.addWidget(self.acquisition_number_label, 0, 0)
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
-        self.acquisition_number.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.acquisition_number, 0, 1)
-        self.acquisition_number.valueChanged.connect(self.acqSpinbox)
-
-        self.epoch_label = QLabel("Epoch")
-        self.epoch_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.acq_buttons.addWidget(self.epoch_label, 1, 0)
-        self.epoch_edit = QLineEdit()
-        self.epoch_edit.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.epoch_edit, 1, 1)
-
-        self.voltage_offset_label = QLabel("Voltage offset")
-        self.voltage_offset_label.setSizePolicy(
-            QSizePolicy.Minimum, QSizePolicy.Minimum
-        )
-        self.acq_buttons.addWidget(self.voltage_offset_label, 2, 0)
-        self.voltage_offset_edit = QLineEdit()
-        self.voltage_offset_edit.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.voltage_offset_edit, 2, 1)
-
-        self.rs_label = QLabel("Rs")
-        self.rs_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.acq_buttons.addWidget(self.rs_label, 3, 0)
-        self.rs_edit = QLineEdit()
-        self.rs_edit.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.rs_edit, 3, 1)
-
-        self.left_button = QToolButton()
-        self.left_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.left_button.pressed.connect(self.leftbutton)
-        self.left_button.setArrowType(Qt.LeftArrow)
-        self.left_button.setAutoRepeat(True)
-        self.left_button.setAutoRepeatInterval(50)
-        self.left_button.setMinimumWidth(70)
-        self.left_button.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.left_button, 4, 0)
-
-        self.right_button = QToolButton()
-        self.right_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.right_button.pressed.connect(self.rightbutton)
-        self.right_button.setArrowType(Qt.RightArrow)
-        self.right_button.setAutoRepeat(True)
-        self.right_button.setAutoRepeatInterval(50)
-        self.right_button.setMinimumWidth(70)
-        self.right_button.setMaximumWidth(70)
-        self.acq_buttons.addWidget(self.right_button, 4, 1)
-
-        self.slider_sensitivity = QSlider()
-        self.slider_sensitivity.setObjectName("event plot slider")
-        self.slider_sensitivity.setOrientation(Qt.Horizontal)
-        self.slider_sensitivity.setValue(20)
-        self.slider_sensitivity.valueChanged.connect(self.slider_value)
-        self.acq_buttons.addWidget(self.slider_sensitivity, 5, 0, 1, 2)
-
-        self.create_event_button = QPushButton("Create new event")
-        self.create_event_button.clicked.connect(self.createEvent)
-        self.create_event_action = QAction("Create new event")
-        self.create_event_action.triggered.connect(self.createEvent)
-        self.acq_buttons.addWidget(self.create_event_button, 6, 0, 1, 2)
-
-        self.acq_buttons.setRowStretch(7, 10)
-
-        self.delete_acq_button = QPushButton("Delete acquisition")
-        self.delete_acq_button.clicked.connect(self.deleteAcq)
-        self.acq_buttons.addWidget(self.delete_acq_button, 8, 0, 1, 2)
-
-        self.reset_recent_acq_button = QPushButton("Reset recent deleted acq")
-        self.reset_recent_acq_button.clicked.connect(self.resetRecentRejectedAcq)
-        self.acq_buttons.addWidget(self.reset_recent_acq_button, 9, 0, 1, 2)
-
-        self.reset_acq_button = QPushButton("Reset deleted acqs")
-        self.reset_acq_button.clicked.connect(self.resetRejectedAcqs)
-        self.acq_buttons.addWidget(self.reset_acq_button, 10, 0, 1, 2)
-
-        self.decon_acq_button = QPushButton("Plot deconvolution")
-        self.decon_acq_button.clicked.connect(self.plotDeconvolution)
-        self.acq_buttons.addWidget(self.decon_acq_button, 11, 0, 1, 2)
-
-        self.acq_buttons.setRowStretch(12, 10)
-
-        self.calculate_parameters_2 = QPushButton("Final analysis")
-        self.acq_buttons.addWidget(self.calculate_parameters_2)
-        self.calculate_parameters_2.clicked.connect(self.runFinalAnalysis)
-        self.acq_buttons.addWidget(self.calculate_parameters_2, 13, 0, 1, 2)
-
-        self.delete_acq_action = QAction("Delete acq")
-        self.delete_acq_action.triggered.connect(self.deleteAcq)
-
-        self.reset_recent_acq_action = QAction("Reset recent del acq")
-        self.reset_recent_acq_action.triggered.connect(self.resetRecentRejectedAcq)
-
-        self.reset_acq_action = QAction("Reset del acq(s)")
-        self.reset_acq_action.triggered.connect(self.resetRejectedAcqs)
-
-        # Filling the plot layout.
-        self.inspectionPlot = pg.PlotWidget(
-            useOpenGL=True,
-        )
-        self.plot_dict["p1"] = self.inspectionPlot
-        self.inspectionPlot.setLabel(
-            "bottom",
-            text="Time (ms)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.inspectionPlot.setLabel(
-            "left",
-            text="Amplitude (pA)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.inspectionPlot.setObjectName("p1")
-        p1pi = self.inspectionPlot.getViewBox()
-        p1pi.menu.addSeparator()
-        p1pi.menu.addAction(self.create_event_action)
-        p1pi.menu.addAction(self.delete_acq_action)
-        p1pi.menu.addAction(self.reset_recent_acq_action)
-        p1pi.menu.addAction(self.reset_acq_action)
-        self.d3.addWidget(self.inspectionPlot, 0, 1)
-        self.d3.layout.setColumnStretch(1, 10)
-
-        self.scrollPlot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["scrollPlot"] = self.scrollPlot
-        self.scrollPlot.setLabel(
-            "bottom",
-            text="Time (ms)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.scrollPlot.setLabel(
-            "left",
-            text="Amplitude (pA)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.scrollPlot.setObjectName("scrollPlot")
-        scrollPlotpi = self.scrollPlot.getViewBox()
-        scrollPlotpi.menu.addSeparator()
-        scrollPlotpi.menu.addAction(self.delete_acq_action)
-        scrollPlotpi.menu.addAction(self.reset_recent_acq_action)
-        scrollPlotpi.menu.addAction(self.reset_acq_action)
-        self.d1.addWidget(self.scrollPlot)
-
-        self.region = pg.LinearRegionItem()
-
-        # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
-        self.region.sigRegionChanged.connect(self.update)
-        self.inspectionPlot.sigRangeChanged.connect(self.updateRegion)
-
-        # Set the initial bounds of the region and its layer
-        # position.
-        self.region.setRegion([0, 400])
-        self.region.setZValue(10)
-
-        self.event_view_widget = QWidget()
-        # self.event_view_scroll = QScrollArea()
-        # self.event_view_scroll.setMinimumWidth(200)
-        # self.event_view_scroll.setContentsMargins(20, 20, 20, 20)
-        # self.event_view_scroll.setWidget(self.event_view_widget)
-        # self.event_view_scroll.setWidgetResizable(True)
-        self.d2.addWidget(self.event_view_widget, 0, 0)
-        self.d2.layout.setColumnMinimumWidth(0, 120)
-        self.event_layout = QFormLayout()
-        self.event_view_widget.setLayout(self.event_layout)
-
-        self.event_number_label = QLabel("Event")
-        self.event_number = QSpinBox()
-        self.event_number.setMaximumWidth(70)
-        self.event_number.setKeyboardTracking(False)
-        self.event_layout.addRow(self.event_number_label, self.event_number)
-        self.event_number.setEnabled(True)
-        self.event_number.setMinimumWidth(70)
-        self.event_number.valueChanged.connect(self.eventSpinbox)
-
-        self.event_baseline_label = QLabel("Baseline (pA)")
-        self.event_baseline_label.setStyleSheet("""color:#34E44B; font-weight:bold""")
-        self.event_baseline = QLineEdit()
-        self.event_baseline.setMaximumWidth(70)
-        self.event_baseline.setReadOnly(True)
-        self.event_layout.addRow(self.event_baseline_label, self.event_baseline)
-
-        self.event_amplitude_label = QLabel("Amplitude (pA)")
-        self.event_amplitude_label.setStyleSheet("""color:#E867E8; font-weight:bold""")
-        self.event_amplitude = QLineEdit()
-        self.event_amplitude.setMaximumWidth(70)
-        self.event_amplitude.setReadOnly(True)
-        self.event_layout.addRow(self.event_amplitude_label, self.event_amplitude)
-
-        self.event_tau_label = QLabel("Est tau (ms)")
-        self.event_tau = QLineEdit()
-        self.event_tau.setMaximumWidth(70)
-        self.event_tau.setReadOnly(True)
-        self.event_tau_label.setStyleSheet("""color:#2A82DA; font-weight: bold;""")
-        self.event_layout.addRow(self.event_tau_label, self.event_tau)
-
-        self.event_rise_time_label = QLabel("Rise time (ms)")
-        self.event_rise_time = QLineEdit()
-        self.event_rise_time.setMaximumWidth(70)
-        self.event_rise_time.setReadOnly(True)
-        self.event_layout.addRow(self.event_rise_time_label, self.event_rise_time)
-
-        self.event_rise_rate_label = QLabel("Rise rate (pA/ms)")
-        self.event_rise_rate = QLineEdit()
-        self.event_rise_rate.setMaximumWidth(70)
-        self.event_rise_rate.setReadOnly(True)
-        self.event_layout.addRow(self.event_rise_rate_label, self.event_rise_rate)
-
-        self.delete_event_button = QPushButton("Delete event")
-        self.event_layout.addRow(self.delete_event_button)
-        self.delete_event_button.clicked.connect(self.deleteEvent)
-        self.delete_event_action = QAction("Delete event")
-        self.delete_event_action.triggered.connect(self.deleteEvent)
-
-        self.set_baseline = QPushButton("Set point as baseline")
-        self.event_layout.addRow(self.set_baseline)
-        self.set_baseline.clicked.connect(self.setPointAsBaseline)
-        self.set_baseline_action = QAction("Set point as baseline")
-        self.set_baseline_action.triggered.connect(self.setPointAsBaseline)
-
-        self.set_peak = QPushButton("Set point as peak")
-        self.event_layout.addRow(self.set_peak)
-        self.set_peak.clicked.connect(self.setPointAsPeak)
-        self.set_peak_action = QAction("Set point as peak")
-        self.set_peak_action.triggered.connect(self.setPointAsPeak)
-
-        self.event_view_plot = pg.PlotWidget(useOpenGL=True)
-        self.event_view_plot.setLabel(
-            "bottom",
-            text="Time (ms)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        self.event_view_plot.setLabel(
-            "left",
-            text="Amplitude (pA)",
-            **{"color": "#C9CDD0", "font-size": "10pt"},
-        )
-        mp = self.event_view_plot.getViewBox()
-        mp.menu.addSeparator()
-        mp.menu.addAction(self.delete_event_action)
-        mp.menu.addAction(self.set_baseline_action)
-        mp.menu.addAction(self.set_peak_action)
-
-        # self.event_view_plot.setMinimumWidth(300)
-        self.event_view_plot.setObjectName("Event view plot")
-        self.d2.addWidget(self.event_view_plot, 0, 1)
-        self.d2.layout.setColumnStretch(1, 10)
 
         # Tab 3 layouts and setup
         self.table_dock = Dock("Data (table)")
@@ -443,53 +160,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.exp_manager = ExpManager()
         self.exp_manager.set_callback(self.updateProgress)
         self.load_widget.setData(self.exp_manager)
-        self.last_event_deleted = {}
-        self.last_event_deleted = []
-        self.last_event_point_clicked = None
-        self.last_acq_point_clicked = None
-        self.event_spinbox_list = []
-        self.last_event_clicked_global = None
-        self.last_event_clicked_local = None
-        self.sort_index = []
-        self.template = []
-        self.event_spinbox_list = []
-        self.events_deleted = 0
-        self.calc_param_clicked = False
-        self.table_dict = {}
-        self.need_to_save = False
-        self.modify = 20
-
-        # Shortcuts
-        self.del_event_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
-        self.del_event_shortcut.activated.connect(self.deleteEvent)
-
-        self.create_event_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
-        self.create_event_shortcut.activated.connect(self.createEvent)
-
-        self.set_baseline = QShortcut(QKeySequence("Ctrl + B"), self)
-        self.set_baseline.activated.connect(self.setPointAsBaseline)
-
-        self.set_peak = QShortcut(QKeySequence("Ctrl + P"), self)
-        self.set_peak.activated.connect(self.setPointAsPeak)
-
-        self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
-        self.del_acq_shortcut.activated.connect(self.deleteAcq)
-
         self.setWidth()
-
-        self.mini_analysis_colors = {
-            "event_unselected": "#34E44B",
-            "event_selected": "#E867E8",
-            "event_baseline": "#34E44B",
-            "event_peak": "#E867E8",
-            "event_tau": "#2A82DA",
-            "event_item": "#C9CDD0",
-            "inpection_plot_background": "black",
-            "scroll_plot_background": "black",
-            "inspection_plot_axes": "C9CDD0",
-        }
-
-        logger.info("Event analysis GUI created.")
 
     def clearTables(self):
         if self.table_dict:
@@ -1370,23 +1041,6 @@ class MiniAnalysisWidget(DragDropWidget):
                 logger.info("No event created, selected point to close to beginning.")
         self.last_acq_point_clicked = None
         self.acq_point_clicked = None
-
-    def plotDeconvolution(self):
-        if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
-            logger.info(
-                "No deconvolution plotted, acquisition"
-                f" {self.acquisition_number.value()} do not exist."
-            )
-            self.errorDialog(
-                "No deconvolution plotted, acquisition\n"
-                f" {self.acquisition_number.value()} do not exist."
-            )
-            return None
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
-        decon, baseline = acq.plot_deconvolved_acq()
-        self.decon_plot.plotData(decon, baseline, np.arange(decon.size))
-        self.decon_plot.show()
-        logger.info("Plotted deconvolution")
 
     def deleteAcq(self):
         """
