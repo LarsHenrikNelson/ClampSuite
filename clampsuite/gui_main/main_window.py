@@ -1,23 +1,24 @@
 import logging
 from pathlib import Path, PurePath
 
-from PyQt5.QtWidgets import (
-    QAction,
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QStackedWidget,
+    QStyle,
     QToolBar,
 )
 
+from ..functions.startup import check_dir
 from .current_clamp_widget import currentClampWidget
 from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisWidget
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
-from ..functions.startup import check_dir
 
 # from ..gui_widgets.qtwidgets import WorkerSignals
 
@@ -84,14 +85,14 @@ class MainWindow(QMainWindow):
         self.save_button = QPushButton()
         self.save_button.clicked.connect(self.saveAs)
         style = self.save_button.style()
-        icon = style.standardIcon(style.SP_DialogSaveButton)
+        icon = style.standardIcon(QStyle.SP_DialogSaveButton)
         self.save_button.setIcon(icon)
         self.tool_bar.addWidget(self.save_button)
 
         self.open_button = QPushButton()
         self.open_button.clicked.connect(self.loadData)
         style = self.open_button.style()
-        icon = style.standardIcon(style.SP_DirOpenIcon)
+        icon = style.standardIcon(QStyle.SP_DirOpenIcon)
         self.open_button.setIcon(icon)
         self.tool_bar.addWidget(self.open_button)
 

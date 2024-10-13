@@ -1,24 +1,23 @@
 import logging
-
 import sys
 from pathlib import PurePath
 
 import pyqtgraph as pg
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QApplication, QSplashScreen
+# from PySide6 import QtCore
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QApplication, QSplashScreen
 
+from .functions.startup import check_dir
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
-from .functions.startup import check_dir
 
 
 def main(logger):
-    if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
-        QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-    if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-        QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    # if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):
+    #     QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+    # if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
+    #     QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QApplication([])
 
     pg.setConfigOptions(antialias=True)

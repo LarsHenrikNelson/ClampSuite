@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import (
-    QFormLayout,
+from PySide6.QtWidgets import (
     QComboBox,
+    QFormLayout,
 )
 
-from .qtwidgets import LineEdit, FrameWidget
+from .qtwidgets import FrameWidget, LineEdit
 
 
 class BaselineWidget(FrameWidget):

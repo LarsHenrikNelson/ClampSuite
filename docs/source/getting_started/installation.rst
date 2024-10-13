@@ -28,7 +28,7 @@ Dependencies
 -  `openpyxl <https://openpyxl.readthedocs.io/en/stable/>`_
 -  `pandas <https://pandas.pydata.org/>`_
 -  `pyqtgraph <https://www.pyqtgraph.org/>`_
--  `PyQt5 <http://pyqt.sourceforge.net/Docs/PyQt5/>`_
+-  `PySide6 <http://pyqt.sourceforge.net/Docs/PySide6/>`_
 -  `pyyaml <https://pyyaml.org/>`_
 -  `qdarkstyle <https://github.com/ColinDuquesnoy/QDarkStyleSheet>`_
 -  `scipy <https://scipy.org/>`_

@@ -1,9 +1,8 @@
 import logging
 
-from ..gui_widgets.palettes import DarkPalette, LightPalette
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
+from PySide6 import QtGui
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
     QApplication,
     QColorDialog,
     QComboBox,
@@ -17,6 +16,8 @@ from PyQt5.QtWidgets import (
     QStackedLayout,
     QWidget,
 )
+
+from ..gui_widgets.palettes import DarkPalette, LightPalette
 
 logger = logging.getLogger(__name__)
 

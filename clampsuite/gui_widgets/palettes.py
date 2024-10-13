@@ -1,4 +1,4 @@
-from PyQt5 import QtGui
+from PySide6 import QtGui
 
 black2white = [
     "#000000",

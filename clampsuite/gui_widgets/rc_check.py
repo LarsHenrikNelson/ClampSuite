@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QFormLayout,
 )
 
-from .qtwidgets import LineEdit, FrameWidget
+from .qtwidgets import FrameWidget, LineEdit
 
 
 class RCCheckWidget(FrameWidget):

@@ -5,10 +5,11 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import QThreadPool
-from PyQt5.QtGui import QFont, QIntValidator
-from PyQt5.QtWidgets import (
-    QAction,
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from PySide6.QtCore import QThreadPool
+from PySide6.QtGui import QAction, QFont, QIntValidator
+from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
     QHBoxLayout,
@@ -22,11 +23,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.utilities import round_sig
-from ..gui_widgets import DragDropWidget, LineEdit, ThreadWorker, LoadAcqWidget
+from ..gui_widgets import DragDropWidget, LineEdit, LoadAcqWidget, ThreadWorker
 from ..manager import ExpManager
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QButtonGroup, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QButtonGroup, QPushButton, QVBoxLayout
 
 from .qtwidgets import WorkerSignals
 

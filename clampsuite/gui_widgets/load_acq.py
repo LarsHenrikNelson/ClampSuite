@@ -1,13 +1,20 @@
 import logging
 from pathlib import Path
 
-from PyQt5.QtCore import (
+from PySide6.QtCore import (
     QAbstractListModel,
     Qt,
     QThreadPool,
-    pyqtSlot,
+    Slot,
 )
-from PyQt5.QtWidgets import QLabel, QListView, QMessageBox, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QLabel,
+    QListView,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QAbstractItemView,
+)
 
 from .acq_inspection import AcqInspectionWidget
 from .qtwidgets import ThreadWorker, WorkerSignals
@@ -98,10 +105,11 @@ class ListView(QListView):
     scanimage matlab files.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(ListView, self).__init__(parent)
+
         self.setAcceptDrops(True)
-        self.setSelectionMode(self.MultiSelection)
+        self.setSelectionMode(QAbstractItemView.MultiSelection)
         self.setDropIndicatorShown(True)
         self.setModel(ListModel())
         self.signals = WorkerSignals()
@@ -125,7 +133,7 @@ class ListView(QListView):
         else:
             e.ignore()
 
-    @pyqtSlot()
+    @Slot()
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the

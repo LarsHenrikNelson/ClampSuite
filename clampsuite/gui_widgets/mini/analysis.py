@@ -2,10 +2,11 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence, QFont
-from PyQt5.QtWidgets import (
-    QAction,
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QFont, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QButtonGroup,
     QFormLayout,
     QGridLayout,
@@ -13,17 +14,14 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
-    QShortcut,
     QSizePolicy,
     QSlider,
     QSpinBox,
     QToolButton,
     QWidget,
 )
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
 
-from functions.utilities import round_sig
+from ...functions.utilities import round_sig
 from ..acq_inspection import DeconInspectionWidget
 
 logger = logging.getLogger(__name__)
@@ -31,9 +29,11 @@ logger = logging.getLogger(__name__)
 
 class AnalysisWidget(DockArea):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, exp_manager=None):
+        super(AnalysisWidget, self).__init__(parent)
 
-        self.exp_manager = None
+        self.exp_manager = exp_manager
+        self.plot_dict = {}
 
         self.decon_plot = DeconInspectionWidget()
 
@@ -317,8 +317,6 @@ class AnalysisWidget(DockArea):
         self.need_to_save = False
         self.modify = 20
 
-        self.del_acq_shortcut.activated.connect(self.deleteAcq)
-
         self.mini_analysis_colors = {
             "event_unselected": "#34E44B",
             "event_selected": "#E867E8",
@@ -346,6 +344,7 @@ class AnalysisWidget(DockArea):
         self.set_peak.activated.connect(self.setPointAsPeak)
 
         self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
+        self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
     def plotDeconvolution(self):
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):

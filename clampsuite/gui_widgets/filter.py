@@ -1,5 +1,5 @@
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import (
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..manager import ExpManager
-from .qtwidgets import LineEdit, FrameWidget
+from .qtwidgets import FrameWidget, LineEdit
 
 
 class FilterWidget(FrameWidget):

@@ -3,10 +3,11 @@ from collections import namedtuple
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QDoubleValidator, QFont, QIntValidator
-from PyQt5.QtWidgets import (
-    QAction,
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtGui import QAction, QDoubleValidator, QFont, QIntValidator
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -24,8 +25,6 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.utilities import round_sig
 from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker

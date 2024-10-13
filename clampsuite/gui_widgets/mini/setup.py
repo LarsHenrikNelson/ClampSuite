@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFormLayout,
@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
-from functions.template_psc import create_template
+from ...functions.template_psc import create_template
 from ..qtwidgets import FrameWidget, LineEdit
 
 logger = logging.getLogger(__name__)

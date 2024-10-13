@@ -2,9 +2,11 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -21,21 +23,19 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
 
 from ..functions.kde import create_kde
 from ..functions.utilities import round_sig
 from ..gui_widgets import (
+    AnalysisButtonsWidget,
     BaselineWidget,
     DragDropWidget,
     FilterWidget,
-    MiniWidget,
+    LoadAcqWidget,
+    mini,
     RCCheckWidget,
     ThreadWorker,
     WorkerSignals,
-    LoadAcqWidget,
-    AnalysisButtonsWidget,
 )
 from ..manager import ExpManager
 
@@ -43,12 +43,11 @@ logger = logging.getLogger(__name__)
 
 
 class MiniAnalysisWidget(DragDropWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(DragDropWidget, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
-        self.plot_dict = {}
         self.signals = WorkerSignals()
 
         logger.info("Creating Mini analysis GUI")
@@ -67,6 +66,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1 = QWidget()
         self.tab1_scroll.setWidget(self.tab1)
 
+        self.analysis_widget = mini.AnalysisWidget()
+
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -74,7 +75,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.dock_area3 = DockArea()
 
         self.tab_widget.addTab(self.tab1_scroll, "Setup")
-        self.tab_widget.addTab(self.dock_area2, "Analysis")
+        self.tab_widget.addTab(self.analysis_widget, "Analysis")
         self.tab_widget.addTab(self.dock_area3, "Final data")
 
         self.setStyleSheet(
@@ -110,7 +111,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.input_layout.addLayout(self.analysis_buttons)
         self.input_layout.addStretch()
 
-        self.mini_settings = MiniWidget()
+        self.mini_settings = mini.MiniWidget()
         self.setup_layout.addLayout(self.mini_settings)
 
         # Setup for the drag and drop load layout

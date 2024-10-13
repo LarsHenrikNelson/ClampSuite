@@ -1,16 +1,23 @@
 from pathlib import Path, PurePath
 
-from PyQt5.QtCore import (
+from PySide6.QtCore import (
     QAbstractListModel,
     QMutex,
     QObject,
     QRunnable,
     Qt,
     QThreadPool,
-    pyqtSignal,
-    pyqtSlot,
+    Signal,
+    Slot,
 )
-from PyQt5.QtWidgets import QLineEdit, QListView, QSpinBox, QWidget, QFrame
+from PySide6.QtWidgets import (
+    QFrame,
+    QLineEdit,
+    QListView,
+    QSpinBox,
+    QWidget,
+    QAbstractItemView,
+)
 
 
 class FrameWidget(QFrame):
@@ -75,7 +82,7 @@ class ThreadWorker(QRunnable):
         self.function.append(function)
         self.kwargs.append(kwargs)
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         self.mutex.lock()
         for func, args in zip(self.function, self.kwargs):
@@ -99,12 +106,12 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    file = pyqtSignal(object)
-    progress = pyqtSignal(object)
-    finished = pyqtSignal(str)
-    file_path = pyqtSignal(object)
-    dir_path = pyqtSignal(object)
-    clicked = pyqtSignal(object)
+    file = Signal(object)
+    progress = Signal(object)
+    finished = Signal(str)
+    file_path = Signal(object)
+    dir_path = Signal(object)
+    clicked = Signal(object)
 
 
 class ListModel(QAbstractListModel):
@@ -193,7 +200,7 @@ class ListView(QListView):
     def __init__(self):
         super().__init__()
         self.setAcceptDrops(True)
-        self.setSelectionMode(self.MultiSelection)
+        self.setSelectionMode(QAbstractItemView.MultiSelection)
         self.setDropIndicatorShown(True)
         self.setModel(ListModel())
         self.signals = WorkerSignals()
@@ -217,7 +224,7 @@ class ListView(QListView):
         else:
             e.ignore()
 
-    @pyqtSlot()
+    @Slot(object)
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the
@@ -296,7 +303,7 @@ class DragDropWidget(QWidget):
         else:
             e.ignore()
 
-    @pyqtSlot()
+    @Slot(object)
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the

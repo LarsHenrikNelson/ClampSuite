@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QFormLayout, QHBoxLayout, QLineEdit, QSpinBox, QWidget
+from PySide6.QtWidgets import QFormLayout, QHBoxLayout, QLineEdit, QSpinBox, QWidget
 
 from ..gui_widgets.qtwidgets import LineEdit
 

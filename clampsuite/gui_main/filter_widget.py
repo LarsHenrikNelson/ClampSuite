@@ -1,9 +1,9 @@
 import logging
 
 import pyqtgraph as pg
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import (
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
