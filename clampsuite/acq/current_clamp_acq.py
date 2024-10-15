@@ -193,8 +193,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 else:
                     temp_array = self.array[self.peaks[0] : self._pulse_end]
                 indexes = np.where(temp_array < self.spike_threshold)[0] + self.peaks[0]
+                if len(indexes) > 0:
+                    end = indexes[-1]
+                else:
+                    end = self.peaks[1] 
                 start = self.rheo_x - int(5 * self.s_r_c)
-                end = indexes[-1]
                 self.ap_index = [start, end]
                 self.first_ap = self.array[start:end]
 
