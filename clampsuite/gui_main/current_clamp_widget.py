@@ -439,6 +439,7 @@ class currentClampWidget(DragDropWidget):
         self.spike_plot.addItem(self.clickable_spike_data)
 
         self.spk_data_plots_cleared = True
+        self.text = None
 
         self.pbar.setFormat("Ready to analyze")
         self.setWidth()
@@ -605,6 +606,9 @@ class currentClampWidget(DragDropWidget):
                 symbolBrush="m",
             )
             self.spk_data_plots_cleared = True
+            if self.text is not None:
+                self.plot_widget.removeItem(self.text)
+                self.text = None
 
     def reset(self):
         logger.info("Resetting UI.")
@@ -821,10 +825,10 @@ class currentClampWidget(DragDropWidget):
                 pen="m",
             )
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
-            text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
-            text.setFont(QFont("Helvetica", 20))
+            self.text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
+            self.text.setFont(QFont("Helvetica", 20))
             self.plot_widget.setRange(xRange=(-30, 30), yRange=(-30, 30))
-            self.plot_widget.addItem(text)
+            self.plot_widget.addItem(self.text)
         self.acquisition_number.setEnabled(True)
 
     def plotClicked(self, item, points):
