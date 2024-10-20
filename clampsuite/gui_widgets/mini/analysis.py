@@ -1258,25 +1258,3 @@ class AnalysisWidget(DockArea):
         self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
-
-        inspection_plot = {
-            "background": "k",
-            "left_axis": "#FCFCFC",
-            "left_axis_text": "#FCFCFC",
-            "bottom_axis": "#FCFCFC",
-            "bottom_axis_text": "#FCFCFC",
-        }
-        scroll_plot = {
-            "background": "k",
-            "left_axis": "#FCFCFC",
-            "left_axis_text": "#FCFCFC",
-            "bottom_axis": "#FCFCFC",
-            "bottom_axis_text": "#FCFCFC",
-        }
-        event_view_plot = {
-            "background": "k",
-            "left_axis": "#FCFCFC",
-            "left_axis_text": "#FCFCFC",
-            "bottom_axis": "#FCFCFC",
-            "bottom_axis_text": "#FCFCFC",
-        }
