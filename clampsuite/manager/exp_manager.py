@@ -379,3 +379,15 @@ class ExpManager:
             return self.final_analysis.df_dict
         else:
             return {}
+
+    def clear(self):
+        self.exp_dict = {}
+        self.final_analysis = None
+        self.ui_prefs = None
+        self.analysis_prefs = {}
+        self.num_of_acqs = 0
+        self.deleted_acqs = {}
+        self.acqs_deleted = 0
+        self.start_acq = None
+        self.end_acq = None
+        self.analyzed = False

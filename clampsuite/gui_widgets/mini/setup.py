@@ -98,7 +98,7 @@ class MiniSettingsWidget(FrameWidget):
         self.decon_type_edit.setObjectName("mini_finding_method_edit")
         self.layout.addRow("Event finding method", self.decon_type_edit)
 
-    def getSettings(self):
+    def getAnalysisSettings(self):
         analysis_args = (
             {
                 "sensitivity": self.sensitivity_edit.toFloat(),
@@ -190,7 +190,7 @@ class TemplateWidget(FrameWidget):
         self.sample_rate_edit.setText("10000")
         self.layout.addRow("Sample rate", self.sample_rate_edit)
 
-    def getSettings(self):
+    def getAnalysisSettings(self):
         template_args = {
             "amplitude": self.amplitude_edit.toFloat(),
             "tau_1": self.tau_1_edit.toFloat(),
@@ -262,9 +262,9 @@ class MiniWidget(QVBoxLayout):
             x=(np.arange(len(template)) / s_r_c), y=template, pen=pg.mkPen(width=3)
         )
 
-    def getSettings(self):
+    def getAnalysisSettings(self):
         temp = {
-            "template_settings": self.template_settings.getSettings(),
-            "mini_settings": self.mini_settings.getSettings(),
+            "template_settings": self.template_settings.getAnalysisSettings(),
+            "mini_settings": self.mini_settings.getAnalysisSettings(),
         }
         return temp

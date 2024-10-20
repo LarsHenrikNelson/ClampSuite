@@ -34,7 +34,7 @@ class BaselineWidget(FrameWidget):
         )
         self.layout.addRow("Baseline method", self.baseline_method)
 
-    def getSettings(self):
+    def getAnalysisSettings(self):
         baseline_args = {
             "baseline_start": self.b_start_edit.toInt(),
             "baseline_end": self.b_end_edit.toInt(),

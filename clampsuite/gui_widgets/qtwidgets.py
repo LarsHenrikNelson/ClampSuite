@@ -19,6 +19,17 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
 )
 
+from ..manager import ExpManager
+
+
+class QExpManager(ExpManager):
+
+    def __init__(self):
+        self.need_to_save = False
+
+    def needToSave(self, save: bool):
+        self.need_to_save = save
+
 
 class FrameWidget(QFrame):
 
@@ -111,7 +122,7 @@ class WorkerSignals(QObject):
     finished = Signal(str)
     file_path = Signal(object)
     dir_path = Signal(object)
-    clicked = Signal(object)
+    clicked = Signal(bool)
 
 
 class ListModel(QAbstractListModel):

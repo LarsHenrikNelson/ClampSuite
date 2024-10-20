@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from ...functions.utilities import round_sig
 from ..acq_inspection import DeconInspectionWidget
+from ..qtwidgets import WorkerSignals
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,8 @@ class AnalysisWidget(DockArea):
 
         self.exp_manager = exp_manager
         self.plot_dict = {}
+
+        self.signal = WorkerSignals()
 
         self.decon_plot = DeconInspectionWidget()
 
@@ -91,7 +94,7 @@ class AnalysisWidget(DockArea):
 
         self.left_button = QToolButton()
         self.left_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.left_button.pressed.connect(self.leftbutton)
+        self.left_button.pressed.connect(self.leftButton)
         self.left_button.setArrowType(Qt.LeftArrow)
         self.left_button.setAutoRepeat(True)
         self.left_button.setAutoRepeatInterval(50)
@@ -101,7 +104,7 @@ class AnalysisWidget(DockArea):
 
         self.right_button = QToolButton()
         self.right_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.right_button.pressed.connect(self.rightbutton)
+        self.right_button.pressed.connect(self.rightButton)
         self.right_button.setArrowType(Qt.RightArrow)
         self.right_button.setAutoRepeat(True)
         self.right_button.setAutoRepeatInterval(50)
@@ -113,7 +116,7 @@ class AnalysisWidget(DockArea):
         self.slider_sensitivity.setObjectName("event plot slider")
         self.slider_sensitivity.setOrientation(Qt.Horizontal)
         self.slider_sensitivity.setValue(20)
-        self.slider_sensitivity.valueChanged.connect(self.slider_value)
+        self.slider_sensitivity.valueChanged.connect(self.sliderValue)
         self.acq_buttons.addWidget(self.slider_sensitivity, 5, 0, 1, 2)
 
         self.create_event_button = QPushButton("Create new event")
@@ -346,6 +349,14 @@ class AnalysisWidget(DockArea):
         self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
+    def clearPlots(self):
+        self.inspectionPlot.clear()
+        self.scrollPlot.clear()
+        self.inspectionPlot.setAutoVisible(y=True)
+        self.scrollPlot.enableAutoRange()
+        self.event_view_plot.clear()
+        self.decon_plot.clear()
+
     def plotDeconvolution(self):
         if not self.exp_manager.acq_exists("mini", self.acquisition_number.value()):
             logger.info(
@@ -376,8 +387,6 @@ class AnalysisWidget(DockArea):
 
         # Enabling the buttons since they were temporarily disabled while
         # The acquisitions were analyzed.
-        self.analyze_acq_button.setEnabled(True)
-        self.calculate_parameters.setEnabled(True)
         self.calculate_parameters_2.setEnabled(True)
         self.tab_widget.setCurrentIndex(1)
         logger.info("Analysis finished.")
@@ -578,15 +587,15 @@ class AnalysisWidget(DockArea):
         rgn = viewRange[0]
         self.region.setRegion(rgn)
 
-    def slider_value(self, value):
+    def sliderValue(self, value):
         self.modify = value
 
-    def leftbutton(self):
+    def leftButton(self):
         if self.left_button.isDown():
             minX, maxX = self.region.getRegion()
             self.region.setRegion([minX - self.modify, maxX - self.modify])
 
-    def rightbutton(self):
+    def rightButton(self):
         if self.right_button.isDown():
             minX, maxX = self.region.getRegion()
             self.region.setRegion([minX + self.modify, maxX + self.modify])
@@ -1157,55 +1166,28 @@ class AnalysisWidget(DockArea):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("mini"):
-            logger.info("Did not run final analysis, no acquisitions analyzed.")
-            self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
-            return None
-        logger.info("Beginning final analysis.")
-        self.calculate_parameters.setEnabled(False)
-        self.calculate_parameters_2.setEnabled(False)
-        self.calc_param_clicked = True
-        if self.exp_manager.final_analysis is not None:
-            logger.info("Clearing previous analysis.")
-            self.final_tab_widget.clear()
-            self.clearTables()
-            self.table_dict = {}
-        self.need_to_save = True
+        self.signal.clicked.emit(True)
 
-        self.pbar.setFormat("Analyzing...")
-        logger.info("Experiment manager started final analysis")
-        self.exp_manager.run_final_analysis(acqs_deleted=self.exp_manager.acqs_deleted)
-        logger.info("Experiment manager finished final analysis.")
-        fa = self.exp_manager.final_analysis
-        self.plotAveEvent(
-            fa.average_event_x(),
-            fa.average_event_y(),
-            fa.fit_decay_x(),
-            fa.fit_decay_y(),
-        )
-        logger.info("Plotted average event")
-        for key, df in fa.df_dict.items():
-            data_table = pg.TableWidget(sortable=False)
-            self.table_dict[key] = data_table
-            data_table.setData(df.T.to_dict("dict"))
-            self.final_tab_widget.addTab(data_table, key)
-        logger.info("Set final data into tables.")
-        plots = [
-            "Amplitude (pA)",
-            "Est tau (ms)",
-            "Rise time (ms)",
-            "Rise rate (pA/ms)",
-            "IEI (ms)",
-        ]
-        self.plot_selector.clear()
-        self.plot_selector.addItems(plots)
-        self.plot_selector.setMinimumContentsLength(len(max(plots, key=len)))
-        if self.plot_selector.currentText() != "IEI (ms)":
-            self.plotRawData(self.plot_selector.currentText())
-        self.pbar.setFormat("Finished analysis")
-        self.calculate_parameters.setEnabled(True)
-        self.calculate_parameters_2.setEnabled(True)
-        self.tab_widget.setCurrentIndex(2)
-        logger.info("Plotted final data.")
-        logger.info("Finished analyzing.")
-        self.pbar.setFormat("Final analysis finished")
+    def setData(self, exp_manager):
+        self.exp_manager = exp_manager
+
+    def reset(self):
+        logger.info("Resetting UI.")
+        """
+        This function resets all the variables and clears all the plots.
+        It takes a while to run.
+        """
+        self.inspectionPlot.clear()
+        self.scrollPlot.clear()
+        self.calc_param_clicked = False
+        self.event_view_plot.clear()
+        self.last_event_point_clicked = None
+        self.last_acq_point_clicked = None
+        self.last_event_clicked_global = None
+        self.last_event_clicked_local = None
+        self.event_spinbox_list = []
+        self.sort_index = []
+        self.inspection_widget.clearData()
+        self.calc_param_clicked = False
+        self.need_to_save = False
+        logger.info("UI Reset. Ready to analyze.")

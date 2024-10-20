@@ -20,7 +20,6 @@ from . import acquisition
 
 
 class FilterAcq(acquisition.Acquisition, analysis="filter"):
-
     """
     This is the base class for acquisitions. It returns the array from a
     matfile and filters the array.
@@ -67,6 +66,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
             "parzen",
             "exponential",
         ] = "hann",
+        beta_sigma: float = None,
         polyorder: Union[int, None] = None,
     ):
         self._baseline_start = int(baseline_start * self.s_r_c)
@@ -82,6 +82,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         self.low_width = low_width
         self.window = window
         self.polyorder = polyorder
+        self.beta_sigma = beta_sigma
 
     def analyze(self):
         self.filter_array(self.array)
@@ -133,6 +134,11 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         based on subtraction. Pretty esoteric and is more for learning
         purposes.
         """
+        if self.window == "gaussian" or self.window == "kaiser":
+            window = (self.window, self.beta_sigma)
+        else:
+            window = self.window
+
         baselined_array = array - np.mean(
             array[self._baseline_start : self._baseline_end]
         )
@@ -179,7 +185,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 high_width=self.high_width,
                 low_pass=self.low_pass,
                 low_width=self.low_width,
-                window=self.window,
+                window=window,
             )
         elif self.filter_type == "fir_zero_2":
             self.filtered_array = fir_zero_2(
@@ -190,7 +196,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 high_width=self.high_width,
                 low_pass=self.low_pass,
                 low_width=self.low_width,
-                window=self.window,
+                window=window,
             )
         elif self.filter_type == "remez_1":
             self.filtered_array = remez_1(
@@ -229,7 +235,7 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 high_width=self.high_width,
                 low_pass=self.low_pass,
                 low_width=self.low_width,
-                window=self.window,
+                window=window,
             )
             self.filtered_array = baselined_array - array
 

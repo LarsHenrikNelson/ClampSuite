@@ -32,7 +32,7 @@ class RCCheckWidget(FrameWidget):
         self.rc_check_end.setText("10300")
         self.layout.addRow("RC check end (ms)", self.rc_check_end)
 
-    def getSettings(self):
+    def getAnalysisSettings(self):
         rc_args = {
             "rc_check": self.rc_checkbox.isChecked(),
             "rc_check_start": self.rc_check_start_edit.toFloat(),

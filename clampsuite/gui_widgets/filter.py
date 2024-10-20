@@ -81,15 +81,7 @@ class FilterWidget(FrameWidget):
         self.polyorder_edit.setEnabled(True)
         self.layout.addRow(self.polyorder_label, self.polyorder_edit)
 
-    def getSettings(self):
-        if (
-            self.window_edit.currentText() == "gaussian"
-            or self.window_edit.currentText() == "kaiser"
-        ):
-            window = (self.window_edit.currentText(), self.beta_sigma.value())
-        else:
-            window = self.window_edit.currentText()
-
+    def getAnalysisSettings(self):
         filter_args = (
             {
                 "filter_type": self.filter_selection.currentText(),
@@ -98,7 +90,7 @@ class FilterWidget(FrameWidget):
                 "high_width": self.high_width_edit.toFloat(),
                 "low_pass": self.low_pass_edit.toFloat(),
                 "low_width": self.low_width_edit.toFloat(),
-                "window": window,
+                "window": self.window_edit.currentText(),
                 "polyorder": self.polyorder_edit.toInt(),
                 "beta_sigma": self.beta_sigma.value(),
             },
