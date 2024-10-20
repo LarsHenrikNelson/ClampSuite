@@ -478,22 +478,5 @@ class MiniAnalysisWidget(DragDropWidget):
         elif isinstance(value, str):
             self.pbar.setFormat(value)
 
-    def setAppearancePreferences(self, pref_dict):
-        self.inspectionPlot.setBackground(pref_dict[0])
-        self.inspectionPlot.getAxis("left").setPen(pref_dict[1])
-        self.inspectionPlot.getAxis("left").setTextPen(pref_dict[1])
-        self.inspectionPlot.getAxis("bottom").setPen(pref_dict[1])
-        self.inspectionPlot.getAxis("bottom").setTextPen(pref_dict[1])
-        self.scrollPlot.setBackground(pref_dict[2])
-        self.scrollPlot.getAxis("left").setPen(pref_dict[3])
-        self.scrollPlot.getAxis("left").setTextPen(pref_dict[3])
-        self.scrollPlot.getAxis("bottom").setPen(pref_dict[3])
-        self.scrollPlot.getAxis("bottom").setTextPen(pref_dict[3])
-        self.event_view_plot.setBackground(pref_dict[4])
-        self.event_view_plot.getAxis("left").setPen(pref_dict[5])
-        self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
-        self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
-        self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
-
     def setWorkingDirectory(self, path):
         self.signals.dir_path.emit(path)

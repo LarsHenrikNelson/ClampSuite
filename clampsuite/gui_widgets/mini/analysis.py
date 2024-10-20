@@ -31,7 +31,42 @@ logger = logging.getLogger(__name__)
 class AnalysisWidget(DockArea):
 
     def __init__(self, parent=None, exp_manager=None):
-        super(AnalysisWidget, self).__init__(parent)
+        super().__init__(parent)
+
+        self.mini_colors = {
+            "Event selected": "#34E44B",
+            "Event unselected": "#E867E8",
+            "Event baseline": "#34E44B",
+            "Event peak": "#E867E8",
+            "Event tau": "#2A82DA",
+            "Event item": "#C9CDD0",
+        }
+        self.plot_colors = {
+            "inspection_plot": {
+                "background": "k",
+                "Left axis": "#FCFCFC",
+                "Left axis text": "#FCFCFC",
+                "Bottom axis": "#FCFCFC",
+                "Bottom axis text": "#FCFCFC",
+                "Main line": "#C9CDD0",
+            },
+            "scroll_plot": {
+                "background": "k",
+                "Left axis": "#FCFCFC",
+                "Left axis text": "#FCFCFC",
+                "Bottom axis": "#FCFCFC",
+                "Bottom axis text": "#FCFCFC",
+                "Main line": "#C9CDD0",
+            },
+            "event_view_plot": {
+                "background": "k",
+                "Left axis": "#FCFCFC",
+                "Left axis text": "#FCFCFC",
+                "Bottom axis": "#FCFCFC",
+                "Bottom axis text": "#FCFCFC",
+                "Main line": "#C9CDD0",
+            },
+        }
 
         self.exp_manager = exp_manager
         self.plot_dict = {}
@@ -320,33 +355,36 @@ class AnalysisWidget(DockArea):
         self.need_to_save = False
         self.modify = 20
 
-        self.mini_analysis_colors = {
-            "event_unselected": "#34E44B",
-            "event_selected": "#E867E8",
-            "event_baseline": "#34E44B",
-            "event_peak": "#E867E8",
-            "event_tau": "#2A82DA",
-            "event_item": "#C9CDD0",
-            "inpection_plot_background": "black",
-            "scroll_plot_background": "black",
-            "inspection_plot_axes": "C9CDD0",
-        }
-
         logger.info("Event analysis GUI created.")
 
-        self.del_event_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.shortcuts = {
+            "delete_event": "Ctrl+D",
+            "create_event": "Ctrl+A",
+            "set_baseline": "Ctrl+B",
+            "set_peak": "Ctrl+P",
+            "delete_acq": "Ctrl+Shift+D",
+        }
+        self.del_event_shortcut = QShortcut(
+            QKeySequence(self.shortcuts["delete_event"]), self
+        )
         self.del_event_shortcut.activated.connect(self.deleteEvent)
 
-        self.create_event_shortcut = QShortcut(QKeySequence("Ctrl+A"), self)
+        self.create_event_shortcut = QShortcut(
+            QKeySequence(self.shortcuts["create_event"]), self
+        )
         self.create_event_shortcut.activated.connect(self.createEvent)
 
-        self.set_baseline = QShortcut(QKeySequence("Ctrl + B"), self)
+        self.set_baseline = QShortcut(
+            QKeySequence(self.shortcuts["set_baseline"]), self
+        )
         self.set_baseline.activated.connect(self.setPointAsBaseline)
 
-        self.set_peak = QShortcut(QKeySequence("Ctrl + P"), self)
+        self.set_peak = QShortcut(QKeySequence(self.shortcuts["set_peak"]), self)
         self.set_peak.activated.connect(self.setPointAsPeak)
 
-        self.del_acq_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
+        self.del_acq_shortcut = QShortcut(
+            QKeySequence(self.shortcuts["delete_acq"]), self
+        )
         self.del_acq_shortcut.activated.connect(self.deleteAcq)
 
     def clearPlots(self):
@@ -522,7 +560,7 @@ class AnalysisWidget(DockArea):
                     event_plot = pg.PlotCurveItem(
                         x=acq_object.postsynaptic_events[i].event_x_comp()[:2],
                         y=acq_object.postsynaptic_events[i].event_y_comp()[:2],
-                        pen=pg.mkPen("#34E44B", width=3),
+                        pen=pg.mkPen(self.mini_colors["Event selected"], width=3),
                         name=i,
                         clickable=True,
                     )
@@ -706,7 +744,7 @@ class AnalysisWidget(DockArea):
             y=event.plot_event_y(),
             symbol="o",
             symbolPen=None,
-            symbolBrush="#C9CDD0",
+            symbolBrush=self.mini_colors["Event item"],
             symbolSize=6,
         )
 
@@ -1191,3 +1229,54 @@ class AnalysisWidget(DockArea):
         self.calc_param_clicked = False
         self.need_to_save = False
         logger.info("UI Reset. Ready to analyze.")
+
+    def getAnalysisSettings(self):
+        pass
+
+    def getUISettings(self):
+        self.shortcuts = {
+            "delete_event": "Ctrl+D",
+            "create_event": "Ctrl+A",
+            "set_baseline": "Ctrl+B",
+            "set_peak": "Ctrl+P",
+            "delete_acq": "Ctrl+Shift+D",
+        }
+
+    def setAppearancePreferences(self, pref_dict):
+        self.inspectionPlot.setBackground(pref_dict[0])
+        self.inspectionPlot.getAxis("left").setPen(pref_dict[1])
+        self.inspectionPlot.getAxis("left").setTextPen(pref_dict[1])
+        self.inspectionPlot.getAxis("bottom").setPen(pref_dict[1])
+        self.inspectionPlot.getAxis("bottom").setTextPen(pref_dict[1])
+        self.scrollPlot.setBackground(pref_dict[2])
+        self.scrollPlot.getAxis("left").setPen(pref_dict[3])
+        self.scrollPlot.getAxis("left").setTextPen(pref_dict[3])
+        self.scrollPlot.getAxis("bottom").setPen(pref_dict[3])
+        self.scrollPlot.getAxis("bottom").setTextPen(pref_dict[3])
+        self.event_view_plot.setBackground(pref_dict[4])
+        self.event_view_plot.getAxis("left").setPen(pref_dict[5])
+        self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
+        self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
+        self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
+
+        inspection_plot = {
+            "background": "k",
+            "left_axis": "#FCFCFC",
+            "left_axis_text": "#FCFCFC",
+            "bottom_axis": "#FCFCFC",
+            "bottom_axis_text": "#FCFCFC",
+        }
+        scroll_plot = {
+            "background": "k",
+            "left_axis": "#FCFCFC",
+            "left_axis_text": "#FCFCFC",
+            "bottom_axis": "#FCFCFC",
+            "bottom_axis_text": "#FCFCFC",
+        }
+        event_view_plot = {
+            "background": "k",
+            "left_axis": "#FCFCFC",
+            "left_axis_text": "#FCFCFC",
+            "bottom_axis": "#FCFCFC",
+            "bottom_axis_text": "#FCFCFC",
+        }
