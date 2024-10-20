@@ -7,17 +7,13 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtCore import Qt, QThreadPool
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
-    QDoubleSpinBox,
-    QFormLayout,
     QHBoxLayout,
     QLineEdit,
     QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
-    QSlider,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
@@ -93,7 +89,6 @@ class MiniAnalysisWidget(DragDropWidget):
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
 
-        self.template_form = QFormLayout()
         self.tab1.setLayout(self.setup_layout)
 
         self.input_layout = QVBoxLayout()
@@ -1307,70 +1302,20 @@ class MiniAnalysisWidget(DragDropWidget):
     def createPrefDict(self):
         logger.info("Creating preferences dictionary.")
         pref_dict = {}
-        line_edits = self.findChildren(QLineEdit)
-        line_edit_dict = {}
-        for i in line_edits:
-            if i.objectName() != "":
-                line_edit_dict[i.objectName()] = i.text()
-        pref_dict["line_edits"] = line_edit_dict
-
-        combo_box_dict = {}
-        combo_boxes = self.findChildren(QComboBox)
-        for i in combo_boxes:
-            if i.objectName() != "":
-                combo_box_dict[i.objectName()] = i.currentText()
-        pref_dict["combo_boxes"] = combo_box_dict
-
-        check_box_dict = {}
-        check_boxes = self.findChildren(QCheckBox)
-        for i in check_boxes:
-            if i.objectName() != "":
-                check_box_dict[i.objectName()] = i.isChecked()
-        pref_dict["check_boxes"] = check_box_dict
-
-        dspinbox_dict = {}
-        dspinboxes = self.findChildren(QDoubleSpinBox)
-        for i in dspinboxes:
-            if i.objectName() != "":
-                dspinbox_dict[i.objectName()] = i.text()
-        pref_dict["double_spinboxes"] = dspinbox_dict
-
-        slider_dict = {}
-        sliders = self.findChildren(QSlider)
-        for i in sliders:
-            if i.objectName() != "":
-                slider_dict[i.objectName()] = i.value()
-        pref_dict["sliders"] = slider_dict
-        logger.info("Preferences dictionary created.")
+        pref_dict["baseline"] = self.baseline_widget.getSettings()
+        pref_dict["filter"] = self.filter_widget.getSettings()
+        pref_dict["rc_check"] = self.rc_widget.getSettings()
+        pref_dict["mini"] = self.mini_settings.getSettings()
         return pref_dict
 
-    def setPreferences(self, pref_dict):
+    def setPreferences(self, pref_dict: dict[dict[str, int | float | str]]):
         logger.info("Setting MiniAnalysis preferences.")
-        line_edits = self.findChildren(QLineEdit)
-        for i in line_edits:
-            if i.objectName() != "":
-                i.setText(pref_dict["line_edits"][i.objectName()])
 
-        combo_boxes = self.findChildren(QComboBox)
-        for i in combo_boxes:
-            if i.objectName() != "":
-                i.setCurrentText(pref_dict["combo_boxes"][i.objectName()])
+        self.baseline_widget.setSettings(pref_dict["baseline"])
+        self.filter_widget.getSettings(pref_dict["filter"])
+        self.rc_widget.getSettings(pref_dict["rc_check"])
+        self.mini_settings.getSettings(pref_dict["mini"])
 
-        check_boxes = self.findChildren(QCheckBox)
-        for i in check_boxes:
-            if i.objectName() != "":
-                i.setChecked(pref_dict["check_boxes"][i.objectName()])
-
-        spinboxes = self.findChildren(QDoubleSpinBox)
-        for i in spinboxes:
-            if i.objectName() != "":
-                if pref_dict["double_spinboxes"][i.objectName()] != "":
-                    i.setValue(float(pref_dict["double_spinboxes"][i.objectName()]))
-
-        sliders = self.findChildren(QSlider)
-        for i in sliders:
-            if i.objectName() != "":
-                i.setValue(pref_dict["sliders"][i.objectName()])
         logger.info("Preferences set.")
         self.pbar.setFormat("Preferences set")
 

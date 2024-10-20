@@ -100,9 +100,21 @@ class FilterWidget(FrameWidget):
                 "low_width": self.low_width_edit.toFloat(),
                 "window": window,
                 "polyorder": self.polyorder_edit.toInt(),
+                "beta_sigma": self.beta_sigma.value(),
             },
         )
         return filter_args
+
+    def setSettings(self, settings: dict[str, str | int | bool]):
+        self.filter_selection.setCurrentText(settings["filter_type"])
+        self.order_edit.setText(settings["order"])
+        self.high_pass_edit.setText(settings["high_pass"])
+        self.high_width_edit.setText(settings["high_width"])
+        self.low_pass_edit.setText(settings["low_pass"])
+        self.low_width_edit.setText(settings["low_width"])
+        self.window_edit.setCurrentText(settings["window"])
+        self.polyorder_edit.setText(settings["polyorder"])
+        self.beta_sigma.setText(settings["beta_sigma"])
 
     def windowChanged(self, text):
         if text == "gaussian":

@@ -20,21 +20,27 @@ class RCCheckWidget(FrameWidget):
         self.rc_checkbox.setTristate(False)
         self.layout.addRow("RC check", self.rc_checkbox)
 
-        self.rc_check_start_edit = LineEdit()
-        self.rc_check_start_edit.setEnabled(True)
-        self.rc_check_start_edit.setObjectName("rc_check_start_edit")
-        self.rc_check_start_edit.setText("10000")
-        self.layout.addRow("RC check start (ms)", self.rc_check_start_edit)
+        self.rc_check_start = LineEdit()
+        self.rc_check_start.setEnabled(True)
+        self.rc_check_start.setObjectName("rc_check_start")
+        self.rc_check_start.setText("10000")
+        self.layout.addRow("RC check start (ms)", self.rc_check_start)
 
-        self.rc_check_end_edit = LineEdit()
-        self.rc_check_end_edit.setEnabled(True)
-        self.rc_check_end_edit.setObjectName("rc_check_end_edit")
-        self.rc_check_end_edit.setText("10300")
-        self.layout.addRow("RC check end (ms)", self.rc_check_end_edit)
+        self.rc_check_end = LineEdit()
+        self.rc_check_end.setEnabled(True)
+        self.rc_check_end.setObjectName("rc_check_end")
+        self.rc_check_end.setText("10300")
+        self.layout.addRow("RC check end (ms)", self.rc_check_end)
 
     def getSettings(self):
         rc_args = {
-            "baseline_start": self.b_start_edit.toInt(),
-            "baseline_end": self.b_end_edit.toInt(),
+            "rc_check": self.rc_checkbox.isChecked(),
+            "rc_check_start": self.rc_check_start_edit.toFloat(),
+            "rc_check_end": self.rc_check_end.toFloat(),
         }
         return rc_args
+
+    def setSettings(self, settings: dict[str, str | int | bool]):
+        self.rc_check.setChecked(settings["rc_check"])
+        self.rc_check_start.setText(settings["rc_check_start"])
+        self.rc_check_end.setText(settings["rc_check_end"])
