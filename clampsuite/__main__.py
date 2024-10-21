@@ -23,7 +23,7 @@ def main(logger):
     pg.setConfigOptions(antialias=True)
     pg.setConfigOption("foreground", "#FCFCFC")
 
-    wdir = PurePath(__file__).parent
+    wdir = PurePath(clampsuite.__file__).parent
     logo_path = str(wdir / "logo/d_logo.png")
     pic = QPixmap(logo_path)
     splash = QSplashScreen(pic)
