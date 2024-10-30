@@ -438,7 +438,6 @@ class currentClampWidget(DragDropWidget):
         self.clickable_spike_data.sigPointsClicked.connect(self.plotClicked)
         self.spike_plot.addItem(self.clickable_spike_data)
 
-        self.spk_data_plots_cleared = True
         self.text = None
 
         self.pbar.setFormat("Ready to analyze")
@@ -544,8 +543,29 @@ class currentClampWidget(DragDropWidget):
         self.pbar.setFormat("Analysis finished")
         logger.info("Firsts acquisition set.")
 
-    def clearAcqPlots(self):
-        if not self.spk_data_plots_cleared:
+    def clearAcqPlots(self, clear_main: bool = False, clear_spikes: bool = False):
+        if clear_main:
+            self.acq_plot.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen("w"),
+                symbol="o",
+                symbolSize=8,
+                symbolBrush=(0, 0, 0, 0),
+                symbolPen=(0, 0, 0, 0),
+            )
+
+            self.delta_v_data.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen(color="r", width=2),
+            )
+            self.vsag_data.setData(
+                x=[],
+                y=[],
+                pen=pg.mkPen(color="m", width=2),
+            )
+        if clear_spikes:
             self.spike_peaks_data.setData(
                 x=[],
                 y=[],
@@ -605,7 +625,6 @@ class currentClampWidget(DragDropWidget):
                 symbol="o",
                 symbolBrush="m",
             )
-            self.spk_data_plots_cleared = True
             if self.text is not None:
                 self.plot_widget.removeItem(self.text)
                 self.text = None
@@ -629,27 +648,7 @@ class currentClampWidget(DragDropWidget):
         self.plot_dict = {}
         self.table_dict = {}
         self.inspection_widget.clearData()
-        self.clearAcqPlots()
-        self.acq_plot.setData(
-            x=[],
-            y=[],
-            pen=pg.mkPen("w"),
-            symbol="o",
-            symbolSize=8,
-            symbolBrush=(0, 0, 0, 0),
-            symbolPen=(0, 0, 0, 0),
-        )
-
-        self.delta_v_data.setData(
-            x=[],
-            y=[],
-            pen=pg.mkPen(color="r", width=2),
-        )
-        self.vsag_data.setData(
-            x=[],
-            y=[],
-            pen=pg.mkPen(color="m", width=2),
-        )
+        self.clearAcqPlots(clear_main=True, clear_spikes=True)
         self.exp_manager = ExpManager()
         self.last_acq_point_clicked = None
         self.acq_view.setData(self.exp_manager)
@@ -799,31 +798,10 @@ class currentClampWidget(DragDropWidget):
                     symbol="o",
                     symbolBrush="m",
                 )
-                self.spk_data_plots_cleared = False
             else:
-                self.clearAcqPlots()
+                self.clearAcqPlots(clear_spikes=True)
         else:
-            self.clearAcqPlots()
-            self.acq_plot.setData(
-                x=[],
-                y=[],
-                pen=pg.mkPen("w"),
-                symbol="o",
-                symbolSize=8,
-                symbolBrush=(0, 0, 0, 0),
-                symbolPen=(0, 0, 0, 0),
-            )
-
-            self.delta_v_data.setData(
-                x=[],
-                y=[],
-                pen="r",
-            )
-            self.vsag_data.setData(
-                x=[],
-                y=[],
-                pen="m",
-            )
+            self.clearAcqPlots(clear_main=True, clear_spikes=True)
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             self.text.setFont(QFont("Helvetica", 20))
@@ -931,7 +909,7 @@ class currentClampWidget(DragDropWidget):
         self.exp_manager.delete_acq("current_clamp", self.acquisition_number.value())
 
         # Clear plots
-        self.plot_widget.clear()
+        self.clearAcqPlots(clear_main=True, clear_spikes=True)
         logger.info(f"Deleted acquisition {self.acquisition_number.value()}.")
 
     def resetRejectedAcqs(self):
