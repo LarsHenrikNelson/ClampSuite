@@ -41,6 +41,7 @@ testing = [
 
 [project.urls]
 Homepage = "https://github.com/LarsHenrikNelson/ClampSuite"
+Documentation = "https://clampsuite.readthedocs.io/"
 
 [project.gui-scripts]
 clampsuite = "clampsuite.__main__:main"

@@ -6,8 +6,10 @@ from pathlib import PurePath
 import pyqtgraph as pg
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QApplication, QSplashScreen
+
+import clampsuite
 
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
@@ -24,7 +26,7 @@ def main(logger):
     pg.setConfigOptions(antialias=True)
     pg.setConfigOption("foreground", "#FCFCFC")
 
-    wdir = PurePath(__file__).parent
+    wdir = PurePath(clampsuite.__file__).parent
     logo_path = str(wdir / "logo/d_logo.png")
     pic = QPixmap(logo_path)
     splash = QSplashScreen(pic)
