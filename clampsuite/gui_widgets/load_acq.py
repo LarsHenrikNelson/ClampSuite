@@ -181,6 +181,7 @@ class LoadAcqWidget(QVBoxLayout):
 
         self.analysis_type = analysis_type
         self.load_acq_label = QLabel("Acquisition(s)")
+        self.load_acq_label.setStyleSheet("font-weight: bold")
         self.addWidget(self.load_acq_label)
         self.load_widget = ListView()
         self.load_widget.model().signals.progress.connect(self.updateProgress)

@@ -61,7 +61,8 @@ class MiniAnalysisWidget(DragDropWidget):
         self.tab1_scroll.setWidget(self.tab1)
 
         self.analysis_widget = mini.AnalysisWidget()
-        self.analysis_widget.clicked.connect(self.runFinalAnalysis)
+        self.analysis_widget.signals.error.connect(self.errorDialog)
+        self.analysis_widget.signals.clicked.connect(self.runFinalAnalysis)
 
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -480,3 +481,6 @@ class MiniAnalysisWidget(DragDropWidget):
 
     def setWorkingDirectory(self, path):
         self.signals.dir_path.emit(path)
+
+    def needToSave(self):
+        return self.exp_manager.need_to_save

@@ -71,7 +71,7 @@ class AnalysisWidget(DockArea):
         self.exp_manager = exp_manager
         self.plot_dict = {}
 
-        self.signal = WorkerSignals()
+        self.signals = WorkerSignals()
 
         self.decon_plot = DeconInspectionWidget()
 
@@ -585,11 +585,11 @@ class AnalysisWidget(DockArea):
                 self.event_number.setValue(0)
                 self.eventSpinbox(0)
                 logger.info(
-                    f"Acquisition {self.acquisition_number.value()} has no events to plot."
+                    f"Acquisition {self.acquisition_number.value()}: Events plotted."
                 )
             else:
                 logger.info(
-                    f"Acquisition {self.acquisition_number.value()}: Events plotted."
+                    f"Acquisition {self.acquisition_number.value()} has no events to plot."
                 )
             self.acq_point_clicked = pg.PlotDataItem(
                 x=[],
@@ -1204,7 +1204,7 @@ class AnalysisWidget(DockArea):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        self.signal.clicked.emit(True)
+        self.signals.clicked.emit()
 
     def setData(self, exp_manager):
         self.exp_manager = exp_manager
@@ -1258,3 +1258,6 @@ class AnalysisWidget(DockArea):
         self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
+
+    def errorDialog(self, text):
+        self.signals.error.emit(text)

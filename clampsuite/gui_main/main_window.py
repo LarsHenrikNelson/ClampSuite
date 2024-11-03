@@ -244,7 +244,7 @@ class MainWindow(QMainWindow):
         self.preferences_widget.show()
 
     def closeEvent(self, event):
-        if self.central_widget.currentWidget().need_to_save:
+        if self.central_widget.currentWidget().needToSave():
             msgbox = QMessageBox()
             msgbox.setInformativeText("Do you want to save your changes?")
             msgbox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
@@ -268,7 +268,7 @@ class MainWindow(QMainWindow):
             temp_path = self.program_directory / (key + ".yaml")
             if temp_path.exists():
                 logger.info(f"Loading {key} preferences from {temp_path}")
-                value.loadPreferences(self.program_directory / (key + ".yaml"))
+                # value.loadPreferences(self.program_directory / (key + ".yaml"))
             else:
                 logger.info(f"Loading {key} preferences to {temp_path}")
                 value.savePreferences(self.program_directory / key)

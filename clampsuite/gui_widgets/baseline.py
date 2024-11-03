@@ -9,7 +9,7 @@ from .qtwidgets import FrameWidget, LineEdit
 class BaselineWidget(FrameWidget):
 
     def __init__(self, parent=None):
-        super(BaselineWidget, self).__init__(parent)
+        super().__init__(title="Baseline", parent=parent)
 
         self.layout = QFormLayout()
         self.setLayout(self.layout)
@@ -26,7 +26,7 @@ class BaselineWidget(FrameWidget):
         self.b_end_edit.setText("80")
         self.layout.addRow("Baseline end (ms)", self.b_end_edit)
 
-        baseline_methods = ["mean", "polynomial"]
+        baseline_methods = ["None", "mean", "polynomial"]
         self.baseline_method = QComboBox(None)
         self.baseline_method.addItems(baseline_methods)
         self.baseline_method.setMinimumContentsLength(

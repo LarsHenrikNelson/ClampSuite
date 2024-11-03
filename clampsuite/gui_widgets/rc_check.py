@@ -9,7 +9,7 @@ from .qtwidgets import FrameWidget, LineEdit
 class RCCheckWidget(FrameWidget):
 
     def __init__(self, parent=None):
-        super(RCCheckWidget, self).__init__(parent)
+        super().__init__(title="RC Check", parent=parent)
 
         self.layout = QFormLayout()
         self.setLayout(self.layout)

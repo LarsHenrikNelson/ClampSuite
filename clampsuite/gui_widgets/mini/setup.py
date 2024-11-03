@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 class MiniSettingsWidget(FrameWidget):
 
     def __init__(self, parent=None):
-        super(MiniSettingsWidget, self).__init__(parent)
+        super().__init__(
+            title="Mini Settings",
+            parent=parent,
+        )
 
         self.layout = QFormLayout()
         self.setLayout(self.layout)
@@ -99,29 +102,27 @@ class MiniSettingsWidget(FrameWidget):
         self.layout.addRow("Event finding method", self.decon_type_edit)
 
     def getAnalysisSettings(self):
-        analysis_args = (
-            {
-                "sensitivity": self.sensitivity_edit.toFloat(),
-                "amp_threshold": self.amp_thresh_edit.toFloat(),
-                "mini_spacing": self.event_spacing_edit.toFloat(),
-                "min_rise_time": self.min_rise_time.toFloat(),
-                "max_rise_time": self.max_rise_time.toFloat(),
-                "min_decay_time": self.min_decay.toFloat(),
-                "event_length": self.event_length.toInt(),
-                "decay_rise": self.decay_rise.isChecked(),
-                "invert": self.invert_checkbox.isChecked(),
-                "decon_type": self.decon_type_edit.currentText(),
-                "curve_fit_decay": self.curve_fit_decay.isChecked(),
-                "curve_fit_type": self.curve_fit_edit.currentText(),
-                "baseline_corr": self.baseline_corr_choice.isChecked(),
-                "rc_check": self.rc_checkbox.isChecked(),
-                "rc_check_start": self.rc_check_start_edit.toFloat(),
-                "rc_check_end": self.rc_check_end_edit.toFloat(),
-            },
-        )
+        analysis_args = {
+            "sensitivity": self.sensitivity_edit.toFloat(),
+            "amp_threshold": self.amp_thresh_edit.toFloat(),
+            "mini_spacing": self.event_spacing_edit.toFloat(),
+            "min_rise_time": self.min_rise_time.toFloat(),
+            "max_rise_time": self.max_rise_time.toFloat(),
+            "min_decay_time": self.min_decay.toFloat(),
+            "event_length": self.event_length.toInt(),
+            "decay_rise": self.decay_rise.isChecked(),
+            "invert": self.invert_checkbox.isChecked(),
+            "decon_type": self.decon_type_edit.currentText(),
+            "curve_fit_decay": self.curve_fit_decay.isChecked(),
+            "curve_fit_type": self.curve_fit_edit.currentText(),
+            "baseline_corr": self.baseline_corr_choice.isChecked(),
+            "rc_check": self.rc_checkbox.isChecked(),
+            "rc_check_start": self.rc_check_start_edit.toFloat(),
+            "rc_check_end": self.rc_check_end_edit.toFloat(),
+        }
         return analysis_args
 
-    def setSettings(self, settings: dict[str, str | int | bool]):
+    def setAnalysisSettings(self, settings: dict[str, str | int | bool]):
         self.sensitivity_edit.setText(settings["sensitivity"])
         self.amp_thresh_edit.setText(settings["amp_threshold"])
         self.event_spacing_edit.setText(settings["mini_spacing"])
@@ -143,7 +144,7 @@ class MiniSettingsWidget(FrameWidget):
 class TemplateWidget(FrameWidget):
 
     def __init__(self, parent=None):
-        super(TemplateWidget, self).__init__(parent)
+        super().__init__(title="Mini template", parent=parent)
 
         self.layout = QFormLayout()
         self.setLayout(self.layout)
@@ -201,6 +202,9 @@ class TemplateWidget(FrameWidget):
             "sample_rate": self.sample_rate_edit.toInt(),
         }
         return template_args
+
+    def setAnalysisSettings(self, settings: dict[str, str | int | float]):
+        self.amplitude_edit.setText("")
 
 
 class MiniWidget(QVBoxLayout):

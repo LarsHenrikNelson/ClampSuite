@@ -11,7 +11,7 @@ from PySide6.QtCore import (
     Slot,
 )
 from PySide6.QtWidgets import (
-    QFrame,
+    QGroupBox,
     QLineEdit,
     QListView,
     QSpinBox,
@@ -31,15 +31,25 @@ class QExpManager(ExpManager):
         self.need_to_save = save
 
 
-class FrameWidget(QFrame):
+class FrameWidget(QGroupBox):
 
-    def __init__(self, parent=None):
-        super(FrameWidget, self).__init__(parent)
+    def __init__(self, title="", parent=None):
+        super().__init__(parent=parent)
 
-        self.setObjectName("parent")
+        self.setTitle(title)
+        # self.setObjectName("parent")
 
-        self.setFrameStyle(QFrame.Panel | QFrame.Plain)
-        self.setStyleSheet(r"QFrame#parent {border: 1px solid; border-color: #404040}")
+        # self.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        self.setStyleSheet(
+            r"""QGroupBox 
+            {
+                border: 1px solid; border-color: #404040;
+                border-radius: 6px;
+                margin-top: 12px;
+                padding: 0px 0px;
+                font-weight: bold}
+            """
+        )
 
 
 class LineEdit(QLineEdit):
@@ -117,12 +127,13 @@ class WorkerSignals(QObject):
     from freezing when there are long running events.
     """
 
-    file = Signal(object)
-    progress = Signal(object)
+    file = Signal(str)
+    progress = Signal(str)
     finished = Signal(str)
-    file_path = Signal(object)
-    dir_path = Signal(object)
-    clicked = Signal(bool)
+    file_path = Signal(str)
+    dir_path = Signal(str)
+    clicked = Signal(str)
+    error = Signal(str)
 
 
 class ListModel(QAbstractListModel):
@@ -235,7 +246,7 @@ class ListView(QListView):
         else:
             e.ignore()
 
-    @Slot(object)
+    @Slot(QObject)
     def dropEvent(self, e):
         """
         This function will enable the drop file directly on to the

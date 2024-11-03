@@ -14,7 +14,7 @@ class FilterWidget(FrameWidget):
     filters = ExpManager.filters
 
     def __init__(self, parent=None):
-        super(FilterWidget, self).__init__(parent)
+        super().__init__(title="Filter", parent=parent)
 
         self.layout = QFormLayout()
         self.setLayout(self.layout)

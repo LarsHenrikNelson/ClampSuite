@@ -4,13 +4,13 @@ from pathlib import PurePath
 
 import pyqtgraph as pg
 
-# from PySide6 import QtCore
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from .functions.startup import check_dir
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
+import clampsuite
 
 
 def main(logger):
