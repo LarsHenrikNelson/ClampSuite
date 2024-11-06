@@ -149,7 +149,15 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
                 height=2,
             )
+            if len(peaks) == 0:
+                peaks, _ = signal.find_peaks(
+                    dddv_zscored[
+                        self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]
+                    ],
+                    height=1,
+                )
             peaks = peaks - 1 + self._pulse_start + int(1 * self.s_r_c)
+
         elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
