@@ -25,6 +25,8 @@ class MiniSettingsWidget(FrameWidget):
             parent=parent,
         )
 
+        self.setObjectName("mini_settings")
+
         self.layout = QFormLayout()
         self.setLayout(self.layout)
 
@@ -149,6 +151,8 @@ class TemplateWidget(FrameWidget):
         self.layout = QFormLayout()
         self.setLayout(self.layout)
 
+        self.setObjectName("template_settings")
+
         self.tau_1_edit = LineEdit()
         self.tau_1_edit.setObjectName("tau_1_edit")
         self.tau_1_edit.setEnabled(True)
@@ -213,6 +217,8 @@ class MiniWidget(QVBoxLayout):
         super(MiniWidget, self).__init__(parent)
 
         # self.setContentsMargins(0, 0, 0, 0)
+
+        self.setObjectName("mini_widget")
 
         self.extra_layout = QVBoxLayout()
         self.addLayout(self.extra_layout)

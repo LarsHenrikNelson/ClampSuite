@@ -14,6 +14,8 @@ class RCCheckWidget(FrameWidget):
         self.layout = QFormLayout()
         self.setLayout(self.layout)
 
+        self.setObjectName("rc_check")
+
         self.rc_checkbox = QCheckBox()
         self.rc_checkbox.setObjectName("rc_checkbox")
         self.rc_checkbox.setChecked(True)

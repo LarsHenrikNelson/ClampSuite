@@ -27,6 +27,8 @@ class AnalysisWidget(QWidget):
 
         self.exp_manager = None
 
+        self.setObjectName("current_clamp_analysis")
+
         self.signals = WorkerSignals()
 
         self.h_layout = QHBoxLayout()

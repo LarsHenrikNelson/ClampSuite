@@ -175,6 +175,8 @@ class LoadAcqWidget(QVBoxLayout):
         super(LoadAcqWidget, self).__init__(parent)
         self.signals = WorkerSignals()
 
+        self.setObjectName("load_acq")
+
         self.inspection_widget = AcqInspectionWidget()
         self.exp_manager = None
         self.dlg = QMessageBox()

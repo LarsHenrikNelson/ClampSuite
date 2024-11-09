@@ -19,6 +19,8 @@ class FilterWidget(FrameWidget):
         self.layout = QFormLayout()
         self.setLayout(self.layout)
 
+        self.setObjectName("filter")
+
         self.filter_selection = QComboBox(self)
         self.filter_selection.addItems(self.filters)
         self.filter_selection.setMinimumContentsLength(len(max(self.filters, key=len)))

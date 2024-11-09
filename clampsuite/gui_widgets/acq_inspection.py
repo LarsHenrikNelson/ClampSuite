@@ -18,6 +18,8 @@ class AcqInspectionWidget(QWidget):
         self.props_layout = QFormLayout()
         self.acq_dict = {}
 
+        self.setObjectName("acq_inspection")
+
         # Since the class is inheriting from QWdiget there is no need to set
         # or define a central widget like the mainwindow setCentralWidget
         self.setLayout(self.plot_layout)

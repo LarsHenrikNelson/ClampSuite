@@ -19,6 +19,8 @@ class CurrentClammpSettingsWidget(FrameWidget):
 
         self.setLayout(self.input_layout)
 
+        self.setObjectName("current_clamp_setup")
+
         self.min_spike_threshold_label = QLabel("Min spike threshold (mV)")
         self.min_spike_threshold_edit = LineEdit()
         self.min_spike_threshold_edit.setObjectName("min_spike_threshold")

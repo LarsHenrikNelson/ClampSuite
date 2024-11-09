@@ -14,6 +14,8 @@ class BaselineWidget(FrameWidget):
         self.layout = QFormLayout()
         self.setLayout(self.layout)
 
+        self.setObjectName("baseline")
+
         self.b_start_edit = LineEdit(None)
         self.b_start_edit.setObjectName("b_start_edit")
         self.b_start_edit.setEnabled(True)

@@ -33,6 +33,8 @@ class AnalysisWidget(DockArea):
     def __init__(self, parent=None, exp_manager=None):
         super().__init__(parent)
 
+        self.setObjectName("mini_analysis")
+
         self.mini_colors = {
             "Event selected": "#34E44B",
             "Event unselected": "#E867E8",
