@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class MiniAnalysisWidget(DragDropWidget):
     def __init__(self, parent=None):
-        super(DragDropWidget, self).__init__(parent)
+        super().__init__()
         self.initUI()
 
     def initUI(self):
@@ -85,6 +85,8 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.dlg = QMessageBox(self)
 
+        self._analysis_widgets = {}
+
         # Tab 1 layouts
         self.setup_layout = QHBoxLayout()
 
@@ -95,12 +97,15 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.baseline_widget = BaselineWidget()
         self.input_layout.addWidget(self.baseline_widget)
+        self._analysis_widgets[self.baseline_widget.objectName()] = self.baseline_widget
 
         self.rc_widget = RCCheckWidget()
         self.input_layout.addWidget(self.rc_widget)
+        self._analysis_widgets[self.rc_widget.objectName()] = self.rc_widget
 
         self.filter_widget = FilterWidget()
         self.input_layout.addWidget(self.filter_widget)
+        self._analysis_widgets[self.filter_widget.objectName()] = self.filter_widget
 
         self.analysis_buttons = AnalysisButtonsWidget()
         self.input_layout.addLayout(self.analysis_buttons)
@@ -108,6 +113,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.mini_settings = mini.MiniWidget()
         self.setup_layout.addLayout(self.mini_settings)
+        self._analysis_widgets[self.mini_settings.objectName()] = self.mini_settings
 
         # Setup for the drag and drop load layout
         self.analysis_type = "mini"
@@ -447,19 +453,16 @@ class MiniAnalysisWidget(DragDropWidget):
     def createPrefDict(self):
         logger.info("Creating preferences dictionary.")
         pref_dict = {}
-        pref_dict["baseline"] = self.baseline_widget.getSettings()
-        pref_dict["filter"] = self.filter_widget.getSettings()
-        pref_dict["rc_check"] = self.rc_widget.getSettings()
-        pref_dict["mini"] = self.mini_settings.getSettings()
+        for i in self._analysis_widgets.values():
+            pref_dict[i.objectName()] = i.getAnalysisSettings()
+        logger.info("Mini analysis preferences dictionary created.")
         return pref_dict
 
-    def setPreferences(self, pref_dict: dict[dict[str, int | float | str]]):
+    def setPreferences(self, pref_dict: dict[str, dict[str, int | float | str]]):
         logger.info("Setting MiniAnalysis preferences.")
 
-        self.baseline_widget.setSettings(pref_dict["baseline"])
-        self.filter_widget.getSettings(pref_dict["filter"])
-        self.rc_widget.getSettings(pref_dict["rc_check"])
-        self.mini_settings.getSettings(pref_dict["mini"])
+        for key, values in pref_dict.items():
+            self._analysis_widgets[key].setAnalysisSettings(values)
 
         logger.info("Preferences set.")
         self.pbar.setFormat("Preferences set")

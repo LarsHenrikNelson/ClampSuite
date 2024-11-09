@@ -37,7 +37,7 @@ class RCCheckWidget(FrameWidget):
     def getAnalysisSettings(self):
         rc_args = {
             "rc_check": self.rc_checkbox.isChecked(),
-            "rc_check_start": self.rc_check_start_edit.toFloat(),
+            "rc_check_start": self.rc_check_start.toFloat(),
             "rc_check_end": self.rc_check_end.toFloat(),
         }
         return rc_args

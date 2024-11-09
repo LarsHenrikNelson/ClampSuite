@@ -6,7 +6,7 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QAction, QDoubleValidator, QFont, QIntValidator
+from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -27,8 +27,19 @@ from PySide6.QtWidgets import (
 )
 
 from ..functions.utilities import round_sig
-from ..gui_widgets.qtwidgets import DragDropWidget, LineEdit, ListView, ThreadWorker
-from ..manager import ExpManager
+from ..gui_widgets import (
+    AnalysisButtonsWidget,
+    evoked_psc,
+    evoked_lfp,
+    BaselineWidget,
+    DragDropWidget,
+    FilterWidget,
+    LoadAcqWidget,
+    ThreadWorker,
+    WorkerSignals,
+    QExpManager,
+)
+from ..gui_widgets.qtwidgets import FrameWidget
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
@@ -68,314 +79,78 @@ class oEPSCWidget(DragDropWidget):
         self.tab1_scroll.setWidgetResizable(True)
         self.tab1_scroll.setWidget(self.tab1)
         self.tabs.addTab(self.tab1_scroll, "Setup")
+
         self.tab1_layout = QVBoxLayout()
         self.tab1.setLayout(self.tab1_layout)
-        self.form_layouts = QHBoxLayout()
-        self.tab1_layout.addLayout(self.form_layouts, 0)
-        self.view_layout_1 = QVBoxLayout()
-        self.view_layout_2 = QVBoxLayout()
-        self.input_layout_1 = QFormLayout()
-        self.input_layout_3 = QFormLayout()
-        self.input_layout_2 = QFormLayout()
-        self.oepsc_view = ListView()
-        self.oepsc_view.model().signals.progress.connect(self.updateProgress)
-        self.oepsc_view.model().signals.dir_path.connect(self.setWorkingDirectory)
-        self.oepsc_analysis = "oepsc"
-        self.oepsc_view.setAnalysisType(self.oepsc_analysis)
-        self.acq_label_1 = QLabel("Acquisition(s)")
-        self.view_layout_1.addWidget(self.acq_label_1)
-        self.view_layout_1.addWidget(self.oepsc_view)
-        self.inspect_oepsc_acqs = QPushButton("Inspect acquistions")
-        self.inspect_oepsc_acqs.clicked.connect(
-            lambda checked: self.inspectAcqs("oepsc")
-        )
-        self.view_layout_1.addWidget(self.inspect_oepsc_acqs)
-        self.del_oepsc_sel = QPushButton("Delete selection")
-        self.del_oepsc_sel.clicked.connect(
-            lambda checked: self.delSelection(self.oepsc_view, "oepsc")
-        )
-        self.view_layout_1.addWidget(self.del_oepsc_sel)
-        self.form_layouts.addLayout(self.view_layout_1)
-        self.form_layouts.addLayout(self.input_layout_1)
-        self.form_layouts.addLayout(self.input_layout_3)
-        self.lfp_view = ListView()
-        self.lfp_view.model().signals.progress.connect(self.updateProgress)
-        self.lfp_view.model().signals.dir_path.connect(self.setWorkingDirectory)
-        self.lfp_analysis = "lfp"
-        self.lfp_view.setAnalysisType(self.lfp_analysis)
-        self.acq_label_2 = QLabel("Acquisition(s)")
-        self.view_layout_2.addWidget(self.acq_label_2)
-        self.view_layout_2.addWidget(self.lfp_view)
-        self.inspect_lfp_acqs = QPushButton("Inspect acquistions")
-        self.inspect_lfp_acqs.clicked.connect(lambda checked: self.inspectAcqs("lfp"))
-        self.view_layout_2.addWidget(self.inspect_lfp_acqs)
-        self.del_lfp_sel = QPushButton("Delete selection")
-        self.del_lfp_sel.clicked.connect(
-            lambda checked: self.delSelection(self.lfp_view, "lfp")
-        )
-        self.view_layout_2.addWidget(self.del_lfp_sel)
-        self.form_layouts.addLayout(self.view_layout_2)
-        self.form_layouts.addLayout(self.input_layout_2)
 
-        # oEPSC buttons and line edits
-        self.oepsc_input = QLabel("oEPSC")
-        self.input_layout_1.addRow(self.oepsc_input)
+        self.widget_layout = QHBoxLayout()
+        self.tab1_layout.addLayout(self.widget_layout)
 
-        self.o_b_start_label = QLabel("Baseline start")
-        self.o_b_start_edit = LineEdit()
-        self.o_b_start_edit.setEnabled(True)
-        self.o_b_start_edit.setObjectName("o_b_start_edit")
-        self.o_b_start_edit.setText("850")
-        self.input_layout_1.addRow(self.o_b_start_label, self.o_b_start_edit)
+        self._psc_analysis_widgets = {}
 
-        self.o_b_end_label = QLabel("Baseline end")
-        self.o_b_end_edit = LineEdit()
-        self.o_b_end_edit.setEnabled(True)
-        self.o_b_end_edit.setObjectName("o_b_end_edit")
-        self.o_b_end_edit.setText("950")
-        self.input_layout_1.addRow(self.o_b_end_label, self.o_b_end_edit)
+        self.psc_widget = FrameWidget(title="Evoked PSC")
+        self.psc_layout = QHBoxLayout()
+        self.psc_widget.setLayout(self.psc_layout)
+        self.widget_layout.addWidget(self.psc_widget)
 
-        self.o_filter_type_label = QLabel("Filter Type")
-        filters = ExpManager.filters
-        self.o_filter_selection = QComboBox()
-        self.o_filter_selection.addItems(filters)
-        self.o_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
-        self.o_filter_selection.setObjectName("o_filter_selection")
-        self.o_filter_selection.setCurrentText("fir_zero_2")
-        self.input_layout_1.addRow(self.o_filter_type_label, self.o_filter_selection)
-        self.o_filter_selection.currentTextChanged.connect(self.setOFiltProp)
+        self.psc_load_widget = LoadAcqWidget(analysis_type="oepsc")
+        self.psc_layout.addLayout(self.psc_load_widget)
 
-        self.o_order_label = QLabel("Order")
-        self.o_order_edit = LineEdit()
-        self.o_order_edit.setValidator(QIntValidator())
-        self.o_order_edit.setEnabled(True)
-        self.o_order_edit.setObjectName("o_order_edit")
-        self.o_order_edit.setText("5")
-        self.input_layout_1.addRow(self.o_order_label, self.o_order_edit)
+        self.psc_settings_layout = QVBoxLayout()
+        self.psc_layout.addLayout(self.psc_settings_layout)
 
-        self.o_high_pass_label = QLabel("High-pass")
-        self.o_high_pass_edit = LineEdit()
-        self.o_high_pass_edit.setObjectName("o_high_pass_edit")
-        self.o_high_pass_edit.setEnabled(True)
-        self.input_layout_1.addRow(self.o_high_pass_label, self.o_high_pass_edit)
-
-        self.o_high_width_label = QLabel("High-width")
-        self.o_high_width_edit = LineEdit()
-
-        self.o_high_width_edit.setObjectName("o_high_width_edit")
-        self.o_high_width_edit.setEnabled(True)
-        self.input_layout_1.addRow(self.o_high_width_label, self.o_high_width_edit)
-
-        self.o_low_pass_label = QLabel("Low-pass")
-        self.o_low_pass_edit = LineEdit()
-        self.o_low_pass_edit.setObjectName("o_low_pass_edit")
-        self.o_low_pass_edit.setEnabled(True)
-        self.o_low_pass_edit.setText("600")
-        self.input_layout_1.addRow(self.o_low_pass_label, self.o_low_pass_edit)
-
-        self.o_low_width_label = QLabel("Low-width")
-        self.o_low_width_edit = LineEdit()
-        self.o_low_width_edit.setObjectName("o_low_width_edit")
-        self.o_low_width_edit.setText("600")
-        self.o_low_width_edit.setEnabled(True)
-        self.input_layout_1.addRow(self.o_low_width_label, self.o_low_width_edit)
-
-        self.o_window_label = QLabel("Window type")
-        windows = ExpManager.windows
-        self.o_window_edit = QComboBox(self)
-        self.o_window_edit.setObjectName("o_window_edit")
-        self.o_window_edit.addItems(windows)
-        self.o_window_edit.setMinimumContentsLength(len(max(windows, key=len)))
-        self.input_layout_1.addRow(self.o_window_label, self.o_window_edit)
-        self.o_window_edit.currentTextChanged.connect(self.oWindowChanged)
-
-        self.o_beta_sigma_label = QLabel("Beta/Sigma")
-        self.o_beta_sigma = QDoubleSpinBox()
-        self.o_beta_sigma.setMinimumWidth(70)
-        self.o_beta_sigma.setObjectName("o_beta_sigma")
-        self.input_layout_1.addRow(self.o_beta_sigma_label, self.o_beta_sigma)
-
-        self.o_polyorder_label = QLabel("Polyorder")
-        self.o_polyorder_edit = LineEdit()
-        self.o_polyorder_edit.setValidator(QIntValidator())
-        self.o_polyorder_edit.setEnabled(True)
-        self.o_polyorder_edit.setObjectName("o_polyorder_edit")
-        self.o_polyorder_edit.setText("3")
-        self.input_layout_1.addRow(self.o_polyorder_label, self.o_polyorder_edit)
-
-        self.input_layout_3.addRow(QLabel(""), QLabel(""))
-
-        self.o_pulse_start = QLabel("Pulse start")
-        self.o_pulse_start_edit = LineEdit()
-        self.o_pulse_start_edit.setEnabled(True)
-        self.o_pulse_start_edit.setObjectName("o_pulse_start_edit")
-        self.o_pulse_start_edit.setText("1000")
-        self.input_layout_3.addRow(self.o_pulse_start, self.o_pulse_start_edit)
-
-        self.o_neg_window_start = QLabel("Negative window start")
-        self.o_neg_start_edit = LineEdit()
-        self.o_neg_start_edit.setValidator(QDoubleValidator())
-        self.o_neg_start_edit.setEnabled(True)
-        self.o_neg_start_edit.setObjectName("o_pulse_start_edit")
-        self.o_neg_start_edit.setText("1001")
-        self.input_layout_3.addRow(self.o_neg_window_start, self.o_neg_start_edit)
-
-        self.o_neg_window_end = QLabel("Negative window end")
-        self.o_neg_end_edit = LineEdit()
-        self.o_neg_end_edit.setValidator(QDoubleValidator())
-        self.o_neg_end_edit.setObjectName("o_neg_end_edit")
-        self.o_neg_end_edit.setEnabled(True)
-        self.o_neg_end_edit.setText("1050")
-        self.input_layout_3.addRow(self.o_neg_window_end, self.o_neg_end_edit)
-
-        self.o_pos_window_start = QLabel("Positive window start")
-        self.o_pos_start_edit = LineEdit()
-        self.o_pos_start_edit.setValidator(QDoubleValidator())
-        self.o_pos_start_edit.setEnabled(True)
-        self.o_pos_start_edit.setObjectName("o_pos_start_edit")
-        self.o_pos_start_edit.setText("1045")
-        self.input_layout_3.addRow(self.o_pos_window_start, self.o_pos_start_edit)
-
-        self.o_pos_window_end = QLabel("Positive window end")
-        self.o_pos_end_edit = LineEdit()
-        self.o_pos_end_edit.setValidator(QDoubleValidator())
-        self.o_pos_end_edit.setEnabled(True)
-        self.o_pos_end_edit.setObjectName("o_pos_end_edit")
-        self.o_pos_end_edit.setText("1055")
-        self.input_layout_3.addRow(self.o_pos_window_end, self.o_pos_end_edit)
-
-        self.charge_transfer_label = QLabel("Charge transfer")
-        self.charge_transfer_edit = QCheckBox(self)
-        self.charge_transfer_edit.setObjectName("charge_transfer")
-        self.charge_transfer_edit.setChecked(False)
-        self.charge_transfer_edit.setTristate(False)
-        self.input_layout_3.addRow(
-            self.charge_transfer_label, self.charge_transfer_edit
+        self.psc_baseline_widget = BaselineWidget()
+        self.psc_settings_layout.addWidget(self.psc_baseline_widget)
+        self._psc_analysis_widgets[self.psc_baseline_widget.objectName()] = (
+            self.psc_baseline_widget
         )
 
-        self.est_decay_label = QLabel("Est decay")
-        self.est_decay_edit = QCheckBox(self)
-        self.est_decay_edit.setObjectName("est_decay")
-        self.est_decay_edit.setChecked(False)
-        self.est_decay_edit.setTristate(False)
-        self.input_layout_3.addRow(self.est_decay_label, self.est_decay_edit)
-
-        self.curve_fit_decay_label = QLabel("Curve fit decay")
-        self.curve_fit_decay = QCheckBox(self)
-        self.curve_fit_decay.setObjectName("curve_fit_decay")
-        self.curve_fit_decay.setChecked(False)
-        self.curve_fit_decay.setTristate(False)
-        self.input_layout_3.addRow(self.curve_fit_decay_label, self.curve_fit_decay)
-
-        self.curve_fit_type_label = QLabel("Curve fit type")
-        fit_types = ["s_exp", "db_exp"]
-        self.curve_fit_type_edit = QComboBox(self)
-        self.curve_fit_type_edit.setMinimumContentsLength(len(max(fit_types, key=len)))
-        self.curve_fit_type_edit.addItems(fit_types)
-        self.curve_fit_type_edit.setObjectName("curve_fit_type")
-        self.input_layout_3.addRow(self.curve_fit_type_label, self.curve_fit_type_edit)
+        self.psc_filter_widget = FilterWidget()
+        self.psc_settings_layout.addWidget(self.psc_filter_widget)
+        self._psc_analysis_widgets[self.psc_filter_widget.objectName()] = (
+            self.psc_filter_widget
+        )
+        self.evoked_psc_settings = evoked_psc.EvokedPSCSettingsWidget()
+        self.psc_settings_layout.addWidget(self.evoked_psc_settings)
+        self._psc_analysis_widgets[self.evoked_psc_settings.objectName()] = (
+            self.evoked_psc_settings
+        )
 
         # LFP input
-        self.lfp_input = QLabel("LFP")
-        self.input_layout_2.addRow(self.lfp_input)
+        self._lfp_analysis_widgets = {}
 
-        self.lfp_b_start_label = QLabel("Baseline start")
-        self.lfp_b_start_edit = LineEdit()
-        self.lfp_b_start_edit.setEnabled(True)
-        self.lfp_b_start_edit.setObjectName("lfp_b_start_edit")
-        self.lfp_b_start_edit.setText("850")
-        self.input_layout_2.addRow(self.lfp_b_start_label, self.lfp_b_start_edit)
+        self.lfp_widget = FrameWidget(title="Evoked LFP")
+        self.lfp_layout = QHBoxLayout()
+        self.lfp_widget.setLayout(self.lfp_layout)
+        self.widget_layout.addWidget(self.lfp_widget)
 
-        self.lfp_b_end_label = QLabel("Baseline end")
-        self.lfp_b_end_edit = LineEdit()
-        self.lfp_b_end_edit.setEnabled(True)
-        self.lfp_b_end_edit.setObjectName("lfp_b_end_edit")
-        self.lfp_b_end_edit.setText("950")
-        self.input_layout_2.addRow(self.lfp_b_end_label, self.lfp_b_end_edit)
+        self.lfp_load_widget = LoadAcqWidget(analysis_type="oepsc")
+        self.lfp_layout.addLayout(self.lfp_load_widget)
 
-        self.lfp_filter_type_label = QLabel("Filter Type")
-        self.lfp_filter_selection = QComboBox(self)
-        self.lfp_filter_selection.addItems(filters)
-        self.lfp_filter_selection.setMinimumContentsLength(len(max(filters, key=len)))
-        self.lfp_filter_selection.setObjectName("lfp_filter_selection")
-        self.lfp_filter_selection.setCurrentText("fir_zero_2")
-        self.input_layout_2.addRow(
-            self.lfp_filter_type_label, self.lfp_filter_selection
+        self.lfp_settings_layout = QVBoxLayout()
+        self.lfp_layout.addLayout(self.lfp_settings_layout)
+
+        self.lfp_baseline_widget = BaselineWidget()
+        self.lfp_settings_layout.addWidget(self.lfp_baseline_widget)
+        self._lfp_analysis_widgets[self.lfp_baseline_widget.objectName()] = (
+            self.lfp_baseline_widget
         )
-        # This has to be added after the labels it changes
-        self.lfp_filter_selection.currentTextChanged.connect(self.setlFiltProp)
 
-        self.lfp_order_label = QLabel("Order")
-        self.lfp_order_edit = LineEdit()
-        self.lfp_order_edit.setValidator(QIntValidator())
-        self.lfp_order_edit.setEnabled(True)
-        self.lfp_order_edit.setObjectName("lfp_order_edit")
-        self.lfp_order_edit.setText("5")
-        self.input_layout_2.addRow(self.lfp_order_label, self.lfp_order_edit)
+        self.lfp_filter_widget = FilterWidget()
+        self.lfp_settings_layout.addWidget(self.lfp_filter_widget)
+        self._lfp_analysis_widgets[self.lfp_filter_widget.objectName()] = (
+            self.lfp_filter_widget
+        )
+        self.evoked_lfp_settings = evoked_lfp.EvokedLFP()
+        self.lfp_settings_layout.addWidget(self.evoked_lfp_settings)
+        self._lfp_analysis_widgets[self.evoked_lfp_settings.objectName()] = (
+            self.evoked_lfp_settings
+        )
 
-        self.lfp_high_pass_label = QLabel("High-pass")
-        self.lfp_high_pass_edit = LineEdit()
-        self.lfp_high_pass_edit.setObjectName("lfp_high_pass_edit")
-        self.lfp_high_pass_edit.setEnabled(True)
-        self.input_layout_2.addRow(self.lfp_high_pass_label, self.lfp_high_pass_edit)
+        self.lfp_settings_layout.addStretch()
 
-        self.lfp_high_width_label = QLabel("High-width")
-        self.lfp_high_width_edit = LineEdit()
-        self.lfp_high_width_edit.setObjectName("lfp_high_width_edit")
-        self.lfp_high_width_edit.setEnabled(True)
-        self.input_layout_2.addRow(self.lfp_high_width_label, self.lfp_high_width_edit)
-
-        self.lfp_low_pass_label = QLabel("Low-pass")
-        self.lfp_low_pass_edit = LineEdit()
-        self.lfp_low_pass_edit.setText("300")
-        self.lfp_low_pass_edit.setObjectName("lfp_low_pass_edit")
-        self.lfp_low_pass_edit.setEnabled(True)
-        self.input_layout_2.addRow(self.lfp_low_pass_label, self.lfp_low_pass_edit)
-
-        self.lfp_low_width_label = QLabel("Low-width")
-        self.lfp_low_width_edit = LineEdit()
-        self.lfp_low_width_edit.setText("300")
-        self.lfp_low_width_edit.setObjectName("lfp_low_width_edit")
-        self.lfp_low_width_edit.setEnabled(True)
-        self.input_layout_2.addRow(self.lfp_low_width_label, self.lfp_low_width_edit)
-
-        self.lfp_window_label = QLabel("Window type")
-        self.lfp_window_edit = QComboBox(self)
-        self.lfp_window_edit.addItems(windows)
-        self.lfp_window_edit.setMinimumContentsLength(len(max(windows, key=len)))
-        self.lfp_window_edit.setObjectName("lfp_window_edit")
-        self.input_layout_2.addRow(self.lfp_window_label, self.lfp_window_edit)
-        self.lfp_window_edit.currentTextChanged.connect(self.lWindowChanged)
-
-        self.lfp_beta_sigma_label = QLabel("Beta/Sigma")
-        self.lfp_beta_sigma = QDoubleSpinBox()
-        self.lfp_beta_sigma.setMinimumWidth(70)
-        self.lfp_beta_sigma.setObjectName("lfp_beta_sigma")
-        self.input_layout_2.addRow(self.lfp_beta_sigma_label, self.lfp_beta_sigma)
-
-        self.lfp_polyorder_label = QLabel("Polyorder")
-        self.lfp_polyorder_edit = LineEdit()
-        self.lfp_polyorder_edit.setValidator(QDoubleValidator())
-        self.lfp_polyorder_edit.setObjectName("lfp_polyorder_edit")
-        self.lfp_polyorder_edit.setEnabled(True)
-        self.lfp_polyorder_edit.setText("3")
-        self.input_layout_2.addRow(self.lfp_polyorder_label, self.lfp_polyorder_edit)
-
-        self.lfp_pulse_start = QLabel("Pulse start")
-        self.lfp_pulse_start_edit = LineEdit()
-        self.lfp_pulse_start_edit.setEnabled(True)
-        self.lfp_pulse_start_edit.setObjectName("lfp_pulse_start_edit")
-        self.lfp_pulse_start_edit.setText("1000")
-        self.input_layout_2.addRow(self.lfp_pulse_start, self.lfp_pulse_start_edit)
-
-        # Tab1 buttons
-        self.analyze_acq_button = QPushButton("Analyze acquisition(s)")
-        self.tab1_layout.addWidget(self.analyze_acq_button)
-        self.analyze_acq_button.clicked.connect(self.analyze)
-
-        self.reset_button = QPushButton("Reset analysis")
-        self.tab1_layout.addWidget(self.reset_button)
-        self.reset_button.clicked.connect(self.reset)
+        self.analysis_buttons = AnalysisButtonsWidget()
+        self.tab1_layout.addLayout(self.analysis_buttons)
 
         # Tab 2 layout
         self.tab2_scroll = QScrollArea()
@@ -591,10 +366,8 @@ class oEPSCWidget(DragDropWidget):
         self.setWidth()
 
         # Lists
-        self.exp_manager = ExpManager()
+        self.exp_manager = QExpManager()
         self.exp_manager.set_callback(self.updateProgress)
-        self.oepsc_view.setData(self.exp_manager)
-        self.lfp_view.setData(self.exp_manager)
         self.last_oepsc_point_clicked = []
         self.last_lfp_point_clicked = []
         self.last_lfp_point_clicked = []
@@ -951,11 +724,7 @@ class oEPSCWidget(DragDropWidget):
         self.clearTables()
         self.calc_param_clicked = False
         self.inspection_widget.removeFileList()
-        self.oepsc_view.clearData()
-        self.lfp_view.clearData()
-        self.exp_manager = ExpManager()
-        self.oepsc_view.setData(self.exp_manager)
-        self.lfp_view.setData(self.exp_manager)
+        self.exp_manager = QExpManager()
         self.need_to_save = False
         self.pbar.setFormat("Ready to analyze")
         self.pbar.setValue(0)
@@ -1307,7 +1076,7 @@ class oEPSCWidget(DragDropWidget):
         self.reset()
         self.pbar.setFormat("Loading...")
         self.pbar.setValue(0)
-        self.exp_manager = ExpManager()
+        self.exp_manager = QExpManager()
         self.worker = ThreadWorker(self.exp_manager)
         self.worker.addAnalysis(function="load", analysis="oepsc", file_path=directory)
         self.worker.signals.progress.connect(self.updateProgress)
@@ -1318,10 +1087,8 @@ class oEPSCWidget(DragDropWidget):
         self.pbar.setFormat("Creating experiment")
         self.choose_analysis_type.exec()
         if self.choose_analysis_type.clickedButton() == self.oepsc_type_button:
-            self.oepsc_view.model().addData(urls)
             self.pbar.setFormat("oEPSC experiment created")
         else:
-            self.lfp_view.model().addData(urls)
             self.pbar.setFormat("LFP experiment created")
 
     def setLoadData(self):
@@ -1333,11 +1100,9 @@ class oEPSCWidget(DragDropWidget):
         if self.exp_manager.ui_prefs:
             self.setPreferences(self.exp_manager.ui_prefs)
         if self.exp_manager.acqs_exist("oepsc"):
-            self.oepsc_view.setData(self.exp_manager)
             self.set_peak_button.setEnabled(True)
             self.delete_oepsc_button.setEnabled(True)
         if self.exp_manager.acqs_exist("lfp"):
-            self.lfp_view.setData(self.exp_manager)
             self.delete_lfp_button.setEnabled(True)
             self.set_fv_button.setEnabled(True)
             self.set_fp_button.setEnabled(True)

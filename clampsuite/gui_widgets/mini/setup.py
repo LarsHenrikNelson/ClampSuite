@@ -20,10 +20,7 @@ logger = logging.getLogger(__name__)
 class MiniSettingsWidget(FrameWidget):
 
     def __init__(self, parent=None):
-        super().__init__(
-            title="Mini Settings",
-            parent=parent,
-        )
+        super().__init__(title="Mini Settings", parent=parent)
 
         self.setObjectName("mini_settings")
 
@@ -117,10 +114,6 @@ class MiniSettingsWidget(FrameWidget):
             "decon_type": self.decon_type_edit.currentText(),
             "curve_fit_decay": self.curve_fit_decay.isChecked(),
             "curve_fit_type": self.curve_fit_edit.currentText(),
-            "baseline_corr": self.baseline_corr_choice.isChecked(),
-            "rc_check": self.rc_checkbox.isChecked(),
-            "rc_check_start": self.rc_check_start_edit.toFloat(),
-            "rc_check_end": self.rc_check_end_edit.toFloat(),
         }
         return analysis_args
 
@@ -137,10 +130,6 @@ class MiniSettingsWidget(FrameWidget):
         self.decon_type_edit.setCurrentText(settings["decon_type"])
         self.curve_fit_decay.setChecked(settings["curve_fit_decay"])
         self.curve_fit_edit.setCurrentText(settings["curve_fit_type"])
-        self.baseline_corr_choice.setChecked(settings["baseline_corr"])
-        self.rc_checkbox.setChecked(settings["rc_check"])
-        self.rc_check_start_edit.setText(settings["rc_check_start"])
-        self.rc_check_end_edit.setText(settings["rc_check_end"])
 
 
 class TemplateWidget(FrameWidget):

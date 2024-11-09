@@ -8,14 +8,9 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtCore import QThreadPool
-from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
-    QComboBox,
-    QFormLayout,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
-    QMessageBox,
     QProgressBar,
     QPushButton,
     QSpinBox,
@@ -24,10 +19,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..functions.utilities import round_sig
 from ..gui_widgets import (
     DragDropWidget,
-    LineEdit,
     LoadAcqWidget,
     ThreadWorker,
     current_clamp,
@@ -88,11 +81,17 @@ class currentClampWidget(DragDropWidget):
         self.h_layout = QHBoxLayout()
         self.tab_2.setLayout(self.h_layout)
 
+        self._analysis_widgets = {}
+
         self.baseline_settings = BaselineWidget()
         self.v_layout.addWidget(self.baseline_settings)
+        self._analysis_widgets[self.baseline_settings.objectName()] = (
+            self.baseline_settings
+        )
 
         self.cc_settings = current_clamp.CurrentClammpSettingsWidget()
         self.v_layout.addWidget(self.cc_settings)
+        self._analysis_widgets[self.cc_settings.objectName()] = self.cc_settings
 
         self.analysis_buttons = AnalysisButtonsWidget()
         self.v_layout.addLayout(self.analysis_buttons)
@@ -189,8 +188,6 @@ class currentClampWidget(DragDropWidget):
         self.main_widget.setCurrentIndex(1)
         self.pbar.setFormat("Analysis finished")
         logger.info("Firsts acquisition set.")
-
-    
 
     def runFinalAnalysis(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
@@ -367,20 +364,9 @@ class currentClampWidget(DragDropWidget):
         logger.info("Creating preferences dictionary.")
         self.pbar.setFormat("Creating preferences dictionary.")
         pref_dict = {}
-        line_edits = self.findChildren(QLineEdit)
-        line_edit_dict = {}
-        for i in line_edits:
-            if i.objectName() != "":
-                line_edit_dict[i.objectName()] = i.text()
-        pref_dict["line_edits"] = line_edit_dict
-        combo_box_dict = {}
-        combo_boxes = self.findChildren(QComboBox)
-        for i in combo_boxes:
-            if i.objectName() != "":
-                combo_box_dict[i.objectName()] = i.currentText()
-        pref_dict["combo_boxes"] = combo_box_dict
-        logger.info("Preferences dictionary created.")
-        self.pbar.setFormat("Preferences dictionary created.")
+        for value in self._analysis_widgets.values():
+            pref_dict[value.objectName()] = value.getAnalysisSettings()
+        logger.info("Current clamp preferences dictionary created.")
         return pref_dict
 
     def errorDialog(self, text):
