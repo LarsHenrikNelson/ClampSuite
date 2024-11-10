@@ -60,7 +60,7 @@ class MiniAnalysisMain(DragDropWidget):
         self.tab1 = QWidget()
         self.tab1_scroll.setWidget(self.tab1)
 
-        self.analysis_widget = mini.AnalysisWidget()
+        self.analysis_widget = mini.MiniAnalysisWidget()
         self.analysis_widget.signals.error.connect(self.errorDialog)
         self.analysis_widget.signals.clicked.connect(self.runFinalAnalysis)
 

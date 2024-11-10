@@ -1,17 +1,12 @@
 import logging
 from collections import namedtuple
 
-import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtCore import Qt, QThreadPool
-from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
-    QFormLayout,
-    QGridLayout,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMessageBox,
     QProgressBar,
@@ -23,7 +18,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..functions.utilities import round_sig
 from ..gui_widgets import (
     AnalysisButtonsWidget,
     evoked_psc,
@@ -33,7 +27,6 @@ from ..gui_widgets import (
     FilterWidget,
     LoadAcqWidget,
     ThreadWorker,
-    WorkerSignals,
     QExpManager,
 )
 from ..gui_widgets.qtwidgets import FrameWidget
@@ -46,6 +39,8 @@ logger = logging.getLogger(__name__)
 class oEPSCWidget(DragDropWidget):
     def __init__(self):
         super().__init__()
+
+        self.exp_manager = QExpManager()
 
         self.initUI()
 
@@ -138,7 +133,7 @@ class oEPSCWidget(DragDropWidget):
         self._lfp_analysis_widgets[self.lfp_filter_widget.objectName()] = (
             self.lfp_filter_widget
         )
-        self.evoked_lfp_settings = evoked_lfp.EvokedLFP()
+        self.evoked_lfp_settings = evoked_lfp.EvokedLFPSettings()
         self.lfp_settings_layout.addWidget(self.evoked_lfp_settings)
         self._lfp_analysis_widgets[self.evoked_lfp_settings.objectName()] = (
             self.evoked_lfp_settings
@@ -160,119 +155,19 @@ class oEPSCWidget(DragDropWidget):
         self.tab2.setLayout(self.tab2_layout)
         self.tabs.addTab(self.tab2_scroll, "Analysis")
         self.tab2_scroll.setWidget(self.tab2)
-        # self.tab2_layout = QHBoxLayout()
-        # self.analysis_buttons_layout = QFormLayout()
-        # self.tab2_layout.addLayout(self.analysis_buttons_layout)
-        # self.tab2.setLayout(self.tab2_layout)
-
-        # Plots
-        self.oepsc_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
-        )
-        self.oepsc_plot.setObjectName("oEPSC plot")
-        self.oepsc_plot.setAutoVisible(y=True)
-        self.oepsc_plot.setMinimumWidth(500)
-        self.oepsc_plot.sigXRangeChanged.connect(lambda: self.getXRange("oepsc_plot"))
-
-        self.lfp_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
-        )
-        self.lfp_plot.setObjectName("LFP plot")
-        self.lfp_plot.setMinimumWidth(500)
-        self.lfp_plot.setAutoVisible(y=True)
-        self.lfp_plot.sigXRangeChanged.connect(lambda: self.getXRange("lfp_plot"))
-
-        self.acq_button_dock = QGridLayout()
-        # self.acq_button_dock.setColumnStretch(0, 0)
-        self.tab2_layout.addLayout(self.acq_button_dock, 0)
 
         self.tab2_dock = DockArea()
-        self.tab2_layout.addWidget(self.tab2_dock, 1)
-        self.oepsc_dock = Dock("oEPSC")
-        self.tab2_dock.addDock(self.oepsc_dock, "left")
-        self.lfp_dock = Dock("LFP")
+        self.tab2_layout.addWidget(self.tab2_dock)
+
+        self.psc_dock = Dock("Evoked PSC")
+        self.tab2_dock.addDock(self.psc_dock, "left")
+        self.psc_analysis = evoked_psc.EvokedPSCAnalysisWidget()
+        self.psc_dock.addWidget(self.psc_analysis)
+
+        self.lfp_dock = Dock("Evoked LFP")
         self.tab2_dock.addDock(self.lfp_dock, "right")
-        self.oepsc_plot_layout = QHBoxLayout()
-        self.oepsc_plot_widget = QWidget()
-        self.oepsc_dock.addWidget(self.oepsc_plot_widget, 0, 0)
-        self.oepsc_plot_widget.setLayout(self.oepsc_plot_layout)
-        self.lfp_plot_layout = QHBoxLayout()
-        self.lfp_plot_widget = QWidget()
-        self.lfp_dock.addWidget(self.lfp_plot_widget, 0, 0)
-        self.lfp_plot_widget.setLayout(self.lfp_plot_layout)
-        self.o_info_layout = QGridLayout()
-        self.lfp_info_layout = QFormLayout()
-        self.oepsc_plot_layout.addLayout(self.o_info_layout, 0)
-        self.oepsc_plot_layout.addWidget(self.oepsc_plot, 1)
-        self.lfp_plot_layout.addLayout(self.lfp_info_layout, 0)
-        self.lfp_plot_layout.addWidget(self.lfp_plot, 1)
-
-        self.lfp_label = QLabel("LFP")
-        self.lfp_info_layout.addRow(self.lfp_label)
-
-        self.lfp_fv_label = QLabel("Fiber volley (mV)")
-        self.lfp_fv_edit = QLineEdit()
-        self.lfp_fv_edit.setReadOnly(True)
-        self.lfp_info_layout.addRow(self.lfp_fv_label, self.lfp_fv_edit)
-
-        self.lfp_fp_label = QLabel("Field potential (mV)")
-        self.lfp_fp_edit = QLineEdit()
-        self.lfp_fp_edit.setReadOnly(True)
-        self.lfp_info_layout.addRow(self.lfp_fp_label, self.lfp_fp_edit)
-
-        self.lfp_fp_slope_label = QLabel("FP slope (mV/ms)")
-        self.lfp_fp_slope_edit = QLineEdit()
-        self.lfp_fp_slope_edit.setReadOnly(True)
-        self.lfp_info_layout.addRow(self.lfp_fp_slope_label, self.lfp_fp_slope_edit)
-
-        self.set_fv_button = QPushButton("Set point as fiber volley")
-        self.set_fv_button.clicked.connect(self.setPointAsFV)
-        self.lfp_info_layout.addRow(self.set_fv_button)
-        self.set_fv_button.setEnabled(True)
-
-        self.set_fp_button = QPushButton("Set point as field potential")
-        self.set_fp_button.clicked.connect(self.setPointAsFP)
-        self.lfp_info_layout.addRow(self.set_fp_button)
-        self.set_fp_button.setEnabled(True)
-
-        self.set_slope_start_btn = QPushButton("Set point as slope start")
-        self.set_slope_start_btn.clicked.connect(self.setPointAsSlopeStart)
-        self.lfp_info_layout.addRow(self.set_slope_start_btn)
-        self.set_slope_start_btn.setEnabled(True)
-
-        self.delete_lfp_button = QPushButton("Delete LFP")
-        self.delete_lfp_button.clicked.connect(self.deleteLFP)
-        self.lfp_info_layout.addRow(self.delete_lfp_button)
-        self.delete_lfp_button.setEnabled(True)
-
-        self.set_fv_action = QAction("Set point as fv")
-        self.set_fv_action.triggered.connect(self.setPointAsFV)
-
-        self.set_fp_action = QAction("Set point as fp")
-        self.set_fp_action.triggered.connect(self.setPointAsFP)
-
-        self.set_slope_action = QAction("Set point as slope")
-        self.set_slope_action.triggered.connect(self.setPointAsSlopeStart)
-
-        self.delete_lfp_action = QAction()
-        self.delete_lfp_action.triggered.connect(self.deleteLFP)
-
-        self.choose_analysis_type = QMessageBox()
-        self.choose_analysis_type.setText("Choose analysis type")
-        self.oepsc_type_button = self.choose_analysis_type.addButton(
-            "oEPSC", QMessageBox.ActionRole
-        )
-        self.lfp_type_button = self.choose_analysis_type.addButton(
-            "LFP", QMessageBox.ActionRole
-        )
-
-        vb = self.lfp_plot.getViewBox()
-        vb.menu.addSeparator()
-        vb.menu.addAction(self.set_fv_action)
-        vb.menu.addAction(self.set_fp_action)
-        vb.menu.addAction(self.set_slope_action)
-        vb.menu.addSeparator()
-        vb.menu.addAction(self.delete_lfp_action)
+        self.lfp_analysis = evoked_lfp.EvokedLFPAnalysisWidget()
+        self.lfp_dock.addWidget(self.lfp_analysis)
 
         # Tab 3 Layout
         self.tab3 = QTabWidget()
@@ -280,20 +175,23 @@ class oEPSCWidget(DragDropWidget):
 
         self.dlg = QMessageBox(self)
 
+        self.choose_analysis_type = QMessageBox()
+        self.choose_analysis_type.setText("Choose analysis type")
+        self.oepsc_type_button = self.choose_analysis_type.addButton(
+            "Evoked PSC", QMessageBox.ActionRole
+        )
+        self.lfp_type_button = self.choose_analysis_type.addButton(
+            "Evoked LFP", QMessageBox.ActionRole
+        )
+
         self.setWidth()
 
         # Lists
         self.exp_manager = QExpManager()
         self.exp_manager.set_callback(self.updateProgress)
-        self.last_oepsc_point_clicked = []
-        self.last_lfp_point_clicked = []
-        self.last_lfp_point_clicked = []
-        self.last_oepsc_point_clicked = []
         self.table_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
-        self.on_x_set = False
-        self.op_x_set = False
 
         logger.info("Event oEPSC/LFP GUI created.")
 
@@ -403,10 +301,8 @@ class oEPSCWidget(DragDropWidget):
 
     def setAcquisition(self):
         if QThreadPool.globalInstance().activeThreadCount() == 0:
-            self.acquisition_number.setMaximum(self.exp_manager.end_acq)
-            self.acquisition_number.setMinimum(self.exp_manager.start_acq)
-            self.acquisition_number.setValue(self.exp_manager.start_acq)
-            self.acqSpinbox(self.exp_manager.start_acq)
+            self.psc_analysis.setAcquisition()
+            self.lfp_analysis.setAcquisition()
             self.tabs.setCurrentIndex(1)
             logger.info("Analysis finished.")
             self.pbar.setFormat("Analysis finished")
@@ -546,6 +442,18 @@ class oEPSCWidget(DragDropWidget):
         logger.info("Experiment successfullzsy loaded.")
         self.pbar.setFormat("Experiment successfully loaded")
 
+    def createPrefDict(self):
+        logger.info("Creating preferences dictionary.")
+        lfp_pref_dict = {}
+        for i in self._lfp_analysis_widgets.values():
+            lfp_pref_dict[i.objectName()] = i.getAnalysisSettings()
+        psc_pref_dict = {}
+        for i in self._psc_analysis_widgets.values():
+            psc_pref_dict[i.objectName()] = i.getAnalysisSettings()
+        pref_dict = {"lfp": lfp_pref_dict, "psc": psc_pref_dict}
+        logger.info(f"{self.widget_name} preferences dictionary created.")
+        return pref_dict
+
     def updateProgress(self, value):
         if isinstance(value, (int, float)):
             self.pbar.setFormat(f"Acquisition {value} analyzed")
@@ -557,3 +465,9 @@ class oEPSCWidget(DragDropWidget):
         self.dlg.setText(text)
         # self.dlg.setText("No files are loaded or analyzed")
         self.dlg.exec()
+
+    def loadPreferences(self):
+        pass
+
+    def needToSave(self):
+        return self.exp_manager.need_to_save

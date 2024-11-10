@@ -3,7 +3,7 @@ from collections import namedtuple
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QAction
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QWidget,
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
 
-class LFPAnalysisWidget(QWidget):
+class EvokedLFPAnalysisWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
@@ -31,14 +31,6 @@ class LFPAnalysisWidget(QWidget):
 
         self.lfp_plot_layout = QHBoxLayout()
         self.setLayout(self.lfp_plot_layout)
-
-        self.lfp_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
-        )
-        self.lfp_plot.setObjectName("LFP plot")
-        self.lfp_plot.setMinimumWidth(500)
-        self.lfp_plot.setAutoVisible(y=True)
-        self.lfp_plot.sigXRangeChanged.connect(self.getXRange)
 
         self.lfp_properties = QFormLayout()
         self.lfp_plot_layout.addLayout(self.lfp_properties)
@@ -58,10 +50,73 @@ class LFPAnalysisWidget(QWidget):
         self.epoch_number.setMaximumWidth(70)
         self.lfp_properties.addRow("Epoch", self.epoch_number)
 
+        self.lfp_fv_edit = QLineEdit()
+        self.lfp_fv_edit.setReadOnly(True)
+        self.lfp_properties.addRow("Fiber volley (mV)", self.lfp_fv_edit)
+
+        self.lfp_fp_edit = QLineEdit()
+        self.lfp_fp_edit.setReadOnly(True)
+        self.lfp_properties.addRow("Field potential (mV)", self.lfp_fp_edit)
+
+        self.lfp_fp_slope_edit = QLineEdit()
+        self.lfp_fp_slope_edit.setReadOnly(True)
+        self.lfp_properties.addRow("FP slope (mV/ms)", self.lfp_fp_slope_edit)
+
+        self.set_fv_button = QPushButton("Set point as fiber volley")
+        self.set_fv_button.clicked.connect(self.setPointAsFV)
+        self.lfp_properties.addRow(self.set_fv_button)
+        self.set_fv_button.setEnabled(True)
+
+        self.set_fp_button = QPushButton("Set point as field potential")
+        self.set_fp_button.clicked.connect(self.setPointAsFP)
+        self.lfp_properties.addRow(self.set_fp_button)
+        self.set_fp_button.setEnabled(True)
+
+        self.set_slope_start_btn = QPushButton("Set point as slope start")
+        self.set_slope_start_btn.clicked.connect(self.setPointAsSlopeStart)
+        self.lfp_properties.addRow(self.set_slope_start_btn)
+        self.set_slope_start_btn.setEnabled(True)
+
+        self.delete_lfp_button = QPushButton("Delete LFP")
+        self.delete_lfp_button.clicked.connect(self.deleteLFP)
+        self.lfp_properties.addRow(self.delete_lfp_button)
+        self.delete_lfp_button.setEnabled(True)
+
+        self.set_fv_action = QAction("Set point as fv")
+        self.set_fv_action.triggered.connect(self.setPointAsFV)
+
+        self.set_fp_action = QAction("Set point as fp")
+        self.set_fp_action.triggered.connect(self.setPointAsFP)
+
+        self.set_slope_action = QAction("Set point as slope")
+        self.set_slope_action.triggered.connect(self.setPointAsSlopeStart)
+
+        self.delete_lfp_action = QAction()
+        self.delete_lfp_action.triggered.connect(self.deleteLFP)
+
+        self.lfp_plot = pg.PlotWidget(
+            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
+        )
+        self.lfp_plot.setObjectName("LFP plot")
+        self.lfp_plot.setMinimumWidth(500)
+        self.lfp_plot.setAutoVisible(y=True)
+        self.lfp_plot.sigXRangeChanged.connect(self.getXRange)
+        self.lfp_plot_layout.addWidget(self.lfp_plot)
+
+        vb = self.lfp_plot.getViewBox()
+        vb.menu.addSeparator()
+        vb.menu.addAction(self.set_fv_action)
+        vb.menu.addAction(self.set_fp_action)
+        vb.menu.addAction(self.set_slope_action)
+        vb.menu.addSeparator()
+        vb.menu.addAction(self.delete_lfp_action)
+
         self.final_analysis_button = QPushButton("Final analysis")
         self.lfp_properties.addRow(self.final_analysis_button)
         self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
         self.final_analysis_button.setEnabled(True)
+
+        self.last_lfp_point_clicked = []
 
     def getXRange(self):
         h = self.acquisition_number.value()
@@ -355,3 +410,12 @@ class LFPAnalysisWidget(QWidget):
                 value,
             )
         return True
+
+    def setAcquisition(self):
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.acqSpinbox(self.exp_manager.start_acq)
+
+    def runFinalAnalysis(self):
+        self.signals.clicked.emit()

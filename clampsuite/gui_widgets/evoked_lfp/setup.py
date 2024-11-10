@@ -7,7 +7,7 @@ from ..qtwidgets import FrameWidget, LineEdit
 logger = logging.getLogger(__name__)
 
 
-class EvokedLFP(FrameWidget):
+class EvokedLFPSettings(FrameWidget):
 
     def __init__(self, parent=None):
         super().__init__(title="Evoked LFP Settings", parent=parent)

@@ -76,3 +76,6 @@ class EvokedPSCSettingsWidget(FrameWidget):
         self.curve_fit_type.addItems(fit_types)
         self.curve_fit_type.setObjectName("curve_fit_type")
         self.layout.addRow("Curve fit type", self.curve_fit_type)
+
+    def setAnalysisPreferences(self):
+        pass

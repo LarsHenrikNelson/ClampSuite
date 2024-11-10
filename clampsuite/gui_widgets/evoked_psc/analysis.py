@@ -31,14 +31,6 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.psc_layout = QHBoxLayout()
         self.setLayout(self.psc_layout)
 
-        self.psc_plot = pg.PlotWidget(
-            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
-        )
-        self.psc_plot.setObjectName("Evoked PSC plot")
-        self.psc_plot.setMinimumWidth(500)
-        self.psc_plot.setAutoVisible(y=True)
-        self.psc_plot.sigXRangeChanged.connect(self.getXRange)
-
         self.psc_properties = QFormLayout()
         self.psc_layout.addLayout(self.psc_properties)
 
@@ -57,14 +49,9 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.epoch_number.setMaximumWidth(70)
         self.psc_properties.addRow("Epoch", self.epoch_number)
 
-        self.final_analysis_button = QPushButton("Final analysis")
-        self.psc_properties.addRow(self.final_analysis_button)
-        self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
-        self.final_analysis_button.setEnabled(True)
-
         self.oepsc_amp_edit = QLineEdit()
         self.oepsc_amp_edit.setReadOnly(True)
-        self.o_info_layout.addRow(self.oepsc_amp_edit)
+        self.psc_properties.addRow(self.oepsc_amp_edit)
 
         self.oepsc_charge_edit = QLineEdit()
         self.oepsc_charge_edit.setReadOnly(True)
@@ -94,11 +81,29 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.delete_oepsc_action = QAction("Delete oEPSC")
         self.delete_oepsc_action.triggered.connect(self.deletePSC)
 
+        self.final_analysis_button = QPushButton("Final analysis")
+        self.psc_properties.addRow(self.final_analysis_button)
+        self.final_analysis_button.clicked.connect(self.runFinalAnalysis)
+        self.final_analysis_button.setEnabled(True)
+
+        self.psc_plot = pg.PlotWidget(
+            labels={"left": "Amplitude (mV)", "bottom": "Time (ms)"}, useOpenGL=True
+        )
+        self.psc_plot.setObjectName("Evoked PSC plot")
+        self.psc_plot.setMinimumWidth(500)
+        self.psc_plot.setAutoVisible(y=True)
+        self.psc_plot.sigXRangeChanged.connect(self.getXRange)
+        self.psc_layout.addWidget(self.psc_plot)
+
         o_vb = self.psc_plot.getViewBox()
         o_vb.menu.addSeparator()
         o_vb.menu.addAction(self.set_peak_action)
         o_vb.menu.addSeparator()
         o_vb.menu.addAction(self.delete_oepsc_action)
+
+        self.on_x_set = False
+        self.op_x_set = False
+        self.last_oepsc_point_clicked = []
 
     def getXRange(self):
         h = self.acquisition_number.value()
@@ -288,3 +293,12 @@ class EvokedPSCAnalysisWidget(QWidget):
                 value,
             )
         return True
+
+    def setAcquisition(self):
+        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
+        self.acquisition_number.setValue(self.exp_manager.start_acq)
+        self.acqSpinbox(self.exp_manager.start_acq)
+
+    def runFinalAnalysis(self):
+        self.signals.clicked.emit()
