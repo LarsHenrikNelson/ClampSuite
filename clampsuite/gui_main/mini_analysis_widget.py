@@ -36,7 +36,7 @@ from ..gui_widgets import (
 logger = logging.getLogger(__name__)
 
 
-class MiniAnalysisWidget(DragDropWidget):
+class MiniAnalysisMain(DragDropWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.initUI()
@@ -371,11 +371,6 @@ class MiniAnalysisWidget(DragDropWidget):
     def errorDialog(self, text):
         self.dlg.setWindowTitle("Error")
         self.dlg.setText(text)
-        self.dlg.exec()
-
-    def eventNotCreated(self):
-        self.dlg.setWindowTitle("Information")
-        self.dlg.setText("Event could not be created")
         self.dlg.exec()
 
     def loadExperiment(self, directory):

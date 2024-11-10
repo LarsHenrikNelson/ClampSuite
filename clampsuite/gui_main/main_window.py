@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from ..functions.startup import check_dir
 from .current_clamp_widget import currentClampWidget
 from .filter_widget import filterWidget
-from .mini_analysis_widget import MiniAnalysisWidget
+from .mini_analysis_widget import MiniAnalysisMain
 from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
 
@@ -102,8 +102,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         logger.info("Creating analysis widgets")
-        logger.info("Creating MiniAnalysisWidget")
-        self.mini_widget = MiniAnalysisWidget()
+        logger.info("Creating MiniAnalysisMain")
+        self.mini_widget = MiniAnalysisMain()
         self.mini_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.mini_widget)
         logger.info("Creating oEPSCWidget")

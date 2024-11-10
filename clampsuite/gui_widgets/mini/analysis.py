@@ -28,7 +28,7 @@ from ..qtwidgets import WorkerSignals
 logger = logging.getLogger(__name__)
 
 
-class AnalysisWidget(DockArea):
+class MiniAnalysisWidget(DockArea):
 
     def __init__(self, parent=None, exp_manager=None):
         super().__init__(parent)
@@ -1205,8 +1205,13 @@ class AnalysisWidget(DockArea):
                 logger.info("No acquisition to reset.")
                 self.pbar.setFormat("No acquisition to reset.")
 
+    def eventNotCreated(self):
+        self.dlg.setWindowTitle("Information")
+        self.dlg.setText("Event could not be created")
+        self.dlg.exec()
+
     def runFinalAnalysis(self):
-        self.signals.clicked.emit()
+        self.signals.clicked.emit(True)
 
     def setData(self, exp_manager):
         self.exp_manager = exp_manager

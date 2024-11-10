@@ -421,4 +421,4 @@ class currentClampWidget(DragDropWidget):
         self.signals.dir_path.emit(path)
 
     def needToSave(self):
-        return True
+        return self.exp_manager.need_to_save
