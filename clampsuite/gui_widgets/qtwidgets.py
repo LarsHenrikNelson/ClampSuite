@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path, PurePath
 
 from PySide6.QtCore import (
@@ -20,6 +21,70 @@ from PySide6.QtWidgets import (
 )
 
 from ..manager import ExpManager
+
+logger = logging.getLogger(__name__)
+
+
+class AnalysisWidget(QWidget):
+    acq = Signal(int)
+    error = Signal(str)
+    clicked = Signal(bool)
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.acquisition_number = QSpinBox()
+        self.acquisition_number.setMaximumWidth(70)
+        self.acquisition_number.setKeyboardTracking(False)
+        self.acquisition_number.setMinimumWidth(70)
+
+    def acqChanged(self):
+        self.acq.emit(self.acquisition_number.value())
+
+    def errorDialog(self, text):
+        self.error.emit(text)
+
+    def acqSpinbox(self, acq_number):
+        raise (NotImplementedError)
+
+    def editAttr(self, line_edit, value):
+        if (
+            not self.exp_manager.acqs_exist(self.objectName())
+            or self.acquisition_number.value()
+            not in self.exp_manager.exp_dict[self.objectName()]
+        ):
+            logger.info(f"No acquisition {self.acquisition_number.value()}.")
+            self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
+            return False
+        else:
+            logger.info(
+                f"Editing acquisition attribute {self.acquisition_number.value()}."
+            )
+            acq = self.exp_manager.exp_dict[self.objectName()][
+                self.acquisition_number.value()
+            ]
+            setattr(acq, line_edit, value)
+            logger.info(
+                f"Set {value} for {line_edit} on aquisition\
+                    {self.acquisition_number.value()}."
+            )
+            return True
+
+    # Below are the must have 'virtual functions' for ClampSuite
+    def reset(self):
+        raise (NotImplementedError)
+
+    def deleteAcq(self):
+        raise (NotImplementedError)
+
+    def resetRejectedAcqs(self):
+        raise (NotImplementedError)
+
+    def resetRecentRejectAcq(self):
+        raise (NotImplementedError)
+
+    def runFinalAnalysis(self):
+        raise (NotImplementedError)
 
 
 class QExpManager(ExpManager):
@@ -134,6 +199,7 @@ class WorkerSignals(QObject):
     dir_path = Signal(str)
     clicked = Signal(str)
     error = Signal(str)
+    acq = Signal(int)
 
 
 class ListModel(QAbstractListModel):

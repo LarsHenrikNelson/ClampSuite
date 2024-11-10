@@ -5,28 +5,26 @@ import pyqtgraph as pg
 from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QWidget,
     QFormLayout,
-    QSpinBox,
     QLineEdit,
     QPushButton,
 )
 
 from ...functions.utilities import round_sig
-from ..qtwidgets import WorkerSignals
+from ..qtwidgets import AnalysisWidget
 
 logger = logging.getLogger(__name__)
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
 
-class EvokedPSCAnalysisWidget(QWidget):
+class EvokedPSCAnalysisWidget(AnalysisWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
         self.exp_manager = None
 
-        self.signals = WorkerSignals()
+        self.setObjectName("evoked_psc_analysis")
 
         self.psc_layout = QHBoxLayout()
         self.setLayout(self.psc_layout)
@@ -34,10 +32,6 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.psc_properties = QFormLayout()
         self.psc_layout.addLayout(self.psc_properties)
 
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setMaximumWidth(70)
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
         self.acquisition_number.setEnabled(True)
         self.psc_properties.addRow("Acq Number", self.acquisition_number)
@@ -51,7 +45,7 @@ class EvokedPSCAnalysisWidget(QWidget):
 
         self.oepsc_amp_edit = QLineEdit()
         self.oepsc_amp_edit.setReadOnly(True)
-        self.psc_properties.addRow(self.oepsc_amp_edit)
+        self.psc_properties.addRow("Amplitude", self.oepsc_amp_edit)
 
         self.oepsc_charge_edit = QLineEdit()
         self.oepsc_charge_edit.setReadOnly(True)
@@ -136,7 +130,8 @@ class EvokedPSCAnalysisWidget(QWidget):
             )
             self.op_x_set = True
 
-    def acqSpinbox(self, h):
+    def acqSpinbox(self, acq_number):
+        self.signals.acq.emit(acq_number)
         self.psc_plot.clear()
         oepsc_object = None
         if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
@@ -148,11 +143,9 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.exp_manager.need_to_save = True
         self.acquisition_number.setDisabled(True)
         self.last_oepsc_point_clicked = []
-        if self.exp_manager.acq_exists("oepsc", self.acquisition_number.value()):
-            logger.info(f"Plotting oEPSC {self.acquisition_number.value()}.")
-            oepsc_object = self.exp_manager.exp_dict["oepsc"][
-                self.acquisition_number.value()
-            ]
+        if self.exp_manager.acq_exists("oepsc", acq_number):
+            logger.info(f"Plotting oEPSC {acq_number}.")
+            oepsc_object = self.exp_manager.exp_dict["oepsc"][acq_number]
             self.setOEPSCLimits(oepsc_object)
             self.oepsc_acq_plot = pg.PlotDataItem(
                 x=oepsc_object.plot_acq_x(),
@@ -193,9 +186,9 @@ class EvokedPSCAnalysisWidget(QWidget):
                 self.oepsc_edecay_edit.setText(
                     str(round_sig((oepsc_object.est_decay())))
                 )
-            logger.info(f"oEPSC acquisition {self.acquisition_number.value()} plotted.")
+            logger.info(f"oEPSC acquisition {acq_number} plotted.")
         else:
-            logger.info(f"No oEPSC acquisition {self.acquisition_number.value()}.")
+            logger.info(f"No oEPSC acquisition {acq_number}.")
             text = pg.TextItem(text="No acquisition", anchor=(0.5, 0.5))
             text.setFont(QFont("Helvetica", 20))
             self.psc_plot.setRange(xRange=(-30, 30), yRange=(-30, 30))
@@ -285,14 +278,7 @@ class EvokedPSCAnalysisWidget(QWidget):
         self.psc_plot.clear()
         logger.info("PSC UI reset.")
 
-    def editAttr(self, line_edit, value):
-        for i in self.exp_manager.exp_dict.values():
-            setattr(
-                i[self.acquisition_number.value()],
-                line_edit,
-                value,
-            )
-        return True
+    
 
     def setAcquisition(self):
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)

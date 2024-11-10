@@ -76,11 +76,6 @@ class currentClampWidget(DragDropWidget):
         self.v_layout = QVBoxLayout()
         self.setup_layout.addLayout(self.v_layout)
 
-        self.tab_2 = QWidget()
-        self.main_widget.addTab(self.tab_2, "Analysis")
-        self.h_layout = QHBoxLayout()
-        self.tab_2.setLayout(self.h_layout)
-
         self._analysis_widgets = {}
 
         self.baseline_settings = BaselineWidget()
@@ -89,7 +84,7 @@ class currentClampWidget(DragDropWidget):
             self.baseline_settings
         )
 
-        self.cc_settings = current_clamp.CurrentClammpSettingsWidget()
+        self.cc_settings = current_clamp.CurrentClampSettingsWidget()
         self.v_layout.addWidget(self.cc_settings)
         self._analysis_widgets[self.cc_settings.objectName()] = self.cc_settings
 
@@ -107,6 +102,13 @@ class currentClampWidget(DragDropWidget):
         self.acq_layout.addLayout(self.load_widget)
 
         # Analysis layout setup (tab 2)
+        self.tab_2 = QWidget()
+        self.main_widget.addTab(self.tab_2, "Analysis")
+        self.tab_2_layout = QHBoxLayout()
+        self.tab_2.setLayout(self.tab_2_layout)
+
+        self.analysis_widget = current_clamp.CurrentClampAnalysisWidget()
+        self.tab_2_layout.addWidget(self.analysis_widget)
 
         # Tab 3 layout
         self.tab3_dock = DockArea()

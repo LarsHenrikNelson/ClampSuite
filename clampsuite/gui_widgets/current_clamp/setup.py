@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 from ..qtwidgets import FrameWidget, LineEdit
 
 
-class CurrentClammpSettingsWidget(FrameWidget):
+class CurrentClampSettingsWidget(FrameWidget):
 
     def __init__(self, parent=None):
         super().__init__(

@@ -6,28 +6,24 @@ import pyqtgraph as pg
 from PySide6.QtGui import QFont, QAction
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QWidget,
     QFormLayout,
-    QSpinBox,
     QLineEdit,
     QPushButton,
 )
 
 from ...functions.utilities import round_sig
-from ..qtwidgets import WorkerSignals
+from ..qtwidgets import AnalysisWidget
 
 logger = logging.getLogger(__name__)
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 
 
-class EvokedLFPAnalysisWidget(QWidget):
+class EvokedLFPAnalysisWidget(AnalysisWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
         self.exp_manager = None
-
-        self.signals = WorkerSignals()
 
         self.lfp_plot_layout = QHBoxLayout()
         self.setLayout(self.lfp_plot_layout)
@@ -35,10 +31,6 @@ class EvokedLFPAnalysisWidget(QWidget):
         self.lfp_properties = QFormLayout()
         self.lfp_plot_layout.addLayout(self.lfp_properties)
 
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setMaximumWidth(70)
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
         self.acquisition_number.setEnabled(True)
         self.lfp_properties.addRow("Acq Number", self.acquisition_number)
@@ -401,15 +393,6 @@ class EvokedLFPAnalysisWidget(QWidget):
         logger.info("Reseting LFP UI.")
         self.lfp_plot.clear()
         logger.info("LFP UI reset.")
-
-    def editAttr(self, line_edit, value):
-        for i in self.exp_manager.exp_dict.values():
-            setattr(
-                i[self.acquisition_number.value()],
-                line_edit,
-                value,
-            )
-        return True
 
     def setAcquisition(self):
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)

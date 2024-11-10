@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QHBoxLayout,
     QFormLayout,
     QGridLayout,
     QLabel,
@@ -23,12 +24,12 @@ from PySide6.QtWidgets import (
 
 from ...functions.utilities import round_sig
 from ..acq_inspection import DeconInspectionWidget
-from ..qtwidgets import WorkerSignals
+from ..qtwidgets import AnalysisWidget
 
 logger = logging.getLogger(__name__)
 
 
-class MiniAnalysisWidget(DockArea):
+class MiniAnalysisWidget(AnalysisWidget):
 
     def __init__(self, parent=None, exp_manager=None):
         super().__init__(parent)
@@ -73,16 +74,19 @@ class MiniAnalysisWidget(DockArea):
         self.exp_manager = exp_manager
         self.plot_dict = {}
 
-        self.signals = WorkerSignals()
-
         self.decon_plot = DeconInspectionWidget()
+
+        self.dock_area = DockArea()
+        self.dock_layout = QHBoxLayout()
+        self.setLayout(self.dock_layout)
+        self.dock_layout.addWidget(self.dock_area)
 
         self.d1 = Dock("Overview")
         self.d2 = Dock("Event")
         self.d3 = Dock("Acq view")
-        self.addDock(self.d1, "left")
-        self.addDock(self.d2, "right")
-        self.addDock(self.d3, "bottom")
+        self.dock_area.addDock(self.d1, "left")
+        self.dock_area.addDock(self.d2, "right")
+        self.dock_area.addDock(self.d3, "bottom")
         self.acq_scroll = QScrollArea()
         self.acq_scroll.setContentsMargins(20, 20, 20, 20)
         self.acq_widget = QWidget()
@@ -99,10 +103,7 @@ class MiniAnalysisWidget(DockArea):
         self.acquisition_number_label.setMaximumWidth(70)
 
         self.acq_buttons.addWidget(self.acquisition_number_label, 0, 0)
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
-        self.acquisition_number.setMaximumWidth(70)
+
         self.acq_buttons.addWidget(self.acquisition_number, 0, 1)
         self.acquisition_number.valueChanged.connect(self.acqSpinbox)
 
@@ -1265,6 +1266,3 @@ class MiniAnalysisWidget(DockArea):
         self.event_view_plot.getAxis("left").setTextPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setPen(pref_dict[5])
         self.event_view_plot.getAxis("bottom").setTextPen(pref_dict[5])
-
-    def errorDialog(self, text):
-        self.signals.error.emit(text)

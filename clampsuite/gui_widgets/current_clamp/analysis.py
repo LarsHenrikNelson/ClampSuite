@@ -10,42 +10,30 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QSpinBox,
     QHBoxLayout,
-    QWidget,
 )
 
 from ...functions.utilities import round_sig
-from ..qtwidgets import WorkerSignals, LineEdit
+from ..qtwidgets import LineEdit, AnalysisWidget
 
 logger = logging.getLogger(__name__)
 
 
-class AnalysisWidget(QWidget):
+class CurrentClampAnalysisWidget(AnalysisWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
         self.exp_manager = None
 
-        self.setObjectName("current_clamp_analysis")
-
-        self.signals = WorkerSignals()
+        self.setObjectName("current_clamp")
 
         self.h_layout = QHBoxLayout()
         self.setLayout(self.h_layout)
-        self.plot_layout = QHBoxLayout()
         self.analysis_buttons = QFormLayout()
-        self.h_layout.addLayout(self.plot_layout, 1)
-        self.plot_layout.addLayout(self.analysis_buttons, 0)
+        self.h_layout.addLayout(self.analysis_buttons)
 
-        self.acquisition_number_label = QLabel("Acq number")
-        self.acquisition_number = QSpinBox()
-        self.acquisition_number.setKeyboardTracking(False)
-        self.acquisition_number.setMinimumWidth(70)
         self.acquisition_number.valueChanged.connect(self.spinbox)
-        self.analysis_buttons.addRow(
-            self.acquisition_number_label, self.acquisition_number
-        )
+        self.analysis_buttons.addRow("Acq Number", self.acquisition_number)
 
         self.epoch_number = LineEdit()
         self.analysis_buttons.addRow("Epoch", self.epoch_number)
@@ -124,7 +112,7 @@ class AnalysisWidget(QWidget):
         self.calculate_params_2.clicked.connect(self.runFinalAnalysis)
 
         self.tab2_dock = DockArea()
-        self.plot_layout.addWidget(self.tab2_dock, 1)
+        self.h_layout.addWidget(self.tab2_dock)
         self.d1 = Dock("Acquisition")
         self.d2 = Dock("First spike")
         self.tab2_dock.addDock(self.d1, "left")
@@ -255,29 +243,6 @@ class AnalysisWidget(QWidget):
         self.spike_plot.addItem(self.clickable_spike_data)
 
         self.text = None
-
-    def editAttr(self, line_edit, value):
-        if (
-            not self.exp_manager.acqs_exist("current_clamp")
-            or self.acquisition_number.value()
-            not in self.exp_manager.exp_dict["current_clamp"]
-        ):
-            logger.info(f"No acquisition {self.acquisition_number.value()}.")
-            self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
-            return False
-        else:
-            logger.info(
-                f"Editing aquisition attribute {self.acquisition_number.value()}."
-            )
-            acq = self.exp_manager.exp_dict["current_clamp"][
-                self.acquisition_number.value()
-            ]
-            setattr(acq, line_edit, value)
-            logger.info(
-                f"Set {value} for {line_edit} on aquisition\
-                    {self.acquisition_number.value()}."
-            )
-            return True
 
     def setAcquisition(self):
         logger.info("Analysis finished.")
@@ -660,5 +625,5 @@ class AnalysisWidget(QWidget):
                 logger.info("No acquisition to reset.")
                 self.pbar.setFormat("No acquisition to reset.")
 
-    def errorDialog(self, text):
-        self.signals.error.emit(text)
+    def runFinalAnalysis(self):
+        pass

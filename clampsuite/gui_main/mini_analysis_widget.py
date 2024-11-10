@@ -61,8 +61,8 @@ class MiniAnalysisMain(DragDropWidget):
         self.tab1_scroll.setWidget(self.tab1)
 
         self.analysis_widget = mini.MiniAnalysisWidget()
-        self.analysis_widget.signals.error.connect(self.errorDialog)
-        self.analysis_widget.signals.clicked.connect(self.runFinalAnalysis)
+        self.analysis_widget.error.connect(self.errorDialog)
+        self.analysis_widget.clicked.connect(self.runFinalAnalysis)
 
         self.tab3_scroll = QScrollArea()
         self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
