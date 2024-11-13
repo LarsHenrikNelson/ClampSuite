@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..functions.startup import check_dir
-from .current_clamp_widget import currentClampWidget
+from .current_clamp_widget import CurrentClampWidget
 from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisMain
 from .oepsc_widget import oEPSCWidget
@@ -110,8 +110,8 @@ class MainWindow(QMainWindow):
         self.oepsc_widget = oEPSCWidget()
         self.oepsc_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.oepsc_widget)
-        logger.info("Creating currentClampWidget")
-        self.current_clamp_widget = currentClampWidget()
+        logger.info("Creating CurrentClampWidget")
+        self.current_clamp_widget = CurrentClampWidget()
         self.current_clamp_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.current_clamp_widget)
         logger.info("Creating filterWidget")
@@ -149,7 +149,7 @@ class MainWindow(QMainWindow):
         elif text == "Current clamp":
             self.central_widget.setCurrentWidget(self.current_clamp_widget)
             self.current_widget = "CurrentClampWidget"
-            logger.info("Central widget set as currentClampWidget")
+            logger.info("Central widget set as CurrentClampWidget")
         elif text == "Filtering setup":
             self.central_widget.setCurrentWidget(self.filter_widget)
             self.current_widget = "FilterWidget"

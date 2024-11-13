@@ -2,11 +2,7 @@ import logging
 from pathlib import PurePath
 from typing import Union
 
-import numpy as np
-import pandas as pd
 import pyqtgraph as pg
-from pyqtgraph.dockarea.Dock import Dock
-from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -30,7 +26,7 @@ from ..manager import ExpManager
 logger = logging.getLogger(__name__)
 
 
-class currentClampWidget(MainAnalysisWidget):
+class CurrentClampWidget(MainAnalysisWidget):
     """
     This the currentClampAnalysis widget. The primary functions are carried
     out by the CurrentClamp class. The final analysis and output is done by
@@ -106,20 +102,8 @@ class currentClampWidget(MainAnalysisWidget):
         # Tab 3 layout
         self.tab3_layout = QHBoxLayout()
         self.tab3.setLayout(self.tab3_layout)
-        self.tab3_dock = DockArea()
-        self.tab3_layout.addWidget(self.tab3_dock)
-        self.df_dock = Dock("Data")
-        self.tab3_dock.addDock(self.df_dock, "left")
-        self.df_tabs = QTabWidget()
-        self.df_tabs.setUsesScrollButtons(True)
-        self.df_dock.addWidget(self.df_tabs)
-        self.plot_dock = Dock("Plots")
-        self.tab3_dock.addDock(self.plot_dock, "right")
-        self.plot_tabs = QTabWidget()
-        self.plot_tabs.setUsesScrollButtons(True)
-        self.plot_dock.addWidget(self.plot_tabs)
-        self.plot_tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
-        self.df_tabs.setUsesScrollButtons(True)
+        self.final_analysis = current_clamp.FinalCurrentClampAnalysis()
+        self.tab3_layout.addWidget(self.final_analysis)
 
         self.exp_manager.set_callback(self.updateProgress)
         self.load_widget.setData(self.exp_manager)
@@ -205,90 +189,11 @@ class currentClampWidget(MainAnalysisWidget):
             iv_start=self.iv_start_edit.toInt(), iv_end=self.iv_end_edit.toInt()
         )
         logger.info("Experiment manager finished final analysis.")
-        fi_an = self.exp_manager.final_analysis
-        for key, value in fi_an.df_dict.items():
-            table = pg.TableWidget(sortable=False)
-            table.setData(value.T.to_dict())
-            self.table_dict["key"] = table
-            self.df_tabs.addTab(table, key)
-        logger.info("Set final data into tables.")
-        self.plotIVCurve("Delta V (mV)")
-        self.plotIVCurve("Voltage sag (mV)")
-        if fi_an.hertz:
-            self.plotSpikeFrequency(fi_an.df_dict["Hertz"].copy())
-        if fi_an.pulse_ap:
-            self.plotAP(fi_an.df_dict["Pulse APs"].copy(), "Pulse")
-        if fi_an.ramp_ap:
-            self.plotAP(fi_an.df_dict["Ramp APs"].copy(), "Ramp")
         self.calculate_parameters.setEnabled(True)
         self.main_widget.setCurrentIndex(2)
         logger.info("Plotted final data.")
         logger.info("Finished analyzing.")
         self.pbar.setFormat("Final analysis finished")
-
-    def plotIVCurve(self, column: str):
-        iv_curve_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict[f"{column} iv_curve_plot"] = iv_curve_plot
-        self.plot_tabs.addTab(iv_curve_plot, f"{column} IV curve")
-        fa = self.exp_manager.final_analysis
-        deltav_df = fa.df_dict[column]
-        iv_x = fa.df_dict[f"{column} IV x"]
-        iv_y = fa.df_dict[f"{column} IV lines"]
-        iv_curve_plot.addLegend()
-        epochs = iv_y.columns.to_list()
-        for i in epochs:
-            if iv_x[i].isna().all():
-                pass
-            else:
-                pencil = pg.mkPen(color=pg.Color(int(i)))
-                brush = pg.mkBrush(color=pg.intColor(int(i)))
-                iv_curve_plot.plot(iv_x[i].to_numpy(), iv_y[i].to_numpy(), pen=pencil)
-                iv_curve_plot.plot(
-                    deltav_df["Pulse amp (pA)"].to_numpy(),
-                    deltav_df[i].to_numpy(),
-                    pen=None,
-                    symbol="o",
-                    symbolPen=pencil,
-                    symbolBrush=brush,
-                    name=f"Epoch {i}",
-                )
-
-    def plotSpikeFrequency(self, hertz):
-        spike_curve_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict["spike_curve_plot"] = spike_curve_plot
-        self.plot_tabs.addTab(spike_curve_plot, "Spike curve")
-        pulse_amp = hertz.pop("Pulse amp (pA)").to_numpy()
-        plot_epochs = hertz.columns.to_list()
-        spike_curve_plot.addLegend()
-        for i in plot_epochs:
-            pencil = pg.mkPen(color=pg.intColor(i))
-            brush = pg.mkBrush(color=pg.intColor(i))
-            spike_curve_plot.plot(
-                pulse_amp,
-                hertz[i].to_numpy(),
-                symbol="o",
-                pen=pencil,
-                name=f"Epoch {i}",
-                symbolPen=pencil,
-                symbolBrush=brush,
-            )
-
-    def plotAP(self, df: pd.DataFrame, ap_type: str):
-        pulse_ap_plot = pg.PlotWidget(useOpenGL=True)
-        self.plot_dict[f"{ap_type}_ap_plot"] = pulse_ap_plot
-        self.plot_tabs.addTab(pulse_ap_plot, f"{ap_type} AP")
-        pulse_ap_plot.addLegend()
-        if len(df.columns) > 1:
-            for i in df.columns:
-                array = df[i].to_numpy()
-                pencil = pg.mkPen(color=pg.intColor(i))
-                pulse_ap_plot.plot(
-                    np.arange(len(array)) / 10, array, pen=pencil, name=f"Epoch {i}"
-                )
-        else:
-            i = df.columns[0]
-            array = df[i]
-            pulse_ap_plot.plot(np.arange(len(array)) / 10, array, name=f"Epoch {i}")
 
     def createExperiment(self, urls):
         self.pbar.setFormat("Creating experiment")
@@ -360,11 +265,6 @@ class currentClampWidget(MainAnalysisWidget):
             pref_dict[value.objectName()] = value.getAnalysisSettings()
         logger.info("Current clamp preferences dictionary created.")
         return pref_dict
-
-    def errorDialog(self, text):
-        self.dlg.setWindowTitle("Error")
-        self.dlg.setText(text)
-        self.dlg.exec()
 
     def saveAs(self, file_path: Union[str, PurePath]):
         if not self.exp_manager.acqs_exist("current_clamp"):
