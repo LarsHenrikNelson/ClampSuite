@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QScrollArea,
+    QMessageBox,
 )
 from PySide6.QtCore import Slot, Qt
 
@@ -22,6 +23,11 @@ class MainAnalysisWidget(QWidget):
         super().__init__(parent=parent)
         self.setAcceptDrops(True)
         self.signals = WorkerSignals()
+
+        self.setStyleSheet(
+            """QTabWidget::tab-bar
+                                          {alignment: left;}"""
+        )
 
         self.parent_layout = QVBoxLayout()
         self.main_layout = QHBoxLayout()
@@ -63,6 +69,8 @@ class MainAnalysisWidget(QWidget):
 
         self.exp_manager = QExpManager()
         self.exp_manager.set_callback(self.updateProgress)
+
+        self.dlg = QMessageBox(self)
 
     def dragEnterEvent(self, e):
         """
@@ -147,3 +155,11 @@ class MainAnalysisWidget(QWidget):
 
     def needToSave(self):
         return self.exp_manager.need_to_save
+
+    def errorDialog(self, text):
+        self.dlg.setWindowTitle("Error")
+        self.dlg.setText(text)
+        self.dlg.exec()
+
+    def analyze(self):
+        raise (NotImplementedError)

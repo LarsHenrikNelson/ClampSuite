@@ -11,12 +11,10 @@ from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
-    QProgressBar,
     QPushButton,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
-    QWidget,
 )
 
 from ..gui_widgets import (
