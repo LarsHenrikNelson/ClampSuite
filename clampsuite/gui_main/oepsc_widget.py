@@ -4,30 +4,26 @@ from collections import namedtuple
 import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QMessageBox,
-    QProgressBar,
     QPushButton,
-    QScrollArea,
     QSpinBox,
-    QTabWidget,
     QVBoxLayout,
-    QWidget,
 )
 
 from ..gui_widgets import (
     AnalysisButtonsWidget,
-    evoked_psc,
-    evoked_lfp,
     BaselineWidget,
-    DragDropWidget,
     FilterWidget,
     LoadAcqWidget,
-    ThreadWorker,
+    MainAnalysisWidget,
     QExpManager,
+    ThreadWorker,
+    evoked_lfp,
+    evoked_psc,
 )
 from ..gui_widgets.qtwidgets import FrameWidget
 
@@ -36,9 +32,9 @@ XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 logger = logging.getLogger(__name__)
 
 
-class oEPSCWidget(DragDropWidget):
-    def __init__(self):
-        super().__init__()
+class oEPSCWidget(MainAnalysisWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
 
         self.exp_manager = QExpManager()
 
@@ -48,30 +44,12 @@ class oEPSCWidget(DragDropWidget):
         logger.info("Creating oEPSC/LFP GUI")
         self.signals.file.connect(self.loadPreferences)
         self.signals.file_path.connect(self.loadExperiment)
-        self.parent_layout = QVBoxLayout()
-        self.main_layout = QHBoxLayout()
-        self.parent_layout.addLayout(self.main_layout)
-        self.setLayout(self.parent_layout)
-        self.tabs = QTabWidget()
-        self.main_layout.addWidget(self.tabs)
-        self.pbar = QProgressBar()
-        self.pbar.setValue(0)
-        self.pbar.setFormat("")
-        self.parent_layout.addWidget(self.pbar)
         self.setStyleSheet(
             """QTabWidget::tab-bar 
                                           {alignment: left;}"""
         )
 
         # Tab 1 layout
-        self.tab1 = QWidget()
-        self.tab1_scroll = QScrollArea()
-        self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.tab1_scroll.setWidgetResizable(True)
-        self.tab1_scroll.setWidget(self.tab1)
-        self.tabs.addTab(self.tab1_scroll, "Setup")
-
         self.tab1_layout = QVBoxLayout()
         self.tab1.setLayout(self.tab1_layout)
 
@@ -144,17 +122,9 @@ class oEPSCWidget(DragDropWidget):
         self.analysis_buttons = AnalysisButtonsWidget()
         self.tab1_layout.addLayout(self.analysis_buttons)
 
-        # Tab 2 layout
-        self.tab2_scroll = QScrollArea()
-        self.tab2_scroll.setViewportMargins(10, 10, 10, 10)
-        self.tab2_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.tab2_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.tab2_scroll.setWidgetResizable(True)
-        self.tab2 = QWidget()
+        # Tab 2 layout)
         self.tab2_layout = QHBoxLayout()
         self.tab2.setLayout(self.tab2_layout)
-        self.tabs.addTab(self.tab2_scroll, "Analysis")
-        self.tab2_scroll.setWidget(self.tab2)
 
         self.tab2_dock = DockArea()
         self.tab2_layout.addWidget(self.tab2_dock)
@@ -168,10 +138,6 @@ class oEPSCWidget(DragDropWidget):
         self.tab2_dock.addDock(self.lfp_dock, "right")
         self.lfp_analysis = evoked_lfp.EvokedLFPAnalysisWidget()
         self.lfp_dock.addWidget(self.lfp_analysis)
-
-        # Tab 3 Layout
-        self.tab3 = QTabWidget()
-        self.tabs.addTab(self.tab3, "Final data")
 
         self.dlg = QMessageBox(self)
 

@@ -278,13 +278,11 @@ class EvokedPSCAnalysisWidget(AnalysisWidget):
         self.psc_plot.clear()
         logger.info("PSC UI reset.")
 
-    
-
     def setAcquisition(self):
         self.acquisition_number.setMaximum(self.exp_manager.end_acq)
         self.acquisition_number.setMinimum(self.exp_manager.start_acq)
         self.acquisition_number.setValue(self.exp_manager.start_acq)
         self.acqSpinbox(self.exp_manager.start_acq)
 
-    def runFinalAnalysis(self):
-        self.signals.clicked.emit()
+    def runFinalAnalysis(self, checked: bool):
+        self.signals.clicked.emit(checked)

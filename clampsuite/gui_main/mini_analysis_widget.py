@@ -23,7 +23,7 @@ from ..functions.kde import create_kde
 from ..gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
-    DragDropWidget,
+    MainAnalysisWidget,
     FilterWidget,
     LoadAcqWidget,
     mini,
@@ -36,7 +36,7 @@ from ..gui_widgets import (
 logger = logging.getLogger(__name__)
 
 
-class MiniAnalysisMain(DragDropWidget):
+class MiniAnalysisMain(MainAnalysisWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.initUI()
@@ -48,40 +48,11 @@ class MiniAnalysisMain(DragDropWidget):
         # Create tabs for part of the analysis program
         self.signals.file.connect(self.loadPreferences)
         self.signals.file_path.connect(self.loadExperiment)
-        self.main_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
-        self.tab_widget = QTabWidget()
-        self.main_layout.addWidget(self.tab_widget)
-
-        self.tab1_scroll = QScrollArea()
-        self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.tab1_scroll.setWidgetResizable(True)
-        self.tab1 = QWidget()
-        self.tab1_scroll.setWidget(self.tab1)
-
-        self.analysis_widget = mini.MiniAnalysisWidget()
-        self.analysis_widget.error.connect(self.errorDialog)
-        self.analysis_widget.clicked.connect(self.runFinalAnalysis)
-
-        self.tab3_scroll = QScrollArea()
-        self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.tab3_scroll.setWidgetResizable(True)
-        self.dock_area3 = DockArea()
-
-        self.tab_widget.addTab(self.tab1_scroll, "Setup")
-        self.tab_widget.addTab(self.analysis_widget, "Analysis")
-        self.tab_widget.addTab(self.dock_area3, "Final data")
 
         self.setStyleSheet(
             """QTabWidget::tab-bar
                                           {alignment: left;}"""
         )
-
-        self.pbar = QProgressBar(self)
-        self.pbar.setValue(0)
-        self.main_layout.addWidget(self.pbar)
 
         self.dlg = QMessageBox(self)
 
@@ -125,13 +96,25 @@ class MiniAnalysisMain(DragDropWidget):
 
         self.setup_layout.addStretch(1)
 
+        # Tab 2
+        self.analysis_widget = mini.MiniAnalysisWidget()
+        self.analysis_widget.error.connect(self.errorDialog)
+        self.analysis_widget.clicked.connect(self.runFinalAnalysis)
+        self.tab2_layout = QHBoxLayout()
+        self.tab2.setLayout(self.tab2_layout)
+        self.tab2_layout.addWidget(self.analysis_widget)
+
         # Tab 3 layouts and setup
+        self.tab3_dock = DockArea()
+        self.tab3_layout = QHBoxLayout()
+        self.tab3.setLayout(self.tab3_layout)
+        self.tab3_layout.addWidget(self.tab3_dock)
         self.table_dock = Dock("Data (table)")
         self.ave_event_dock = Dock("Average Event")
         self.data_dock = Dock("Data (visualization)")
-        self.dock_area3.addDock(self.table_dock, position="left")
-        self.dock_area3.addDock(self.ave_event_dock, position="right")
-        self.dock_area3.addDock(self.data_dock, position="bottom")
+        self.tab3_dock.addDock(self.table_dock, position="left")
+        self.tab3_dock.addDock(self.ave_event_dock, position="right")
+        self.tab3_dock.addDock(self.data_dock, position="bottom")
         self.ave_event_plot = pg.PlotWidget(
             labels={"left": "Amplitude (pA)", "bottom": "Time (ms)"}, useOpenGL=True
         )

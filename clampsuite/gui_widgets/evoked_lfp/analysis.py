@@ -400,5 +400,5 @@ class EvokedLFPAnalysisWidget(AnalysisWidget):
         self.acquisition_number.setValue(self.exp_manager.start_acq)
         self.acqSpinbox(self.exp_manager.start_acq)
 
-    def runFinalAnalysis(self):
-        self.signals.clicked.emit()
+    def runFinalAnalysis(self, checked: bool):
+        self.signals.clicked.emit(checked)

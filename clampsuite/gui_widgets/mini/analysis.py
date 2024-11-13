@@ -1211,8 +1211,8 @@ class MiniAnalysisWidget(AnalysisWidget):
         self.dlg.setText("Event could not be created")
         self.dlg.exec()
 
-    def runFinalAnalysis(self):
-        self.signals.clicked.emit(True)
+    def runFinalAnalysis(self, checked: bool):
+        self.signals.clicked.emit(checked)
 
     def setData(self, exp_manager):
         self.exp_manager = exp_manager

@@ -1,23 +1,68 @@
 import logging
 from pathlib import Path, PurePath
 
-from PySide6.QtWidgets import QTabWidget, QProgressBar
+from PySide6.QtWidgets import (
+    QTabWidget,
+    QWidget,
+    QProgressBar,
+    QVBoxLayout,
+    QHBoxLayout,
+    QScrollArea,
+)
 from PySide6.QtCore import Slot, Qt
 
-from .qtwidgets import WorkerSignals
+from .qtwidgets import WorkerSignals, QExpManager
 
 
 logger = logging.getLogger(__name__)
 
 
-class MainAnalysisWidget(QTabWidget):
-    def __init__(self):
-        super().__init__()
+class MainAnalysisWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
         self.setAcceptDrops(True)
         self.signals = WorkerSignals()
 
+        self.parent_layout = QVBoxLayout()
+        self.main_layout = QHBoxLayout()
+        self.parent_layout.addLayout(self.main_layout)
+        self.setLayout(self.parent_layout)
+        self.tabs = QTabWidget()
+        self.main_layout.addWidget(self.tabs)
+
         self.pbar = QProgressBar(self)
         self.pbar.setValue(0)
+        self.parent_layout.addWidget(self.pbar)
+
+        self.tab1 = QWidget()
+        self.tab1_scroll = QScrollArea()
+        self.tab1_scroll.setViewportMargins(10, 10, 10, 10)
+        self.tab1_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab1_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab1_scroll.setWidgetResizable(True)
+        self.tab1_scroll.setWidget(self.tab1)
+        self.tabs.addTab(self.tab1_scroll, "Setup")
+
+        self.tab2 = QWidget()
+        self.tab2_scroll = QScrollArea()
+        self.tab2_scroll.setViewportMargins(10, 10, 10, 10)
+        self.tab2_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab2_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab2_scroll.setWidgetResizable(True)
+        self.tab2_scroll.setWidget(self.tab2)
+        self.tabs.addTab(self.tab2_scroll, "Analysis")
+
+        self.tab3 = QWidget()
+        self.tab3_scroll = QScrollArea()
+        self.tab3_scroll.setViewportMargins(10, 10, 10, 10)
+        self.tab3_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab3_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.tab3_scroll.setWidgetResizable(True)
+        self.tab3_scroll.setWidget(self.tab3)
+        self.tabs.addTab(self.tab3_scroll, "Final data")
+
+        self.exp_manager = QExpManager()
+        self.exp_manager.set_callback(self.updateProgress)
 
     def dragEnterEvent(self, e):
         """
@@ -75,8 +120,7 @@ class MainAnalysisWidget(QTabWidget):
 
         for key, values in pref_dict.items():
             self._analysis_widgets[key].setAnalysisSettings(values)
-
-        logger.info("Preferences set.")
+            logger.info(f"Preferences set for {key} widget.")
         self.pbar.setFormat("Preferences set")
 
     def loadPreferences(self, file_name: str | PurePath):

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..gui_widgets import (
-    DragDropWidget,
+    MainAnalysisWidget,
     LoadAcqWidget,
     ThreadWorker,
     current_clamp,
@@ -32,7 +32,7 @@ from ..manager import ExpManager
 logger = logging.getLogger(__name__)
 
 
-class currentClampWidget(DragDropWidget):
+class currentClampWidget(MainAnalysisWidget):
     """
     This the currentClampAnalysis widget. The primary functions are carried
     out by the CurrentClamp class. The final analysis and output is done by
@@ -66,11 +66,8 @@ class currentClampWidget(DragDropWidget):
         self.main_widget.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
         self.main_layout.addWidget(self.main_widget)
 
-        self.tab_1 = QWidget()
-        self.main_widget.addTab(self.tab_1, "Setup")
-
         self.setup_layout = QHBoxLayout()
-        self.tab_1.setLayout(self.setup_layout)
+        self.tab1.setLayout(self.setup_layout)
         self.acq_layout = QVBoxLayout()
         self.setup_layout.addLayout(self.acq_layout, 0)
         self.v_layout = QVBoxLayout()
@@ -102,16 +99,17 @@ class currentClampWidget(DragDropWidget):
         self.acq_layout.addLayout(self.load_widget)
 
         # Analysis layout setup (tab 2)
-        self.tab_2 = QWidget()
-        self.main_widget.addTab(self.tab_2, "Analysis")
-        self.tab_2_layout = QHBoxLayout()
-        self.tab_2.setLayout(self.tab_2_layout)
+        self.tab2_layout = QHBoxLayout()
+        self.tab2.setLayout(self.tab2_layout)
 
         self.analysis_widget = current_clamp.CurrentClampAnalysisWidget()
-        self.tab_2_layout.addWidget(self.analysis_widget)
+        self.tab2_layout.addWidget(self.analysis_widget)
 
         # Tab 3 layout
+        self.tab3_layout = QHBoxLayout()
+        self.tab3.setLayout(self.tab3_layout)
         self.tab3_dock = DockArea()
+        self.tab3_layout.addWidget(self.tab3_dock)
         self.df_dock = Dock("Data")
         self.tab3_dock.addDock(self.df_dock, "left")
         self.df_tabs = QTabWidget()
@@ -122,15 +120,9 @@ class currentClampWidget(DragDropWidget):
         self.plot_tabs = QTabWidget()
         self.plot_tabs.setUsesScrollButtons(True)
         self.plot_dock.addWidget(self.plot_tabs)
-        self.main_widget.addTab(self.tab3_dock, "Final data")
         self.plot_tabs.setStyleSheet("""QTabWidget::tab-bar {alignment: left;}""")
         self.df_tabs.setUsesScrollButtons(True)
 
-        self.pbar = QProgressBar(self)
-        self.pbar.setValue(0)
-        self.main_layout.addWidget(self.pbar, 0)
-
-        self.exp_manager = ExpManager()
         self.exp_manager.set_callback(self.updateProgress)
         self.load_widget.setData(self.exp_manager)
 
@@ -395,32 +387,3 @@ class currentClampWidget(DragDropWidget):
             QThreadPool.globalInstance().start(self.worker)
             self.reset_button.setEnabled(True)
             self.need_to_save = False
-
-    def finishedSaving(self):
-        self.pbar.setFormat("Finished saving")
-        logger.info("Finished saving.")
-
-    def loadPreferences(self, file_name: Union[str, PurePath]):
-        self.need_to_save = True
-        load_dict = self.exp_manager.load_ui_prefs(file_name)
-        self.setPreferences(load_dict)
-
-    def savePreferences(self, fle_path: Union[str, PurePath]):
-        pref_dict = self.createPrefDict()
-        if pref_dict:
-            self.exp_manager.save_ui_prefs(fle_path, pref_dict)
-        else:
-            pass
-
-    def updateProgress(self, value):
-        if isinstance(value, (int, float)):
-            self.pbar.setFormat(f"Acquisition {value} analyzed")
-            # self.pbar.setFormat(f"{value}")
-        elif isinstance(value, str):
-            self.pbar.setFormat(value)
-
-    def setWorkingDirectory(self, path):
-        self.signals.dir_path.emit(path)
-
-    def needToSave(self):
-        return self.exp_manager.need_to_save

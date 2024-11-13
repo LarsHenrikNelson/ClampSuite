@@ -32,5 +32,4 @@ class AnalysisButtonsWidget(QVBoxLayout):
 
     def clicked(self, object):
         button_id = self.button_group.id(object)
-        print(self.button_map[button_id])
         self.signals.finished.emit(self.button_map[button_id])

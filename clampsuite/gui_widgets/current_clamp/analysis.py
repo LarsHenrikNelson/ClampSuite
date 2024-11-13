@@ -625,5 +625,5 @@ class CurrentClampAnalysisWidget(AnalysisWidget):
                 logger.info("No acquisition to reset.")
                 self.pbar.setFormat("No acquisition to reset.")
 
-    def runFinalAnalysis(self):
-        pass
+    def runFinalAnalysis(self, checked: bool):
+        self.clicked.emit(checked)

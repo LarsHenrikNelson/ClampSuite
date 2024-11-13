@@ -1,4 +1,5 @@
 from .acq_inspection import DeconInspectionWidget  # noqa: F401
+from .analysis_widget import MainAnalysisWidget  # noqa: F401
 from .baseline import BaselineWidget  # noqa: F401
 from .buttons import AnalysisButtonsWidget  # noqa: F401
 from .filter import FilterWidget  # noqa: F401
