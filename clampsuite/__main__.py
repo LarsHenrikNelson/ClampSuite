@@ -1,18 +1,25 @@
 import logging
 import sys
-from pathlib import PurePath
 
 import pyqtgraph as pg
 
 from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from .functions.startup import check_dir
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
-import clampsuite
 
 from . import resources  # noqa: F401
+
+try:
+    from ctypes import windll  # Only exists on Windows.
+
+    myappid = "mycompany.myproduct.subproduct.version"
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except ImportError:
+    pass
 
 
 def main(logger):
@@ -25,23 +32,24 @@ def main(logger):
     pg.setConfigOptions(antialias=True)
     pg.setConfigOption("foreground", "#FCFCFC")
 
-    wdir = PurePath(clampsuite.__file__).parent
-    logo_path = str(wdir / "logo/d_logo.png")
-    pic = QPixmap(logo_path)
+    icon = QIcon(":/icons/logo-favicon.ico")
+    pic = QPixmap(icon.pixmap(QSize(512, 512)))
     splash = QSplashScreen(pic)
     splash.show()
+    timer = QTimer()
+    timer.singleShot(5000, lambda x: x)
     app.setStyle("Fusion")
     font = app.font()
     font.setPointSize(10)
     app.setFont(font)
     app.setPalette(DarkPalette())
-    app.setWindowIcon(QIcon(pic))
+    app.setWindowIcon(icon)
     window = MainWindow()
     window.setWindowTitle("ClampSuite")
     window.setProgramDirectory()
     window.loadPresets()
-    window.show()
     splash.finish(window)
+    window.show()
     app.aboutToQuit.connect(lambda: logger.info("Closing ClampSuite"))
     sys.exit(app.exec())
 

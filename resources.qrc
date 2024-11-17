@@ -9,5 +9,6 @@
         <file>icons/pos_neg-sq.png</file>
         <file>icons/mini-acq-sq.png</file>
         <file>icons/current_clamp_pulse-sq.png</file>
+        <file>icons/logo-favicon.ico</file>
     </qresource>
 </RCC>
