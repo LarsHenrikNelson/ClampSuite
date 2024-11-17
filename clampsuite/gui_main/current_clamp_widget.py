@@ -52,8 +52,8 @@ class CurrentClampWidget(MainAnalysisWidget):
         self.plot_dict = {}
         self.table_dict = {}
 
-        self.signals.file.connect(self.loadPreferences)
-        self.signals.file_path.connect(self.loadExperiment)
+        self.file.connect(self.loadPreferences)
+        self.file_path.connect(self.loadExperiment)
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
         self.main_widget = QTabWidget()

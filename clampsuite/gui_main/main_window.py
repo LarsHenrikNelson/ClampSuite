@@ -1,26 +1,26 @@
 import logging
 from pathlib import Path, PurePath
 
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon, QPixmap, Qt
+from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QStackedWidget,
-    QStyle,
     QToolBar,
+    QBoxLayout,
+    QWidget,
 )
 
 from ..functions.startup import check_dir
 from .current_clamp_widget import CurrentClampWidget
-from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisMain
-from .oepsc_widget import oEPSCWidget
+from .oepsc_widget import EvokedPSCLFPWidget
 from .pref_widget import PreferencesWidget
+from .home_widget import HomeWidget
 
-# from ..gui_widgets.qtwidgets import WorkerSignals
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +30,19 @@ class MainWindow(QMainWindow):
         super().__init__()
         logger.info("Creating GUI")
         self.initUI()
-        self.setWidget("Mini analysis")
+        # self.setWidget("Mini analysis")
 
     def initUI(self):
         self.setWindowTitle("Electrophysiology Analysis")
+
+        self.available_widgets = [
+            "Mini analysis",
+            "Current clamp",
+            "Evoked PSC/LFP",
+        ]
+        self.button_map = {
+            index: value for index, value in enumerate(self.available_widgets)
+        }
 
         # Set the menu bar
         self.bar = self.menuBar()
@@ -73,60 +82,45 @@ class MainWindow(QMainWindow):
         self.preferences_menu.addAction(self.setApplicationPreferences)
 
         self.tool_bar = QToolBar()
+        self.tool_bar.setIconSize(QtCore.QSize(32, 32))
         self.addToolBar(self.tool_bar)
 
-        self.widget_chooser = QComboBox()
-        self.tool_bar.addWidget(self.widget_chooser)
-        widgets = ["Mini analysis", "oEPSC/LFP", "Current clamp", "Filtering setup"]
-        self.widget_chooser.addItems(widgets)
-        self.widget_chooser.setMinimumContentsLength(len(max(widgets, key=len)))
-        self.widget_chooser.currentTextChanged.connect(self.setWidget)
+        # self.widget_chooser = QComboBox()
+        # self.tool_bar.addWidget(self.widget_chooser)
+        # widgets = ["Mini analysis", "oEPSC/LFP", "Current clamp", "Filtering setup"]
+        # self.widget_chooser.addItems(widgets)
+        # self.widget_chooser.setMinimumContentsLength(len(max(widgets, key=len)))
+        # self.widget_chooser.currentTextChanged.connect(self.setWidget)
 
-        self.save_button = QPushButton()
-        self.save_button.clicked.connect(self.saveAs)
-        style = self.save_button.style()
-        icon = style.standardIcon(QStyle.SP_DialogSaveButton)
-        self.save_button.setIcon(icon)
-        self.tool_bar.addWidget(self.save_button)
+        homeicon = QIcon(QPixmap(":/icons/home.png"))
+        home = QAction(homeicon, "Home", self)
+        home.triggered.connect(lambda _: self.setWidget("Home"))
+        self.tool_bar.addAction(home)
 
-        self.open_button = QPushButton()
-        self.open_button.clicked.connect(self.loadData)
-        style = self.open_button.style()
-        icon = style.standardIcon(QStyle.SP_DirOpenIcon)
-        self.open_button.setIcon(icon)
-        self.tool_bar.addWidget(self.open_button)
+        newicon = QIcon(QPixmap(":/icons/new-folder.png"))
+        new = QAction(newicon, "New experiment", self)
+        self.tool_bar.addAction(new)
+
+        saveicon = QIcon(QPixmap(":/icons/save.png"))
+        save = QAction(saveicon, "Save", self)
+        self.tool_bar.addAction(save)
+
+        foldericon = QIcon(QPixmap(":/icons/folder-open.png"))
+        folder = QAction(foldericon, "Folder", self)
+        self.tool_bar.addAction(folder)
 
         self.preferences_widget = PreferencesWidget()
 
-        self.central_widget = QStackedWidget()
+        self.central_widget = QWidget()
+        self.main_layout = QBoxLayout(QBoxLayout.LeftToRight)
+        self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
 
-        logger.info("Creating analysis widgets")
-        logger.info("Creating MiniAnalysisMain")
-        self.mini_widget = MiniAnalysisMain()
-        self.mini_widget.signals.dir_path.connect(self.setWorkingDirectory)
-        self.central_widget.addWidget(self.mini_widget)
-        logger.info("Creating oEPSCWidget")
-        self.oepsc_widget = oEPSCWidget()
-        self.oepsc_widget.signals.dir_path.connect(self.setWorkingDirectory)
-        self.central_widget.addWidget(self.oepsc_widget)
-        logger.info("Creating CurrentClampWidget")
-        self.current_clamp_widget = CurrentClampWidget()
-        self.current_clamp_widget.signals.dir_path.connect(self.setWorkingDirectory)
-        self.central_widget.addWidget(self.current_clamp_widget)
-        logger.info("Creating filterWidget")
-        self.filter_widget = filterWidget()
-        self.central_widget.addWidget(self.filter_widget)
-        logger.info("Analysis widgets created")
+        self.current_widget = HomeWidget(button_map=self.button_map)
+        self._current_widget = "Home"
+        self.current_widget.clicked.connect(self.setWidget)
+        self.main_layout.addWidget(self.current_widget, 0, Qt.AlignCenter)
 
-        self.gui_widgets = {
-            "MiniAnalysisWidget": self.mini_widget,
-            "oEPSCWidget": self.oepsc_widget,
-            "CurrentClampWidget": self.current_clamp_widget,
-            # "FilterWidget": self.filter_widget,
-        }
-        self.current_widget = ""
-        self.setComboBoxSpacing()
         self.working_dir = str(Path().home())
 
         self.load_dialog_open = False
@@ -138,22 +132,34 @@ class MainWindow(QMainWindow):
             i.view().setSpacing(1)
 
     def setWidget(self, text):
-        if text == "Mini analysis":
-            self.central_widget.setCurrentWidget(self.mini_widget)
-            self.current_widget = "MiniAnalysisWidget"
-            logger.info("Central widget set as MiniAnalysisWidget")
-        elif text == "oEPSC/LFP":
-            self.central_widget.setCurrentWidget(self.oepsc_widget)
-            self.current_widget = "oEPSCWidget"
-            logger.info("Central widget set as oEPSCWidget")
-        elif text == "Current clamp":
-            self.central_widget.setCurrentWidget(self.current_clamp_widget)
-            self.current_widget = "CurrentClampWidget"
-            logger.info("Central widget set as CurrentClampWidget")
-        elif text == "Filtering setup":
-            self.central_widget.setCurrentWidget(self.filter_widget)
-            self.current_widget = "FilterWidget"
-            logger.info("Central widget set as filterWidget")
+        if text != self._current_widget:
+            self.main_layout.removeWidget(self.current_widget)
+            self.to_delete = self.current_widget
+            del self.current_widget
+            self.to_delete.hide()
+            self.to_delete.deleteLater()
+            if text == "Mini analysis":
+                logger.info("Creating MiniAnalysisMain")
+                self.current_widget = MiniAnalysisMain()
+                logger.info("Central widget set as Mini analysis")
+            elif text == "Evoked PSC/LFP":
+                self.current_widget = EvokedPSCLFPWidget()
+                logger.info("Central widget set as Evoked PSC/LFP")
+            elif text == "Current clamp":
+                self.current_widget = CurrentClampWidget()
+                logger.info("Central widget set as Current clamp")
+            elif text == "Home":
+                self.current_widget = HomeWidget(button_map=self.button_map)
+                logger.info("Central widget set as Home")
+
+            self._current_widget = text
+
+            if text != "Home":
+                self.current_widget.dir_path.connect(self.setWorkingDirectory)
+                self.main_layout.addWidget(self.current_widget, Qt.AlignCenter)
+            else:
+                self.current_widget.clicked.connect(self.setWidget)
+                self.main_layout.addWidget(self.current_widget, 0, Qt.AlignCenter)
 
     def saveAs(self):
         save_filename, _extension = QFileDialog.getSaveFileName(
@@ -165,7 +171,7 @@ class MainWindow(QMainWindow):
             logger.info("Saving analysis.")
             self.working_dir = str(Path(PurePath(save_filename).parent))
             logger.info(f"Working directory set to: {self.working_dir}")
-            self.central_widget.currentWidget().saveAs(save_filename)
+            self.current_widget.saveAs(save_filename)
             logger.info("Analysis saved.")
 
     def loadExperiment(self):
@@ -180,7 +186,7 @@ class MainWindow(QMainWindow):
             logger.info("Loading experiment.")
             path = Path(directory)
             self.working_dir = str(path)
-            self.central_widget.currentWidget().loadExperiment(path)
+            self.current_widget.loadExperiment(path)
             logger.info("Experiment loaded.")
 
     def createExperiment(self):
@@ -193,7 +199,7 @@ class MainWindow(QMainWindow):
             logger.info("Creating/appending new experiment.")
             self.working_dir = str(PurePath(directory[0]).parent)
             logger.info(f"Working directory set to: {self.working_dir}")
-            self.central_widget.currentWidget().createExperiment(directory)
+            self.current_widget.createExperiment(directory)
             logger.info("Experiment created/appended.")
 
     def loadData(self):
@@ -220,7 +226,7 @@ class MainWindow(QMainWindow):
         )
         if len(file_name) > 0:
             logger.info("Loading preferences")
-            self.central_widget.currentWidget().loadPreferences(file_name)
+            self.current_widget.loadPreferences(file_name)
             logger.info("Preferences loaded")
         else:
             logger.info("No preferences loaded")
@@ -231,7 +237,7 @@ class MainWindow(QMainWindow):
         )
         if save_filename:
             logger.info("Saving preferences")
-            self.central_widget.currentWidget().savePreferences(save_filename)
+            self.current_widget.savePreferences(save_filename)
             self.gui_widgets[self.current_widget].savePreferences(
                 self.program_directory / self.current_widget
             )
@@ -244,7 +250,7 @@ class MainWindow(QMainWindow):
         self.preferences_widget.show()
 
     def closeEvent(self, event):
-        if self.central_widget.currentWidget().needToSave():
+        if self.current_widget.needToSave():
             msgbox = QMessageBox()
             msgbox.setInformativeText("Do you want to save your changes?")
             msgbox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard)
@@ -264,11 +270,12 @@ class MainWindow(QMainWindow):
         logger.info(f"Program directory set as {self.program_directory}")
 
     def loadPresets(self):
-        for key, value in self.gui_widgets.items():
-            temp_path = self.program_directory / (key + ".yaml")
-            if temp_path.exists():
-                logger.info(f"Loading {key} preferences from {temp_path}")
-                # value.loadPreferences(self.program_directory / (key + ".yaml"))
-            else:
-                logger.info(f"Loading {key} preferences to {temp_path}")
-                value.savePreferences(self.program_directory / key)
+        pass
+        # for key, value in self.gui_widgets.items():
+        #     temp_path = self.program_directory / (key + ".yaml")
+        #     if temp_path.exists():
+        #         logger.info(f"Loading {key} preferences from {temp_path}")
+        #         # value.loadPreferences(self.program_directory / (key + ".yaml"))
+        #     else:
+        #         logger.info(f"Loading {key} preferences to {temp_path}")
+        #         value.savePreferences(self.program_directory / key)

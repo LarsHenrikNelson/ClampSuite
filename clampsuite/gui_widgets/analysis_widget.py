@@ -10,19 +10,25 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QMessageBox,
 )
-from PySide6.QtCore import Slot, Qt
+from PySide6.QtCore import Slot, Qt, Signal
 
-from .qtwidgets import WorkerSignals, QExpManager
+from .qtwidgets import QExpManager
 
 
 logger = logging.getLogger(__name__)
 
 
 class MainAnalysisWidget(QWidget):
+    acq = Signal(int)
+    error = Signal(str)
+    clicked = Signal(bool)
+    file = Signal(str)
+    file_path = Signal(Path)
+    dir_path = Signal(Path)
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setAcceptDrops(True)
-        self.signals = WorkerSignals()
 
         self.setStyleSheet(
             """QTabWidget::tab-bar
@@ -103,9 +109,9 @@ class MainAnalysisWidget(QWidget):
             url = e.mimeData().urls()[0]
             fname = PurePath(str(url.toLocalFile()))
             if fname.suffix == ".yaml":
-                self.signals.file.emit(fname)
+                self.file.emit(fname)
             elif Path(fname).is_dir():
-                self.signals.file_path.emit(Path(fname))
+                self.file_path.emit(Path(fname))
             else:
                 e.ignore()
         else:
@@ -151,7 +157,7 @@ class MainAnalysisWidget(QWidget):
             self.pbar.setFormat(value)
 
     def setWorkingDirectory(self, path):
-        self.signals.dir_path.emit(path)
+        self.dir_path.emit(path)
 
     def needToSave(self):
         return self.exp_manager.need_to_save

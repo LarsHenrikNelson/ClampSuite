@@ -32,7 +32,7 @@ XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 logger = logging.getLogger(__name__)
 
 
-class oEPSCWidget(MainAnalysisWidget):
+class EvokedPSCLFPWidget(MainAnalysisWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
@@ -42,8 +42,8 @@ class oEPSCWidget(MainAnalysisWidget):
 
     def initUI(self):
         logger.info("Creating oEPSC/LFP GUI")
-        self.signals.file.connect(self.loadPreferences)
-        self.signals.file_path.connect(self.loadExperiment)
+        self.file.connect(self.loadPreferences)
+        self.file_path.connect(self.loadExperiment)
         self.setStyleSheet(
             """QTabWidget::tab-bar 
                                           {alignment: left;}"""

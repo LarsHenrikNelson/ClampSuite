@@ -12,6 +12,8 @@ from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
 import clampsuite
 
+from . import resources  # noqa: F401
+
 
 def main(logger):
     # if hasattr(QtCore.Qt, "AA_EnableHighDpiScaling"):

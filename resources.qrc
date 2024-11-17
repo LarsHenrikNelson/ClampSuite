@@ -1,0 +1,13 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>icons/folder-open.png</file>
+        <file>icons/home.png</file>
+        <file>icons/save.png</file>
+        <file>icons/new.png</file>
+        <file>icons/new-folder.png</file>
+        <file>icons/pos_neg-sq.png</file>
+        <file>icons/mini-acq-sq.png</file>
+        <file>icons/current_clamp_pulse-sq.png</file>
+    </qresource>
+</RCC>
