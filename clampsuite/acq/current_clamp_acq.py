@@ -558,7 +558,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Spike width (ms)": self.spike_width(),
             "Max AP vel (mV/ms)": self.max_velocity_y,
             "Max AP vel time (ms)": self.max_velocity_x / self.s_r_c,
-            "Min AP vel (mV/mS)": self.min_velocity_y,
+            "Min AP vel (mV/ms)": self.min_velocity_y,
             "Min AP vel time (ms)": self.min_velocity_x / self.s_r_c,
             "Spike freq adapt": self.spike_adapt,
             "Local sfa": self.local_var,
