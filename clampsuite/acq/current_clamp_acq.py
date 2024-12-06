@@ -242,12 +242,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # Differentiate the array to find the peak dv/dt.
             dv = np.gradient(self.first_ap)
             dt = np.gradient(self.spike_x_array())
+            dv_dt = dv / dt
 
-            self.max_velocity_x = np.argmax(dv / dt)
+            self.max_velocity_x = np.argmax(dv_dt)
             self.max_velocity_y = dv[self.max_velocity_x]
-            self.max_velocity_x += self.ap_index[0] / self.s_r_c
+            self.max_velocity_x += self.ap_index[0]
 
-            self.min_velocity_x = np.argmin(dv / dt)
+            self.min_velocity_x = np.argmin(dv_dt)
             self.min_velocity_y = dv[self.min_velocity_x]
             self.min_velocity_x += self.ap_index[0]
         else:
@@ -545,7 +546,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Ramp": self.ramp,
             "Epoch": self.epoch,
             "Baseline mean (pA)": self.baseline_mean,
-            "Pulse start (ms)": self._pulse_start / self.s_r_c,
+            "Pulse start (ms)": float(self._pulse_start) / self.s_r_c,
             "Delta V (mV)": self.delta_v,
             "Voltage sag (mV)": self.voltage_sag,
             "Spike threshold (mV)": self.spike_threshold,
@@ -557,9 +558,9 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Num spikes": num_spks,
             "Spike width (ms)": self.spike_width(),
             "Max AP vel (mV/ms)": self.max_velocity_y,
-            "Max AP vel time (ms)": self.max_velocity_x / self.s_r_c,
+            "Max AP vel time (ms)": float(self.max_velocity_x) / self.s_r_c,
             "Min AP vel (mV/ms)": self.min_velocity_y,
-            "Min AP vel time (ms)": self.min_velocity_x / self.s_r_c,
+            "Min AP vel time (ms)": float(self.min_velocity_x) / self.s_r_c,
             "Spike freq adapt": self.spike_adapt,
             "Local sfa": self.local_var,
             "Divisor sfa": self.sfa_divisor,
