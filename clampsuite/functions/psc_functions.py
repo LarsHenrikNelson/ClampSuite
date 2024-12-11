@@ -145,3 +145,76 @@ def iterative_curve_fit(
             )
         )
     return fit_vals, y
+
+
+def psc_template(
+    x,
+    *args,
+):
+    amplitude = np.array(args[0::5])
+    tau1 = np.array(args[1::5])
+    tau2 = np.array(args[2::5])
+    rp = np.array(args[3::5])
+    spacer = np.array(args[4::5])
+    output = np.zeros((amplitude.size, x.size))
+    i = 0
+    for a, t1, t2, r, s in zip(amplitude, tau1, tau2, rp, spacer):
+        output[int(i)] = template(output[i], a, t1, t2, r, s)
+        i += 1
+    return output.sum(axis=0)
+
+
+def template(
+    x: np.ndarray,
+    amplitude: int | float = -20,
+    rise_tau: int | float = 3,
+    decay_tau: int | float = 50,
+    risepower: int | float = 0.5,
+    spacer: int | float = 15,
+) -> np.ndarray:
+    """Creates a template based on several factors. X, taus and spacer must
+    be in samples and not milliseconds or seconds.
+
+    Args:
+        amplitude (float): Amplitude of template
+        tau_1 (float): Rise tau (ms) of template
+        tau_2 (float): Decay tau (ms) of template
+        risepower (float): Risepower of template
+        length (float): Length of time (ms) for template
+        spacer (int, optional): Delay (ms) until template starts. Defaults to 1.5.
+
+    Returns:
+        np.array: Numpy array of the template.
+    """
+    template = x.copy()
+    length = template.size - spacer
+    t_length = np.arange(0, length, dtype=float)
+    Aprime = (decay_tau / rise_tau) ** (rise_tau / (rise_tau - decay_tau))
+    y = (
+        amplitude
+        / Aprime
+        * (
+            (1 - (np.exp(-t_length / rise_tau))) ** risepower
+            * np.exp((-t_length / decay_tau))
+        )
+    )
+    template[int(spacer) :] = y
+    return template
+
+
+def _convert_psc_template_vars(
+    data: list[CurveFitData], pulse_starts: list[float], sample_rate
+):
+    vals = []
+    src = sample_rate / 1000
+    for i, j in zip(data, pulse_starts):
+        vals.extend(
+            [
+                i["amplitude"],
+                i["rise_tau"] * src,
+                i["decay_tau"] * src,
+                i["rise_power"],
+                j * src,
+            ]
+        )
+    return vars
