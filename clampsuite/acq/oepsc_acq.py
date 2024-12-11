@@ -4,6 +4,7 @@ import numpy as np
 from scipy import integrate, optimize
 
 from ..functions.curve_fit import db_exp_decay, s_exp_decay
+from ..functions.psc_functions import _detect_pos_neg
 from . import filter_acq
 
 
@@ -46,7 +47,7 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
         self.baseline_mean = np.mean(
             self.filtered_array[self._baseline_start : self._baseline_end]
         )
-        self.find_peak_dir()
+        self.peak_direction = _detect_pos_neg(self.filtered_array)
         self.find_amplitude()
         self.zero_crossing()
         if self.find_ct:
@@ -57,12 +58,6 @@ class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
             self.est_tau_x = np.nan
         if self.find_fdecay:
             self.find_fit_decay()
-
-    def find_peak_dir(self):
-        if abs(max(self.filtered_array)) > abs(min(self.filtered_array)):
-            self.peak_direction = "positive"
-        else:
-            self.peak_direction = "negative"
 
     def find_amplitude(self):
         if self.peak_direction == "positive":
