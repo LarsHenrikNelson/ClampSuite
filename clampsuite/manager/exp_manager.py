@@ -5,8 +5,8 @@ from copy import deepcopy
 from pathlib import Path, PurePath
 from typing import Callable, Literal, Union
 
-import yaml
 import numpy as np
+import yaml
 
 from ..acq import Acquisition
 from ..final_analysis import FinalAnalysis
@@ -41,31 +41,15 @@ class ExpManager:
             self.set_cycle(key)
         self._set_start_end_acq()
 
-    def analyze_exp(
-        self, exp: str, filter_args=None, template_args=None, analysis_args=None
-    ) -> None:
+    def analyze_exp(self, exp: str, analysis_args: dict) -> None:
+        self.analysis_prefs = analysis_args
         if self.exp_dict.get(exp):
             acq_dict = self.exp_dict[exp]
-            pref_dict = {}
-            if filter_args is not None:
-                pref_dict.update(filter_args)
-            if template_args is not None:
-                pref_dict.update(template_args)
-            pref_dict.update(analysis_args)
-            self.analysis_prefs = pref_dict
             for i in acq_dict.values():
-                if filter_args is not None:
-                    i.set_filter(**filter_args)
-                if template_args is not None:
-                    i.set_template(**template_args)
-                i.analyze(**analysis_args)
+                i.analyze(analysis_args)
                 self.callback_func(f"Acquisition {i.acq_number} analyzed")
             self.analyzed = True
             self.callback_func(f"Analyzed {exp} acquisitions")
-
-    def set_ui_prefs(self, pref_dict: dict) -> None:
-        self.ui_prefs = pref_dict
-        self.ui_prefs["Deleted acqs"] = {}
 
     def run_final_analysis(self, **kwargs) -> None:
         analysis = list(self.exp_dict.keys())
@@ -82,10 +66,10 @@ class ExpManager:
         file_path = Path(file_path)
         file_path.mkdir()
         file_path = file_path / file_path.parts[-1]
-        if self.ui_prefs is not None:
+        if self.analysis_prefs is not None:
             for key, data in self.deleted_acqs.items():
-                self.ui_prefs["Deleted acqs"] = {key: list(data.keys())}
-            self.save_ui_prefs(file_path, self.ui_prefs)
+                self.analysis_prefs["Deleted acqs"] = {key: list(data.keys())}
+            self.save_analysis_prefs(file_path, self.ui_prefs)
         if self.final_analysis is not None:
             self.save_final_analysis(file_path)
         self._save_acqs(file_path)
@@ -124,12 +108,6 @@ class ExpManager:
                 saved += 1
                 self.callback_func(f"Saved acquisition {acq.acq_number}")
         self.callback_func("Saved acqs")
-
-    def save_ui_prefs(self, file_path: Union[PurePath, Path, str], ui_prefs) -> None:
-        self.callback_func("Saving preferences")
-        with open(f"{file_path}.yaml", "w") as file:
-            yaml.dump(ui_prefs, file)
-        self.callback_func("Saved preferences")
 
     def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]) -> None:
         with open(f"{file_path}.yaml", "w") as file:

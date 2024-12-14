@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path, PurePath
 
+from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import (
     QTabWidget,
     QWidget,
@@ -12,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Slot, Qt, Signal
 
-from .qtwidgets import QExpManager
+from .qtwidgets import QExpManager, ThreadWorker
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class MainAnalysisWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
 
         self.setStyleSheet(
             """QTabWidget::tab-bar
@@ -169,3 +171,13 @@ class MainAnalysisWidget(QWidget):
 
     def analyze(self):
         raise (NotImplementedError)
+
+    def addData(self, urls):
+        if not isinstance(urls[0], str):
+            urls = [str(url.toLocalFile()) for url in urls]
+        worker = ThreadWorker(self.exp_manager)
+        worker.addAnalysis("create_exp", analysis=self.analysis_type, file=urls)
+        self.signals.dir_path.emit(str(Path(urls[0]).parent))
+        worker.signals.progress.connect(self.updateProgress)
+        worker.signals.finished.connect(self.acqsAdded)
+        QThreadPool.globalInstance().start(worker)

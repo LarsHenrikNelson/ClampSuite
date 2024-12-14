@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path, PurePath
 
+import yaml
 from PySide6.QtCore import (
     QAbstractListModel,
     QMutex,
@@ -12,12 +13,12 @@ from PySide6.QtCore import (
     Slot,
 )
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QGroupBox,
     QLineEdit,
     QListView,
     QSpinBox,
     QWidget,
-    QAbstractItemView,
 )
 
 from ..manager import ExpManager
@@ -94,6 +95,16 @@ class QExpManager(ExpManager):
 
     def needToSave(self, save: bool):
         self.need_to_save = save
+
+    def set_ui_prefs(self, pref_dict: dict) -> None:
+        self.ui_prefs = pref_dict
+        self.ui_prefs["Deleted acqs"] = {}
+
+    def save_ui_prefs(self, file_path: PurePath | Path | str, ui_prefs) -> None:
+        self.callback_func("Saving preferences")
+        with open(f"{file_path}.yaml", "w") as file:
+            yaml.dump(ui_prefs, file)
+        self.callback_func("Saved preferences")
 
 
 class FrameWidget(QGroupBox):

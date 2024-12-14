@@ -138,6 +138,7 @@ class MainWindow(QMainWindow):
             del self.current_widget
             self.to_delete.hide()
             self.to_delete.deleteLater()
+            print(text)
             if text == "Mini analysis":
                 logger.info("Creating MiniAnalysisMain")
                 self.current_widget = MiniAnalysisMain()

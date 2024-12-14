@@ -1,19 +1,14 @@
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import (
-    QAbstractListModel,
-    Qt,
-    QThreadPool,
-    Slot,
-)
+from PySide6.QtCore import QAbstractListModel, Qt, QThreadPool, Signal, Slot
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QLabel,
     QListView,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
-    QAbstractItemView,
 )
 
 from .acq_inspection import AcqInspectionWidget
@@ -30,6 +25,9 @@ class ListModel(QAbstractListModel):
     The model is used to add, remove, and modify the data through the use of a
     controller which in Qt is often built into the models.
     """
+
+    progress = Signal(int)
+    dir_path = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -100,51 +98,12 @@ class ListModel(QAbstractListModel):
 
 
 class ListView(QListView):
-    """
-    This is a custom listview that allows for drag and drop loading of
-    scanimage matlab files.
-    """
 
     def __init__(self, parent=None):
         super(ListView, self).__init__(parent)
 
-        self.setAcceptDrops(True)
         self.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.setDropIndicatorShown(True)
         self.setModel(ListModel())
-        self.signals = WorkerSignals()
-
-    def dragEnterEvent(self, e):
-        """
-        This function will detect the drag enter event from the mouse on the
-        main window
-        """
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    def dragMoveEvent(self, e):
-        """
-        This function will detect the drag move event on the main window
-        """
-        if e.mimeData().hasUrls:
-            e.accept()
-        else:
-            e.ignore()
-
-    @Slot()
-    def dropEvent(self, e):
-        """
-        This function will enable the drop file directly on to the
-        main window. The file location will be stored in the self.filename
-        """
-        if e.mimeData().hasUrls:
-            e.setDropAction(Qt.CopyAction)
-            e.accept()
-            self.model().addData(e.mimeData().urls())
-        else:
-            e.ignore()
 
     def clearData(self):
         self.model().clearData()
@@ -170,6 +129,8 @@ class ListView(QListView):
 
 
 class LoadAcqWidget(QVBoxLayout):
+    progress = Signal(int)
+    dir_path = Signal(str)
 
     def __init__(self, analysis_type: str, parent=None):
         super(LoadAcqWidget, self).__init__(parent)
@@ -231,10 +192,10 @@ class LoadAcqWidget(QVBoxLayout):
         self.dlg.exec()
 
     def updateProgress(self, value):
-        self.signals.progress.emit(value)
+        self.progress.emit(value)
 
     def setWorkingDirectory(self, path):
-        self.signals.dir_path.emit(path)
+        self.dir_path.emit(path)
 
     def addData(self, urls):
         self.load_widget.model().addData(urls)
