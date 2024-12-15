@@ -86,19 +86,19 @@ def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
 
     # Must provide bounds otherwise curve_fit throws an error
     if direction == "positive":
-        lower_bounds = (0.001, 0.0001, 0.0001, 0.0001)
+        lower_bounds = (0.0, 0.0, 0.0, 0.0)
         peak_point = y.argmax()
         upper_bounds = (
-            y[peak_point] * 1.2,
+            y[peak_point] * 2,
             peak_point / s_r_c,
             float(y.size / s_r_c),
             np.inf,
         )
     else:
         peak_point = y.argmin()
-        lower_bounds = (y[peak_point] * 1.2, 0.0001, 0.0001, 0.0001)
+        lower_bounds = (y[peak_point] * 2, 0.0, 0.0, 0.0)
         upper_bounds = (
-            0.001,
+            0.0,
             peak_point / s_r_c,
             float(y.size / s_r_c),
             np.inf,
@@ -144,7 +144,7 @@ def iterative_curve_fit(
                 rise_power=popt[3],
             )
         )
-    return fit_vals, y
+    return fit_vals
 
 
 def psc_template(
@@ -217,4 +217,4 @@ def _convert_psc_template_vars(
                 j * src,
             ]
         )
-    return vars
+    return vals
