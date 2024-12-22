@@ -6,9 +6,20 @@ from scipy import signal, optimize
 
 class Event(TypedDict):
     peak_x: float
+    peak_y: float
     amplitude: float
     start_x: float
     end_x: float
+    rise_time: float
+
+
+def _detect_pos_neg(y):
+    maximum = np.abs(y.max())
+    minimum = np.abs(y.min())
+    if maximum > minimum:
+        return "positive"
+    else:
+        return "negative"
 
 
 def find_peak_window(array, peak_direction, window_start, window_end):
@@ -21,25 +32,59 @@ def find_peak_window(array, peak_direction, window_start, window_end):
     return peak_y, peak_x
 
 
-def find_multipeaks(array, height, prominence, distance):
+def iterative_peak_window(
+    y: np.ndarray, window_starts: int, window_ends: int, baseline_size: int = 0
+) -> Event:
+    direction = _detect_pos_neg(y)
+    peaks = []
+    for st, end in zip(window_starts, window_ends):
+        peak_x, peak_y = find_peak_window(y, direction, st, end)
+        amplitude = np.abs(peak_y - y[st - baseline_size - 1 : st])
+        temp = Event(
+            peak_x=peak_x,
+            peak_y=peak_y,
+            amplitude=amplitude,
+            start_x=st,
+            end_x=end,
+            rise_time=peak_x - st,
+        )
+        peaks.append(temp)
+    return peaks
+
+
+def iterative_peak_prominence(
+    array: np.ndarry,
+    height: float,
+    prominence: float,
+    distance: int,
+    sample_rate: float,
+) -> Event:
     peaks, props = signal.find_peaks(
         array, height=height, prominence=prominence, distance=(distance)
     )
+    # Need to rework this some more. Based on how scipy.find_peaks works this
+    # will likely not yield the expected results.
+    s_r_c = sample_rate / 1000
+
     events = []
     for i in np.arange(len(peaks)):
-        if i < len(peaks) - 1:
+        if i < (len(peaks) - 1):
             temp = Event(
                 peak_x=peaks[i],
+                peak_y=array[peaks[i]],
                 amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
-                start_x=props["left_bases"][i],
-                end_x=props["left_bases"][i + 1],
+                start_x=props["left_bases"][i] / s_r_c,
+                rise_time=props["left_bases"][i] / s_r_c,
+                end_x=(peaks[i] - props["left_bases"][i + 1]) / s_r_c,
             )
         else:
             temp = Event(
                 peak_x=peaks[i],
+                peak_y=array[peaks[i]],
                 amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
-                start_x=props["left_bases"][i],
-                end_x=props["right_bases"][i],
+                start_x=props["left_bases"][i] / s_r_c,
+                end_x=props["right_bases"][i] / s_r_c,
+                rise_time=(peaks[i] - props["left_bases"][i]) / s_r_c,
             )
         events.append(temp)
 
@@ -67,17 +112,8 @@ def psc(
     return y
 
 
-def _detect_pos_neg(y):
-    maximum = np.abs(y.max())
-    minimum = np.abs(y.min())
-    if maximum > minimum:
-        return "positive"
-    else:
-        return "negative"
-
-
 def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
-    s_r_c = int(sample_rate / 1000)
+    s_r_c = sample_rate / 1000
     temp = y[int(start * s_r_c) : int(end * s_r_c)]
     x = np.arange(temp.size) / s_r_c
 
@@ -126,7 +162,7 @@ def iterative_curve_fit(
         sample_rate (float, int): sample rate
     """
     y = data.copy()
-    s_r_c = int(sample_rate / 1000)
+    s_r_c = sample_rate / 1000
     pulse_ends = pulse_starts[1:]
     pulse_ends = np.r_[pulse_ends, data.size / s_r_c]
     fit_vals = []
