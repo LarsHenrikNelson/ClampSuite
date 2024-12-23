@@ -4,7 +4,7 @@ import numpy as np
 from scipy import integrate, optimize
 
 from ..functions.curve_fit import db_exp_decay, s_exp_decay
-from ..functions.psc_functions import _detect_pos_neg
+from ..functions.epsc_functions import _detect_pos_neg
 from . import filter_acq
 
 

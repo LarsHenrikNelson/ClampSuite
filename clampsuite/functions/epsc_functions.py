@@ -53,7 +53,7 @@ def iterative_peak_window(
 
 
 def iterative_peak_prominence(
-    array: np.ndarry,
+    array: np.ndarray,
     height: float,
     prominence: float,
     distance: int,
