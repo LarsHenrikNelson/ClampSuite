@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
-from ..functions.curve_fit import s_exp_decay
+from ..functions.decay_fit import s_exp_decay
 from . import final_analysis
 
 
