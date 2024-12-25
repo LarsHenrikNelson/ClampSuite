@@ -254,3 +254,23 @@ def _convert_psc_template_vars(
             ]
         )
     return vals
+
+
+class EvokedPSC:
+
+    def __init__(
+        self,
+        data: np.ndarray,
+        sample_rate: float | int,
+        pulse_starts: list[float],
+        start: float | None = None,
+        end: float | None = None,
+    ):
+        self.data = data
+        self.sample_rate = sample_rate
+        self.pulse_starts = pulse_starts
+        self.start = start
+        self.end = end
+
+    def analyze():
+        pass
