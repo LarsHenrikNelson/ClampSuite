@@ -3,7 +3,7 @@ import numpy as np
 from scipy import optimize, signal
 from scipy.stats import linregress
 
-from ..functions.curve_fit import db_exp_decay, s_exp_decay
+from ..functions.decay_fit import db_exp_decay, s_exp_decay
 
 
 class MiniEvent:
