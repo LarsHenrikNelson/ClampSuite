@@ -159,7 +159,7 @@ class MiniEvent:
             )
             new_slope = slope + 1
             i = search_start[-1]
-            while new_slope > slope:
+            while new_slope > slope and i > 0:
                 slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
                 i -= 1
                 new_slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
