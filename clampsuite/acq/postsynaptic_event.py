@@ -168,10 +168,14 @@ class MiniEvent:
             )[0]
             if baseline_start.size > 0:
                 temp = int(baseline_start[-1] + (i - 1 * self.s_r_c))
+                if temp < 0:
+                    temp = 0
                 self._event_start_x = self.x_array()[temp]
                 self.event_start_y = self.event_array[temp]
             else:
                 temp = int(baseline_start.size / 2 + (i - 1 * self.s_r_c))
+                if temp < 0:
+                    temp = 0
                 self._event_start_x = self.x_array()[temp]
                 self.event_start_y = self.event_array[temp]
         else:
