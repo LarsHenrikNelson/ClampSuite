@@ -1,7 +1,7 @@
 import numpy as np
 from typing import NamedTuple
 from scipy import optimize
-from .epsc_functions import _detect_pos_neg
+from .evoked_psc import _detect_pos_neg
 
 
 class SExpDecayFit(NamedTuple):

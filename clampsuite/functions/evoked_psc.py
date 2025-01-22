@@ -8,9 +8,7 @@ class Event(TypedDict):
     peak_x: float
     peak_y: float
     amplitude: float
-    start_x: float
-    end_x: float
-    rise_time: float
+    baseline: float
 
 
 def _detect_pos_neg(y):
@@ -44,24 +42,27 @@ def find_peak_window(
         else:
             raise ValueError("Statistic not recognized, must be max, mean or median")
         peak_x = (window_start + window_end) / 2
-    return peak_y, peak_x
+    return peak_x, peak_y
 
 
 def _iterative_peak_window(
     y: np.ndarray,
-    window_starts: float,
-    window_ends: float,
+    pulse_starts: np.ndarray,
+    window_starts: np.ndarray,
+    window_ends: np.ndarray,
     sample_rate: float | int,
     baseline_size: float = 10,
     statistic: Literal["max", "mean", "median"] = "mean",
+    direction: Literal["positive", "negative"] | None = None,
 ) -> Event:
     """
     Iteratively finds the peak by taking the max, mean or median within a window of data.
 
     Args:
         y (np.ndarray): Acquisition data.
-        window_starts (float): Start of window in milliseconds.
-        window_ends (float): End of window in milliseconds.
+        pulse_starts (np.nadarray): Start of pulses in milliseconds.
+        window_starts (np.ndarray): Start of windows in milliseconds.
+        window_ends (np.ndarray): End of windows in milliseconds.
         sample_rate (float | int): Sample rate of data.
         baseline_size (float, optional): Size of the baseline before the peak. Defaults to 10.
         statistic (Literal[&quot;max&quot;, &quot;mean&quot;, &quot;median&quot;], optional): Statistic of the window. Defaults to "mean".
@@ -69,22 +70,22 @@ def _iterative_peak_window(
     Returns:
         Event: _description_
     """
-    direction = _detect_pos_neg(y)
+    if direction is None:
+        direction = _detect_pos_neg(y)
     peaks = []
     s_r_c = sample_rate / 1000
     baseline_size = int(baseline_size * s_r_c)
-    for start, end in zip(window_starts, window_ends):
-        start = start * s_r_c
-        end = end * s_r_c
+    for pstart, start, end in zip(pulse_starts, window_starts, window_ends):
+        start = int(start * s_r_c)
+        end = int(end * s_r_c)
+        pstart = int(pstart * s_r_c)
         peak_x, peak_y = find_peak_window(y, direction, start, end, statistic)
-        amplitude = np.abs(peak_y - y[start - baseline_size - 1 : start])
+        baseline = np.mean(y[pstart - baseline_size - 1 : pstart])
+        amplitude = np.abs(peak_y - baseline)
         temp = Event(
             peak_x=peak_x,
             peak_y=peak_y,
             amplitude=amplitude,
-            start_x=start,
-            end_x=end,
-            rise_time=peak_x - start,
         )
         peaks.append(temp)
     return peaks
@@ -98,30 +99,35 @@ def iterative_peak_window(
     sample_rate: float | int,
     baseline_size: float = 10,
     statistic: Literal["max", "mean", "median"] = "mean",
+    direction: Literal["positive", "negative"] | None = None,
 ):
-    window_starts = pulse_starts + window_offset
-    window_ends = window_starts + window_size
+    window_starts = np.array(pulse_starts) + window_offset
+    window_ends = np.array(window_starts) + window_size
     peaks = _iterative_peak_window(
-        y, window_starts, window_ends, sample_rate, baseline_size, statistic
+        y,
+        pulse_starts,
+        window_starts,
+        window_ends,
+        sample_rate,
+        baseline_size,
+        statistic,
+        direction,
     )
 
     s_r_c = sample_rate / 1000
     for i in peaks:
-        i["peak_x"] *= s_r_c
-        i["start_x"] *= s_r_c
-        i["end_x"] *= s_r_c
-        i["rise_time"] *= s_r_c
+        i["peak_x"] /= s_r_c
     return peaks
 
 
 def iterative_peak_prominence(
-    array: np.ndarray,
+    y: np.ndarray,
     height: float,
     prominence: float,
     distance: int,
 ) -> Event:
     peaks, props = signal.find_peaks(
-        array, height=height, prominence=prominence, distance=(distance)
+        y, height=height, prominence=prominence, distance=(distance)
     )
     # Need to rework this some more. Based on how scipy.find_peaks works this
     # will likely not yield the expected results.
@@ -131,8 +137,8 @@ def iterative_peak_prominence(
         if i < (len(peaks) - 1):
             temp = Event(
                 peak_x=peaks[i],
-                peak_y=array[peaks[i]],
-                amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
+                peak_y=y[peaks[i]],
+                amplitude=np.abs(y[peaks[i]] - props["left_bases"][i]),
                 start_x=props["left_bases"][i],
                 rise_time=props["left_bases"][i],
                 end_x=(peaks[i] - props["left_bases"][i + 1]),
@@ -140,8 +146,8 @@ def iterative_peak_prominence(
         else:
             temp = Event(
                 peak_x=peaks[i],
-                peak_y=array[peaks[i]],
-                amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
+                peak_y=y[peaks[i]],
+                amplitude=np.abs(y[peaks[i]] - props["left_bases"][i]),
                 start_x=props["left_bases"][i],
                 end_x=props["right_bases"][i],
                 rise_time=(peaks[i] - props["left_bases"][i]),
@@ -150,14 +156,22 @@ def iterative_peak_prominence(
     return events
 
 
-class CurveFitData(TypedDict):
+class CurveFitDataSExp(TypedDict):
     amplitude: float
     rise_tau: float
     decay_tau: float
     rise_power: float
 
 
-def psc(
+class CurveFitDataDExp(TypedDict):
+    amplitude: float
+    rise_tau: float
+    decay_tau_fast: float
+    decay_tau_slow: float
+    rise_power: float
+
+
+def psc_sexp(
     x: np.ndarray,
     amplitude: int | float = -20,
     rise_tau: int | float = 3,
@@ -173,13 +187,36 @@ def psc(
     return y
 
 
-def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
+def psc_dexp(
+    x: np.ndarray,
+    amplitude: int | float = -20,
+    rise_tau: int | float = 3,
+    decay_tau_fast: int | float = 50,
+    decay_tau_slow: int | float = 0,
+    risepower: int | float = 0.5,
+):
+
+    y = amplitude * (
+        (1 - (np.exp(-x / rise_tau))) ** risepower
+        * (np.exp((-x / decay_tau_fast) + np.exp((-x / decay_tau_slow))))
+    )
+    return y
+
+
+def _fit_psc(
+    y: np.ndarray,
+    start: float,
+    end: float,
+    sample_rate: float | int,
+    direction: Literal["positive", "negative"] | None = None,
+):
     s_r_c = sample_rate / 1000
     temp = y[int(start * s_r_c) : int(end * s_r_c)]
     x = np.arange(temp.size) / s_r_c
 
     # Detect whether acquisition is positive or negative
-    direction = _detect_pos_neg(y)
+    if direction is None:
+        direction = _detect_pos_neg(y)
 
     # Must provide bounds otherwise curve_fit throws an error
     if direction == "positive":
@@ -188,7 +225,7 @@ def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
         upper_bounds = (
             y[peak_point] * 2,
             peak_point / s_r_c,
-            float(y.size / s_r_c),
+            float(temp.size / s_r_c),
             np.inf,
         )
     else:
@@ -197,12 +234,12 @@ def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
         upper_bounds = (
             0.0,
             peak_point / s_r_c,
-            float(y.size / s_r_c),
+            float(temp.size / s_r_c),
             np.inf,
         )
 
     popt, _ = optimize.curve_fit(
-        psc,
+        psc_sexp,
         x,
         temp,
         bounds=[lower_bounds, upper_bounds],
@@ -212,29 +249,35 @@ def _fit_psc(y: np.ndarray, start: float, end: float, sample_rate: float | int):
 
 
 def iterative_curve_fit(
-    data: np.ndarray, pulse_starts: np.ndarray, sample_rate: float | int
+    y: np.ndarray,
+    pulse_starts: np.ndarray,
+    offset: float,
+    sample_rate: float | int,
+    direction: Literal["positive", "negative"] | None = None,
 ):
     """Data is an array that contains multiple events. Pulse starts note the beginning of each
     event.
 
     Args:
-        data (np.ndarray): array of data
+        y (np.ndarray): array of y
         pulse_starts (np.ndarray): pulse starts in milliseconds
         sample_rate (float, int): sample rate
     """
-    y = data.copy()
+    y = y.copy()
     s_r_c = sample_rate / 1000
     pulse_ends = pulse_starts[1:]
-    pulse_ends = np.r_[pulse_ends, data.size / s_r_c]
+    pulse_starts = np.array(pulse_starts) + offset
+    m = np.max(np.diff(pulse_starts))
+    pulse_ends = np.r_[pulse_ends, pulse_ends[-1] + m]
     fit_vals = []
     for start, end in zip(pulse_starts, pulse_ends):
-        popt = _fit_psc(y, start, end, sample_rate)
-        size = data.size - int(start * s_r_c)
+        popt = _fit_psc(y, start, end, sample_rate, direction)
+        size = y.size - int(start * s_r_c)
         x = np.arange(size) / s_r_c
-        temp = psc(x, *popt)
+        temp = psc_sexp(x, *popt)
         y[int(start * s_r_c) :] -= temp
         fit_vals.append(
-            CurveFitData(
+            CurveFitDataSExp(
                 amplitude=popt[0],
                 rise_tau=popt[1],
                 decay_tau=popt[2],
@@ -248,12 +291,12 @@ def psc_template(
     x,
     *args,
 ):
-    amplitude = np.array(args[0::5])
-    tau1 = np.array(args[1::5])
-    tau2 = np.array(args[2::5])
-    rp = np.array(args[3::5])
-    spacer = np.array(args[4::5])
-    output = np.zeros((amplitude.size, x.size))
+    amplitude = args[0::5]
+    tau1 = args[1::5]
+    tau2 = args[2::5]
+    rp = args[3::5]
+    spacer = args[4::5]
+    output = np.zeros((len(amplitude), len(x)))
     i = 0
     for a, t1, t2, r, s in zip(amplitude, tau1, tau2, rp, spacer):
         output[int(i)] = template(output[i], a, t1, t2, r, s)
@@ -268,6 +311,7 @@ def template(
     decay_tau: int | float = 50,
     risepower: int | float = 0.5,
     spacer: int | float = 15,
+    sample_rate: float = 10000,
 ) -> np.ndarray:
     """Creates a template based on several factors. X, taus and spacer must
     be in samples and not milliseconds or seconds.
@@ -283,9 +327,11 @@ def template(
     Returns:
         np.array: Numpy array of the template.
     """
+    s_r_c = sample_rate / 1000
     template = x.copy()
+    spacer = int(spacer * s_r_c)
     length = template.size - spacer
-    t_length = np.arange(0, length, dtype=float)
+    t_length = np.arange(0, length, dtype=float) / s_r_c
     Aprime = (decay_tau / rise_tau) ** (rise_tau / (rise_tau - decay_tau))
     y = (
         amplitude
@@ -300,18 +346,17 @@ def template(
 
 
 def _convert_psc_template_vars(
-    data: list[CurveFitData], pulse_starts: list[float], sample_rate
+    data: list[CurveFitDataSExp], pulse_starts: list[float], offset: float
 ):
     vals = []
-    src = sample_rate / 1000
     for i, j in zip(data, pulse_starts):
         vals.extend(
             [
                 i["amplitude"],
-                i["rise_tau"] * src,
-                i["decay_tau"] * src,
+                i["rise_tau"] + offset,
+                i["decay_tau"] + offset,
                 i["rise_power"],
-                j * src,
+                j + offset,
             ]
         )
     return vals
