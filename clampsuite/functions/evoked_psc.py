@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Literal
 
 import numpy as np
 from scipy import signal, optimize
@@ -22,33 +22,95 @@ def _detect_pos_neg(y):
         return "negative"
 
 
-def find_peak_window(array, peak_direction, window_start, window_end):
-    if peak_direction == "positive":
-        peak_y = np.max(array[window_start:window_end])
-        peak_x = np.argmax(array[window_start:window_end]) + window_start
-    elif peak_direction == "negative":
-        peak_y = np.min(array[window_start:window_end])
-        peak_x = np.argmin(array[window_start:window_end]) + window_start
+def find_peak_window(
+    array,
+    peak_direction,
+    window_start,
+    window_end,
+    statistic: Literal["max", "mean", "median"] = "mean",
+):
+    if statistic == "max":
+        if peak_direction == "positive":
+            peak_y = np.max(array[window_start:window_end])
+            peak_x = np.argmax(array[window_start:window_end]) + window_start
+        elif peak_direction == "negative":
+            peak_y = np.min(array[window_start:window_end])
+            peak_x = np.argmin(array[window_start:window_end]) + window_start
+    else:
+        if statistic == "mean":
+            peak_y = np.mean(array[window_start:window_end])
+        elif statistic == "median":
+            peak_y = np.median(array[window_start:window_end])
+        else:
+            raise ValueError("Statistic not recognized, must be max, mean or median")
+        peak_x = (window_start + window_end) / 2
     return peak_y, peak_x
 
 
-def iterative_peak_window(
-    y: np.ndarray, window_starts: int, window_ends: int, baseline_size: int = 0
+def _iterative_peak_window(
+    y: np.ndarray,
+    window_starts: float,
+    window_ends: float,
+    sample_rate: float | int,
+    baseline_size: float = 10,
+    statistic: Literal["max", "mean", "median"] = "mean",
 ) -> Event:
+    """
+    Iteratively finds the peak by taking the max, mean or median within a window of data.
+
+    Args:
+        y (np.ndarray): Acquisition data.
+        window_starts (float): Start of window in milliseconds.
+        window_ends (float): End of window in milliseconds.
+        sample_rate (float | int): Sample rate of data.
+        baseline_size (float, optional): Size of the baseline before the peak. Defaults to 10.
+        statistic (Literal[&quot;max&quot;, &quot;mean&quot;, &quot;median&quot;], optional): Statistic of the window. Defaults to "mean".
+
+    Returns:
+        Event: _description_
+    """
     direction = _detect_pos_neg(y)
     peaks = []
-    for st, end in zip(window_starts, window_ends):
-        peak_x, peak_y = find_peak_window(y, direction, st, end)
-        amplitude = np.abs(peak_y - y[st - baseline_size - 1 : st])
+    s_r_c = sample_rate / 1000
+    baseline_size = int(baseline_size * s_r_c)
+    for start, end in zip(window_starts, window_ends):
+        start = start * s_r_c
+        end = end * s_r_c
+        peak_x, peak_y = find_peak_window(y, direction, start, end, statistic)
+        amplitude = np.abs(peak_y - y[start - baseline_size - 1 : start])
         temp = Event(
             peak_x=peak_x,
             peak_y=peak_y,
             amplitude=amplitude,
-            start_x=st,
+            start_x=start,
             end_x=end,
-            rise_time=peak_x - st,
+            rise_time=peak_x - start,
         )
         peaks.append(temp)
+    return peaks
+
+
+def iterative_peak_window(
+    y: np.ndarray,
+    window_offset: float,
+    window_size: float,
+    pulse_starts: np.ndarray,
+    sample_rate: float | int,
+    baseline_size: float = 10,
+    statistic: Literal["max", "mean", "median"] = "mean",
+):
+    window_starts = pulse_starts + window_offset
+    window_ends = window_starts + window_size
+    peaks = _iterative_peak_window(
+        y, window_starts, window_ends, sample_rate, baseline_size, statistic
+    )
+
+    s_r_c = sample_rate / 1000
+    for i in peaks:
+        i["peak_x"] *= s_r_c
+        i["start_x"] *= s_r_c
+        i["end_x"] *= s_r_c
+        i["rise_time"] *= s_r_c
     return peaks
 
 
@@ -57,14 +119,12 @@ def iterative_peak_prominence(
     height: float,
     prominence: float,
     distance: int,
-    sample_rate: float,
 ) -> Event:
     peaks, props = signal.find_peaks(
         array, height=height, prominence=prominence, distance=(distance)
     )
     # Need to rework this some more. Based on how scipy.find_peaks works this
     # will likely not yield the expected results.
-    s_r_c = sample_rate / 1000
 
     events = []
     for i in np.arange(len(peaks)):
@@ -73,20 +133,21 @@ def iterative_peak_prominence(
                 peak_x=peaks[i],
                 peak_y=array[peaks[i]],
                 amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
-                start_x=props["left_bases"][i] / s_r_c,
-                rise_time=props["left_bases"][i] / s_r_c,
-                end_x=(peaks[i] - props["left_bases"][i + 1]) / s_r_c,
+                start_x=props["left_bases"][i],
+                rise_time=props["left_bases"][i],
+                end_x=(peaks[i] - props["left_bases"][i + 1]),
             )
         else:
             temp = Event(
                 peak_x=peaks[i],
                 peak_y=array[peaks[i]],
                 amplitude=np.abs(array[peaks[i]] - props["left_bases"][i]),
-                start_x=props["left_bases"][i] / s_r_c,
-                end_x=props["right_bases"][i] / s_r_c,
-                rise_time=(peaks[i] - props["left_bases"][i]) / s_r_c,
+                start_x=props["left_bases"][i],
+                end_x=props["right_bases"][i],
+                rise_time=(peaks[i] - props["left_bases"][i]),
             )
         events.append(temp)
+    return events
 
 
 class CurveFitData(TypedDict):
