@@ -22,9 +22,9 @@ def curve_fit_sigmoid(current, firing_rate):
     upsampled_current = np.linspace(current.min(), current.max(), 1000)
     sigmoid_curve = sigmoid(upsampled_current, *p)
     diff = np.gradient(sigmoid_curve)
-    max_gain = diff.argmax()
-    max_gain = diff[max_gain]
-    max_current = upsampled_current[max_gain]
+    max_gain_index = diff.argmax()
+    max_gain = diff[max_gain_index]
+    max_current = upsampled_current[max_gain_index]
 
     output = SigmoidCurveFit(
         max_value=p[0],
