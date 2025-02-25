@@ -14,7 +14,7 @@ class SigmoidCurveFit(TypedDict):
 
 
 def sigmoid(x, max_value, midpoint, slope, offset):
-    return 1 / (1 + np.exp((x - midpoint) / slope)) * max_value + offset
+    return 1 / (1 + np.exp((x - midpoint) / slope)) * -max_value + offset
 
 
 def curve_fit_sigmoid(current, firing_rate):
