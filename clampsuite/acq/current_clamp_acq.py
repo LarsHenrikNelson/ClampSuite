@@ -141,9 +141,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         if self.threshold_method == "third_derivative":
             dddv = np.gradient(ddv)
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
+            ppeaks, _ = signal.find_peaks(dddv_zscored)
+            npeaks, _ = signal.find_peaks(-dddv_zscored)
+            threshold = np.mean(
+                np.abs(np.concatenate([dddv_zscored[ppeaks], dddv_zscored[npeaks]]))
+            )
             peaks, _ = signal.find_peaks(
                 dddv_zscored[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]],
-                height=2,
+                height=threshold * 4,
             )
             if len(peaks) == 0:
                 peaks, _ = signal.find_peaks(
@@ -171,7 +176,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 )[-1]
             except IndexError:
                 peaks = [
-                    (np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start)
+                    np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start
                 ]
         else:
             raise AttributeError(

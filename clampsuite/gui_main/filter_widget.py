@@ -205,7 +205,7 @@ class filterWidget(QWidget):
             # without it.
             self.load_widget.clearSelection()
 
-        if len(self.exp_manager.exp_dict[self.analysis_type]) == 0:
+        if len(self.exp_manager.acquisitions) == 0:
             self.plot_list = 0
             self.pencil_list = []
             self.p1.clear()
@@ -220,10 +220,8 @@ class filterWidget(QWidget):
             window = (self.window_edit.currentText(), self.beta_sigma.value())
         else:
             window = self.window_edit.currentText()
-        key = list(self.exp_manager.exp_dict["filter"].keys())[
-            self.acq_number.value() - 1
-        ]
-        h = self.exp_manager.exp_dict["filter"][key]
+        key = list(self.exp_manager.acquisitions.keys())[self.acq_number.value() - 1]
+        h = self.exp_manager.acquisitions[key]
         h.set_filter(
             baseline_start=self.b_start_edit.toInt(),
             baseline_end=self.b_end_edit.toInt(),
@@ -268,8 +266,8 @@ class filterWidget(QWidget):
         if self.plot_list > 0:
             self.p1.clear()
             for i, j in zip(self.filter_list, self.pencil_list):
-                key = list(self.exp_manager.exp_dict["filter"].keys())[number - 1]
-                h = self.exp_manager.exp_dict["filter"][key]
+                key = list(self.exp_manager.acquisitions.keys())[number - 1]
+                h = self.exp_manager.acquisitions[key]
                 h.analyze(
                     sample_rate=i["sample_rate"],
                     baseline_start=i["baseline_start"],

@@ -15,7 +15,8 @@ from PyQt5.QtWidgets import (
 from .current_clamp_widget import currentClampWidget
 from .filter_widget import filterWidget
 from .mini_analysis_widget import MiniAnalysisWidget
-from .oepsc_widget import oEPSCWidget
+
+# from .oepsc_widget import oEPSCWidget
 from .pref_widget import PreferencesWidget
 from ..functions.startup import check_dir
 
@@ -106,9 +107,9 @@ class MainWindow(QMainWindow):
         self.mini_widget.signals.dir_path.connect(self.setWorkingDirectory)
         self.central_widget.addWidget(self.mini_widget)
         logger.info("Creating oEPSCWidget")
-        self.oepsc_widget = oEPSCWidget()
-        self.oepsc_widget.signals.dir_path.connect(self.setWorkingDirectory)
-        self.central_widget.addWidget(self.oepsc_widget)
+        # self.oepsc_widget = oEPSCWidget()
+        # self.oepsc_widget.signals.dir_path.connect(self.setWorkingDirectory)
+        # self.central_widget.addWidget(self.oepsc_widget)
         logger.info("Creating currentClampWidget")
         self.current_clamp_widget = currentClampWidget()
         self.current_clamp_widget.signals.dir_path.connect(self.setWorkingDirectory)
@@ -120,7 +121,7 @@ class MainWindow(QMainWindow):
 
         self.gui_widgets = {
             "MiniAnalysisWidget": self.mini_widget,
-            "oEPSCWidget": self.oepsc_widget,
+            # "oEPSCWidget": self.oepsc_widget,
             "CurrentClampWidget": self.current_clamp_widget,
             # "FilterWidget": self.filter_widget,
         }

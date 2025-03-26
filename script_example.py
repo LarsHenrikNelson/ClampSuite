@@ -19,7 +19,7 @@ exp_manager.create_exp(analysis="mini", file=file_paths)
 # %%
 # Analyze mini acquistions using default settings.
 # To specify settings just add the need keyword arguments.
-exp_manager.analyze_exp("mini")
+exp_manager.analyze_exp()
 
 # %%
 exp_manager.run_final_analysis()

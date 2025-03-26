@@ -447,8 +447,7 @@ class currentClampWidget(DragDropWidget):
     def editAttr(self, line_edit, value):
         if (
             not self.exp_manager.acqs_exist("current_clamp")
-            or self.acquisition_number.value()
-            not in self.exp_manager.exp_dict["current_clamp"]
+            or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
@@ -457,9 +456,7 @@ class currentClampWidget(DragDropWidget):
             logger.info(
                 f"Editing aquisition attribute {self.acquisition_number.value()}."
             )
-            acq = self.exp_manager.exp_dict["current_clamp"][
-                self.acquisition_number.value()
-            ]
+            acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
             setattr(acq, line_edit, value)
             logger.info(
                 f"Set {value} for {line_edit} on aquisition\
@@ -484,7 +481,7 @@ class currentClampWidget(DragDropWidget):
         else:
             logger.info("Opening acquisition inspection widget.")
             self.inspection_widget.clearData()
-            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
+            self.inspection_widget.setData(self.exp_manager)
             self.inspection_widget.show()
 
     def deleteSelection(self):
@@ -689,14 +686,9 @@ class currentClampWidget(DragDropWidget):
         self.need_to_save = True
         self.plot_widget.enableAutoRange()
         self.spike_plot.enableAutoRange()
-        if (
-            self.acquisition_number.value()
-            in self.exp_manager.exp_dict["current_clamp"]
-        ):
+        if self.acquisition_number.value() in self.exp_manager.acquisitions:
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
-            acq_object = self.exp_manager.exp_dict["current_clamp"][
-                self.acquisition_number.value()
-            ]
+            acq_object = self.exp_manager.acquisitions[self.acquisition_number.value()]
             self.epoch_number.setText(acq_object.epoch)
             self.pulse_amp_num.setText(str(acq_object.pulse_amp))
             self.pulse_pattern.setText(acq_object.pulse_pattern)
@@ -842,8 +834,7 @@ class currentClampWidget(DragDropWidget):
     def setSpikeThreshold(self):
         if (
             not self.exp_manager.acqs_exist("current_clamp")
-            or self.acquisition_number.value()
-            not in self.exp_manager.exp_dict["current_clamp"]
+            or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
@@ -854,9 +845,7 @@ class currentClampWidget(DragDropWidget):
             self.errorDialog("No point was selected, peak not set.")
             return None
 
-        acq = self.exp_manager.exp_dict["current_clamp"][
-            self.acquisition_number.value()
-        ]
+        acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
         self.need_to_save = True
         x = self.last_acq_point_clicked[1][0]
         y = self.last_acq_point_clicked[1][1]
@@ -897,8 +886,7 @@ class currentClampWidget(DragDropWidget):
     def deleteAcq(self):
         if (
             not self.exp_manager.acqs_exist("current_clamp")
-            or self.acquisition_number.value()
-            not in self.exp_manager.exp_dict["current_clamp"]
+            or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
             self.errorDialog(f"No acquisition {self.acquisition_number.value()}.")
@@ -960,7 +948,9 @@ class currentClampWidget(DragDropWidget):
         self.pbar.setFormat("Analyzing...")
         logger.info("Experiment manager started final analysis")
         self.exp_manager.run_final_analysis(
-            iv_start=self.iv_start_edit.toInt(), iv_end=self.iv_end_edit.toInt()
+            "current_clamp",
+            iv_start=self.iv_start_edit.toInt(),
+            iv_end=self.iv_end_edit.toInt(),
         )
         logger.info("Experiment manager finished final analysis.")
         fi_an = self.exp_manager.final_analysis

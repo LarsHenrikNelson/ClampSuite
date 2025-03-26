@@ -797,7 +797,7 @@ class MiniAnalysisWidget(DragDropWidget):
         else:
             logger.info("Opening acquisition inspection widget.")
             self.inspection_widget.clearData()
-            self.inspection_widget.setData(self.analysis_type, self.exp_manager)
+            self.inspection_widget.setData(self.exp_manager)
             self.inspection_widget.show()
 
     def delSelection(self):
@@ -985,7 +985,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_spinbox_list = []
 
         # I choose to just show
-        acq_dict = self.exp_manager.exp_dict["mini"]
+        acq_dict = self.exp_manager.acquisitions
         if self.acquisition_number.value() in acq_dict:
             logger.info(f"Plotting acquisition {self.acquisition_number.value()}.")
 
@@ -1061,10 +1061,10 @@ class MiniAnalysisWidget(DragDropWidget):
                 # I had to create a way to correctly reference the position
                 # of events when adding new events because I ended up just
                 # adding the new events to postsynaptic events list.
-                self.sort_index = self.exp_manager.exp_dict["mini"][
+                self.sort_index = self.exp_manager.acquisitions[
                     self.acquisition_number.value()
                 ].sort_index()
-                self.event_spinbox_list = self.exp_manager.exp_dict["mini"][
+                self.event_spinbox_list = self.exp_manager.acquisitions[
                     self.acquisition_number.value()
                 ].list_of_events()
 
@@ -1271,7 +1271,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.event_view_plot.clear()
 
         # Reference the event.
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+        acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
         event = acq.postsynaptic_events[event_index]
 
         # This allows the window on p1 to follow each event when using
@@ -1413,7 +1413,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # Find the index of the event so that the correct event is
             # modified.
             event_index = self.sort_index[int(self.event_number.text())]
-            acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+            acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
             event = acq.postsynaptic_events[event_index]
 
             logger.info(
@@ -1489,7 +1489,7 @@ class MiniAnalysisWidget(DragDropWidget):
             # modified.
             event_index = self.sort_index[int(self.event_number.text())]
 
-            acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+            acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
             event = acq.postsynaptic_events[event_index]
 
             logger.info(
@@ -1569,14 +1569,14 @@ class MiniAnalysisWidget(DragDropWidget):
         self.scrollPlot.removeItem(self.last_event_clicked_global)
 
         # Deleted the event from the postsynaptic events and final events.
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+        acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
         acq.del_postsynaptic_event(event_index)
 
         # Recreate the sort_index and event_spinbox_list
-        self.sort_index = self.exp_manager.exp_dict["mini"][
+        self.sort_index = self.exp_manager.acquisitions[
             self.acquisition_number.value()
         ].sort_index()
-        self.event_spinbox_list = self.exp_manager.exp_dict["mini"][
+        self.event_spinbox_list = self.exp_manager.acquisitions[
             self.acquisition_number.value()
         ].list_of_events()
 
@@ -1631,7 +1631,7 @@ class MiniAnalysisWidget(DragDropWidget):
             x = self.last_acq_point_clicked[0]
 
             # The event needs a baseline of at least 2 milliseconds long.
-            acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+            acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
 
             if x > 2:
                 # Create the new event.
@@ -1702,7 +1702,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 f" {self.acquisition_number.value()} do not exist."
             )
             return None
-        acq = self.exp_manager.exp_dict["mini"][self.acquisition_number.value()]
+        acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
         decon, baseline = acq.plot_deconvolved_acq()
         self.decon_plot.plotData(decon, baseline, np.arange(decon.size))
         self.decon_plot.show()
@@ -1789,7 +1789,9 @@ class MiniAnalysisWidget(DragDropWidget):
 
         self.pbar.setFormat("Analyzing...")
         logger.info("Experiment manager started final analysis")
-        self.exp_manager.run_final_analysis(acqs_deleted=self.exp_manager.acqs_deleted)
+        self.exp_manager.run_final_analysis(
+            "mini", acqs_deleted=self.exp_manager.acqs_deleted
+        )
         logger.info("Experiment manager finished final analysis.")
         fa = self.exp_manager.final_analysis
         self.plotAveEvent(

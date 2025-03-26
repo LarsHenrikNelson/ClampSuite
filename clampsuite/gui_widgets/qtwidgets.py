@@ -64,19 +64,26 @@ class ThreadWorker(QRunnable):
         self.function.append(function)
         self.kwargs.append(kwargs)
 
+    def _run_function(self, func, exp_manager, args):
+        if func == "save":
+            exp_manager.save_data(**args)
+        elif func == "analyze":
+            exp_manager.analyze_exp(**args)
+        elif func == "load":
+            exp_manager.load_exp(**args)
+        elif func == "create_exp":
+            exp_manager.create_exp(**args)
+
     @pyqtSlot()
     def run(self):
         self.mutex.lock()
         for func, args in zip(self.function, self.kwargs):
-            self.exp_manager.set_callback(self.signals.progress.emit)
-            if func == "save":
-                self.exp_manager.save_data(**args)
-            elif func == "analyze":
-                self.exp_manager.analyze_exp(**args)
-            elif func == "load":
-                self.exp_manager.load_exp(**args)
-            elif func == "create_exp":
-                self.exp_manager.create_exp(**args)
+            if "exp" in args.keys():
+                exp = args.pop("exp")
+            if isinstance(self.exp_manager, dict):
+                self._run_function(func, self.exp_manager[exp], args)
+            else:
+                self._run_function(func, self.exp_manager, args)
         self.mutex.unlock()
         self.signals.finished.emit("Finished")
 
@@ -125,7 +132,7 @@ class ListModel(QAbstractListModel):
         self.analysis_type = analysis
 
     def deleteSelection(self, index):
-        keys = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        keys = list(self.exp_manager.acquisitions.keys())
         keys.sort()
 
         # Need to catch cases where the index does not exist anymore.
@@ -135,7 +142,7 @@ class ListModel(QAbstractListModel):
         else:
             self.removeRow(index)
             key = keys[index]
-            del self.exp_manager.exp_dict[self.analysis_type][key]
+            del self.exp_manager.acquisitions[key]
             self.layoutChanged.emit()
             self.sortNames()
 
@@ -162,11 +169,9 @@ class ListModel(QAbstractListModel):
         self.signals.progress.emit(value)
 
     def sortNames(self):
-        acq_list = list(self.exp_manager.exp_dict[self.analysis_type].keys())
+        acq_list = list(self.exp_manager.acquisitions.keys())
         acq_list.sort()
-        self.acq_names = [
-            self.exp_manager.exp_dict[self.analysis_type][i].name for i in acq_list
-        ]
+        self.acq_names = [self.exp_manager.acquisitions[i].name for i in acq_list]
 
     def setLoadData(self, exp_manager):
         self.exp_manager = exp_manager
