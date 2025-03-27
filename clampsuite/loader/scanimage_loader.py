@@ -174,14 +174,14 @@ class ScanImageLoader(BaseLoader):
         acq_dict["rc_check_pulse_end"] = rc_end
         return acq_dict
 
-    def set_cycle(self):
-        rows = len(self.acquisitions)
+    def set_cycle(self, acquisitions):
+        rows = len(acquisitions)
         temp_data = np.zeros((rows, 5))
-        for index, key in enumerate(self.acquisitions):
-            temp_data[index, 0] = self.acquisitions[key]["acq_number"]
-            temp_data[index, 1] = self.acquisitions[key]["epoch"]
-            temp_data[index, 2] = self.acquisitions[key]["pulse_amp"]
-            temp_data[index, 3] = int(self.acquisitions[key]["ramp"])
+        for index, key in enumerate(acquisitions):
+            temp_data[index, 0] = acquisitions[key]["acq_number"]
+            temp_data[index, 1] = acquisitions[key]["epoch"]
+            temp_data[index, 2] = acquisitions[key]["pulse_amp"]
+            temp_data[index, 3] = int(acquisitions[key]["ramp"])
 
         temp_data = temp_data[temp_data[:, 1].argsort()]
         temp_data = temp_data[temp_data[:, 0].argsort()]
@@ -200,12 +200,14 @@ class ScanImageLoader(BaseLoader):
             if temp_data[i, 3] == 1:
                 temp_data[i, 4] = 0
         for i in range(rows):
-            self.acquisitions[int(temp_data[i, 0])]["cycle"] = int(temp_data[i, 4])
+            acquisitions[int(temp_data[i, 0])]["cycle"] = int(temp_data[i, 4])
 
     def load_files(self, file_paths: list[str | Path]):
+        acquisitions = {}
         n_files = len(file_paths)
         for count, i in enumerate(file_paths):
             acq_comp = self.load_scanimage_file(i)
             self.callback_func(f"Acquisition {count+1} of {n_files} loaded")
-            self.acquisitions[int(acq_comp["acq_number"])] = acq_comp
-        self.set_cycle()
+            acquisitions[int(acq_comp["acq_number"])] = acq_comp
+        self.set_cycle(acquisitions)
+        return acquisitions

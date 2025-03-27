@@ -10,8 +10,9 @@ import numpy as np
 
 from ..final_analysis import FinalAnalysis
 from ..functions.filtering_functions import Filters, Windows
-from ..functions.load_functions import NumpyEncoder, load_json_file, load_scanimage_file
+from ..functions.load_functions import NumpyEncoder
 from ..loader import JSONLoader, ScanImageLoader, NeoLoader
+from ..acq import Acquisition
 
 
 class ExpManager:
@@ -31,7 +32,6 @@ class ExpManager:
         self.end_acq = None
         self.analyzed = False
         self.loader = None
-        self.acquisitions = {}
 
     def create_exp(
         self,
@@ -201,14 +201,20 @@ class ExpManager:
         file_path = [Path(i) for i in file_path]
         if self.loader is None:
             if file_path[0].suffix == ".mat":
-                loader = ScanImageLoader(analysis, self.callback_func)
+                self.loader = ScanImageLoader(analysis, self.callback_func)
             elif file_path[0].suffix == ".json":
-                loader = JSONLoader(analysis, self.callback_func)
+                self.loader = JSONLoader(analysis, self.callback_func)
             else:
-                loader = NeoLoader(analysis, self.callback_func)
-        loader.load_files(file_path)
-        self.acquisitions.update(loader.create_acquisitions())
+                self.loader = NeoLoader(analysis, self.callback_func)
+        acquisitions = self.loader.load_files(file_path)
+        self._create_acquisitions(acquisitions, analysis)
         self.callback_func("Loaded acquisitions")
+
+    def _create_acquisitions(self, acquisitions: dict, analysis: str):
+        for vals in acquisitions.values():
+            obj = Acquisition(analysis)
+            obj.load_data(vals)
+            self.acquisitions[int(obj.acq_number)] = obj
 
     def _set_start_end_acq(self) -> None:
         self.start_acq = min(self.acquisitions.keys())

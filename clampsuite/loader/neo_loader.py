@@ -13,6 +13,7 @@ class NeoLoader(BaseLoader):
         self.secondary_channel = None
         self.acq_count = 0
         self.epoch_count = 0
+        self.cycle_count = 0
 
     def load_segment(self, file, segment: int, gain: float, channel_index: int = 0):
         acq = file.get_analogsignal_chunk(
@@ -48,8 +49,7 @@ class NeoLoader(BaseLoader):
             acq_dict["pulse_width"] = 0
             acq_dict["pulse_amp"] = 0
 
-    def process_acquisitions(self, file: str | Path):
-        output_dict = {}
+    def process_acquisitions(self, file: str | Path, output_dict={}):
         self.secondary_channel
         nacqs = file.header["nb_segment"][0]
         filename = Path(file.filename).stem
@@ -59,8 +59,8 @@ class NeoLoader(BaseLoader):
             acq_dict["acq_number"] = self.acq_count
             acq_dict["time_stamp"] = file.segment_t_start(block_index=0, seg_index=i)
             acq_dict["epoch"] = str(self.epoch_count)
-            acq_dict["cycle"] = self.epoch_count
-            acq_dict["name"] = filename
+            acq_dict["cycle"] = self.cycle_count
+            acq_dict["name"] = f"{filename}_{self.acq_count}"
             acq_dict["_rc_check_pulse_start"] = 0
             acq_dict["_rc_check_pulse_end"] = 0
             acq_dict["ramp"] = "0"
@@ -82,16 +82,20 @@ class NeoLoader(BaseLoader):
         return output_dict
 
     def process_data_files(self, data_files: list):
+        output_dict = {}
         for file in data_files:
+            self.cycle_count += 1
             nchans = len(file.header["signal_channels"])
             if nchans > 1:
                 self.secondary_channel = 1
-            self.epoch_count += 1
-            acq_dict = self.process_acquisitions(file)
-            self.acquisitions.update(acq_dict)
+            self.process_acquisitions(file, output_dict)
+        return output_dict
 
     def load_files(self, files=list[str | Path]):
         data_files = []
+        self.cycle_count = 0
+        self.epoch_count += 1
+        sorted(files)
         for i in files:
             output = neo.rawio.get_rawio(i)
             if isinstance(output, list):
@@ -100,4 +104,5 @@ class NeoLoader(BaseLoader):
                 output = output(i)
             output.parse_header()
             data_files.append(output)
-        self.process_data_files(data_files)
+        output_dict = self.process_data_files(data_files)
+        return output_dict
