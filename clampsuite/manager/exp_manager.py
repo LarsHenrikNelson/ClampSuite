@@ -201,11 +201,11 @@ class ExpManager:
         file_path = [Path(i) for i in file_path]
         if self.loader is None:
             if file_path[0].suffix == ".mat":
-                self.loader = ScanImageLoader(analysis, self.callback_func)
+                self.loader = ScanImageLoader(self.callback_func)
             elif file_path[0].suffix == ".json":
-                self.loader = JSONLoader(analysis, self.callback_func)
+                self.loader = JSONLoader(self.callback_func)
             else:
-                self.loader = NeoLoader(analysis, self.callback_func)
+                self.loader = NeoLoader(self.callback_func)
         acquisitions = self.loader.load_files(file_path)
         self._create_acquisitions(acquisitions, analysis)
         self.callback_func("Loaded acquisitions")

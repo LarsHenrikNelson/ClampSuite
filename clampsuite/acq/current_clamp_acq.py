@@ -49,7 +49,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         if self.ramp == "0":
             self.baseline_mean = np.mean(
-                self.array[self.baseline_start : self.baseline_end]
+                self.array[self._baseline_start : self._baseline_end]
             )
             max_value = np.max(self.array[self._pulse_start : self._pulse_end])
             if max_value < self.threshold:
@@ -70,7 +70,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         elif self.ramp == "1":
             self.delta_v = np.nan
             self.baseline_mean = np.mean(
-                self.array[self.baseline_start : self.baseline_end]
+                self.array[self._baseline_start : self._baseline_end]
             )
 
     def find_spike_parameters(self):
@@ -127,7 +127,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # Differentiate the array to find the peak dv/dt.
                 dv = np.gradient(self.array)
                 peak_dv, _ = signal.find_peaks(dv, height=6)
-                baseline_std = np.std(dv[self.baseline_start : self.baseline_end])
+                baseline_std = np.std(dv[self._baseline_start : self._baseline_end])
 
                 self.rheo_x = (
                     np.argwhere(dv[self._pulse_start : peak_dv[0]] < (8 * baseline_std))
@@ -141,27 +141,23 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         if self.threshold_method == "third_derivative":
             dddv = np.gradient(ddv)
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
-            ppeaks, _ = signal.find_peaks(dddv_zscored)
-            npeaks, _ = signal.find_peaks(-dddv_zscored)
-            threshold = np.mean(
-                np.abs(np.concatenate([dddv_zscored[ppeaks], dddv_zscored[npeaks]]))
-            )
-            peaks, _ = signal.find_peaks(
-                dddv_zscored[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]],
-                height=threshold * 4,
-            )
-            if len(peaks) == 0:
-                peaks, _ = signal.find_peaks(
-                    dddv_zscored[
-                        self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]
-                    ],
-                    height=1,
-                )
-            peaks = peaks - 1 + self._pulse_start + int(0.7 * self.s_r_c)
-
+            start = int(0.7 * self.s_r_c) + self._pulse_start
+            temp = dddv_zscored[start : self.peaks[0]]
+            ppeaks, other = signal.find_peaks(temp, prominence=1)
+            base = temp[other["right_bases"]].argmin()
+            peaks = [ppeaks[base] - 1 + start]
         elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
+        elif self.threshold_method == "velocity":
+            temp = dv[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]]
+            percent = np.percentile(temp, 97.5)
+            peaks = (
+                np.where(temp > percent * 2)[0]
+                + self._pulse_start
+                + int(0.7 * self.s_r_c)
+                - 1
+            )
         elif self.threshold_method == "legacy":
             # While many papers use a single threshold to find the threshold
             # potential this does not work if you want to analyze both
@@ -384,14 +380,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         be less arbitrary. The AHP
         """
         if not np.isnan(self.peaks[0]):
-            peak = np.argmax(self.first_ap)
-            dvv = np.gradient(np.gradient(self.first_ap[: int(peak + 5 * self.s_r_c)]))
-            corr_factor = len(self.first_ap) - len(
-                self.first_ap[: int(peak + 5 * self.s_r_c)]
-            )
-            base = (np.argmin(dvv[::-1] < 0.15) * -1) - corr_factor
-            self.ahp_y = self.first_ap[base]
-            self.ahp_x = self.spike_x_array()[base]
+            # peak = np.argmax(self.first_ap)
+            # dvv = np.gradient(np.gradient(self.first_ap[: int(peak + 5 * self.s_r_c)]))
+            # corr_factor = len(self.first_ap) - len(
+            #     self.first_ap[: int(peak + 5 * self.s_r_c)]
+            # )
+            # base = (np.argmin(dvv[::-1] < 0.15) * -1) - corr_factor
+            if len(self.peaks) > 1:
+                end = self.peaks[1]
+            else:
+                end = self._pulse_end
+            base = np.argmin(self.array[self.peaks[0] : end]) + self.peaks[0]
+            self.ahp_y = self.array[base]
+            self.ahp_x = base / self.s_r_c
         else:
             self.ahp_x = np.nan
             self.ahp_y = np.nan

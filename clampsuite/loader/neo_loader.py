@@ -2,13 +2,14 @@ from pathlib import Path
 
 import neo
 import numpy as np
+from scipy import signal
 
 from .base_loader import BaseLoader
 
 
 class NeoLoader(BaseLoader):
-    def __init__(self, analysis: str, callback_func: callable = print):
-        super().__init__(analysis, callback_func)
+    def __init__(self, callback_func: callable = print):
+        super().__init__(callback_func)
         self.main_channel = 0
         self.secondary_channel = None
         self.acq_count = 0
@@ -27,7 +28,10 @@ class NeoLoader(BaseLoader):
         temp = self.load_segment(
             file, segment, gain=gain, channel_index=self.secondary_channel
         )
-        indexes = np.where(np.abs(np.diff(temp)) > 12)[0] + 1
+        abs_tt = np.abs(np.diff(temp))
+        ppeaks, _ = signal.find_peaks(abs_tt)
+        threshold = np.mean(abs_tt[ppeaks])
+        indexes = np.where(abs_tt > threshold * 3)[0]
         if len(indexes) > 0:
             acq_dict["pulse_start"] = indexes[0] / acq_dict["s_r_c"]
             acq_dict["pulse_end"] = indexes[1] / acq_dict["s_r_c"]
@@ -60,7 +64,7 @@ class NeoLoader(BaseLoader):
             acq_dict["time_stamp"] = file.segment_t_start(block_index=0, seg_index=i)
             acq_dict["epoch"] = str(self.epoch_count)
             acq_dict["cycle"] = self.cycle_count
-            acq_dict["name"] = f"{filename}_{self.acq_count}"
+            acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
             acq_dict["_rc_check_pulse_start"] = 0
             acq_dict["_rc_check_pulse_end"] = 0
             acq_dict["ramp"] = "0"

@@ -20,7 +20,6 @@ from . import acquisition
 
 
 class FilterAcq(acquisition.Acquisition, analysis="filter"):
-
     """
     This is the base class for acquisitions. It returns the array from a
     matfile and filters the array.

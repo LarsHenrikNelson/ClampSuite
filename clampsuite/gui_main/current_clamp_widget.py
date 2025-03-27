@@ -155,7 +155,7 @@ class currentClampWidget(DragDropWidget):
         )
 
         self.threshold_method = QComboBox()
-        methods = ["third_derivative", "max_curvature", "legacy"]
+        methods = ["third_derivative", "velocity", "max_curvature", "legacy"]
         self.threshold_method.addItems(methods)
         self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
 
