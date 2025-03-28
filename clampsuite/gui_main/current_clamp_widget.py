@@ -117,34 +117,6 @@ class currentClampWidget(DragDropWidget):
         self.b_end_edit.setText("300")
         self.input_layout.addRow(self.b_end_label, self.b_end_edit)
 
-        # self.pulse_start_label = QLabel("Pulse start (ms)")
-        # self.pulse_start_edit = LineEdit()
-        # self.pulse_start_edit.setObjectName("pulse_start_edit")
-        # self.pulse_start_edit.setEnabled(True)
-        # self.pulse_start_edit.setText("300")
-        # self.input_layout.addRow(self.pulse_start_label, self.pulse_start_edit)
-
-        # self.pulse_end_label = QLabel("Pulse end (ms)")
-        # self.pulse_end_edit = LineEdit()
-        # self.pulse_end_edit.setObjectName("pulse_end_edit")
-        # self.pulse_end_edit.setEnabled(True)
-        # self.pulse_end_edit.setText("1002")
-        # self.input_layout.addRow(self.pulse_end_label, self.pulse_end_edit)
-
-        # self.ramp_start_label = QLabel("Ramp start (ms)")
-        # self.ramp_start_edit = LineEdit()
-        # self.ramp_start_edit.setObjectName("ramp_start_edit")
-        # self.ramp_start_edit.setEnabled(True)
-        # self.ramp_start_edit.setText("300")
-        # self.input_layout.addRow(self.ramp_start_label, self.ramp_start_edit)
-
-        # self.ramp_end_label = QLabel("Ramp end (ms)")
-        # self.ramp_end_edit = LineEdit()
-        # self.ramp_end_edit.setObjectName("ramp_end_edit")
-        # self.ramp_end_edit.setEnabled(True)
-        # self.ramp_end_edit.setText("4000")
-        # self.input_layout.addRow(self.ramp_end_label, self.ramp_end_edit)
-
         self.min_spike_threshold_label = QLabel("Min spike threshold (mV)")
         self.min_spike_threshold_edit = LineEdit()
         self.min_spike_threshold_edit.setObjectName("min_spike_threshold")
@@ -155,7 +127,13 @@ class currentClampWidget(DragDropWidget):
         )
 
         self.threshold_method = QComboBox()
-        methods = ["third_derivative", "velocity", "max_curvature", "legacy"]
+        methods = [
+            "third_derivative",
+            "second_derivative",
+            "first_derivative",
+            "max_curvature",
+            "legacy",
+        ]
         self.threshold_method.addItems(methods)
         self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
 
@@ -845,40 +823,49 @@ class currentClampWidget(DragDropWidget):
             self.errorDialog("No point was selected, peak not set.")
             return None
 
-        acq = self.exp_manager.acquisitions[self.acquisition_number.value()]
+        acq_object = self.exp_manager.acquisitions[self.acquisition_number.value()]
         self.need_to_save = True
         x = self.last_acq_point_clicked[1][0]
         y = self.last_acq_point_clicked[1][1]
-        acq.set_spike_threshold(x, y)
+        acq_object.set_spike_threshold(x, y)
 
         self.plot_widget.removeItem(self.last_acq_point_clicked[0])
         self.spike_plot.removeItem(self.last_spike_point_clicked[0])
 
         self.st_data_spk_plot.setData(
-            x=acq.plot_st_x(),
-            y=acq.plot_st_y(),
+            x=acq_object.plot_st_x(),
+            y=acq_object.plot_st_y(),
             pen=None,
             symbol="o",
             symbolBrush="b",
         )
         self.st_data_acq_plot.setData(
-            x=acq.plot_st_x(),
-            y=acq.plot_st_y(),
+            x=acq_object.plot_st_x(),
+            y=acq_object.plot_st_y(),
             pen=None,
             symbol="o",
             symbolBrush="b",
         )
 
         self.spk_width_acq_plot.setData(
-            x=acq.spike_width_x(),
-            y=acq.spike_width_y(),
+            x=acq_object.spike_width_x(),
+            y=acq_object.spike_width_y(),
             pen=pg.mkPen("g", width=4),
         )
 
         self.spk_width_spk_plot.setData(
-            x=acq.spike_width_x(),
-            y=acq.spike_width_y(),
+            x=acq_object.spike_width_x(),
+            y=acq_object.spike_width_y(),
             pen=pg.mkPen("g", width=4),
+        )
+
+        self.clickable_spike_data.setData(
+            x=acq_object.spike_x_array(),
+            y=acq_object.first_ap,
+            symbol="o",
+            symbolSize=8,
+            symbolBrush=(0, 0, 0, 0),
+            symbolPen=(0, 0, 0, 0),
         )
 
         logger.info(f"Spike threshold set {self.acquisition_number.value()}.")

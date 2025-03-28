@@ -12,7 +12,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self,
         threshold: Union[int, float] = -15,
         threshold_method: Literal[
-            "third_derivative", "max_curvature", "legacy"
+            "third_derivative",
+            "first_derivative",
+            "second_derivative",
+            "max_curvature",
+            "legacy",
         ] = "third_derivative",
         min_spikes: int = 2,
         debug=False,
@@ -143,21 +147,37 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
             start = int(0.7 * self.s_r_c) + self._pulse_start
             temp = dddv_zscored[start : self.peaks[0]]
-            ppeaks, other = signal.find_peaks(temp, prominence=1)
-            base = temp[other["right_bases"]].argmin()
-            peaks = [ppeaks[base] - 1 + start]
+            base = temp.argmin()
+            index = base - 1
+            val = temp[base] - temp[index]
+            while val < 0:
+                index -= 1
+                base -= 1
+                val = temp[base] - temp[index]
+            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
         elif self.threshold_method == "max_curvature":
             peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
             peaks = peaks - 2
-        elif self.threshold_method == "velocity":
+        elif self.threshold_method == "first_derivative":
             temp = dv[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]]
-            percent = np.percentile(temp, 97.5)
-            peaks = (
-                np.where(temp > percent * 2)[0]
-                + self._pulse_start
-                + int(0.7 * self.s_r_c)
-                - 1
-            )
+            base = temp.argmax()
+            index = base - 1
+            val = temp[base] - temp[index]
+            while val > 0:
+                index -= 1
+                base -= 1
+                val = temp[base] - temp[index]
+            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
+        elif self.threshold_method == "second_derivative":
+            temp = dv[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]]
+            base = temp.argmax()
+            index = base - 1
+            val = temp[base] - temp[index]
+            while val > 0:
+                index -= 1
+                base -= 1
+                val = temp[base] - temp[index]
+            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
         elif self.threshold_method == "legacy":
             # While many papers use a single threshold to find the threshold
             # potential this does not work if you want to analyze both
@@ -416,6 +436,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.rheo_x = int(self.s_r_c * x)
         self.spike_threshold = y
         self.find_spike_width()
+        self.find_first_spike()
 
     def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:

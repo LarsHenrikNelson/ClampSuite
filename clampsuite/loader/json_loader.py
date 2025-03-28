@@ -96,6 +96,9 @@ def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
 
 
 class JSONLoader(BaseLoader):
+    def __init__(self, callback_func: callable):
+        super().__init__(callback_func)
+
     def load_json_file(self, path: Union[PurePath, str]) -> dict:
         """
         This function loads a json file and sets each key: value pair

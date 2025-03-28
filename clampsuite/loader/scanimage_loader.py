@@ -9,6 +9,9 @@ from .base_loader import BaseLoader
 
 
 class ScanImageLoader(BaseLoader):
+    def __init__(self, callback_func: callable):
+        super().__init__(callback_func)
+
     def load_mat(self, filename: str) -> dict:
         """
         This function loads a matlab file and puts it into a dictionary that is

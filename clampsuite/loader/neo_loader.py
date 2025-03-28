@@ -99,7 +99,7 @@ class NeoLoader(BaseLoader):
         data_files = []
         self.cycle_count = 0
         self.epoch_count += 1
-        sorted(files)
+        files.sort()
         for i in files:
             output = neo.rawio.get_rawio(i)
             if isinstance(output, list):
