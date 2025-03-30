@@ -144,9 +144,8 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         ddv = np.gradient(dv)
         if self.threshold_method == "third_derivative":
             dddv = np.gradient(ddv)
-            dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
             start = int(0.7 * self.s_r_c) + self._pulse_start
-            temp = dddv_zscored[start : self.peaks[0]]
+            temp = dddv[start : self.peaks[0]]
             base = temp.argmin()
             index = base - 1
             val = temp[base] - temp[index]
