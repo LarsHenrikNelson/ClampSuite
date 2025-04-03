@@ -34,14 +34,24 @@ class NeoLoader(BaseLoader):
         indexes = np.where(abs_tt > threshold * 3)[0]
         if len(indexes) > 0:
             acq_dict["pulse_start"] = indexes[0] / acq_dict["s_r_c"]
-            acq_dict["pulse_end"] = indexes[1] / acq_dict["s_r_c"]
             acq_dict["_pulse_start"] = indexes[0]
-            acq_dict["_pulse_end"] = indexes[1]
+            if len(indexes) > 1:
+                acq_dict["pulse_end"] = indexes[1] / acq_dict["s_r_c"]
+                acq_dict["_pulse_end"] = indexes[1]
+            else:
+                acq_dict["pulse_end"] = len(temp) / acq_dict["s_r_c"]
+                acq_dict["_pulse_end"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
             acq_dict["pulse_duration"] = acq_dict["pulse_end"] - acq_dict["pulse_start"]
-            acq_dict["pulse_width"] = indexes[1] - indexes[0]
+            if acq_dict["_pulse_end"] > acq_dict["_pulse_start"]:
+                acq_dict["pulse_width"] = (
+                    acq_dict["_pulse_end"] - acq_dict["_pulse_start"]
+                )
+            else:
+                acq_dict["pulse_width"] = 0
             acq_dict["pulse_amp"] = int(
-                np.mean(temp[indexes[0] : indexes[1]]) - np.mean(temp[: indexes[0]])
+                np.mean(temp[acq_dict["_pulse_start"] : acq_dict["_pulse_end"]])
+                - np.mean(temp[: acq_dict["_pulse_start"]])
             )
         else:
             acq_dict["pulse_start"] = 0

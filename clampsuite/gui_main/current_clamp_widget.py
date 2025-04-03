@@ -128,9 +128,11 @@ class currentClampWidget(DragDropWidget):
 
         self.threshold_method = QComboBox()
         methods = [
+            "method_vii",
             "third_derivative",
             "second_derivative",
             "first_derivative",
+            "method_ii",
             "max_curvature",
             "legacy",
         ]
@@ -625,6 +627,7 @@ class currentClampWidget(DragDropWidget):
         self.inspection_widget.clearData()
         self.clearAcqPlots(clear_main=True, clear_spikes=True)
         self.exp_manager = ExpManager()
+        self.exp_manager.set_callback(self.update_progress)
         self.last_acq_point_clicked = None
         self.acq_view.setData(self.exp_manager)
         self.pbar.setValue(0)

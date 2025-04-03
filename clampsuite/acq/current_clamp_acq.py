@@ -140,43 +140,47 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 self.spike_threshold = self.array[self.rheo_x]
 
     def find_spk_thresh(self, array: np.ndarray) -> "tuple[int, int]":
-        dv = np.gradient(array)
+        start = int(0.7 * self.s_r_c) + self._pulse_start
+        temp = array[start : self.peaks[0]]
+        dv = np.gradient(temp)
         ddv = np.gradient(dv)
+        dddv = np.gradient(ddv)
         if self.threshold_method == "third_derivative":
-            dddv = np.gradient(ddv)
-            start = int(0.7 * self.s_r_c) + self._pulse_start
-            temp = dddv[start : self.peaks[0]]
-            base = temp.argmin()
+            base = dddv.argmin()
             index = base - 1
-            val = temp[base] - temp[index]
+            val = dddv[base] - dddv[index]
             while val < 0:
                 index -= 1
                 base -= 1
-                val = temp[base] - temp[index]
-            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
+                val = dddv[base] - dddv[index]
+            peaks = [start + index + 1]
         elif self.threshold_method == "max_curvature":
-            peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
-            peaks = peaks - 2
+            peaks = np.argmax(-1 * (dv / temp))
+            peaks = [peaks - 2 + start]
+        elif self.threshold_method == "method_vii":
+            method_vii = ddv * (1 + dv**2) ** (-3 / 2)
+            peaks = [method_vii.argmax() + start]
+        elif self.threshold_method == "method_ii":
+            method_ii = (dddv * dv - ddv**2) / (np.ma.array(dv**3, mask=dv != 0))
+            peaks = [method_ii.data.argmax() + start]
         elif self.threshold_method == "first_derivative":
-            temp = dv[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]]
-            base = temp.argmax()
+            base = dv.argmax()
             index = base - 1
-            val = temp[base] - temp[index]
+            val = dv[base] - dv[index]
             while val > 0:
                 index -= 1
                 base -= 1
-                val = temp[base] - temp[index]
-            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
+                val = dv[base] - dv[index]
+            peaks = [start + index + 1]
         elif self.threshold_method == "second_derivative":
-            temp = dv[self._pulse_start + int(0.7 * self.s_r_c) : self.peaks[0]]
-            base = temp.argmax()
+            base = ddv.argmax()
             index = base - 1
-            val = temp[base] - temp[index]
+            val = ddv[base] - ddv[index]
             while val > 0:
                 index -= 1
                 base -= 1
-                val = temp[base] - temp[index]
-            peaks = [self._pulse_start + int(0.7 * self.s_r_c) + index + 1]
+                val = ddv[base] - ddv[index]
+            peaks = [start + index + 1]
         elif self.threshold_method == "legacy":
             # While many papers use a single threshold to find the threshold
             # potential this does not work if you want to analyze both
