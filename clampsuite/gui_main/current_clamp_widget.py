@@ -615,7 +615,6 @@ class currentClampWidget(DragDropWidget):
         self.calculate_parameters.setEnabled(True)
         self.deleted_acqs = {}
         self.recent_reject_acq = {}
-        self.pref_dict = {}
         self.calc_param_clicked = False
         self.need_to_save = False
         self.df_tabs.clear()
@@ -627,7 +626,7 @@ class currentClampWidget(DragDropWidget):
         self.inspection_widget.clearData()
         self.clearAcqPlots(clear_main=True, clear_spikes=True)
         self.exp_manager = ExpManager()
-        self.exp_manager.set_callback(self.update_progress)
+        self.exp_manager.set_callback(self.updateProgress)
         self.last_acq_point_clicked = None
         self.acq_view.setData(self.exp_manager)
         self.pbar.setValue(0)
