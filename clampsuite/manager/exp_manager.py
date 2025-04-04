@@ -185,7 +185,7 @@ class ExpManager:
                 self.load_final_analysis(analysis, path)
                 self.callback_func("Loaded final data")
         if can_load_data:
-            self._load_acqs(analysis=None, file_path=file_paths_edit)
+            self._load_acqs(analysis=analysis, file_path=file_paths_edit)
             self._set_start_end_acq()
             self._set_deleted_acqs()
         else:
@@ -213,10 +213,12 @@ class ExpManager:
     def _create_acquisitions(self, acquisitions: dict, analysis: str):
         for vals in acquisitions.values():
             obj = Acquisition(analysis)
+            vals["analysis"] = analysis
             obj.load_data(vals)
             self.acquisitions[int(obj.acq_number)] = obj
 
     def _set_start_end_acq(self) -> None:
+        print(self.acquisitions.keys())
         self.start_acq = min(self.acquisitions.keys())
         self.end_acq = max(self.acquisitions.keys())
 

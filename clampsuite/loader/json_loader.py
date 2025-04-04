@@ -126,6 +126,6 @@ class JSONLoader(BaseLoader):
         acquisitions = {}
         for count, i in enumerate(file_paths):
             data = self.load_json_file(i)
-            acquisitions[data["acq_number"]] = data
+            acquisitions[int(data["acq_number"])] = data
             self.callback_func(f"Loaded {count+1} of {nacqs}")
         return acquisitions

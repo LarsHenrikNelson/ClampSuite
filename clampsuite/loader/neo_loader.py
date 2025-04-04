@@ -42,17 +42,6 @@ class NeoLoader(BaseLoader):
                 acq_dict["pulse_end"] = len(temp) / acq_dict["s_r_c"]
                 acq_dict["_pulse_end"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
-            acq_dict["pulse_duration"] = acq_dict["pulse_end"] - acq_dict["pulse_start"]
-            if acq_dict["_pulse_end"] > acq_dict["_pulse_start"]:
-                acq_dict["pulse_width"] = (
-                    acq_dict["_pulse_end"] - acq_dict["_pulse_start"]
-                )
-            else:
-                acq_dict["pulse_width"] = 0
-            acq_dict["pulse_amp"] = int(
-                np.mean(temp[acq_dict["_pulse_start"] : acq_dict["_pulse_end"]])
-                - np.mean(temp[: acq_dict["_pulse_start"]])
-            )
         else:
             acq_dict["pulse_start"] = 0
             acq_dict["_pulse_start"] = 0
@@ -63,8 +52,9 @@ class NeoLoader(BaseLoader):
             acq_dict["pulse_width"] = 0
             acq_dict["pulse_amp"] = 0
 
-    def process_acquisitions(self, file: str | Path, output_dict={}):
+    def process_acquisitions(self, file: str | Path):
         self.secondary_channel
+        temp_dict = {}
         nacqs = file.header["nb_segment"][0]
         filename = Path(file.filename).stem
         for i in range(nacqs):
@@ -91,9 +81,35 @@ class NeoLoader(BaseLoader):
             acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
             if self.secondary_channel == 1:
                 self.process_secondary_channel(file, i, acq_dict)
-            output_dict[self.acq_count] = acq_dict
+            temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i+1} of {nacqs} from {filename}")
-        return output_dict
+        self.set_pulse(file, nacqs, temp_dict)
+        return temp_dict
+
+    def set_pulse(self, file, nacqs, acq_dict: dict):
+        gain = file.header["signal_channels"][self.secondary_channel][5]
+        pulse_starts = [value["_pulse_start"] for value in acq_dict.values()]
+        pulse_ends = [value["_pulse_end"] for value in acq_dict.values()]
+        ps, ps_count = np.unique(pulse_starts, return_counts=True)
+        pe, pe_count = np.unique(pulse_ends, return_counts=True)
+        pe, pe_count = np.unique(pulse_ends, return_counts=True)
+        ps = ps[np.argmax(ps_count)]
+        pe = pe[np.argmax(pe_count)]
+        for index, value in zip(range(nacqs), acq_dict.values()):
+            value["_pulse_start"] = ps
+            value["_pulse_end"] = pe
+            value["pulse_start"] = ps / value["s_r_c"]
+            value["pulse_end"] = pe / value["s_r_c"]
+            gain = file.header["signal_channels"][self.secondary_channel][5]
+            temp = self.load_segment(
+                file, index, gain=gain, channel_index=self.secondary_channel
+            )
+            value["pulse_duration"] = value["pulse_end"] - value["pulse_start"]
+            value["pulse_width"] = value["_pulse_end"] - value["_pulse_start"]
+            value["pulse_amp"] = int(
+                np.mean(temp[value["_pulse_start"] : value["_pulse_end"]])
+                - np.mean(temp[: value["_pulse_start"]])
+            )
 
     def process_data_files(self, data_files: list):
         output_dict = {}
@@ -102,7 +118,8 @@ class NeoLoader(BaseLoader):
             nchans = len(file.header["signal_channels"])
             if nchans > 1:
                 self.secondary_channel = 1
-            self.process_acquisitions(file, output_dict)
+            temp = self.process_acquisitions(file)
+            output_dict.update(temp)
         return output_dict
 
     def load_files(self, files=list[str | Path]):

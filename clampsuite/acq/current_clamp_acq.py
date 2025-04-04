@@ -167,11 +167,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             base = dv.argmax()
             index = base - 1
             val = dv[base] - dv[index]
-            while val > 0:
+            mm = dv[base] / 10
+            while val > 0 or dv[base] > mm:
                 index -= 1
                 base -= 1
                 val = dv[base] - dv[index]
-            peaks = [start + index + 1]
+            base = np.where(dv > np.max(dv[:base]))[0][0]
+            peaks = [base + start + int(0.1 * self.s_r_c)]
         elif self.threshold_method == "second_derivative":
             base = ddv.argmax()
             index = base - 1
@@ -180,7 +182,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 index -= 1
                 base -= 1
                 val = ddv[base] - ddv[index]
-            peaks = [start + index + 1]
+            peaks = [start + base]
         elif self.threshold_method == "legacy":
             # While many papers use a single threshold to find the threshold
             # potential this does not work if you want to analyze both
