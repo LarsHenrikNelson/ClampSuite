@@ -75,8 +75,7 @@ class ExpManager:
         file_path.mkdir()
         file_path = file_path / file_path.parts[-1]
         if self.ui_prefs is not None:
-            for key, data in self.deleted_acqs.items():
-                self.ui_prefs["Deleted acqs"] = {key: list(data.keys())}
+            self.ui_prefs["Deleted acqs"] = list(self.deleted_acqs.keys())
             self.save_ui_prefs(file_path, self.ui_prefs)
         if self.final_analysis is not None:
             self.save_final_analysis(file_path)
@@ -218,7 +217,6 @@ class ExpManager:
             self.acquisitions[int(obj.acq_number)] = obj
 
     def _set_start_end_acq(self) -> None:
-        print(self.acquisitions.keys())
         self.start_acq = min(self.acquisitions.keys())
         self.end_acq = max(self.acquisitions.keys())
 
@@ -263,7 +261,7 @@ class ExpManager:
         else:
             return 0
 
-    def acqs_exist(self, exp) -> bool:
+    def acqs_exist(self) -> bool:
         if len(self.acquisitions) > 0:
             return True
         else:

@@ -426,7 +426,7 @@ class currentClampWidget(DragDropWidget):
 
     def editAttr(self, line_edit, value):
         if (
-            not self.exp_manager.acqs_exist("current_clamp")
+            not self.exp_manager.acqs_exist()
             or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
@@ -455,7 +455,7 @@ class currentClampWidget(DragDropWidget):
             i.setMinimumWidth(100)
 
     def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions exist to inspect.")
             self.errorDialog("No acquisitions exist to inspect.")
         else:
@@ -465,7 +465,7 @@ class currentClampWidget(DragDropWidget):
             self.inspection_widget.show()
 
     def deleteSelection(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions exist to remove from analysis list.")
             self.errorDialog("No acquisitions exist to remove from analysis list.")
         else:
@@ -478,7 +478,7 @@ class currentClampWidget(DragDropWidget):
             logger.info("Removed acquisitions from analysis.")
 
     def analyze(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions loaded, analysis ended.")
             self.errorDialog("No acquisitions loaded, analysis ended.")
             self.analyze_acq_button.setEnabled(True)
@@ -813,7 +813,7 @@ class currentClampWidget(DragDropWidget):
 
     def setSpikeThreshold(self):
         if (
-            not self.exp_manager.acqs_exist("current_clamp")
+            not self.exp_manager.acqs_exist()
             or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
@@ -874,7 +874,7 @@ class currentClampWidget(DragDropWidget):
 
     def deleteAcq(self):
         if (
-            not self.exp_manager.acqs_exist("current_clamp")
+            not self.exp_manager.acqs_exist()
             or self.acquisition_number.value() not in self.exp_manager.acquisitions
         ):
             logger.info(f"No acquisition {self.acquisition_number.value()}.")
@@ -883,14 +883,14 @@ class currentClampWidget(DragDropWidget):
 
         logger.info(f"Deleting acquisition {self.acquisition_number.value()}.")
         self.need_to_save = False
-        self.exp_manager.delete_acq("current_clamp", self.acquisition_number.value())
+        self.exp_manager.delete_acq(self.acquisition_number.value())
 
         # Clear plots
         self.clearAcqPlots(clear_main=True, clear_spikes=True)
         logger.info(f"Deleted acquisition {self.acquisition_number.value()}.")
 
     def resetRejectedAcqs(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not reset acquistions, no acquisitions exist.")
             self.errorDialog("Did not reset acquistions, no acquisitions exist.")
         else:
@@ -901,7 +901,7 @@ class currentClampWidget(DragDropWidget):
             self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectAcq(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
         else:
@@ -917,7 +917,7 @@ class currentClampWidget(DragDropWidget):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
@@ -1115,7 +1115,7 @@ class currentClampWidget(DragDropWidget):
         self.dlg.exec()
 
     def saveAs(self, file_path: Union[str, PurePath]):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             self.errorDialog("No data to save")
         else:
             logger.info("Saving experiment.")

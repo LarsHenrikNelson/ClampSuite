@@ -791,7 +791,7 @@ class MiniAnalysisWidget(DragDropWidget):
             i.adjustSize()
 
     def inspectAcqs(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions exist to inspect.")
             self.errorDialog("No acquisitions exist to inspect.")
         else:
@@ -801,7 +801,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.inspection_widget.show()
 
     def delSelection(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions exist to remove from analysis list.")
             self.errorDialog("No acquisitions exist to remove from analysis list.")
         else:
@@ -845,7 +845,7 @@ class MiniAnalysisWidget(DragDropWidget):
         EventAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions, analysis ended.")
             self.errorDialog("No acquisitions, analysis ended.")
             self.analyze_acq_button.setEnabled(True)
@@ -1234,7 +1234,7 @@ class MiniAnalysisWidget(DragDropWidget):
         """
         Function to plot a event in the event plot.
         """
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info(
                 "Event was not plotted, acquisition"
                 f" {self.acquisition_number.value()} does not exist."
@@ -1714,7 +1714,7 @@ class MiniAnalysisWidget(DragDropWidget):
         button is clicked.
         """
 
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info(
                 f"Acquisition {self.acquisition_number.value()} was not"
                 " deleted, no acquisitions exist."
@@ -1732,7 +1732,7 @@ class MiniAnalysisWidget(DragDropWidget):
 
         # Add acquisition to be deleted to the deleted acquisitions
         # and the recent deleted acquistion dictionary.
-        self.exp_manager.delete_acq("mini", self.acquisition_number.value())
+        self.exp_manager.delete_acq(self.acquisition_number.value())
 
         # Clear plots
         self.inspectionPlot.clear()
@@ -1745,7 +1745,7 @@ class MiniAnalysisWidget(DragDropWidget):
         logger.info(f"Aquisition {self.acquisition_number.value()} deleted.")
 
     def resetRejectedAcqs(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not reset acquistions, no acquisitions exist.")
             self.errorDialog("Did not reset acquistions, no acquisitions exist.")
         else:
@@ -1756,7 +1756,7 @@ class MiniAnalysisWidget(DragDropWidget):
             self.pbar.setFormat("Reset deleted acquisitions.")
 
     def resetRecentRejectedAcq(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not reset recent acquistion, no acquisitions exist.")
             self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
         else:
@@ -1772,7 +1772,7 @@ class MiniAnalysisWidget(DragDropWidget):
                 self.pbar.setFormat("No acquisition to reset.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
@@ -1941,7 +1941,7 @@ class MiniAnalysisWidget(DragDropWidget):
         self.pbar.setFormat("Experiment successfully loaded")
 
     def saveAs(self, save_filename):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("There is no data to save")
             self.errorDialog("There is no data to save")
         else:

@@ -143,7 +143,7 @@ def test_number_of_deleted_acqs(olfp_data_scanimage):
 def test_acqs_exist(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    assert manager.acqs_exist("lfp")
+    assert manager.acqs_exist()
 
 
 def test_acq_exist(olfp_data_scanimage):
