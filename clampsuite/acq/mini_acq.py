@@ -286,26 +286,27 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
                 pass
             else:
                 # Create the mini class then analyze.
-                event = MiniEvent()
-                event.analyze(
-                    acq_number=self.acq_number,
-                    event_pos=peak,
-                    y_array=self.final_array,
-                    event_length=self.event_length,
-                    sample_rate=self.sample_rate,
-                    curve_fit_decay=self.curve_fit_decay,
-                    curve_fit_type=self.curve_fit_type,
-                )
+                try:
+                    event = MiniEvent()
+                    event.analyze(
+                        acq_number=self.acq_number,
+                        event_pos=peak,
+                        y_array=self.final_array,
+                        event_length=self.event_length,
+                        sample_rate=self.sample_rate,
+                        curve_fit_decay=self.curve_fit_decay,
+                        curve_fit_type=self.curve_fit_type,
+                    )
 
-                # Screen out methods using the function.
-                # See the function below for further details.
-                if self.check_event(event, event_time):
-                    self.postsynaptic_events += [event]
-                    self.final_events += [peak]
-                    event_time += [event.event_peak_x()]
-                    event_number += 1
-                # else:
-                #     pass
+                    # Screen out methods using the function.
+                    # See the function below for further details.
+                    if self.check_event(event, event_time):
+                        self.postsynaptic_events += [event]
+                        self.final_events += [peak]
+                        event_time += [event.event_peak_x()]
+                        event_number += 1
+                except Exception:
+                    pass
 
     def check_event(self, event: MiniEvent, events: list) -> bool:
         """The function is used to screen out events based
