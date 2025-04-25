@@ -30,7 +30,7 @@ class MainAnalysisWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
+        # self.setDropIndicatorShown(True)
 
         self.setStyleSheet(
             """QTabWidget::tab-bar

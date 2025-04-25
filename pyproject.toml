@@ -12,6 +12,7 @@ keywords = ["electrophysiology", "analysis"]
 dependencies = [
     "Bottleneck>=1.3.5",
     "KDEpy",
+    "neo",
     "numpy>=1.23.3",
     "openpyxl>=3.0.10",
     "pandas>=1.4.4",
