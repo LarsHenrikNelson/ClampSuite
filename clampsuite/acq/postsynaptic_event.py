@@ -43,10 +43,9 @@ class MiniEvent:
         self.create_event(y_array)
         self.find_peak()
         self.find_event_parameters(y_array)
-        self.peak_align_value = self._event_peak_x - self._array_start
 
-    def create_event(self, y_array: Union[np.ndarray, list]):
-        self._array_start = int(self._event_pos - (2 * self.s_r_c))
+    def create_event(self, y_array: Union[np.ndarray, list], offset: int = 2):
+        self._array_start = int(self._event_pos - (offset * self.s_r_c))
         self.adjust_pos = int(self._event_pos - self._array_start)
         end = int(self._event_pos + self._event_length)
         if end > len(y_array) - 1:
@@ -170,14 +169,12 @@ class MiniEvent:
                 temp = int(baseline_start[-1] + (i - 1 * self.s_r_c))
                 if temp < 0:
                     temp = 0
-                self._event_start_x = self.x_array()[temp]
-                self.event_start_y = self.event_array[temp]
             else:
                 temp = int(baseline_start.size / 2 + (i - 1 * self.s_r_c))
                 if temp < 0:
                     temp = 0
-                self._event_start_x = self.x_array()[temp]
-                self.event_start_y = self.event_array[temp]
+            self._event_start_x = self.x_array()[temp]
+            self.event_start_y = self.event_array[temp]
         else:
             self.find_alt_baseline()
 
@@ -295,6 +292,8 @@ class MiniEvent:
             pass
         else:
             self.find_baseline()
+            self._event_pos = self._event_start_x
+            self.create_event(y_array, offset=5)
             self.calc_event_amplitude()
             self.est_decay()
             self.calc_event_rise_time()
