@@ -21,7 +21,8 @@ def test_create_exp(request, data, name):
     result = request.getfixturevalue(data)
     exp_manager = ExpManager()
     exp_manager.create_exp(name, result)
-    assert name in exp_manager.exp_dict.keys()
+    acq_n = list(exp_manager.acquisitions.keys())[0]
+    assert name == exp_manager.acquisitions[acq_n].analysis
 
 
 @pytest.mark.parametrize(
@@ -37,8 +38,9 @@ def test_mini_analysis_data(request, data, name):
     result = request.getfixturevalue(data)
     exp_manager = ExpManager()
     exp_manager.create_exp(name, result)
-    assert name in exp_manager.exp_dict
-    assert len(exp_manager.exp_dict[name].items()) == len(result)
+    acq_n = list(exp_manager.acquisitions.keys())[0]
+    assert name == exp_manager.acquisitions[acq_n].analysis
+    assert len(exp_manager.acquisitions) == len(result)
 
 
 def test_delete_acq(msn_mepsc_data_scanimage):
@@ -46,7 +48,7 @@ def test_delete_acq(msn_mepsc_data_scanimage):
     exp_manager.create_exp("mini", msn_mepsc_data_scanimage)
     exp_manager.delete_acq(exp="mini", acq=61)
     assert 61 in exp_manager.deleted_acqs["mini"].keys()
-    assert 61 not in exp_manager.exp_dict["mini"].keys()
+    assert 61 not in exp_manager.acquisitions["mini"].keys()
 
 
 @pytest.mark.parametrize(
@@ -84,11 +86,11 @@ def test_static_load_acqs(request, data, name):
 def test_set_start_end_acqs(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
     assert manager.start_acq == keys[0]
     assert manager.end_acq == keys[-1]
 
-    del manager.exp_dict["lfp"][keys[0]]
+    del manager.acquisitions["lfp"][keys[0]]
     manager._set_start_end_acq()
     assert manager.start_acq == keys[1]
 
@@ -96,43 +98,43 @@ def test_set_start_end_acqs(olfp_data_scanimage):
 def test_del_acq(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
     manager.delete_acq(exp="lfp", acq=keys[0])
     assert keys[0] in manager.deleted_acqs["lfp"]
-    assert keys[0] not in manager.exp_dict["lfp"]
+    assert keys[0] not in manager.acquisitions["lfp"]
 
 
 def test_reset_recent_deleted(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
 
     manager.delete_acq(exp="lfp", acq=keys[0])
     manager.reset_recent_deleted_acq(exp="lfp")
     assert keys[0] not in manager.deleted_acqs["lfp"]
-    assert keys[0] in manager.exp_dict["lfp"]
+    assert keys[0] in manager.acquisitions["lfp"]
 
 
 def test_reset_deleted(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
     del_keys = [keys[0], keys[3]]
     manager.delete_acq(exp="lfp", acq=del_keys[0])
     manager.delete_acq(exp="lfp", acq=del_keys[1])
     manager.reset_deleted_acqs(exp="lfp")
 
     assert del_keys[0] not in manager.deleted_acqs["lfp"]
-    assert del_keys[0] in manager.exp_dict["lfp"]
+    assert del_keys[0] in manager.acquisitions["lfp"]
 
     assert del_keys[1] not in manager.deleted_acqs["lfp"]
-    assert del_keys[1] in manager.exp_dict["lfp"]
+    assert del_keys[1] in manager.acquisitions["lfp"]
 
 
 def test_number_of_deleted_acqs(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
 
     manager.delete_acq(exp="lfp", acq=keys[0])
     assert manager.num_of_del_acqs() == 1
@@ -141,12 +143,12 @@ def test_number_of_deleted_acqs(olfp_data_scanimage):
 def test_acqs_exist(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    assert manager.acqs_exist("lfp")
+    assert manager.acqs_exist()
 
 
 def test_acq_exist(olfp_data_scanimage):
     manager = ExpManager()
     manager.create_exp(analysis="lfp", file=olfp_data_scanimage)
-    keys = sorted(list(manager.exp_dict["lfp"].keys()))
+    keys = sorted(list(manager.acquisitions["lfp"].keys()))
     assert manager.acq_exists("lfp", keys[0])
     assert not manager.acq_exists("lfp", keys[-1] + 1)

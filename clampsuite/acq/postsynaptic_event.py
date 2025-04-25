@@ -3,7 +3,7 @@ import numpy as np
 from scipy import optimize, signal
 from scipy.stats import linregress
 
-from ..functions.curve_fit import db_exp_decay, s_exp_decay
+from ..functions.decay_fit import db_exp_decay, s_exp_decay
 
 
 class MiniEvent:
@@ -43,10 +43,9 @@ class MiniEvent:
         self.create_event(y_array)
         self.find_peak()
         self.find_event_parameters(y_array)
-        self.peak_align_value = self._event_peak_x - self._array_start
 
-    def create_event(self, y_array: Union[np.ndarray, list]):
-        self._array_start = int(self._event_pos - (2 * self.s_r_c))
+    def create_event(self, y_array: Union[np.ndarray, list], offset: int = 2):
+        self._array_start = int(self._event_pos - (offset * self.s_r_c))
         self.adjust_pos = int(self._event_pos - self._array_start)
         end = int(self._event_pos + self._event_length)
         if end > len(y_array) - 1:
@@ -159,7 +158,7 @@ class MiniEvent:
             )
             new_slope = slope + 1
             i = search_start[-1]
-            while new_slope > slope:
+            while new_slope > slope and i > 0:
                 slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
                 i -= 1
                 new_slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
@@ -168,12 +167,14 @@ class MiniEvent:
             )[0]
             if baseline_start.size > 0:
                 temp = int(baseline_start[-1] + (i - 1 * self.s_r_c))
-                self._event_start_x = self.x_array()[temp]
-                self.event_start_y = self.event_array[temp]
+                if temp < 0:
+                    temp = 0
             else:
                 temp = int(baseline_start.size / 2 + (i - 1 * self.s_r_c))
-                self._event_start_x = self.x_array()[temp]
-                self.event_start_y = self.event_array[temp]
+                if temp < 0:
+                    temp = 0
+            self._event_start_x = self.x_array()[temp]
+            self.event_start_y = self.event_array[temp]
         else:
             self.find_alt_baseline()
 
@@ -291,6 +292,8 @@ class MiniEvent:
             pass
         else:
             self.find_baseline()
+            self._event_pos = self._event_start_x
+            self.create_event(y_array, offset=5)
             self.calc_event_amplitude()
             self.est_decay()
             self.calc_event_rise_time()

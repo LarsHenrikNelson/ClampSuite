@@ -172,8 +172,9 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
             i.setMinimumWidth(80)
 
     def analyze(self):
-        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
-            "lfp"
+        if (
+            not self.managers["oepsc"].acqs_exist()
+            and not self.managers["lfp"].acqs_exist()
         ):
             logger.info("No acquisitions, analysis ended.")
             self.fileDoesNotExist()
@@ -205,8 +206,8 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
         else:
             lfp_window = self.lfp_window_edit.currentText()
         threadpool = QThreadPool().globalInstance()
-        worker = ThreadWorker(self.exp_manager)
-        if self.exp_manager.acqs_exist("oepsc"):
+        worker = ThreadWorker(self.managers)
+        if self.managers["oepsc"].acqs_exist():
             worker.addAnalysis(
                 "analyze",
                 exp="oepsc",
@@ -235,7 +236,7 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
                     "curve_fit_type": self.curve_fit_type_edit.currentText(),
                 },
             )
-        if self.exp_manager.acqs_exist("lfp"):
+        if self.managers["lfp"].acqs_exist():
             worker.addAnalysis(
                 "analyze",
                 exp="lfp",
@@ -296,8 +297,9 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
         self.table_dict = {}
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
-            "lfp"
+        if (
+            not self.managers["oepsc"].acqs_exist()
+            and not self.managers["lfp"].acqs_exist()
         ):
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.fileDoesNotExist(
@@ -308,7 +310,8 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
         self.need_to_save = True
         self.final_analysis_button.setEnabled(False)
         self.calc_param_clicked = True
-        self.exp_manager.run_final_analysis()
+        for val in self.managers.values():
+            val.run_final_analysis()
         fa = self.exp_manager.final_analysis
         for key, df in fa.df_dict.items():
             table = pg.TableWidget()
@@ -320,8 +323,9 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
         self.pbar.setFormat("Final analysis finished")
 
     def saveAs(self, file_path):
-        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
-            "lfp"
+        if (
+            not self.managers["oepsc"].acqs_exist()
+            and not self.managers["lfp"].acqs_exist()
         ):
             logger.info("There is no data to save")
             self.fileDoesNotExist("There is no data to save")
@@ -369,11 +373,11 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
             self.pbar.setFormat("LFP experiment created")
 
     def setLoadData(self):
-        if not self.exp_manager.acqs_exist("oepsc") and not self.exp_manager.acqs_exist(
-            "lfp"
+        if (
+            not self.managers["oepsc"].acqs_exist()
+            and not self.managers["lfp"].acqs_exist()
         ):
-            self.acquisition_number.setMaximum(self.exp_manager.start_acq)
-            self.acquisition_number.setMinimum(self.exp_manager.end_acq)
+            self.setAcquisition()
         if self.exp_manager.ui_prefs:
             self.setPreferences(self.exp_manager.ui_prefs)
         if self.exp_manager.acqs_exist("oepsc"):
@@ -387,9 +391,7 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
                 self.lfp_pulse_start_edit.toInt() - 10,
                 self.lfp_b_start_edit.toInt() + 250,
             )
-        self.acquisition_number.setValue(self.exp_manager.start_acq)
-        self.acquisition_number.setMinimum(self.exp_manager.start_acq)
-        self.acquisition_number.setMaximum(self.exp_manager.end_acq)
+        self.setAcquisition()
         self.acquisition_number.setEnabled(True)
         fa = self.exp_manager.final_analysis
         if fa is not None:

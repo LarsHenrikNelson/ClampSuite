@@ -119,7 +119,7 @@ class MiniAnalysisMain(MainAnalysisWidget):
         EventAnalysis object needs to have analyze run. This was
         chosen because it made the initial debugging easier.
         """
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions, analysis ended.")
             self.errorDialog("No acquisitions, analysis ended.")
             return None
@@ -180,7 +180,7 @@ class MiniAnalysisMain(MainAnalysisWidget):
         logger.info("UI Reset. Ready to analyze.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
@@ -245,7 +245,7 @@ class MiniAnalysisMain(MainAnalysisWidget):
         self.pbar.setFormat("Experiment successfully loaded")
 
     def saveAs(self, save_filename):
-        if not self.exp_manager.acqs_exist("mini"):
+        if not self.exp_manager.acqs_exist():
             logger.info("There is no data to save")
             self.errorDialog("There is no data to save")
         else:

@@ -8,10 +8,11 @@ from typing import Callable, Literal, Union
 import numpy as np
 import yaml
 
-from ..acq import Acquisition
 from ..final_analysis import FinalAnalysis
 from ..functions.filtering_functions import Filters, Windows
-from ..functions.load_functions import NumpyEncoder, load_json_file, load_scanimage_file
+from ..functions.load_functions import NumpyEncoder
+from ..loader import JSONLoader, ScanImageLoader, NeoLoader
+from ..acq import Acquisition
 
 
 class ExpManager:
@@ -19,17 +20,18 @@ class ExpManager:
     windows = list(typing.get_args(Windows))
 
     def __init__(self) -> None:
-        self.exp_dict = {}
+        self.acquisitions = {}
         self.final_analysis = None
         self.ui_prefs = None
         self.analysis_prefs = {}
         self.num_of_acqs = 0
         self.callback_func = print
-        self.deleted_acqs = {}
+        self.deleted_acqs = OrderedDict()
         self.acqs_deleted = 0
         self.start_acq = None
         self.end_acq = None
         self.analyzed = False
+        self.loader = None
 
     def create_exp(
         self,
@@ -37,8 +39,6 @@ class ExpManager:
         file: Union[list, tuple, str, Path, PurePath],
     ) -> None:
         self._load_acqs(analysis, file)
-        for key in self.exp_dict.keys():
-            self.set_cycle(key)
         self._set_start_end_acq()
 
     def analyze_exp(self, exp: str, analysis_args: dict) -> None:
@@ -92,21 +92,17 @@ class ExpManager:
     def _save_acqs(self, file_path: Union[PurePath, Path, str]) -> None:
         self.callback_func("Saving acquisitions")
         count = 0
-        for i in self.exp_dict.keys():
-            count += len(self.exp_dict[i].keys())
-        for i in self.deleted_acqs.keys():
-            count += len(self.deleted_acqs.keys())
+        count += len(self.acquisitions)
+        count += len(self.deleted_acqs)
         saved = 0
-        for i in self.exp_dict.values():
-            for acq in i.values():
-                self.save_acq(acq, file_path)
-                saved += 1
-                self.callback_func(f"Saved acquisition {acq.acq_number}")
-        for i in self.deleted_acqs.values():
-            for acq in i.values():
-                self.save_acq(acq, file_path)
-                saved += 1
-                self.callback_func(f"Saved acquisition {acq.acq_number}")
+        for acq in self.acquisitions.values():
+            self.save_acq(acq, file_path)
+            saved += 1
+            self.callback_func(f"Saved acquisition {acq.acq_number}")
+        for acq in self.deleted_acqs.values():
+            self.save_acq(acq, file_path)
+            saved += 1
+            self.callback_func(f"Saved acquisition {acq.acq_number}")
         self.callback_func("Saved acqs")
 
     def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]) -> None:
@@ -175,7 +171,7 @@ class ExpManager:
                 self.load_final_analysis(analysis, path)
                 self.callback_func("Loaded final data")
         if can_load_data:
-            self._load_acqs(analysis=None, file_path=file_paths_edit)
+            self._load_acqs(analysis=analysis, file_path=file_paths_edit)
             self._set_start_end_acq()
             self._set_deleted_acqs()
         else:
@@ -188,163 +184,81 @@ class ExpManager:
     ) -> None:
         if isinstance(file_path, (str, Path, PurePath)):
             file_path = list(file_path)
-        num_of_acqs = len(file_path)
-        # cycle_dict = {}
-        for count, i in enumerate(file_path):
-            if Path(i).exists():
-                acq = self.load_acq(analysis, i)
-                self._set_acq(acq)
-            self.callback_func(f"Acquisition {count} of {num_of_acqs} loaded")
+        file_path = [Path(i) for i in file_path]
+        if self.loader is None:
+            if file_path[0].suffix == ".mat":
+                self.loader = ScanImageLoader(self.callback_func)
+            elif file_path[0].suffix == ".json":
+                self.loader = JSONLoader(self.callback_func)
+            else:
+                self.loader = NeoLoader(self.callback_func)
+        acquisitions = self.loader.load_files(file_path)
+        self._create_acquisitions(acquisitions, analysis)
         self.callback_func("Loaded acquisitions")
 
-    @staticmethod
-    def load_acq(
-        analysis: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"],
-        path: Union[str, Path, PurePath],
-    ) -> Acquisition:
-        path_obj = PurePath(path)
-        if not Path(path_obj).exists():
-            return None
-        if path_obj.suffix == ".mat":
-            acq_comp = load_scanimage_file(path_obj)
-        elif path_obj.suffix == ".json":
-            acq_comp = load_json_file(path_obj)
-        else:
-            raise AttributeError("File type not recognized!")
-        if "analysis" in acq_comp:
-            obj = Acquisition(acq_comp["analysis"])
-        elif isinstance(analysis, str):
+    def _create_acquisitions(self, acquisitions: dict, analysis: str):
+        for vals in acquisitions.values():
             obj = Acquisition(analysis)
-        else:
-            raise AttributeError("Must provide an analysis.")
-        obj.load_data(acq_comp)
-        return obj
-
-    @staticmethod
-    def load_acqs(
-        analysis: Union[str, None],
-        file_path: Union[list, tuple, str, Path, PurePath],
-    ) -> dict:
-        acq_dict = {}
-        if isinstance(file_path, (str, Path, PurePath)):
-            file_path = list(file_path)
-        for i in file_path:
-            acq = ExpManager.load_acq(analysis, i)
-            if acq is not None:
-                acq_dict[int(acq.acq_number)] = acq
-        return acq_dict
-
-    def _set_acq(self, acq) -> None:
-        if acq is None:
-            pass
-        elif acq.analysis in self.exp_dict:
-            self.exp_dict[acq.analysis][int(acq.acq_number)] = acq
-        else:
-            self.exp_dict[acq.analysis] = {}
-            self.exp_dict[acq.analysis][int(acq.acq_number)] = acq
+            vals["analysis"] = analysis
+            obj.load_data(vals)
+            self.acquisitions[int(obj.acq_number)] = obj
 
     def _set_start_end_acq(self) -> None:
-        start_acq = []
-        end_acq = []
-        for i in self.exp_dict.values():
-            temp = list(i.keys())
-            if len(temp) > 0:
-                start_acq.append(min(temp))
-                end_acq.append(max(temp))
-        self.start_acq = min(start_acq)
-        self.end_acq = max(end_acq)
+        self.start_acq = min(self.acquisitions.keys())
+        self.end_acq = max(self.acquisitions.keys())
 
     def _set_deleted_acqs(self) -> None:
-        for exp, acqs in self.exp_dict.items():
-            for acq, value in acqs.items():
-                deleted_acqs = []
-                if not value.accepted:
-                    deleted_acqs.append(acq)
-            for i in deleted_acqs:
-                self.delete_acq(exp, i)
+        for acq, value in self.acquisitions.items():
+            deleted_acqs = []
+            if not value.accepted:
+                deleted_acqs.append(acq)
+        for i in deleted_acqs:
+            self.delete_acq(i)
 
     def set_callback(self, func: Callable[[int, str], None]):
         self.callback_func = func
 
-    def get_acqs(self, exp: str) -> list:
-        return [i.name for i in self.exp_dict[exp].values()]
+    def get_acqs(self) -> list:
+        return [i.name for i in self.acquisitions.values()]
 
-    def delete_acq(
-        self, exp: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"], acq: int
-    ) -> None:
-        item = self.exp_dict[exp].pop(acq)
-        if exp in self.deleted_acqs:
-            item.delete()
-            self.deleted_acqs[exp][acq] = item
-        else:
-            self.deleted_acqs[exp] = OrderedDict()
-            self.deleted_acqs[exp][acq] = item
+    def delete_acq(self, acq: int) -> None:
+        item = self.acquisitions.pop(acq)
+        item.delete()
+        self.deleted_acqs[acq] = item
         self.acqs_deleted += 1
 
-    def set_cycle(self, exp):
-        rows = len(self.exp_dict[exp])
-        temp_data = np.zeros((rows, 5))
-        for index, key in enumerate(self.exp_dict[exp]):
-            temp_data[index, 0] = self.exp_dict[exp][key].acq_number
-            temp_data[index, 1] = self.exp_dict[exp][key].epoch
-            temp_data[index, 2] = self.exp_dict[exp][key].pulse_amp
-            temp_data[index, 3] = int(self.exp_dict[exp][key].ramp)
-
-        temp_data = temp_data[temp_data[:, 1].argsort()]
-        temp_data = temp_data[temp_data[:, 0].argsort()]
-
-        current_epoch = temp_data[0, 1]
-        count = 0
-        for i in range(1, rows):
-            if current_epoch != temp_data[i, 1]:
-                count = -1
-                current_epoch = temp_data[i, 1]
-            if temp_data[i - 1, 2] > 0 and temp_data[i, 2] < 0:
-                count += 1
-                temp_data[i, 4] = count
-            else:
-                temp_data[i, 4] = count
-            if temp_data[i, 3] == 1:
-                temp_data[i, 4] = 0
-        for i in range(rows):
-            self.exp_dict[exp][int(temp_data[i, 0])].set_cycle(int(temp_data[i, 4]))
-
-    def reset_deleted_acqs(self, exp: str) -> int:
-        if self.deleted_acqs[exp]:
-            del_dict = self.deleted_acqs[exp]
+    def reset_deleted_acqs(self) -> int:
+        if self.deleted_acqs:
+            del_dict = self.deleted_acqs
             for i in del_dict.values():
                 i.accept()
-            self.exp_dict[exp].update(del_dict)
-            self.deleted_acqs[exp] = OrderedDict()
+            self.acquisitions.update(del_dict)
             self.acqs_deleted = 0
             return 1
         else:
             return 0
 
-    def reset_recent_deleted_acq(self, exp: str):
-        if self.deleted_acqs[exp]:
-            item = self.deleted_acqs[exp].popitem()
+    def reset_recent_deleted_acq(self):
+        if self.deleted_acqs:
+            item = self.deleted_acqs.popitem()
             item[1].accept()
-            self.exp_dict[exp][item[0]] = item[1]
+            self.acquisitions[item[0]] = item[1]
             self.acqs_deleted -= 1
             return item[0]
         else:
             return 0
 
-    def acqs_exist(self, exp) -> bool:
-        return exp in self.exp_dict
-
-    def acq_exists(self, exp, acq_num) -> bool:
-        if exp in self.exp_dict:
-            return acq_num in self.exp_dict[exp]
+    def acqs_exist(self) -> bool:
+        if len(self.acquisitions) > 0:
+            return True
         else:
             return False
 
+    def acq_exists(self, acq_num) -> bool:
+        return acq_num in self.acquisitions
+
     def num_of_del_acqs(self) -> int:
-        del_acqs = 0
-        for i in self.deleted_acqs.keys():
-            del_acqs += len(self.deleted_acqs[i].values())
-        return del_acqs
+        return len(self.deleted_acqs)
 
     def set_current_acq(self) -> int:
         if self.ui_prefs is not None:

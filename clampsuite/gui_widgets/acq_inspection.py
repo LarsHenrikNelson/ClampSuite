@@ -68,8 +68,8 @@ class AcqInspectionWidget(QWidget):
 
         self.acq_dict = {}
 
-    def setData(self, analysis, exp_manager):
-        self.acq_dict = exp_manager.exp_dict[analysis]
+    def setData(self, exp_manager):
+        self.acq_dict = exp_manager.acquisitions
         sorted_list = sorted(self.acq_dict.keys(), key=lambda x: int(x))
         self.acq_number.setMinimum(sorted_list[0])
         self.acq_number.setMaximum(sorted_list[-1])

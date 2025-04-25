@@ -12,7 +12,11 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self,
         threshold: Union[int, float] = -15,
         threshold_method: Literal[
-            "third_derivative", "max_curvature", "legacy"
+            "third_derivative",
+            "first_derivative",
+            "second_derivative",
+            "max_curvature",
+            "legacy",
         ] = "third_derivative",
         min_spikes: int = 2,
         debug=False,
@@ -34,6 +38,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             self.find_baseline_stability()
             self.find_spike_parameters()
             self.find_first_spike()
+            self.spike_velocity()
             self.get_ramp_rheo()
             self.find_spike_width()
             self.find_AHP_peak()
@@ -48,7 +53,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         if self.ramp == "0":
             self.baseline_mean = np.mean(
-                self.array[self.baseline_start : self.baseline_end]
+                self.array[self._baseline_start : self._baseline_end]
             )
             max_value = np.max(self.array[self._pulse_start : self._pulse_end])
             if max_value < self.threshold:
@@ -69,7 +74,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         elif self.ramp == "1":
             self.delta_v = np.nan
             self.baseline_mean = np.mean(
-                self.array[self.baseline_start : self.baseline_end]
+                self.array[self._baseline_start : self._baseline_end]
             )
 
     def find_spike_parameters(self):
@@ -100,18 +105,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             # Get the peak voltage
             self.peak_volt = self.array[self.peaks[0]]
 
-            # Differentiate the array to find the peak dv/dt.
-            dv = np.gradient(self.array)
-            dt = np.gradient(self.plot_acq_x())
-            peak_dv, _ = signal.find_peaks(dv, height=6)
-
-            # Pull out the index of the first peak and find the peak velocity.
-            self.ap_v = (dv / dt)[peak_dv[0]]
-
-            # Calculate this early so that it does not need to be calculated
-            # a second time.
-            baseline_std = np.std(dv[self.baseline_start : self.baseline_end])
-
             # Calculate the IEI and correction for sample rate
             if not np.isnan(self.peaks[0]) and len(self.peaks) > 1:
                 self.iei = np.diff(self.peaks) / self.s_r_c
@@ -133,6 +126,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 # This takes the last value of an array of values that are
                 # less than the threshold. It was the most robust way to find
                 # the spike threshold time.
+                # Calculate this early so that it does not need to be calculated
+                # a second time.
+                # Differentiate the array to find the peak dv/dt.
+                dv = np.gradient(self.array)
+                peak_dv, _ = signal.find_peaks(dv, height=6)
+                baseline_std = np.std(dv[self._baseline_start : self._baseline_end])
+
                 self.rheo_x = (
                     np.argwhere(dv[self._pulse_start : peak_dv[0]] < (8 * baseline_std))
                     + self._pulse_start
@@ -140,19 +140,49 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 self.spike_threshold = self.array[self.rheo_x]
 
     def find_spk_thresh(self, array: np.ndarray) -> "tuple[int, int]":
-        dv = np.gradient(array)
+        start = int(0.7 * self.s_r_c) + self._pulse_start
+        temp = array[start : self.peaks[0]]
+        dv = np.gradient(temp)
         ddv = np.gradient(dv)
+        dddv = np.gradient(ddv)
         if self.threshold_method == "third_derivative":
-            dddv = np.gradient(ddv)
-            dddv_zscored = (dddv - np.mean(dddv)) / np.std(dddv)
-            peaks, _ = signal.find_peaks(
-                dddv_zscored[self._pulse_start + int(1 * self.s_r_c) : self.peaks[0]],
-                height=2,
-            )
-            peaks = peaks - 1 + self._pulse_start + int(1 * self.s_r_c)
+            base = dddv.argmin()
+            index = base - 1
+            val = dddv[base] - dddv[index]
+            while val < 0:
+                index -= 1
+                base -= 1
+                val = dddv[base] - dddv[index]
+            peaks = [start + index + 1]
         elif self.threshold_method == "max_curvature":
-            peaks, _ = signal.find_peaks(-1 * (dv / array), prominence=0.5)
-            peaks = peaks - 2
+            peaks = np.argmax(-1 * (dv / temp))
+            peaks = [peaks - 2 + start]
+        elif self.threshold_method == "method_vii":
+            method_vii = ddv * (1 + dv**2) ** (-3 / 2)
+            peaks = [method_vii.argmax() + start]
+        elif self.threshold_method == "method_ii":
+            method_ii = (dddv * dv - ddv**2) / (np.ma.array(dv**3, mask=dv != 0))
+            peaks = [method_ii.data.argmax() + start]
+        elif self.threshold_method == "first_derivative":
+            base = dv.argmax()
+            index = base - 1
+            val = dv[base] - dv[index]
+            mm = dv[base] / 10
+            while val > 0 or dv[base] > mm:
+                index -= 1
+                base -= 1
+                val = dv[base] - dv[index]
+            base = np.where(dv > np.max(dv[:base]))[0][0]
+            peaks = [base + start + int(0.1 * self.s_r_c)]
+        elif self.threshold_method == "second_derivative":
+            base = ddv.argmax()
+            index = base - 1
+            val = ddv[base] - ddv[index]
+            while val > 0:
+                index -= 1
+                base -= 1
+                val = ddv[base] - ddv[index]
+            peaks = [start + base]
         elif self.threshold_method == "legacy":
             # While many papers use a single threshold to find the threshold
             # potential this does not work if you want to analyze both
@@ -167,7 +197,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 )[-1]
             except IndexError:
                 peaks = [
-                    (np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start)
+                    np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start
                 ]
         else:
             raise AttributeError(
@@ -193,8 +223,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 else:
                     temp_array = self.array[self.peaks[0] : self._pulse_end]
                 indexes = np.where(temp_array < self.spike_threshold)[0] + self.peaks[0]
+                if len(indexes) > 0:
+                    end = indexes[-1]
+                else:
+                    if len(self.peaks) > 1:
+                        end = self.peaks[1]
+                    else:
+                        end = self._pulse_end
                 start = self.rheo_x - int(5 * self.s_r_c)
-                end = indexes[-1]
                 self.ap_index = [start, end]
                 self.first_ap = self.array[start:end]
 
@@ -226,6 +262,27 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
                 # Extract the first action potential based on the ap_index.
                 self.first_ap = np.split(self.array, self.ap_index)[1]
+
+    def spike_velocity(self):
+        if not np.isnan(self.first_ap[0]):
+            # Differentiate the array to find the peak dv/dt.
+            dv = np.gradient(self.first_ap)
+            dt = np.gradient(self.spike_x_array())
+            dv_dt = dv / dt
+
+            self.max_velocity_x = np.argmax(dv_dt)
+            self.max_velocity_y = dv[self.max_velocity_x]
+            self.max_velocity_x += self.ap_index[0]
+
+            self.min_velocity_x = np.argmin(dv_dt)
+            self.min_velocity_y = dv[self.min_velocity_x]
+            self.min_velocity_x += self.ap_index[0]
+        else:
+            self.max_velocity_x = np.nan
+            self.max_velocity_y = np.nan
+
+            self.min_velocity_x = np.nan
+            self.min_velocity_y = np.nan
 
     def find_spike_width(self):
         # Create the masked array using the mask found earlier to find
@@ -348,14 +405,19 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         be less arbitrary. The AHP
         """
         if not np.isnan(self.peaks[0]):
-            peak = np.argmax(self.first_ap)
-            dvv = np.gradient(np.gradient(self.first_ap[: int(peak + 5 * self.s_r_c)]))
-            corr_factor = len(self.first_ap) - len(
-                self.first_ap[: int(peak + 5 * self.s_r_c)]
-            )
-            base = (np.argmin(dvv[::-1] < 0.15) * -1) - corr_factor
-            self.ahp_y = self.first_ap[base]
-            self.ahp_x = self.spike_x_array()[base]
+            # peak = np.argmax(self.first_ap)
+            # dvv = np.gradient(np.gradient(self.first_ap[: int(peak + 5 * self.s_r_c)]))
+            # corr_factor = len(self.first_ap) - len(
+            #     self.first_ap[: int(peak + 5 * self.s_r_c)]
+            # )
+            # base = (np.argmin(dvv[::-1] < 0.15) * -1) - corr_factor
+            if len(self.peaks) > 1:
+                end = self.peaks[1]
+            else:
+                end = self._pulse_end
+            base = np.argmin(self.array[self.peaks[0] : end]) + self.peaks[0]
+            self.ahp_y = self.array[base]
+            self.ahp_x = base / self.s_r_c
         else:
             self.ahp_x = np.nan
             self.ahp_y = np.nan
@@ -379,6 +441,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         self.rheo_x = int(self.s_r_c * x)
         self.spike_threshold = y
         self.find_spike_width()
+        self.find_first_spike()
 
     def spike_width(self) -> Union[int, float]:
         if self.width_comp is not None:
@@ -515,7 +578,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "Ramp": self.ramp,
             "Epoch": self.epoch,
             "Baseline mean (pA)": self.baseline_mean,
-            "Pulse start (ms)": self._pulse_start / self.s_r_c,
+            "Pulse start (ms)": float(self._pulse_start) / self.s_r_c,
             "Delta V (mV)": self.delta_v,
             "Voltage sag (mV)": self.voltage_sag,
             "Spike threshold (mV)": self.spike_threshold,
@@ -526,7 +589,10 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             "IEI": self.iei_mean,
             "Num spikes": num_spks,
             "Spike width (ms)": self.spike_width(),
-            "Max AP vel (mV/mS)": self.ap_v,
+            "Max AP vel (mV/ms)": self.max_velocity_y,
+            "Max AP vel time (ms)": float(self.max_velocity_x) / self.s_r_c,
+            "Min AP vel (mV/ms)": self.min_velocity_y,
+            "Min AP vel time (ms)": float(self.min_velocity_x) / self.s_r_c,
             "Spike freq adapt": self.spike_adapt,
             "Local sfa": self.local_var,
             "Divisor sfa": self.sfa_divisor,

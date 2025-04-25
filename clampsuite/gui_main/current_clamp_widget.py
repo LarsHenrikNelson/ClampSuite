@@ -123,7 +123,7 @@ class CurrentClampWidget(MainAnalysisWidget):
             i.setMinimumWidth(100)
 
     def analyze(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("No acquisitions loaded, analysis ended.")
             self.errorDialog("No acquisitions loaded, analysis ended.")
             self.analyze_acq_button.setEnabled(True)
@@ -166,7 +166,7 @@ class CurrentClampWidget(MainAnalysisWidget):
         logger.info("Firsts acquisition set.")
 
     def runFinalAnalysis(self):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             logger.info("Did not run final analysis, no acquisitions analyzed.")
             self.errorDialog("Did not run final analysis, no acquisitions analyzed.")
             return None
@@ -186,7 +186,9 @@ class CurrentClampWidget(MainAnalysisWidget):
         self.pbar.setFormat("Analyzing...")
         logger.info("Experiment manager started final analysis")
         self.exp_manager.run_final_analysis(
-            iv_start=self.iv_start_edit.toInt(), iv_end=self.iv_end_edit.toInt()
+            "current_clamp",
+            iv_start=self.iv_start_edit.toInt(),
+            iv_end=self.iv_end_edit.toInt(),
         )
         logger.info("Experiment manager finished final analysis.")
         self.calculate_parameters.setEnabled(True)
@@ -267,7 +269,7 @@ class CurrentClampWidget(MainAnalysisWidget):
         return pref_dict
 
     def saveAs(self, file_path: Union[str, PurePath]):
-        if not self.exp_manager.acqs_exist("current_clamp"):
+        if not self.exp_manager.acqs_exist():
             self.errorDialog("No data to save")
         else:
             logger.info("Saving experiment.")
