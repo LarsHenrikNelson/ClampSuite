@@ -6,7 +6,9 @@ from . import (
     kde,
     load_functions,
     rc_check,
+    spike_analysis,
     startup,
     template_psc,
     utilities,
+    iv_curve
 )

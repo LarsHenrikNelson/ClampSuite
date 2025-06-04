@@ -7,6 +7,7 @@ from scipy.stats import linregress
 
 from . import final_analysis
 from ..acq import Acquisition
+from ..functions.iv_curve import fit_iv
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):
@@ -143,35 +144,25 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
         average = np.average(np.array(arrays), axis=0)
         return average
 
-    def iv_curve(
-        self,
-        df: pd.DataFrame,
-        start: int,
-        end: Union[int, None],
-        column: str,
-        output_column: str,
-    ) -> pd.DataFrame:
-        if end is None:
-            end = -1
-        df_pivot = self.extract_features(df, column)
-        slopes = []
-        iv_lines = []
-        iv_xs = []
-        columns = df_pivot.columns.to_list()
-        for i in columns:
-            temp = df_pivot[i].dropna()
-            y = temp.to_numpy()[start - 1 : end]
-            x = temp.index.to_numpy()[start - 1 : end]
-            iv_xs.append(x)
-            reg = linregress(x=x, y=y)
-            slopes += [reg.slope * 1000]
-            iv_temp = reg.slope * x + reg.intercept
-            iv_lines.append(iv_temp)
-        resistance = pd.DataFrame(data=slopes, index=columns, columns=[output_column])
-        self.create_dataframe(iv_xs, columns, f"{column} IV x")
-        self.create_dataframe(iv_lines, columns, f"{column} IV lines")
-        self.df_dict[column] = df_pivot.reset_index()
-        return resistance
+    def test(self):
+        groups = self.df_dict["raw_data"].groupby(["Epoch"]).indices
+        output = defaultdict(list)
+        for epoch, indexes in groups.items():
+            output["Epoch"].append(epoch)
+            temp_df = self.df_dict["raw_data"].iloc[indexes]
+            pulse_amp = temp_df["Pulse amp (pA)"].to_numpy()
+            mem_res_output = fit_iv(
+                temp_df["Delta V (mV)"].to_numpy(),
+                pulse_amp,
+                self.iv_start,
+                self.iv_end,
+            )
+            output["Membrane resistance"].append(mem_res_output)
+            sag_index = np.where(pulse_amp <= 0)[0][0]
+            sag_res_output = fit_iv(
+                temp_df["Voltage sag (mV)"].to_numpy(), pulse_amp, 0, sag_index
+            )
+            output["Sag resistance"].append(sag_res_output)
 
     def create_dataframe(
         self,

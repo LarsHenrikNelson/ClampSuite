@@ -4,6 +4,8 @@ import bottleneck as bn
 import numpy as np
 from scipy import signal, stats
 
+from ..functions.spike_analysis import find_all_spk_thresholds
+from ..functions.voltage_funcs import delta_v
 from . import filter_acq
 
 
@@ -33,6 +35,24 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
 
         # Analysis functions
         if not debug:
+            self.baseline_mean = np.mean(
+                self.array[self._baseline_start : self._baseline_end]
+            )
+            self.peaks, _ = signal.find_peaks(
+                self.array[self._pulse_start : self._pulse_end],
+                height=self.threshold,
+                prominence=int(1 * self.s_r_c),
+            )
+            if len(self.peaks) > 0:
+                self.spike_thresholds = find_all_spk_thresholds(
+                    self.array,
+                    self.peaks,
+                    self._pulse_start,
+                    self._pulse_end,
+                    self.threshold_method,
+                )
+            else:
+                self.spike_thresholds = []
             self.get_delta_v()
             self.find_voltage_sag()
             self.find_baseline_stability()
@@ -52,30 +72,12 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         pulses with spikes it takes the mode of the moving mean.
         """
         if self.ramp == "0":
-            self.baseline_mean = np.mean(
-                self.array[self._baseline_start : self._baseline_end]
-            )
-            max_value = np.max(self.array[self._pulse_start : self._pulse_end])
-            if max_value < self.threshold:
-                self.delta_v = (
-                    np.mean(self.array[self._pulse_start : self._pulse_end])
-                    - self.baseline_mean
-                )
+            if len(self.peaks) > 0:
+                self.delta_v = delta_v(self.array, self._pulse_start, self._pulse_end)
             else:
-                m = stats.mode(
-                    bn.move_mean(
-                        self.array[self._pulse_start : self._pulse_end],
-                        window=1000,
-                        min_count=1,
-                    ),
-                    keepdims=True,
-                )
-                self.delta_v = m[0][0] - self.baseline_mean
+                self.delta_v = self.spike_thresholds[0]
         elif self.ramp == "1":
             self.delta_v = np.nan
-            self.baseline_mean = np.mean(
-                self.array[self._baseline_start : self._baseline_end]
-            )
 
     def find_spike_parameters(self):
         """This function returns the spike parameters of a pulse or ramp that
@@ -138,73 +140,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                     + self._pulse_start
                 )[-1][0]
                 self.spike_threshold = self.array[self.rheo_x]
-
-    def find_spk_thresh(self, array: np.ndarray) -> "tuple[int, int]":
-        start = int(0.7 * self.s_r_c) + self._pulse_start
-        temp = array[start : self.peaks[0]]
-        dv = np.gradient(temp)
-        ddv = np.gradient(dv)
-        dddv = np.gradient(ddv)
-        if self.threshold_method == "third_derivative":
-            base = dddv.argmin()
-            index = base - 1
-            val = dddv[base] - dddv[index]
-            while val < 0:
-                index -= 1
-                base -= 1
-                val = dddv[base] - dddv[index]
-            peaks = [start + index + 1]
-        elif self.threshold_method == "max_curvature":
-            peaks = np.argmax(-1 * (dv / temp))
-            peaks = [peaks - 2 + start]
-        elif self.threshold_method == "method_vii":
-            method_vii = ddv * (1 + dv**2) ** (-3 / 2)
-            peaks = [method_vii.argmax() + start]
-        elif self.threshold_method == "method_ii":
-            method_ii = (dddv * dv - ddv**2) / (np.ma.array(dv**3, mask=dv != 0))
-            peaks = [method_ii.data.argmax() + start]
-        elif self.threshold_method == "first_derivative":
-            base = dv.argmax()
-            index = base - 1
-            val = dv[base] - dv[index]
-            mm = dv[base] / 10
-            while val > 0 or dv[base] > mm:
-                index -= 1
-                base -= 1
-                val = dv[base] - dv[index]
-            base = np.where(dv > np.max(dv[:base]))[0][0]
-            peaks = [base + start + int(0.1 * self.s_r_c)]
-        elif self.threshold_method == "second_derivative":
-            base = ddv.argmax()
-            index = base - 1
-            val = ddv[base] - ddv[index]
-            while val > 0:
-                index -= 1
-                base -= 1
-                val = ddv[base] - ddv[index]
-            peaks = [start + base]
-        elif self.threshold_method == "legacy":
-            # While many papers use a single threshold to find the threshold
-            # potential this does not work if you want to analyze both
-            # interneurons and other neuron types. I have created a shifting
-            # threshold based on where the maximum velocity occurs of the first
-            # spike occurs.
-            peak_dv, _ = signal.find_peaks(dv, height=6)
-            try:
-                peaks = (
-                    np.argwhere(np.gradient(dv[self._pulse_start : peak_dv[0]]) < (0.3))
-                    + self._pulse_start
-                )[-1]
-            except IndexError:
-                peaks = [
-                    np.argmin(dv[self._pulse_start : peak_dv[0]]) + self._pulse_start
-                ]
-        else:
-            raise AttributeError(
-                "threshold_method must be third_derivative, max_curvature or legacy."
-            )
-        rheo_x = peaks[0]
-        return rheo_x
 
     def find_first_spike(self):
         """This function analyzes the parameter of the first action potential in
@@ -310,26 +245,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             self.baseline_stability = np.nan
 
-    def spike_adaptation(self):
-        """
-        This function calculates the spike frequency adaptation. A positive
-        number means that the spikes are speeding up and a negative number
-        means that spikes are slowing down. This function was inspired by the
-        Allen Brain Institutes IPFX analysis program
-        https://github.com/AllenInstitute/ipfx/tree/
-        db47e379f7f9bfac455cf2301def0319291ad361
-        """
-
-        if len(self.iei) <= 1:
-            self.spike_adapt = np.nan
-        else:
-            # self.iei = self.iei.astype(float)
-            if np.allclose((self.iei[1:] + self.iei[:-1]), 0.0):
-                self.spike_adapt = np.nan
-            norm_diffs = (self.iei[1:] - self.iei[:-1]) / (self.iei[1:] + self.iei[:-1])
-            norm_diffs[(self.iei[1:] == 0) & (self.iei[:-1] == 0)] = 0.0
-            self.spike_adapt = np.nanmean(norm_diffs)
-
     def get_ramp_rheo(self):
         """
         This function gets the ramp rheobase. The ramp pulse is recreated
@@ -360,42 +275,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
                 self.ramp_rheo = ramp_array[self.rheo_x]
         else:
             self.ramp_rheo = np.nan
-
-    def calculate_sfa_local_var(self):
-        """
-        The idea for the function was initially inspired by a program called
-        Easy Electropysiology (https://github.com/easy-electrophysiology).
-
-        This function calculates the local variance in spike frequency
-        accomadation that was drawn from the paper:
-        Shinomoto, Shima and Tanji. (2003). Differences in Spiking Patterns
-        Among Cortical Neurons. Neural Computation, 15, 2823-2842.
-
-        Returns
-        -------
-        None.
-
-        """
-        if len(self.iei) < 2 or self.iei is np.nan:
-            self.local_var = np.nan
-        else:
-            isi_shift = self.iei[1:]
-            isi_cut = self.iei[:-1]
-            n_minus_1 = len(isi_cut)
-            self.local_var = (
-                np.sum((3 * (isi_cut - isi_shift) ** 2) / (isi_cut + isi_shift) ** 2)
-                / n_minus_1
-            )
-
-    def calculate_sfa_divisor(self):
-        """
-        The idea for the function was initially inspired by a program called
-        Easy Electropysiology (https://github.com/easy-electrophysiology).
-        """
-        if len(self.iei) > 1 or self.iei is np.nan:
-            self.sfa_divisor = self.iei[0] / self.iei[-1]
-        else:
-            self.sfa_divisor = np.nan
 
     def find_AHP_peak(self):
         """
