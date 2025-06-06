@@ -61,7 +61,9 @@ class NeoLoader(BaseLoader):
             acq_dict = {}
             self.acq_count += 1
             acq_dict["acq_number"] = self.acq_count
-            acq_dict["time_stamp"] = file.segment_t_start(block_index=0, seg_index=i)
+            acq_dict["time_stamp"] = file._axon_info[
+                "rec_datetime"
+            ].timestamp() + file.segment_t_start(block_index=0, seg_index=i)
             acq_dict["epoch"] = str(self.epoch_count)
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
