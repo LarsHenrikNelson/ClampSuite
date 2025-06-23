@@ -8,13 +8,14 @@ from .base_loader import BaseLoader
 
 
 class NeoLoader(BaseLoader):
-    def __init__(self, callback_func: callable = print):
+    def __init__(self, callback_func: callable = print, nchannels=2):
         super().__init__(callback_func)
         self.main_channel = 0
         self.secondary_channel = None
         self.acq_count = 0
         self.epoch_count = 0
         self.cycle_count = 0
+        self.nchannels = nchannels
 
     def load_segment(self, file, segment: int, gain: float, channel_index: int = 0):
         acq = file.get_analogsignal_chunk(
@@ -53,15 +54,18 @@ class NeoLoader(BaseLoader):
             acq_dict["pulse_amp"] = 0
 
     def process_acquisitions(self, file: str | Path):
-        self.secondary_channel
         temp_dict = {}
         nacqs = file.header["nb_segment"][0]
         filename = Path(file.filename).stem
+        t = file._axon_info["rec_datetime"]
+        time = t.hour * 3600 + t.minute * 60 + t.second
         for i in range(nacqs):
             acq_dict = {}
             self.acq_count += 1
             acq_dict["acq_number"] = self.acq_count
-            acq_dict["time_stamp"] = file.segment_t_start(block_index=0, seg_index=i)
+            acq_dict["time_stamp"] = time + file.segment_t_start(
+                block_index=0, seg_index=i
+            )
             acq_dict["epoch"] = str(self.epoch_count)
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
@@ -79,11 +83,12 @@ class NeoLoader(BaseLoader):
                 2
             ]
             acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
-            if self.secondary_channel == 1:
+            if self.secondary_channel is not None:
                 self.process_secondary_channel(file, i, acq_dict)
             temp_dict[self.acq_count] = acq_dict
-            self.callback_func(f"Acquisition {i+1} of {nacqs} from {filename}")
-        self.set_pulse(file, nacqs, temp_dict)
+            self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
+        if self.secondary_channel is not None:
+            self.set_pulse(file, nacqs, temp_dict)
         return temp_dict
 
     def set_pulse(self, file, nacqs, acq_dict: dict):
@@ -116,7 +121,7 @@ class NeoLoader(BaseLoader):
         for file in data_files:
             self.cycle_count += 1
             nchans = len(file.header["signal_channels"])
-            if nchans > 1:
+            if nchans > 1 and self.nchannels > 1:
                 self.secondary_channel = 1
             temp = self.process_acquisitions(file)
             output_dict.update(temp)
