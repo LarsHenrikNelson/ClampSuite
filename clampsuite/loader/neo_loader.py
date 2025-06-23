@@ -57,13 +57,15 @@ class NeoLoader(BaseLoader):
         temp_dict = {}
         nacqs = file.header["nb_segment"][0]
         filename = Path(file.filename).stem
+        t = file._axon_info["rec_datetime"]
+        time = t.hour * 3600 + t.minute * 60 + t.second
         for i in range(nacqs):
             acq_dict = {}
             self.acq_count += 1
             acq_dict["acq_number"] = self.acq_count
-            acq_dict["time_stamp"] = file._axon_info[
-                "rec_datetime"
-            ].timestamp() + file.segment_t_start(block_index=0, seg_index=i)
+            acq_dict["time_stamp"] = time + file.segment_t_start(
+                block_index=0, seg_index=i
+            )
             acq_dict["epoch"] = str(self.epoch_count)
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
