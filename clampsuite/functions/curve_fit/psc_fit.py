@@ -3,14 +3,7 @@ from typing import Literal
 import numpy as np
 from scipy import optimize
 
-
-def _detect_pos_neg(y):
-    maximum = np.abs(y.max())
-    minimum = np.abs(y.min())
-    if maximum > minimum:
-        return "positive"
-    else:
-        return "negative"
+from .utilities import _detect_pos_neg
 
 
 def psc_sexp(

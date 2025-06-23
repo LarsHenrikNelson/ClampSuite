@@ -5,7 +5,7 @@ import numpy as np
 from scipy import signal, stats
 
 from ..functions.current_clamp.spike_analysis import find_all_spk_thresholds
-from ..functions.voltage_funcs import delta_v
+from ..functions.current_clamp.voltage_funcs import delta_v
 from . import filter_acq
 
 
