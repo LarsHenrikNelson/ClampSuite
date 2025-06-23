@@ -96,9 +96,7 @@ def fit_decay(y, sample_rate, num_decays):
         bounds=[lower_bounds, upper_bounds],
     )
 
-    # Maybe not so great usage of NamedTuple but decreases the amount of code.
     output = CURVE_FIT_OUTPUT[str(num_decays)](*popt)
-    output = {j: output[index] for index, j in enumerate(output._fields)}
     return output
 
 
