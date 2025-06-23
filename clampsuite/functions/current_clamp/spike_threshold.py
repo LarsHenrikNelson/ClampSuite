@@ -1,3 +1,5 @@
+from typing import Literal, TypeAlias
+
 import numpy as np
 from scipy import signal
 
@@ -95,13 +97,23 @@ ThresholdFunctions = {
     "legacy": legacy,
 }
 
+ThresholdType: TypeAlias = Literal[
+    "third_derivative",
+    "max_curvature",
+    "method_vii",
+    "method_ii",
+    "first_derivative",
+    "second_derivative",
+    "legacy",
+]
+
 
 def find_all_spk_thresholds(
     voltages: np.ndarray,
     peaks: np.ndarray,
     pulse_start: int = 0,
     pulse_end: int = -1,
-    threshold_method="third_derivative",
+    threshold_method: ThresholdType = "third_derivative",
 ):
     output = np.zeros(len(peaks))
     start_index = pulse_start

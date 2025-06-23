@@ -157,24 +157,21 @@ class ScanImageLoader(BaseLoader):
         )
 
         acq_dict["pulse_amp"] = amp
-        acq_dict["_pulse_start"] = int(start * acq_dict["s_r_c"])
+        acq_dict["pulse_start"] = int(start * acq_dict["s_r_c"])
         if end > 0:
-            acq_dict["_pulse_end"] = int(end * acq_dict["s_r_c"])
+            acq_dict["pulse_end"] = int(end * acq_dict["s_r_c"])
         else:
-            acq_dict["_pulse_end"] = int(duration * acq_dict["s_r_c"])
+            acq_dict["pulse_end"] = int(duration * acq_dict["s_r_c"])
             acq_dict["pulse_end"] = duration
         acq_dict["ramp"] = ramp
         acq_dict["pulse_amp"] = amp
-        acq_dict["pulse_start"] = 0
 
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(
             data_string, "RCCheck='(.*);'"
         )
-        acq_dict["_rc_check_pulse_start"] = int(rc_start * acq_dict["s_r_c"])
-        acq_dict["_rc_check_pulse_end"] = int(rc_end * acq_dict["s_r_c"])
+        acq_dict["rc_check_pulse_start"] = int(rc_start * acq_dict["s_r_c"])
+        acq_dict["rc_check_pulse_end"] = int(rc_end * acq_dict["s_r_c"])
         acq_dict["rc_amp"] = rc_amp
-        acq_dict["rc_check_pulse_start"] = rc_start
-        acq_dict["rc_check_pulse_end"] = rc_end
         return acq_dict
 
     def set_cycle(self, acquisitions):
@@ -210,7 +207,7 @@ class ScanImageLoader(BaseLoader):
         n_files = len(file_paths)
         for count, i in enumerate(file_paths):
             acq_comp = self.load_scanimage_file(i)
-            self.callback_func(f"Acquisition {count+1} of {n_files} loaded")
+            self.callback_func(f"Acquisition {count + 1} of {n_files} loaded")
             acquisitions[int(acq_comp["acq_number"])] = acq_comp
         self.set_cycle(acquisitions)
         return acquisitions

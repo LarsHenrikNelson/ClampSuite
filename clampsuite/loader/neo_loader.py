@@ -34,20 +34,15 @@ class NeoLoader(BaseLoader):
         threshold = np.mean(abs_tt[ppeaks])
         indexes = np.where(abs_tt > threshold * 3)[0]
         if len(indexes) > 0:
-            acq_dict["pulse_start"] = indexes[0] / acq_dict["s_r_c"]
-            acq_dict["_pulse_start"] = indexes[0]
+            acq_dict["pulse_start"] = indexes[0]
             if len(indexes) > 1:
-                acq_dict["pulse_end"] = indexes[1] / acq_dict["s_r_c"]
-                acq_dict["_pulse_end"] = indexes[1]
+                acq_dict["pulse_end"] = indexes[1]
             else:
-                acq_dict["pulse_end"] = len(temp) / acq_dict["s_r_c"]
-                acq_dict["_pulse_end"] = len(temp)
+                acq_dict["pulse_end"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
         else:
             acq_dict["pulse_start"] = 0
-            acq_dict["_pulse_start"] = 0
-            acq_dict["_pulse_end"] = len(temp)
-            acq_dict["pulse_end"] = len(temp) / acq_dict["s_r_c"]
+            acq_dict["pulse_end"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
             acq_dict["pulse_duration"] = 0
             acq_dict["pulse_width"] = 0
@@ -69,8 +64,6 @@ class NeoLoader(BaseLoader):
             acq_dict["epoch"] = str(self.epoch_count)
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
-            acq_dict["_rc_check_pulse_start"] = 0
-            acq_dict["_rc_check_pulse_end"] = 0
             acq_dict["ramp"] = "0"
             acq_dict["rc_check_pulse_start"] = 0
             acq_dict["rc_check_pulse_end"] = 0

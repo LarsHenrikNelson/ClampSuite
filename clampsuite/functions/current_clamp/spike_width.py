@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 
 
-def find_spk_half_width(
+def spk_half_width(
     voltages: np.array, peak_x: int, spike_threshold: float, start: int, end: int
 ):
     volts = np.asarray(voltages[int(start) : int(end)])
@@ -16,7 +16,7 @@ def find_spk_half_width(
     return width
 
 
-def find_spk_width(voltages: np.array, spike_threshold: float, start: int, end: int):
+def spk_width(voltages: np.array, spike_threshold: float, start: int, end: int):
     volts = np.asarray(voltages[int(start) : int(end)])
     x = np.arange(len(volts))
     xvals = np.linspace(x[0], x[-1], num=x.size * 10)
@@ -37,7 +37,7 @@ def find_spk_width(voltages: np.array, spike_threshold: float, start: int, end: 
     return width
 
 
-def find_spk_auc(voltages: np.array, spike_threshold: float, start: int, end: int):
+def spk_auc(voltages: np.array, spike_threshold: float, start: int, end: int):
     volts = np.asarray(voltages[int(start) : int(end)])
     x = np.arange(len(volts))
     xvals = np.linspace(x[0], x[-1], num=x.size * 10)
@@ -59,7 +59,11 @@ def find_spk_auc(voltages: np.array, spike_threshold: float, start: int, end: in
 
 
 def find_all_spk_widths(
-    voltages, peaks, spike_thresholds, pulse_end, end_offset: int = 2000
+    voltages: np.ndarray,
+    peaks: np.ndarray,
+    spike_thresholds: np.ndarray,
+    pulse_end: int,
+    end_offset: int = 2000,
 ):
     hws = np.zeros((len(peaks), 3))
     fws = np.zeros((len(peaks), 4))
@@ -73,20 +77,20 @@ def find_all_spk_widths(
                 end = spike_thresholds[index, 0] + end_offset
             else:
                 end = pulse_end
-        hws[index] = find_spk_half_width(
+        hws[index] = spk_half_width(
             voltages,
             peaks[index],
             spike_thresholds[index, 1],
             spike_thresholds[index, 0],
             end,
         )
-        fws[index] = find_spk_width(
+        fws[index] = spk_width(
             voltages,
             spike_thresholds[index, 1],
             spike_thresholds[index, 0],
             end,
         )
-        auc[index] = find_spk_auc(
+        auc[index] = spk_auc(
             voltages,
             spike_thresholds[index, 1],
             spike_thresholds[index, 0],
