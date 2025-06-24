@@ -3,8 +3,10 @@ from typing import Literal, TypeAlias
 import numpy as np
 from scipy import signal
 
+KEYS = ["threshold_index"]
 
-def third_derivative(derivatives, start, end):
+
+def third_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
     dddv = derivatives["dddv"][start:end]
     base = dddv.argmin()
     index = base - 1
@@ -17,7 +19,7 @@ def third_derivative(derivatives, start, end):
     return peak
 
 
-def max_curvature(derivatives, start, end):
+def max_curvature(derivatives: dict[str, np.ndarray], start: int, end: int):
     dv = derivatives["dv"][start:end]
     v = derivatives["v"][start:end]
     peak = np.argmax(-1 * (dv / v))
@@ -25,7 +27,7 @@ def max_curvature(derivatives, start, end):
     return peak
 
 
-def method_vii(derivatives, start, end):
+def method_vii(derivatives: dict[str, np.ndarray], start: int, end: int):
     ddv = derivatives["ddv"][start:end]
     dv = derivatives["ddv"][start:end]
     method_vii = ddv * (1 + dv**2) ** (-3 / 2)
@@ -33,7 +35,7 @@ def method_vii(derivatives, start, end):
     return peak
 
 
-def method_ii(derivatives, start, end):
+def method_ii(derivatives: dict[str, np.ndarray], start: int, end: int):
     dddv = derivatives["dddv"][start:end]
     ddv = derivatives["ddv"][start:end]
     dv = derivatives["dv"][start:end]
@@ -42,7 +44,7 @@ def method_ii(derivatives, start, end):
     return peak
 
 
-def first_derivative(derivatives, start, end):
+def first_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
     dv = derivatives["dv"][start:end]
     base = dv.argmax()
     index = base - 1
@@ -57,7 +59,7 @@ def first_derivative(derivatives, start, end):
     return peak
 
 
-def second_derivative(derivatives, start, end):
+def second_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
     ddv = derivatives["ddv"][start:end]
     base = ddv.argmax()
     index = base - 1
@@ -70,7 +72,7 @@ def second_derivative(derivatives, start, end):
     return peak
 
 
-def legacy(derivatives, start, end):
+def legacy(derivatives: dict[str, np.ndarray], start: int, end: int):
     # While many papers use a single threshold to find the threshold
     # potential this does not work if you want to analyze both
     # interneurons and other neuron types. I have created a shifting
@@ -115,7 +117,7 @@ def find_all_spk_thresholds(
     pulse_end: int = -1,
     threshold_method: ThresholdType = "third_derivative",
 ):
-    output = np.zeros(len(peaks))
+    output = np.zeros(len(peaks), dtype=int)
     start_index = pulse_start
     dv = np.gradient(voltages)
     ddv = np.gradient(dv)
@@ -132,4 +134,4 @@ def find_all_spk_thresholds(
         except IndexError:
             output[index] = np.nan
         start_index = peaks[index]
-    return output
+    return {"threshold_index": output}

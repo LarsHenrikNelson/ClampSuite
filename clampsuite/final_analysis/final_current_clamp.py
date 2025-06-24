@@ -7,7 +7,7 @@ from scipy.stats import linregress
 
 from . import final_analysis
 from ..acq import Acquisition
-from ..functions.iv_curve import fit_iv
+from ..functions.curve_fit.iv_curve import fit_iv
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):

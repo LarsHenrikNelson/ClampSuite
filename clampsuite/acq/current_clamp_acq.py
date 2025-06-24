@@ -4,138 +4,157 @@ import numpy as np
 from scipy import signal
 
 from ..functions.current_clamp import (
-    voltage_sag,
-    find_all_spk_thresholds,
+    ThresholdType,
     find_all_ahps,
+    find_all_spk_auc,
+    find_all_spk_thresholds,
+    find_all_spk_widths,
+    voltage_sag,
 )
 from ..functions.general import baseline_stability, delta
-from . import filter_acq
 
 
-class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
+class CurrentClampAcq:
+    def __init__(self, array: np.ndarray, fs: float, pulse_amp):
+        self.array = array
+        self.fs = fs
+        self.s_r_c = fs / 1000
+        self.pulse_amp = pulse_amp
+
+        self.analysis_variables = {}
+        self.analysis_variables["baseline_v"] = None
+        self.analysis_variables["delta_v"] = None
+        self.analysis_variables["hertz"] = 0.0
+        self.analysis_variables["peak_index"] = None
+        self.analysis_variables["threshold_index"] = None
+        self.analysis_variables["hw_left"] = None
+        self.analysis_variables["hw_right"] = None
+        self.analysis_variables["hw_y"] = None
+        self.analysis_variables["fw_left"] = None
+        self.analysis_variables["fw_right"] = None
+        self.analysis_variables["fw_y"] = None
+        self.analysis_variables["auc"] = None
+        self.analysis_variables["auc_left"] = None
+        self.analysis_variables["auc_right"] = None
+        self.analysis_variables["ahp_index"] = None
+        self.analysis_variables["velocity"] = None
+        self.analysis_variables["mem_tau_est"] = None
+        self.analysis_variables["sag"] = None
+        self.analysis_variables["sag_loc"] = None
+        self.analysis_variables["baseline_stability"] = None
+
     def analyze(
         self,
-        threshold: Union[int, float] = -15,
-        threshold_method: Literal[
-            "third_derivative",
-            "first_derivative",
-            "second_derivative",
-            "max_curvature",
-            "legacy",
-        ] = "third_derivative",
+        baseline_start: int = 0,
+        baseline_end: int = 3000,
+        pulse_start: int = 3000,
+        pulse_end: int = 10000,
+        min_spike_voltage: Union[int, float] = -15,
+        threshold_method: ThresholdType = "third_derivative",
         min_spikes: int = 2,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
-        debug=False,
     ):
-        if self._pulse_start == 0:
-            if self._baseline_end == self.array.size:
-                self._pulse_start = 0
-            else:
-                self._pulse_start = self._baseline_end
-                self.pulse_start = self.baseline_end
-        self.threshold = threshold
+        if pulse_end < pulse_start:
+            raise ValueError("pulse_end must be greater than pulse_start")
+        if baseline_end < baseline_start:
+            raise ValueError("baseline_end must be greater than baseline_start")
+        self.analysis_settings = {}
+        self.min_spike_voltage = min_spike_voltage
         self.threshold_method = threshold_method
         self.min_spikes = min_spikes
         self.proportion = proportion
         self.side = side
+        self.baseline_start = baseline_start
+        self.baseline_end = baseline_end
+        self.pulse_end = pulse_end
+        self.pulse_start = pulse_start
 
         # Analysis functions
-        self.baseline_mean = np.mean(
-            self.array[self._baseline_start : self._baseline_end]
+        self.analysis_variables["baseline_v"] = np.mean(
+            self.array[self.baseline_start : self.baseline_end]
         )
-        self.peaks, _ = signal.find_peaks(
-            self.array[self._pulse_start : self._pulse_end],
-            height=self.threshold,
+        peak_index, _ = signal.find_peaks(
+            self.array[self.pulse_start : self.pulse_end],
+            height=self.min_spike_voltage,
             prominence=int(1 * self.s_r_c),
         )
-        if len(self.peaks) > 0:
-            self.spike_thresholds = find_all_spk_thresholds(
-                self.array,
-                self.peaks,
-                self._pulse_start,
-                self._pulse_end,
-                self.threshold_method,
+        peak_index += self.pulse_start
+        self.analysis_variables["peak_index"] = peak_index
+        if peak_index is not None:
+            self.analysis_variables.update(
+                find_all_spk_thresholds(
+                    self.array,
+                    peak_index,
+                    self.pulse_start,
+                    self.pulse_end,
+                    self.threshold_method,
+                )
             )
-            self.ahps = find_all_ahps()
-        else:
-            self.spike_thresholds = []
-        self.delta_v = self.get_delta_v()
+            self.analysis_variables.update(
+                find_all_ahps(self.array, peak_index, self.pulse_end)
+            )
+            self.analysis_variables.update(
+                find_all_spk_widths(
+                    self.array,
+                    self.analysis_variables["threshold_index"],
+                    self.pulse_end,
+                )
+            )
+            self.analysis_variables.update(
+                find_all_spk_auc(
+                    self.array,
+                    self.analysis_variables["threshold_index"],
+                    self.pulse_end,
+                )
+            )
+
+        self.analysis_variables["delta_v"] = self.get_delta_v(peak_index)
 
         if self.pulse_amp < 0:
-            self.sag_loc, self.sag = voltage_sag(
-                self.array, self._pulse_start, self._pulse_end
+            self.analysis_variables.update(
+                voltage_sag(self.array, self.pulse_start, self.pulse_end)
             )
         else:
-            self.sag_loc, self.sag = np.nan, np.nan
+            self.analysis_variables["sag"] = None
+            self.analysis_variables["sag_loc"] = None
 
-        self.baseline_stability = baseline_stability(
-            self.array, self._pulse_start, self._pulse_end
+        self.analysis_variables["baseline_stability"] = baseline_stability(
+            self.array, self.pulse_start, self.pulse_end
         )
 
-        self.find_first_spike()
-        self.spike_velocity()
-        self.get_ramp_rheo()
-        self.find_spike_width()
-        self.find_AHP_peak()
-
-    def get_delta_v(self):
+    def get_delta_v(self, peaks):
         """This function finds the delta-v for a pulse. It simply takes the mean
         value from the pulse start to end for pulses without spikes. For
         pulses with spikes it takes the mode of the moving mean.
         """
-        if self.ramp == "0":
-            if len(self.peaks) > 0:
-                delta_v = delta(
-                    self.array,
-                    self._pulse_start,
-                    self._pulse_end,
-                    self.proportion,
-                    self.side,
-                )
-            else:
-                delta_v = self.spike_thresholds[0]
-        elif self.ramp == "1":
-            delta_v = np.nan
-        return delta_v
 
-    def spike_velocity(self):
-        if not np.isnan(self.first_ap[0]):
-            # Differentiate the array to find the peak dv/dt.
-            dv = np.gradient(self.first_ap)
-            dt = np.gradient(self.spike_x_array())
-            dv_dt = dv / dt
-
-            self.max_velocity_x = np.argmax(dv_dt)
-            self.max_velocity_y = dv[self.max_velocity_x]
-            self.max_velocity_x += self.ap_index[0]
-
-            self.min_velocity_x = np.argmin(dv_dt)
-            self.min_velocity_y = dv[self.min_velocity_x]
-            self.min_velocity_x += self.ap_index[0]
-        else:
-            self.max_velocity_x = np.nan
-            self.max_velocity_y = np.nan
-
-            self.min_velocity_x = np.nan
-            self.min_velocity_y = np.nan
-
-    def find_spike_width(self):
-        # Create the masked array using the mask found earlier to find
-        # The pulse half-width.
-        if not np.isnan(self.peaks[0]):
-            if self.ramp == "0":
-                end = self._pulse_end
-            else:
-                end = self._pulse_end
-            masked_array = self.array.copy()
-            mask = np.array(self.array > self.spike_threshold)
-            masked_array[~mask] = self.spike_threshold
-            self.width_comp = signal.peak_widths(
-                masked_array[:end], self.peaks, rel_height=0.5
+        if len(peaks) == 0:
+            delta_v = delta(
+                self.array,
+                self.pulse_start,
+                self.pulse_end,
+                self.proportion,
+                self.side,
             )
         else:
-            self.width_comp = None
+            index = self.analysis_variables["threshold_index"][0]
+            delta_v = self.array[index] - self.analysis_variables["baseline_v"]
+        # if self.ramp == "0":
+        #     if len(self.peak_index) > 0:
+        #         delta_v = delta(
+        #             self.array,
+        #             self.pulse_start,
+        #             self.pulse_end,
+        #             self.proportion,
+        #             self.side,
+        #         )
+        #     else:
+        #         index = self.analysis_variables["threshold_index"][0]
+        #         delta_v = self.array[index] - self.analysis_variables["baseline_v"]
+        # elif self.ramp == "1":
+        #     delta_v = np.nan
+        return delta_v
 
     def get_ramp_rheo(self):
         """
@@ -154,14 +173,14 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
             else:
                 # Create the ramp current values.
                 ramp_values = np.linspace(
-                    0, self.pulse_amp, num=self._pulse_end - self._pulse_start
+                    0, self.pulse_amp, num=self.pulse_end - self.pulse_start
                 )
 
                 # Create an array of zeros where the ramp will be placed.
                 ramp_array = np.zeros(len(self.array))
 
                 # Insert the ramp into the array of zeros.
-                ramp_array[self._pulse_start : self._pulse_end] = ramp_values
+                ramp_array[self.pulse_start : self.pulse_end] = ramp_values
 
                 # Extract the ramp rheobase.
                 self.ramp_rheo = ramp_array[self.rheo_x]
@@ -182,26 +201,6 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         else:
             return np.nan
 
-    def hertz_exact(self) -> float:
-        if self.ramp == "0":
-            # Calculates the exact hertz by dividing the number peaks by
-            # length of the pulse. If there is only one spike the hertz
-            # returns an impossibly fast number is you take only divide by
-            # the start of the spike_threshold to the end of the pulse.
-            if not np.isnan(self.peaks[0]):
-                return len(self.peaks) / (
-                    (self._pulse_end - self._pulse_start) / self.sample_rate
-                )
-            else:
-                return np.nan
-        elif self.ramp == "1":
-            if not np.isnan(self.peaks[0]):
-                return len(self.peaks) / (
-                    (self._pulse_end - self.rheo_x) / self.sample_rate
-                )
-            else:
-                return np.nan
-
     def spike_width_y(self) -> list:
         if self.width_comp is not None:
             return [self.width_comp[1][0], self.width_comp[1][0]]
@@ -221,15 +220,15 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
     def spike_x_array(self) -> list:
         return self.plot_acq_x()[self.ap_index[0] : self.ap_index[1]]
 
-    def spike_peaks_x(self) -> list:
-        if not np.isnan(self.peaks[0]):
-            return np.array(self.peaks) / self.s_r_c
+    def spike_peak_index_x(self) -> list:
+        if not np.isnan(self.peak_index[0]):
+            return np.array(self.peak_index) / self.s_r_c
         else:
             return []
 
-    def spike_peaks_y(self) -> list:
-        if not np.isnan(self.peaks[0]):
-            return self.array[self.peaks]
+    def spike_peak_index_y(self) -> list:
+        if not np.isnan(self.peak_index[0]):
+            return self.array[self.peak_index]
         else:
             return []
 
@@ -250,7 +249,7 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         """
         if self.ramp == "0":
             x = (
-                int(((self._pulse_end - self._pulse_start) / 2) + self._pulse_start)
+                int(((self.pulse_end - self.pulse_start) / 2) + self.pulse_start)
                 / self.s_r_c
             )
             plot_x = [x, x]
@@ -283,55 +282,13 @@ class CurrentClampAcq(filter_acq.FilterAcq, analysis="current_clamp"):
         return [self.ahp_x]
 
     def first_peak_time(self) -> list:
-        return self.peaks[0] / self.s_r_c
+        return self.peak_index[0] / self.s_r_c
 
-    def plot_acq_y(self) -> np.ndarray:
+    def acq_y(self) -> np.ndarray:
         return self.array
 
-    def plot_acq_x(self) -> np.ndarray:
+    def acq_x(self) -> np.ndarray:
         return np.arange(0, len(self.array)) / self.s_r_c
 
     def acq_data(self) -> dict:
-        """This create a dictionary of all the values created by the class. This
-        makes it very easy to concentatenate the data from multiple
-        acquisitions together.
-
-        Returns:
-            dict: dictionary of acquisition attributes
-        """
-        if np.isnan(self.peaks[0]):
-            num_spks = np.nan
-        else:
-            num_spks = len(self.peaks)
-        current_clamp_dict = {
-            "Acquisition": self.acq_number,
-            "Cycle": self.cycle,
-            "Pulse pattern": self.pulse_pattern,
-            "Pulse amp (pA)": self.pulse_amp,
-            "Ramp": self.ramp,
-            "Epoch": self.epoch,
-            "Baseline mean (pA)": self.baseline_mean,
-            "Pulse start (ms)": float(self._pulse_start) / self.s_r_c,
-            "Delta V (mV)": self.delta_v,
-            "Voltage sag (mV)": self.voltage_sag,
-            "Spike threshold (mV)": self.spike_threshold,
-            "Spike threshold (ms)": self.spike_threshold_x(),
-            "Spike peak volt (mV)": self.peak_volt,
-            "Spike time (ms)": self.first_peak_time(),
-            "Hertz": self.hertz_exact(),
-            "IEI": self.iei_mean,
-            "Num spikes": num_spks,
-            "Spike width (ms)": self.spike_width(),
-            "Max AP vel (mV/ms)": self.max_velocity_y,
-            "Max AP vel time (ms)": float(self.max_velocity_x) / self.s_r_c,
-            "Min AP vel (mV/ms)": self.min_velocity_y,
-            "Min AP vel time (ms)": float(self.min_velocity_x) / self.s_r_c,
-            "Spike freq adapt": self.spike_adapt,
-            "Local sfa": self.local_var,
-            "Divisor sfa": self.sfa_divisor,
-            "Peak AHP (mV)": self.ahp_y,
-            "Peak AHP (ms)": self.ahp_x,
-            "Ramp rheobase (pA)": self.ramp_rheo,
-            "Baseline stability": self.baseline_stability,
-        }
-        return current_clamp_dict
+        pass

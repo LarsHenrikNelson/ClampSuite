@@ -1,99 +1,46 @@
 import numpy as np
 from scipy import signal
 
+KEYS = ["hw_left", "hw_right", "hw_y", "fw_left", "fw_right", "fw_y"]
 
-def spk_half_width(
-    voltages: np.array, peak_x: int, spike_threshold: float, start: int, end: int
-):
+
+def find_spk_width(voltages: np.array, start: int, end: int):
     volts = np.asarray(voltages[int(start) : int(end)])
+    spike_threshold = voltages[start]
     masked_array = volts.copy()
     mask = np.array(volts > spike_threshold)
+    peak_x = np.argmax(volts)
     masked_array[~mask] = spike_threshold
-    width = signal.peak_widths(masked_array, [int(peak_x - start)], rel_height=0.5)
-    width[2][0] += start
-    width[3][0] += start
-    width = np.array([width[2][0], width[3][0], width[1][0]])
-    return width
-
-
-def spk_width(voltages: np.array, spike_threshold: float, start: int, end: int):
-    volts = np.asarray(voltages[int(start) : int(end)])
-    x = np.arange(len(volts))
-    xvals = np.linspace(x[0], x[-1], num=x.size * 10)
-    yinterp = np.interp(xvals, x, volts)
-    indices = np.where(yinterp > spike_threshold)[0]
-    splits = np.where(np.diff(indices) > 1)[0]
-    if len(splits) > 0:
-        indices = indices[: splits[0]]
-    adj_indices = indices / 10
-    width = np.array(
-        [
-            adj_indices[0] + start,
-            adj_indices[-1] + start,
-            yinterp[indices[0]],
-            yinterp[indices[-1]],
-        ]
+    hw = signal.peak_widths(masked_array, [peak_x], rel_height=0.5)
+    fw = signal.peak_widths(masked_array, [peak_x], rel_height=1)
+    return (
+        hw[2][0] + start,
+        hw[3][0] + start,
+        hw[1][0],
+        fw[2][0] + start,
+        fw[3][0] + start,
+        fw[1][0],
     )
-    return width
-
-
-def spk_auc(voltages: np.array, spike_threshold: float, start: int, end: int):
-    volts = np.asarray(voltages[int(start) : int(end)])
-    x = np.arange(len(volts))
-    xvals = np.linspace(x[0], x[-1], num=x.size * 10)
-    yinterp = np.interp(xvals, x, volts)
-    indices = np.where(yinterp > spike_threshold)[0]
-    splits = np.where(np.diff(indices) > 1)[0]
-    if len(splits) > 0:
-        indices = indices[: splits[0]]
-    yinterp = yinterp - yinterp[indices[0]]
-    peak = np.argmax(yinterp)
-    auc = np.array(
-        [
-            np.trapezoid(yinterp[indices[:-1]], dx=x[1] / 10 - x[0] / 10),
-            np.trapezoid(yinterp[indices[0] : peak], dx=x[1] / 10 - x[0] / 10),
-            np.trapezoid(yinterp[peak : indices[-1]], dx=x[1] / 10 - x[0] / 10),
-        ]
-    )
-    return auc
 
 
 def find_all_spk_widths(
-    voltages: np.ndarray,
-    peaks: np.ndarray,
-    spike_thresholds: np.ndarray,
-    pulse_end: int,
-    end_offset: int = 2000,
+    voltages: np.ndarray, spike_thresholds: np.ndarray, pulse_end: int
 ):
-    hws = np.zeros((len(peaks), 3))
-    fws = np.zeros((len(peaks), 4))
-    auc = np.zeros((len(peaks), 3))
-    for index in range(len(peaks)):
-        if index < (len(peaks) - 1):
-            end = spike_thresholds[index + 1, 0]
+    width = {key: np.zeros(len(spike_thresholds)) for key in KEYS}
+    for index in range(len(spike_thresholds)):
+        if index < (len(spike_thresholds) - 1):
+            end = spike_thresholds[index + 1]
         else:
-            # Adding end_offset samples (or 2 ms) to the end helps with spikes that occur just before the end of the acquisition
-            if (pulse_end - spike_thresholds[index, 0]) < end_offset:
-                end = spike_thresholds[index, 0] + end_offset
+            # Adding 2000 samples (or 2 ms) to the end helps with spikes that occur just before the end of the acquisition
+            if (pulse_end - spike_thresholds[index]) < 2000:
+                end = spike_thresholds[index] + 2000
             else:
                 end = pulse_end
-        hws[index] = spk_half_width(
+        output = find_spk_width(
             voltages,
-            peaks[index],
-            spike_thresholds[index, 1],
-            spike_thresholds[index, 0],
+            spike_thresholds[index],
             end,
         )
-        fws[index] = spk_width(
-            voltages,
-            spike_thresholds[index, 1],
-            spike_thresholds[index, 0],
-            end,
-        )
-        auc[index] = spk_auc(
-            voltages,
-            spike_thresholds[index, 1],
-            spike_thresholds[index, 0],
-            end,
-        )
-    return hws, fws, auc
+        for key, value in zip(KEYS, output):
+            width[key][index] = value
+    return width

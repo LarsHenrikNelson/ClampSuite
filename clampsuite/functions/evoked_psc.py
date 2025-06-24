@@ -1,7 +1,7 @@
 from typing import Literal, TypedDict
 
 import numpy as np
-from curve_fit.psc_fit import _detect_pos_neg, _fit_psc, psc_sexp
+from .curve_fit.psc_fit import _detect_pos_neg, _fit_psc, psc_sexp
 from scipy import signal
 
 

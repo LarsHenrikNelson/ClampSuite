@@ -1,5 +1,7 @@
 import numpy as np
 
+KEYS = ["min_velocity_pos", "min_velocity", "max_velocity_pos", "max_velocity"]
+
 
 def spk_velocity(dv: np.ndarray, start: int, end: int):
     min_pos = np.argmin(dv[start:end]) + start
@@ -15,8 +17,7 @@ def find_all_spk_velocities(
     pulse_end: int,
     end_offset: int = 2000,
 ):
-    keys = ["min_velocity_pos", "min_velocity", "max_velocity_pos", "max_velocity"]
-    velocity_measures = {key: np.zeros(spike_thresholds.size) for key in keys}
+    velocity_measures = {key: np.zeros(spike_thresholds.size) for key in KEYS}
     dv = np.diff(voltages)
     for index in range(spike_thresholds.size):
         if index < (len(spike_thresholds) - 1):
@@ -27,7 +28,7 @@ def find_all_spk_velocities(
                 end = spike_thresholds[index, 0] + end_offset
             else:
                 end = pulse_end
-            output = spk_velocity(dv=dv, start=spike_thresholds[index, 0], end=end)
-            for key, value in zip(keys, output):
-                velocity_measures[key][index] = value
+        output = spk_velocity(dv=dv, start=spike_thresholds[index, 0], end=end)
+        for key, value in zip(KEYS, output):
+            velocity_measures[key][index] = value
     return velocity_measures
