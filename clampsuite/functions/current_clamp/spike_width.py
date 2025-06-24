@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import signal
 
-KEYS = ["hw_left", "hw_right", "hw_y", "fw_left", "fw_right", "fw_y"]
+WIDTH_KEYS = ["hw_left", "hw_right", "hw_y", "fw_left", "fw_right", "fw_y"]
 
 
 def find_spk_width(voltages: np.array, start: int, end: int):
@@ -29,7 +29,7 @@ def find_all_spk_widths(
     pulse_end: int,
     offset: int = 2000,
 ):
-    width = {key: np.zeros(len(spike_thresholds)) for key in KEYS}
+    width = {key: np.zeros(len(spike_thresholds)) for key in WIDTH_KEYS}
     for index in range(len(spike_thresholds)):
         if index < (len(spike_thresholds) - 1):
             end = spike_thresholds[index + 1]
@@ -44,6 +44,6 @@ def find_all_spk_widths(
             spike_thresholds[index],
             end,
         )
-        for key, value in zip(KEYS, output):
+        for key, value in zip(WIDTH_KEYS, output):
             width[key][index] = value
     return width

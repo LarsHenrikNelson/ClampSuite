@@ -8,6 +8,7 @@ from ..functions.current_clamp import (
     find_all_ahps,
     find_all_spk_auc,
     find_all_spk_thresholds,
+    find_all_spk_velocities,
     find_all_spk_widths,
     voltage_sag,
 )
@@ -21,27 +22,32 @@ class CurrentClampAcq:
         self.s_r_c = fs / 1000
         self.pulse_amp = pulse_amp
 
-        self.analysis_variables = {}
-        self.analysis_variables["baseline_v"] = None
-        self.analysis_variables["delta_v"] = None
-        self.analysis_variables["hertz"] = 0.0
-        self.analysis_variables["peak_index"] = None
-        self.analysis_variables["threshold_index"] = None
-        self.analysis_variables["hw_left"] = None
-        self.analysis_variables["hw_right"] = None
-        self.analysis_variables["hw_y"] = None
-        self.analysis_variables["fw_left"] = None
-        self.analysis_variables["fw_right"] = None
-        self.analysis_variables["fw_y"] = None
-        self.analysis_variables["auc"] = None
-        self.analysis_variables["auc_left"] = None
-        self.analysis_variables["auc_right"] = None
-        self.analysis_variables["ahp_index"] = None
-        self.analysis_variables["velocity"] = None
-        self.analysis_variables["mem_tau_est"] = None
-        self.analysis_variables["sag"] = None
-        self.analysis_variables["sag_loc"] = None
-        self.analysis_variables["baseline_stability"] = None
+        self._analysis_variables = {}
+        self._analysis_variables["baseline_v"] = None
+        self._analysis_variables["delta_v"] = None
+        self._analysis_variables["hertz"] = 0.0
+        self._analysis_variables["iei"] = 0.0
+        self._analysis_variables["peak_index"] = None
+        self._analysis_variables["threshold_index"] = None
+        self._analysis_variables["hw_left"] = None
+        self._analysis_variables["hw_right"] = None
+        self._analysis_variables["hw_y"] = None
+        self._analysis_variables["fw_left"] = None
+        self._analysis_variables["fw_right"] = None
+        self._analysis_variables["fw_y"] = None
+        self._analysis_variables["auc"] = None
+        self._analysis_variables["auc_left"] = None
+        self._analysis_variables["auc_right"] = None
+        self._analysis_variables["ahp_index"] = None
+        self._analysis_variables["mem_tau_est"] = None
+        self._analysis_variables["sag"] = None
+        self._analysis_variables["sag_loc"] = None
+        self._analysis_variables["baseline_stability"] = None
+        self._analysis_variables["min_velocity_pos"] = None
+        self._analysis_variables["min_velocity"] = None
+        self._analysis_variables["max_velocity_pos"] = None
+        self._analysis_variables["max_velocity"] = None
+        self._analysis_variables["rebound_spike"] = False
 
     def analyze(
         self,
@@ -72,7 +78,7 @@ class CurrentClampAcq:
         self.offset = int(offset * self.s_r_c)
 
         # Analysis functions
-        self.analysis_variables["baseline_v"] = np.mean(
+        self._analysis_variables["baseline_v"] = np.mean(
             self.array[self.baseline_start : self.baseline_end]
         )
         peak_index, _ = signal.find_peaks(
@@ -81,9 +87,14 @@ class CurrentClampAcq:
             prominence=int(1 * self.s_r_c),
         )
         peak_index += self.pulse_start
-        self.analysis_variables["peak_index"] = peak_index
+        self._analysis_variables["peak_index"] = peak_index
+        self._analysis_variables["hertz"] = len(peak_index) / (
+            (self.pulse_end - self.pulse_start) / self.fs
+        )
+        if len(peak_index) > 1:
+            self._analysis_variables["iei"] = np.mean(np.diff(peak_index / self.fs))
         if peak_index is not None:
-            self.analysis_variables.update(
+            self._analysis_variables.update(
                 find_all_spk_thresholds(
                     self.array,
                     peak_index,
@@ -92,39 +103,55 @@ class CurrentClampAcq:
                     self.threshold_method,
                 )
             )
-            self.analysis_variables.update(
+            self._analysis_variables.update(
                 find_all_ahps(self.array, peak_index, self.pulse_end)
             )
-            self.analysis_variables.update(
+            self._analysis_variables.update(
                 find_all_spk_widths(
                     self.array,
-                    self.analysis_variables["threshold_index"],
+                    self._analysis_variables["threshold_index"],
                     self.pulse_end,
                     self.offset,
                 )
             )
-            self.analysis_variables.update(
+            self._analysis_variables.update(
                 find_all_spk_auc(
                     self.array,
-                    self.analysis_variables["threshold_index"],
+                    self._analysis_variables["threshold_index"],
+                    self.pulse_end,
+                    self.offset,
+                )
+            )
+            self._analysis_variables.update(
+                find_all_spk_velocities(
+                    self.array,
+                    self._analysis_variables["threshold_index"],
                     self.pulse_end,
                     self.offset,
                 )
             )
 
-        self.analysis_variables["delta_v"] = self.get_delta_v(peak_index)
+        self._analysis_variables["delta_v"] = self.get_delta_v(peak_index)
 
         if self.pulse_amp < 0:
-            self.analysis_variables.update(
+            self._analysis_variables.update(
                 voltage_sag(self.array, self.pulse_start, self.pulse_end)
             )
         else:
-            self.analysis_variables["sag"] = None
-            self.analysis_variables["sag_loc"] = None
+            self._analysis_variables["sag"] = None
+            self._analysis_variables["sag_loc"] = None
 
-        self.analysis_variables["baseline_stability"] = baseline_stability(
+        self._analysis_variables["baseline_stability"] = baseline_stability(
             self.array, self.pulse_start, self.pulse_end
         )
+
+        rebound_spikes, _ = signal.find_peaks(
+            self.array[self.pulse_end :],
+            height=self.min_spike_voltage,
+            prominence=int(1 * self.s_r_c),
+        )
+        if len(rebound_spikes) > 0:
+            self._analysis_variables["rebound_spike"] = True
 
     def get_delta_v(self, peaks):
         """This function finds the delta-v for a pulse. It simply takes the mean
@@ -141,8 +168,8 @@ class CurrentClampAcq:
                 self.side,
             )
         else:
-            index = self.analysis_variables["threshold_index"][0]
-            delta_v = self.array[index] - self.analysis_variables["baseline_v"]
+            index = self._analysis_variables["threshold_index"][0]
+            delta_v = self.array[index] - self._analysis_variables["baseline_v"]
         # if self.ramp == "0":
         #     if len(self.peak_index) > 0:
         #         delta_v = delta(
@@ -153,8 +180,8 @@ class CurrentClampAcq:
         #             self.side,
         #         )
         #     else:
-        #         index = self.analysis_variables["threshold_index"][0]
-        #         delta_v = self.array[index] - self.analysis_variables["baseline_v"]
+        #         index = self._analysis_variables["threshold_index"][0]
+        #         delta_v = self.array[index] - self._analysis_variables["baseline_v"]
         # elif self.ramp == "1":
         #     delta_v = np.nan
         return delta_v
@@ -294,4 +321,4 @@ class CurrentClampAcq:
         return np.arange(0, len(self.array)) / self.s_r_c
 
     def acq_data(self) -> dict:
-        pass
+        return self._analysis_variables

@@ -3,7 +3,7 @@ from typing import Literal, TypeAlias
 import numpy as np
 from scipy import signal
 
-KEYS = ["threshold_index"]
+THRESHOLD_KEYS = ["threshold_index"]
 
 
 def third_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):

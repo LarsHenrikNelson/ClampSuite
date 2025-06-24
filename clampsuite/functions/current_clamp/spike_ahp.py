@@ -1,6 +1,6 @@
 import numpy as np
 
-KEYS = ["ahp_index"]
+AHP_KEYS = ["ahp_index"]
 
 
 def find_all_ahps(voltages: np.ndarray, peaks: np.ndarray, pulse_end: int):

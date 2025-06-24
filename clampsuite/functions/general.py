@@ -11,7 +11,7 @@ def delta(
     side: Literal["left", "right"] = "right",
     baseline_mean: np.ndarray | None = None,
 ):
-    length = (pulse_start - pulse_end) * proportion
+    length = int((pulse_end - pulse_start) * proportion)
     if side == "left":
         end = pulse_start + length
         start = pulse_start

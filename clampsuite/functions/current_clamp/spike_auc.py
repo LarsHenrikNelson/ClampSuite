@@ -1,6 +1,6 @@
 import numpy as np
 
-KEYS = ["auc", "auc_left", "auc_right"]
+AUC_KEYS = ["auc", "auc_left", "auc_right"]
 
 
 def find_spk_auc(voltages: np.array, start: int, end: int):
@@ -29,7 +29,7 @@ def find_all_spk_auc(
     pulse_end: int,
     offset: int = 2000,
 ):
-    auc = {key: np.zeros(len(spike_thresholds)) for key in KEYS}
+    auc = {key: np.zeros(len(spike_thresholds)) for key in AUC_KEYS}
     for index in range(len(spike_thresholds)):
         if index < (len(spike_thresholds) - 1):
             end = spike_thresholds[index + 1]
@@ -44,6 +44,6 @@ def find_all_spk_auc(
             spike_thresholds[index],
             end,
         )
-        for key, value in zip(KEYS, output):
+        for key, value in zip(AUC_KEYS, output):
             auc[key][index] = value
     return auc
