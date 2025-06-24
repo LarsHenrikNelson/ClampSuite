@@ -146,7 +146,7 @@ class ScanImageLoader(BaseLoader):
         analog_input = matfile1[name]["UserData"]["ai"]
         acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
         acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
-        acq_dict["s_r_c"] = int(acq_dict["sample_rate"] / 1000)
+        s_r_c = int(acq_dict["sample_rate"] / 1000)
         acq_dict["pulse_amp"] = 0.0
 
         acq_dict["pulse_pattern"] = re.findall(
@@ -157,11 +157,11 @@ class ScanImageLoader(BaseLoader):
         )
 
         acq_dict["pulse_amp"] = amp
-        acq_dict["pulse_start"] = int(start * acq_dict["s_r_c"])
+        acq_dict["pulse_start"] = int(start * s_r_c)
         if end > 0:
-            acq_dict["pulse_end"] = int(end * acq_dict["s_r_c"])
+            acq_dict["pulse_end"] = int(end * s_r_c)
         else:
-            acq_dict["pulse_end"] = int(duration * acq_dict["s_r_c"])
+            acq_dict["pulse_end"] = int(duration * s_r_c)
             acq_dict["pulse_end"] = duration
         acq_dict["ramp"] = ramp
         acq_dict["pulse_amp"] = amp
@@ -169,8 +169,8 @@ class ScanImageLoader(BaseLoader):
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(
             data_string, "RCCheck='(.*);'"
         )
-        acq_dict["rc_check_pulse_start"] = int(rc_start * acq_dict["s_r_c"])
-        acq_dict["rc_check_pulse_end"] = int(rc_end * acq_dict["s_r_c"])
+        acq_dict["rc_check_pulse_start"] = int(rc_start * s_r_c)
+        acq_dict["rc_check_pulse_end"] = int(rc_end * s_r_c)
         acq_dict["rc_amp"] = rc_amp
         return acq_dict
 

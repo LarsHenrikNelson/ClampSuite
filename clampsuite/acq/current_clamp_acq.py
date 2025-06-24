@@ -54,12 +54,12 @@ class CurrentClampAcq:
         min_spikes: int = 2,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
+        offset: float = 200.0,
     ):
         if pulse_end < pulse_start:
             raise ValueError("pulse_end must be greater than pulse_start")
         if baseline_end < baseline_start:
             raise ValueError("baseline_end must be greater than baseline_start")
-        self.analysis_settings = {}
         self.min_spike_voltage = min_spike_voltage
         self.threshold_method = threshold_method
         self.min_spikes = min_spikes
@@ -69,6 +69,7 @@ class CurrentClampAcq:
         self.baseline_end = baseline_end
         self.pulse_end = pulse_end
         self.pulse_start = pulse_start
+        self.offset = int(offset * self.s_r_c)
 
         # Analysis functions
         self.analysis_variables["baseline_v"] = np.mean(
@@ -99,6 +100,7 @@ class CurrentClampAcq:
                     self.array,
                     self.analysis_variables["threshold_index"],
                     self.pulse_end,
+                    self.offset,
                 )
             )
             self.analysis_variables.update(
@@ -106,6 +108,7 @@ class CurrentClampAcq:
                     self.array,
                     self.analysis_variables["threshold_index"],
                     self.pulse_end,
+                    self.offset,
                 )
             )
 

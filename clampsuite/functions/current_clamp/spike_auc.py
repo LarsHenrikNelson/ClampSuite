@@ -1,6 +1,6 @@
 import numpy as np
 
-KEYS = ["auc", "left_auc", "right_auc"]
+KEYS = ["auc", "auc_left", "auc_right"]
 
 
 def find_spk_auc(voltages: np.array, start: int, end: int):
@@ -17,21 +17,26 @@ def find_spk_auc(voltages: np.array, start: int, end: int):
     yinterp = yinterp - yinterp[indices[0]]
     auc = (
         np.trapezoid(yinterp[indices[:-1]], dx=x[1] / 10 - x[0] / 10),
-        np.trapezoid(yinterp[indices[0] : peak], dx=x[1] / 10 - x[0] / 10),
-        np.trapezoid(yinterp[peak : indices[-1]], dx=x[1] / 10 - x[0] / 10),
+        np.trapezoid(yinterp[indices[0] : peak + 1], dx=x[1] / 10 - x[0] / 10),
+        np.trapezoid(yinterp[peak : indices[-1] + 1], dx=x[1] / 10 - x[0] / 10),
     )
     return auc
 
 
-def find_all_spk_auc(voltages, spike_thresholds, pulse_end):
+def find_all_spk_auc(
+    voltages: np.ndarray,
+    spike_thresholds: np.ndarray,
+    pulse_end: int,
+    offset: int = 2000,
+):
     auc = {key: np.zeros(len(spike_thresholds)) for key in KEYS}
     for index in range(len(spike_thresholds)):
         if index < (len(spike_thresholds) - 1):
             end = spike_thresholds[index + 1]
         else:
-            # Adding 2000 samples (or 2 ms) to the end helps with spikes that occur just before the end of the acquisition
-            if (pulse_end - spike_thresholds[index]) < 2000:
-                end = spike_thresholds[index] + 2000
+            # Adding 200 samples (or 2 ms) to the end helps with spikes that occur just before the end of the acquisition
+            if (pulse_end - spike_thresholds[index]) < offset:
+                end = spike_thresholds[index] + offset
             else:
                 end = pulse_end
         output = find_spk_auc(
