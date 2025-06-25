@@ -3,7 +3,7 @@ from typing import Literal, TypeAlias
 import numpy as np
 from scipy import signal
 
-THRESHOLD_KEYS = ["threshold_index"]
+THRESHOLD_KEYS = ["threshold_index", "threshold_voltages"]
 
 
 def third_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
@@ -46,11 +46,12 @@ def method_ii(derivatives: dict[str, np.ndarray], start: int, end: int):
 
 def first_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
     dv = derivatives["dv"][start:end]
+    min_index = derivatives["v"][start:end].argmin()
     base = dv.argmax()
     index = base - 1
     val = dv[base] - dv[index]
     mm = dv[base] / 10
-    while val > 0 or dv[base] > mm:
+    while val >= min_index or dv[base] > mm:
         index -= 1
         base -= 1
         val = dv[base] - dv[index]
@@ -61,10 +62,11 @@ def first_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
 
 def second_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
     ddv = derivatives["ddv"][start:end]
+    min_index = derivatives["v"][start:end].argmin()
     base = ddv.argmax()
     index = base - 1
     val = ddv[base] - ddv[index]
-    while val > 0:
+    while val > min_index:
         index -= 1
         base -= 1
         val = ddv[base] - ddv[index]
@@ -114,24 +116,28 @@ def find_all_spk_thresholds(
     voltages: np.ndarray,
     peaks: np.ndarray,
     pulse_start: int = 0,
-    pulse_end: int = -1,
     threshold_method: ThresholdType = "third_derivative",
 ):
     output = np.zeros(len(peaks), dtype=int)
-    start_index = pulse_start
     dv = np.gradient(voltages)
     ddv = np.gradient(dv)
     dddv = np.gradient(ddv)
     derivatives = {"v": voltages, "dv": dv, "ddv": ddv, "dddv": dddv}
     thresh_func = ThresholdFunctions[threshold_method]
     for index in range(len(peaks)):
-        if index < (len(peaks) - 1):
-            end_index = peaks[index]
+        end_index = peaks[index]
+        if index > 0:
+            start_index = (
+                voltages[peaks[index - 1] : peaks[index]].argmin() + peaks[index - 1]
+            )
         else:
-            end_index = pulse_end
+            start_index = int((peaks[index] - pulse_start) * 0.1) + pulse_start
         try:
             output[index] = thresh_func(derivatives, start_index, end_index)
         except IndexError:
-            output[index] = np.nan
-        start_index = peaks[index]
-    return {"threshold_index": output}
+            output[index] = ThresholdFunctions["first_derivative"](
+                derivatives, start_index, end_index
+            )
+        except IndexError:
+            output[index] = start_index
+    return {"threshold_index": output, "threshold_voltages": voltages[output]}

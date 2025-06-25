@@ -8,7 +8,7 @@ def voltage_sag(
     length = pulse_end - pulse_start
     p50 = int(length * proportion) + pulse_start
     sag_loc = np.argmin(array[pulse_start:p50]) + pulse_start
-    output["sag_loc"] = sag_loc
+    output["sag_index"] = sag_loc
     sag_v = array[sag_loc]
     injection_v = np.mean(array[p50:pulse_end])
     output["sag"] = sag_v - injection_v

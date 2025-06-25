@@ -17,17 +17,19 @@ def local_sfa(peaks):
 
     """
 
-    if len(peaks) < 2:
+    if len(peaks) < 3:
         local_var = np.nan
     else:
         iei = np.diff(peaks)
         isi_shift = iei[1:]
         isi_cut = iei[:-1]
         n_minus_1 = len(isi_cut)
-        local_var = (
-            np.sum((3 * (isi_cut - isi_shift) ** 2) / (isi_cut + isi_shift) ** 2)
-            / n_minus_1
-        )
+        divisor = (isi_cut + isi_shift) ** 2
+        has_zeros = np.any(divisor == 0)
+        if not has_zeros:
+            local_var = np.sum((3 * (isi_cut - isi_shift) ** 2) / divisor) / n_minus_1
+        else:
+            local_var = np.nan
     return local_var
 
 
@@ -54,21 +56,31 @@ def ai_sfa(peaks):
     db47e379f7f9bfac455cf2301def0319291ad361
     """
 
-    if len(peaks) > 1:
+    if len(peaks) < 3:
         spike_adapt = np.nan
     else:
         iei = np.diff(peaks)
         if np.allclose((iei[1:] + iei[:-1]), 0.0):
             spike_adapt = np.nan
-        norm_diffs = (iei[1:] - iei[:-1]) / (iei[1:] + iei[:-1])
-        norm_diffs[(iei[1:] == 0) & (iei[:-1] == 0)] = 0.0
-        spike_adapt = np.nanmean(norm_diffs)
+        else:
+            norm_diffs = (iei[1:] - iei[:-1]) / (iei[1:] + iei[:-1])
+            norm_diffs[(iei[1:] == 0) & (iei[:-1] == 0)] = 0.0
+            spike_adapt = np.nanmean(norm_diffs)
     return spike_adapt
 
 
 def adaptation_index(peaks):
     if len(peaks) > 2:
         adapt = peaks[0] / peaks[1]
+    else:
+        adapt = np.nan
+    return adapt
+
+
+def coefficient_of_variation(peaks):
+    if len(peaks) > 1:
+        iei = np.diff(peaks)
+        adapt = np.std(iei) / np.mean(iei)
     else:
         adapt = np.nan
     return adapt

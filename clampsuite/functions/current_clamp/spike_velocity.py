@@ -1,6 +1,11 @@
 import numpy as np
 
-VELOCITY_KEYS = ["min_velocity_pos", "min_velocity", "max_velocity_pos", "max_velocity"]
+VELOCITY_KEYS = [
+    "min_velocity_index",
+    "min_velocity",
+    "max_velocity_index",
+    "max_velocity",
+]
 
 
 def spk_velocity(dv: np.ndarray, start: int, end: int):
@@ -15,7 +20,6 @@ def find_all_spk_velocities(
     voltages: np.ndarray,
     spike_thresholds: np.ndarray,
     pulse_end: int,
-    end_offset: int = 2000,
 ):
     velocity_measures = {}
     for key in VELOCITY_KEYS:
@@ -29,9 +33,12 @@ def find_all_spk_velocities(
         if index < (len(spike_thresholds) - 1):
             end = spike_thresholds[index + 1]
         else:
-            # Adding end_offset samples (or 2 ms) to the end helps with spikes that occur just before the end of the acquisition
-            if (pulse_end - spike_thresholds[index]) < end_offset:
-                end = spike_thresholds[index] + end_offset
+            if index != 0:
+                temp = (
+                    int((spike_thresholds[index] - spike_thresholds[index - 1]) * 1.25)
+                    + spike_thresholds[index]
+                )
+                end = min(temp, pulse_end)
             else:
                 end = pulse_end
         output = spk_velocity(dv=dv, start=spike_thresholds[index], end=end)

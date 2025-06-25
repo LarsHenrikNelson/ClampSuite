@@ -27,16 +27,18 @@ def find_all_spk_widths(
     voltages: np.ndarray,
     spike_thresholds: np.ndarray,
     pulse_end: int,
-    offset: int = 2000,
 ):
     width = {key: np.zeros(len(spike_thresholds)) for key in WIDTH_KEYS}
     for index in range(len(spike_thresholds)):
         if index < (len(spike_thresholds) - 1):
             end = spike_thresholds[index + 1]
         else:
-            # Adding 2000 samples (or 200 ms) to the end helps with spikes that occur just before the end of the acquisition
-            if (pulse_end - spike_thresholds[index]) < offset:
-                end = spike_thresholds[index] + offset
+            if index != 0:
+                temp = (
+                    int((spike_thresholds[index] - spike_thresholds[index - 1]) * 1.25)
+                    + spike_thresholds[index]
+                )
+                end = min(temp, pulse_end)
             else:
                 end = pulse_end
         output = find_spk_width(
