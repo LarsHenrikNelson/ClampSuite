@@ -3,23 +3,26 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from scipy.stats import linregress
 
 from . import final_analysis
-from ..acq import Acquisition
+from ..acq import CurrentClampAcq
 from ..functions.curve_fit.iv_curve import fit_iv
+from ..functions.utilities import map_keys
 
 
-class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_clamp"):
-    def analyze(self, acq_dict: dict, iv_start: int = 1, iv_end: int = 6, debug=False):
-        self.iv_start = iv_start
-        self.iv_end = iv_end
+class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
+    def __init__(self, acq_dict: dict[int, CurrentClampAcq]):
+        self.iv_start = 0
+        self.iv_end = -1
         self.df_dict = {}
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
+        self.acq_dict = acq_dict
+
+    def analyze(self, iv_start: int = 1, iv_end: int = 6, debug=False):
         if not debug:
-            self._analyze(acq_dict)
+            self._analyze(self.acq_dict)
 
     def _analyze(self, acq_dict: dict):
         self.create_raw_data(acq_dict)
@@ -44,16 +47,23 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis, analysis="current_
                 if i == "Ramp APs":
                     self.ramp_ap = True
 
-    def create_raw_data(self, acq_dict: dict[int, Acquisition]):
-        raw_df = pd.DataFrame([acq_dict[i].acq_data() for i in acq_dict.keys()])
-        raw_df["Epoch"] = pd.to_numeric(raw_df["Epoch"])
-        raw_df["Pulse pattern"] = pd.to_numeric(raw_df["Pulse pattern"])
-        raw_df["Pulse amp (pA)"] = pd.to_numeric(raw_df["Pulse amp (pA)"])
-        raw_df["Ramp"] = pd.to_numeric(raw_df["Ramp"])
-        raw_df["Acquisition"] = pd.to_numeric(raw_df["Acquisition"])
-        raw_df.sort_values(["Epoch", "Ramp", "Cycle", "Pulse amp (pA)"], inplace=True)
-        raw_df.reset_index(drop=True, inplace=True)
-        self.df_dict["Raw data"] = raw_df
+    def create_raw_data(self, acq_dict: dict[int, CurrentClampAcq]):
+        spk_params = []
+        acq_params = []
+        for value in acq_dict.values():
+            acq_data, spk_data = value.data()
+            spk_params.append(pd.DataFrame(spk_data))
+            acq_params.append(acq_data)
+        spk_params = pd.concat(spk_params)
+        key_mapping = map_keys(spk_params.columns())
+        spk_params = spk_params.rename(columns=key_mapping)
+
+        acq_params = pd.DataFrame(acq_params)
+        key_mapping = map_keys(acq_params.columns())
+        acq_params = acq_params.rename(columns=key_mapping)
+
+        self.df_dict["Spike parameters"] = spk_params
+        self.df_dict["Acq parameters"] = acq_params
 
     def create_average_data(self):
         ave_df = (

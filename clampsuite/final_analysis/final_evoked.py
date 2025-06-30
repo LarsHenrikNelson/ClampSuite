@@ -5,7 +5,7 @@ import pandas as pd
 from . import final_analysis
 
 
-class FinalEvokedCurrent(final_analysis.FinalAnalysis, analysis="oepsc"):
+class FinalEvokedCurrent(final_analysis.FinalAnalysis):
     def analyze(
         self,
         o_acq_dict: Union[dict, None] = None,

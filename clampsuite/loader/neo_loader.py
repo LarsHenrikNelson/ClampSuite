@@ -34,15 +34,15 @@ class NeoLoader(BaseLoader):
         threshold = np.mean(abs_tt[ppeaks])
         indexes = np.where(abs_tt > threshold * 3)[0]
         if len(indexes) > 0:
-            acq_dict["pulse_start"] = indexes[0]
+            acq_dict["pulse_start_index"] = indexes[0]
             if len(indexes) > 1:
-                acq_dict["pulse_end"] = indexes[1]
+                acq_dict["pulse_end_index"] = indexes[1]
             else:
-                acq_dict["pulse_end"] = len(temp)
+                acq_dict["pulse_end_index"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
         else:
-            acq_dict["pulse_start"] = 0
-            acq_dict["pulse_end"] = len(temp)
+            acq_dict["pulse_start_index"] = 0
+            acq_dict["pulse_end_index"] = len(temp)
             acq_dict["pulse_ramp"] = "0"
             acq_dict["pulse_duration"] = 0
             acq_dict["pulse_width"] = 0
@@ -61,20 +61,18 @@ class NeoLoader(BaseLoader):
             acq_dict["time_stamp"] = time + file.segment_t_start(
                 block_index=0, seg_index=i
             )
-            acq_dict["epoch"] = str(self.epoch_count)
+            acq_dict["epoch"] = self.epoch_count
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
-            acq_dict["ramp"] = "0"
-            acq_dict["rc_check_pulse_start"] = 0
-            acq_dict["rc_check_pulse_end"] = 0
+            acq_dict["ramp"] = 0
+            acq_dict["rc_check_pulse_start_index"] = 0
+            acq_dict["rc_check_pulse_end_index"] = 0
             acq_dict["pulse_pattern"] = str(i)
             gain = file.header["signal_channels"][self.main_channel][5]
             acq_dict["array"] = self.load_segment(
                 file, i, gain=gain, channel_index=self.main_channel
             )
-            acq_dict["sample_rate"] = file.header["signal_channels"][self.main_channel][
-                2
-            ]
+            acq_dict["fs"] = file.header["signal_channels"][self.main_channel][2]
             if self.secondary_channel is not None:
                 self.process_secondary_channel(file, i, acq_dict)
             temp_dict[self.acq_count] = acq_dict
@@ -85,24 +83,25 @@ class NeoLoader(BaseLoader):
 
     def set_pulse(self, file, nacqs, acq_dict: dict):
         gain = file.header["signal_channels"][self.secondary_channel][5]
-        pulse_starts = [value["_pulse_start"] for value in acq_dict.values()]
-        pulse_ends = [value["_pulse_end"] for value in acq_dict.values()]
-        ps, ps_count = np.unique(pulse_starts, return_counts=True)
-        pe, pe_count = np.unique(pulse_ends, return_counts=True)
-        pe, pe_count = np.unique(pulse_ends, return_counts=True)
+        pulse_start_indexs = [
+            value["_pulse_start_index"] for value in acq_dict.values()
+        ]
+        pulse_end_indexs = [value["_pulse_end_index"] for value in acq_dict.values()]
+        ps, ps_count = np.unique(pulse_start_indexs, return_counts=True)
+        pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)
+        pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)
         ps = ps[np.argmax(ps_count)]
         pe = pe[np.argmax(pe_count)]
         for index, value in zip(range(nacqs), acq_dict.values()):
-            value["pulse_start"] = ps
-            value["pulse_end"] = pe
+            value["pulse_start_index"] = ps
+            value["pulse_end_index"] = pe
             gain = file.header["signal_channels"][self.secondary_channel][5]
             temp = self.load_segment(
                 file, index, gain=gain, channel_index=self.secondary_channel
             )
-            value["pulse_width"] = value["pulse_end"] - value["pulse_start"]
             value["pulse_amp"] = int(
-                np.mean(temp[value["pulse_start"] : value["pulse_end"]])
-                - np.mean(temp[: value["pulse_start"]])
+                np.mean(temp[value["pulse_start_index"] : value["pulse_end_index"]])
+                - np.mean(temp[: value["pulse_start_index"]])
             )
 
     def process_data_files(self, data_files: list):

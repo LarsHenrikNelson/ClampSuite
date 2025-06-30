@@ -1,7 +1,14 @@
 import numpy as np
 from scipy import signal
 
-WIDTH_KEYS = ["hw_left", "hw_right", "hw_y", "fw_left", "fw_right", "fw_y"]
+WIDTH_KEYS = [
+    "hw_left_index",
+    "hw_right_index",
+    "hw_mv",
+    "fw_left_index",
+    "fw_right_index",
+    "fw_mv",
+]
 
 
 def find_spk_width(voltages: np.array, start: int, end: int):

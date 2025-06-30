@@ -1,5 +1,5 @@
 import math
-from typing import Union, Literal
+from typing import Union, Literal, Iterable
 
 import numpy as np
 from numpy.random import default_rng
@@ -150,3 +150,30 @@ def create_event_array(
         if (event_index + temp_event.size) < event_array.size:
             event_array[event_index : event_index + temp_event.size] += temp_event
     return event_array
+
+
+def map_keys(keys: Iterable):
+    key_values = {"mv", "index", "pa", "hz"}
+    cap_values = {"hw", "fw", "auc", "ahp", "ai", "iei", "sfa"}
+    key_mapping = {}
+    for key in keys:
+        key_items = key.split("_")
+        temp = []
+        for k in key_items:
+            if k not in key_values:
+                if k not in cap_values:
+                    temp.append(k.capitalize())
+                else:
+                    temp.append(k.upper())
+            else:
+                if k == "index":
+                    temp.append("(ms)")
+                elif k == "pa":
+                    temp.append("(pA)")
+                elif k == "hz":
+                    temp.append("(Hz)")
+                else:
+                    temp.append("(mV)")
+        temp = " ".join(temp)
+        key_mapping[key] = temp
+    return key_mapping

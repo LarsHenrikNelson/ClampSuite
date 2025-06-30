@@ -7,7 +7,7 @@ from .spike_adaptation import (
 )
 from .spike_ahp import find_all_ahps, AHP_KEYS
 from .spike_threshold import find_all_spk_thresholds, ThresholdType, THRESHOLD_KEYS
-from .voltage_funcs import voltage_sag
+from .voltage_funcs import voltage_sag, SAG_KEYS
 from .spike_width import find_all_spk_widths, WIDTH_KEYS
 from .spike_auc import find_all_spk_auc, AUC_KEYS
 from .spike_velocity import find_all_spk_velocities, VELOCITY_KEYS

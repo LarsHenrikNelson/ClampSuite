@@ -6,10 +6,11 @@ import numpy as np
 from scipy.io import loadmat, matlab
 
 from .base_loader import BaseLoader
+from .acquisition_data import AcquisitionData
 
 
 class ScanImageLoader(BaseLoader):
-    def __init__(self, callback_func: callable):
+    def __init__(self, callback_func: callable = print):
         super().__init__(callback_func)
 
     def load_mat(self, filename: str) -> dict:
@@ -112,13 +113,13 @@ class ScanImageLoader(BaseLoader):
         temp_string = re.findall(f"pulseString_{component}=(.*?)state", data_string)
         pulse_width = 0.0
         num_pulses = 0
-        pulse_start = 0.0
+        pulse_start_index = 0.0
         isi = 0.0
         if len(temp_string) == 1:
             temp_string = temp_string[0]
-            pulse_start = re.findall("delay=(.*?);", temp_string)
-            if len(pulse_start) == 1:
-                pulse_start = float(pulse_start[0])
+            pulse_start_index = re.findall("delay=(.*?);", temp_string)
+            if len(pulse_start_index) == 1:
+                pulse_start_index = float(pulse_start_index[0])
             pulse_width = re.findall("pulseWidth=(.*?);", temp_string)
             if len(pulse_width) == 1:
                 pulse_width = float(pulse_width[0])
@@ -128,7 +129,7 @@ class ScanImageLoader(BaseLoader):
             isi = re.findall("isi=(.*?);", temp_string)
             if len(isi) == 1:
                 isi = float(isi[0])
-        return num_pulses, isi, pulse_start
+        return num_pulses, isi, pulse_start_index
 
     def load_scanimage_file(self, path: Union[str, PurePath]) -> dict:
         """
@@ -142,46 +143,44 @@ class ScanImageLoader(BaseLoader):
         acq_dict["acq_number"] = int(name.split("_")[-1])
         acq_dict["array"] = matfile1[name]["data"]
         data_string = matfile1[name]["UserData"]["headerString"]
-        acq_dict["epoch"] = re.findall(r"epoch=(\D?\d*)", data_string)[0]
+        acq_dict["epoch"] = int(re.findall(r"epoch=(\D?\d*)", data_string)[0])
         analog_input = matfile1[name]["UserData"]["ai"]
         acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
-        acq_dict["sample_rate"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
-        s_r_c = int(acq_dict["sample_rate"] / 1000)
+        acq_dict["fs"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
+        s_r_c = int(acq_dict["fs"] / 1000)
         acq_dict["pulse_amp"] = 0.0
 
-        acq_dict["pulse_pattern"] = re.findall(
-            rf"pulseToUse{analog_input}=(\D?\d*)", data_string
-        )[0]
+        acq_dict["pulse_pattern"] = int(
+            re.findall(rf"pulseToUse{analog_input}=(\D?\d*)", data_string)[0]
+        )
         amp, start, end, ramp, duration = self.find_pulse_data(
             data_string, f"pulseString_ao{analog_input}=(.*?)state"
         )
 
-        acq_dict["pulse_amp"] = amp
-        acq_dict["pulse_start"] = int(start * s_r_c)
+        acq_dict["pulse_amp"] = float(amp)
+        acq_dict["pulse_start_index"] = int(start * s_r_c)
         if end > 0:
-            acq_dict["pulse_end"] = int(end * s_r_c)
+            acq_dict["pulse_end_index"] = int(end * s_r_c)
         else:
-            acq_dict["pulse_end"] = int(duration * s_r_c)
-            acq_dict["pulse_end"] = duration
-        acq_dict["ramp"] = ramp
-        acq_dict["pulse_amp"] = amp
+            acq_dict["pulse_end_index"] = int(duration * s_r_c)
+        acq_dict["ramp"] = int(ramp)
 
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(
             data_string, "RCCheck='(.*);'"
         )
-        acq_dict["rc_check_pulse_start"] = int(rc_start * s_r_c)
-        acq_dict["rc_check_pulse_end"] = int(rc_end * s_r_c)
-        acq_dict["rc_amp"] = rc_amp
-        return acq_dict
+        acq_dict["rc_check_pulse_start_index"] = int(rc_start * s_r_c)
+        acq_dict["rc_check_pulse_end_index"] = int(rc_end * s_r_c)
+        acq_dict["rc_amp"] = float(rc_amp)
+        return AcquisitionData(**acq_dict)
 
     def set_cycle(self, acquisitions):
         rows = len(acquisitions)
         temp_data = np.zeros((rows, 5))
         for index, key in enumerate(acquisitions):
-            temp_data[index, 0] = acquisitions[key]["acq_number"]
-            temp_data[index, 1] = acquisitions[key]["epoch"]
-            temp_data[index, 2] = acquisitions[key]["pulse_amp"]
-            temp_data[index, 3] = int(acquisitions[key]["ramp"])
+            temp_data[index, 0] = acquisitions[key].acq_number
+            temp_data[index, 1] = acquisitions[key].epoch
+            temp_data[index, 2] = acquisitions[key].pulse_amp
+            temp_data[index, 3] = int(acquisitions[key].ramp)
 
         temp_data = temp_data[temp_data[:, 1].argsort()]
         temp_data = temp_data[temp_data[:, 0].argsort()]
@@ -200,7 +199,7 @@ class ScanImageLoader(BaseLoader):
             if temp_data[i, 3] == 1:
                 temp_data[i, 4] = 0
         for i in range(rows):
-            acquisitions[int(temp_data[i, 0])]["cycle"] = int(temp_data[i, 4])
+            acquisitions[int(temp_data[i, 0])].cycle = int(temp_data[i, 4])
 
     def load_files(self, file_paths: list[str | Path]):
         acquisitions = {}
@@ -208,6 +207,6 @@ class ScanImageLoader(BaseLoader):
         for count, i in enumerate(file_paths):
             acq_comp = self.load_scanimage_file(i)
             self.callback_func(f"Acquisition {count + 1} of {n_files} loaded")
-            acquisitions[int(acq_comp["acq_number"])] = acq_comp
+            acquisitions[int(acq_comp.acq_number)] = acq_comp
         self.set_cycle(acquisitions)
         return acquisitions

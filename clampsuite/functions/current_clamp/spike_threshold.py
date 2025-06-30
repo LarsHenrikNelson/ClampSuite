@@ -3,7 +3,7 @@ from typing import Literal, TypeAlias
 import numpy as np
 from scipy import signal
 
-THRESHOLD_KEYS = ["threshold_index", "threshold_voltages"]
+THRESHOLD_KEYS = ["threshold_index", "threshold_mv"]
 
 
 def third_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
@@ -140,4 +140,4 @@ def find_all_spk_thresholds(
             )
         except IndexError:
             output[index] = start_index
-    return {"threshold_index": output, "threshold_voltages": voltages[output]}
+    return {"threshold_index": output, "threshold_mv": voltages[output]}

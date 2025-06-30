@@ -1,5 +1,7 @@
 import numpy as np
 
+SAG_KEYS = ["sag_index", "sag_mv"]
+
 
 def voltage_sag(
     array: np.array, pulse_start: int, pulse_end: int, proportion: float = 0.3
@@ -11,5 +13,5 @@ def voltage_sag(
     output["sag_index"] = sag_loc
     sag_v = array[sag_loc]
     injection_v = np.mean(array[p50:pulse_end])
-    output["sag"] = sag_v - injection_v
+    output["sag_mv"] = sag_v - injection_v
     return output

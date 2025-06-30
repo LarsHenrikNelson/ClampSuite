@@ -8,7 +8,7 @@ from ..functions.curve_fit.decay_fit import s_exp_decay
 from . import final_analysis
 
 
-class FinalMiniAnalysis(final_analysis.FinalAnalysis, analysis="mini"):
+class FinalMiniAnalysis(final_analysis.FinalAnalysis):
     """
     This class is used to compile all the data from a dictionary of
     acquistions that contain mini data. The class contains the raw data, and

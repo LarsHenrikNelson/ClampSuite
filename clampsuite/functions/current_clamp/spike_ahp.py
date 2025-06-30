@@ -1,6 +1,6 @@
 import numpy as np
 
-AHP_KEYS = ["ahp_index", "ahp_voltages"]
+AHP_KEYS = ["ahp_index", "ahp_mv"]
 
 
 def find_all_ahps(voltages: np.ndarray, peaks: np.ndarray, pulse_end: int):
@@ -11,4 +11,4 @@ def find_all_ahps(voltages: np.ndarray, peaks: np.ndarray, pulse_end: int):
         else:
             t = np.argmin(voltages[peaks[index] : pulse_end]) + peaks[index]
         output[index] = t
-    return {"ahp_index": output, "ahp_voltages": voltages[output]}
+    return {"ahp_index": output, "ahp_mv": voltages[output]}
