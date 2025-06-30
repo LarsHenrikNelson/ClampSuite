@@ -8,23 +8,6 @@ class FilterError(NamedTuple):
     passed: bool
     error_message: str
 
-
-Filters = Literal[
-    "remez_2",
-    "remez_1",
-    "fir_zero_2",
-    "fir_zero_1",
-    "savgol",
-    "ewma",
-    "ewma_a",
-    "median",
-    "bessel",
-    "butterworth",
-    "bessel_zero",
-    "butterworth_zero",
-    "None",
-]
-
 Windows = Literal[
     "hann",
     "hamming",
@@ -38,13 +21,49 @@ Windows = Literal[
     "parzen",
 ]
 
+class MedianFilter(NamedTuple):
+    filter_type: str = "median"
+    order: int = 4
 
-def median_filter(array: Union[np.ndarray, list], order: int):
-    if isinstance(order, float):
-        order = int(order)
-    filt_array = signal.medfilt(array, order)
-    return filt_array
+class EWMAFilter(NamedTuple):
+    filter_type: Literal["ewma", "ewma_a"] = "ewma"
+    window: int = 30
+    sum_proportion: float = 0.5
 
+class SavgolFilter(NamedTuple):
+    filter_type = "savgol"
+    order: int = 11
+    polyorder: int = 3
+
+
+class FIRFilter(NamedTuple):
+    filter_type: Literal["fir", "fir_zero"] = "fir_zero"
+    order: int = 301
+    high_pass: int | float | None = None
+    high_width: int | float | None = None
+    low_pass: int | float | None = 500
+    low_width: int | float | None = 200
+    window: Windows = "hann",
+    beta_sigma: float = None
+
+class RemezFilter(NamedTuple):
+    filter_type: Literal["remez", "remez_zero"] = "remez_zero"
+    order: int = 301
+    high_pass: int | float | None = None
+    high_width: int | float | None = None
+    low_pass: int | float | None = 500
+    low_width: int | float | None = 200
+
+class IIRFilter(NamedTuple):
+    filter_type: Literal[
+        "bessel",
+        "butterworth",
+        "bessel_zero",
+        "butterworth_zero"
+    ]
+    order: int = 4
+    high_pass: int | float | None = None
+    low_pass: int | float | None = 500
 
 def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate):
     if high_pass is not None and high_width is not None:
@@ -110,404 +129,148 @@ def check_iir_filter_input(high_pass, low_pass, sample_rate):
             return FilterError(False, "High_pass must be less than low_pass.")
     return FilterError(True, "")
 
-
-def bessel(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.bessel(
-            order,
-            Wn=[high_pass, low_pass],
-            btype="bandpass",
-            output="sos",
-            fs=sample_rate,
-        )
-        filt_array = signal.sosfilt(sos, array)
-        return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.bessel(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.bessel(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
+def median_filter(array: Union[np.ndarray, list], filter_settings: MedianFilter):
+    if isinstance(filter_settings.order, float):
+        order = int(filter_settings.order)
+    filt_array = signal.medfilt(array, order)
     return filt_array
 
-
-def bessel_zero(
+def iir_filter(
     array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
+    filter_settings: IIRFilter,
 ):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.bessel(
-            order,
-            Wn=[high_pass, low_pass],
+    if "bessel" in filter_settings.filter_type:
+        filt_design = signal.bessel
+    else:
+        filt_design = signal.butter
+    
+    if "zero" in filter_settings.filter_type:
+        filt_func = signal.sosfiltfilt
+    else:
+        filt_func = signal.sosfilt
+
+    if filter_settings.high_pass is not None and filter_settings.low_pass is not None:
+        sos = filt_design(
+            filter_settings.order,
+            Wn=[filter_settings.high_pass, filter_settings.low_pass],
             btype="bandpass",
             output="sos",
-            fs=sample_rate,
+            fs=filter_settings.sample_rate,
         )
-        filt_array = signal.sosfiltfilt(sos, array)
+        filt_array = filt_func(sos, array)
         return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.bessel(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
+    elif filter_settings.high_pass is not None and filter_settings.low_pass is None:
+        sos = filt_design(
+            filter_settings.order, Wn=filter_settings.high_pass, btype="highpass", output="sos", fs=filter_settings.sample_rate
         )
-        filt_array = signal.sosfiltfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.bessel(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
+        filt_array = filt_func(sos, array)
+    elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
+        sos = filt_design(
+            filter_settings.order, Wn=filter_settings.low_pass, btype="lowpass", output="sos", fs=filter_settings.sample_rate
         )
-        filt_array = signal.sosfiltfilt(sos, array)
+        filt_array = filt_func(sos, array)
     return filt_array
 
+def zero_phase_convolve(b: np.ndarray, a: None, array: np.ndarray):
+    output = np.convolve(array, b, mode="full")
+    wlen = b.size // 2
+    output = output[wlen : array.size + wlen]
+    return output
 
-def butterworth(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.butter(
-            order,
-            Wn=[high_pass, low_pass],
-            btype="bandpass",
-            output="sos",
-            fs=sample_rate,
-        )
-        filt_array = signal.sosfilt(sos, array)
-        return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.butter(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.butter(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
-    return filt_array
-
-
-def butterworth_zero(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.butter(
-            order,
-            Wn=[high_pass, low_pass],
-            btype="bandpass",
-            output="sos",
-            fs=sample_rate,
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-        return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.butter(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.butter(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-    return filt_array
-
-
-def elliptic(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.ellip(
-            order,
-            Wn=[high_pass, low_pass],
-            btype="bandpass",
-            output="sos",
-            fs=sample_rate,
-        )
-        filt_array = signal.sosfilt(sos, array)
-        return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.ellip(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.ellip(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfilt(sos, array)
-    return filt_array
-
-
-def elliptic_zero(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-):
-    if high_pass is not None and low_pass is not None:
-        sos = signal.ellip(
-            order,
-            Wn=[high_pass, low_pass],
-            btype="bandpass",
-            output="sos",
-            fs=sample_rate,
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-        return filt_array
-    elif high_pass is not None and low_pass is None:
-        sos = signal.ellip(
-            order, Wn=high_pass, btype="highpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-    elif high_pass is None and low_pass is not None:
-        sos = signal.ellip(
-            order, Wn=low_pass, btype="lowpass", output="sos", fs=sample_rate
-        )
-        filt_array = signal.sosfiltfilt(sos, array)
-    return filt_array
-
-
-def fir_zero_1(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    high_width: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-    low_width: Union[int, float, None] = None,
-    window: str = "hann",
-):
-    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
-    if high_pass is not None and low_pass is not None:
+def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
+    if "zero" in filter_settings.filter_type:
+        filt_func = signal.filtfilt
+    else:
+        filt_func = zero_phase_convolve
+    if filter_settings.high_pass is not None and filter_settings.low_pass is not None:
         filt = signal.firwin2(
-            order,
+            filter_settings.order,
             freq=[
                 0,
-                high_pass - high_width,
-                high_pass,
-                low_pass,
-                low_pass + low_width,
-                sample_rate / 2,
+                filter_settings.high_pass - filter_settings.high_width,
+                filter_settings.high_pass,
+                filter_settings.low_pass,
+                filter_settings.low_pass + filter_settings.low_width,
+                filter_settings.sample_rate / 2,
             ],
             gain=[0, 0, 1, 1, 0, 0],
-            window=window,
-            fs=sample_rate,
+            window=filter_settings.window,
+            fs=filter_settings.sample_rate,
         )
-        filt_array = signal.filtfilt(filt, 1.0, array)
-    elif high_pass is not None and low_pass is None:
+        filt_array = filt_func(filt, 1.0, array)
+    elif filter_settings.high_pass is not None and filter_settings.low_pass is None:
         filt = signal.firwin2(
-            order,
-            freq=[0, high_pass - high_width, high_pass, sample_rate / 2],
+            filter_settings.order,
+            freq=[0, filter_settings.high_pass - filter_settings.high_width, filter_settings.high_pass, filter_settings.sample_rate / 2],
             gain=[0, 0, 1, 1],
-            window=window,
-            fs=sample_rate,
+            window=filter_settings.window,
+            fs=filter_settings.sample_rate,
         )
-        filt_array = signal.filtfilt(filt, 1.0, array)
-    elif high_pass is None and low_pass is not None:
+        filt_array = filt_func(filt, 1.0, array)
+    elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
         filt = signal.firwin2(
-            order,
-            freq=[0, low_pass, low_pass + low_width, sample_rate / 2],
+            filter_settings.order,
+            freq=[0, filter_settings.low_pass, filter_settings.low_pass + filter_settings.low_width, filter_settings.sample_rate / 2],
             gain=[1, 1, 0, 0],
-            window=window,
-            fs=sample_rate,
+            window=filter_settings.window,
+            fs=filter_settings.sample_rate,
         )
-        filt_array = signal.filtfilt(filt, 1.0, array)
+        filt_array = filt_func(filt, 1.0, array)
     return filt_array
 
-
-def fir_zero_2(
+def remez_filter(
     array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    high_width: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-    low_width: Union[int, float, None] = None,
-    window: str = "hann",
+    filter_settings: RemezFilter
 ):
-    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
-    grp_delay = int(0.5 * (order - 1))
-    if high_pass is not None and low_pass is not None:
-        filt = signal.firwin2(
-            order,
-            freq=[
-                0,
-                high_pass - high_width,
-                high_pass,
-                low_pass,
-                low_pass + low_width,
-                sample_rate / 2,
-            ],
-            gain=[0, 0, 1, 1, 0, 0],
-            window=window,
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(filt, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    elif high_pass is not None and low_pass is None:
-        hi = signal.firwin2(
-            order,
-            [0, high_pass - high_width, high_pass, sample_rate / 2],
-            gain=[0, 0, 1, 1],
-            window=window,
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(hi, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    elif high_pass is None and low_pass is not None:
-        lo = signal.firwin2(
-            order,
-            [0, low_pass, low_pass + low_width, sample_rate / 2],
-            gain=[1, 1, 0, 0],
-            window=window,
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(lo, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    return filt_array
-
-
-def remez_1(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    high_width: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-    low_width: Union[int, float, None] = None,
-):
-    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
-    if high_pass is not None and low_pass is not None:
+    check_fir_filter_input(filter_settings.high_pass, filter_settings.high_width, filter_settings.low_pass, filter_settings.low_width, filter_settings.sample_rate)
+    if filter_settings.high_pass is not None and filter_settings.low_pass is not None:
         filt = signal.remez(
-            order,
+            filter_settings.order,
             [
                 0,
-                high_pass - high_width,
-                high_pass,
-                low_pass,
-                low_pass + low_width,
-                sample_rate / 2,
+                filter_settings.high_pass - filter_settings.high_width,
+                filter_settings.high_pass,
+                filter_settings.low_pass,
+                filter_settings.low_pass + filter_settings.low_width,
+                filter_settings.sample_rate / 2,
             ],
             [0, 1, 0],
-            fs=sample_rate,
+            fs=filter_settings.sample_rate,
         )
         filt_acq = signal.filtfilt(filt, 1.0, array)
-    elif high_pass is not None and low_pass is None:
+    elif filter_settings.high_pass is not None and filter_settings.low_pass is None:
         hi = signal.remez(
-            order,
-            [0, high_pass - high_width, high_pass, sample_rate / 2],
+            filter_settings.order,
+            [0, filter_settings.high_pass - filter_settings.high_width, filter_settings.high_pass, filter_settings.sample_rate / 2],
             [0, 1],
-            fs=sample_rate,
+            fs=filter_settings.sample_rate,
         )
         filt_acq = signal.filtfilt(hi, 1.0, array)
-    elif high_pass is None and low_pass is not None:
+    elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
         lo = signal.remez(
-            order,
-            [0, low_pass, low_pass + low_width, sample_rate / 2],
+            filter_settings.order,
+            [0, filter_settings.low_pass, filter_settings.low_pass + filter_settings.low_width, filter_settings.sample_rate / 2],
             [1, 0],
-            fs=sample_rate,
+            fs=filter_settings.sample_rate,
         )
         filt_acq = signal.filtfilt(lo, 1.0, array)
     return filt_acq
 
 
-def remez_2(
-    array: Union[np.ndarray, list],
-    order: int,
-    sample_rate: Union[int, float],
-    high_pass: Union[int, float, None] = None,
-    high_width: Union[int, float, None] = None,
-    low_pass: Union[int, float, None] = None,
-    low_width: Union[int, float, None] = None,
-):
-    check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate)
-    grp_delay = int(0.5 * (order - 1))
-    if high_pass is not None and low_pass is not None:
-        filt = signal.remez(
-            numtaps=order,
-            bands=[
-                0,
-                high_pass - high_width,
-                high_pass,
-                low_pass,
-                low_pass + low_width,
-                sample_rate / 2,
-            ],
-            desired=[0, 1, 0],
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(filt, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    elif high_pass is not None and low_pass is None:
-        hi = signal.remez(
-            order,
-            [0, high_pass - high_width, high_pass, sample_rate / 2],
-            [0, 1],
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(hi, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    elif high_pass is None and low_pass is not None:
-        lo = signal.remez(
-            order,
-            [0, low_pass, low_pass + low_width, sample_rate / 2],
-            [1, 0],
-            fs=sample_rate,
-        )
-        acq1 = np.hstack((array, np.zeros(grp_delay)))
-        filt_acq = signal.lfilter(lo, 1.0, acq1)
-        filt_array = filt_acq[grp_delay:]
-    return filt_array
-
-
-def savgol_filt(array: Union[np.ndarray, list], order: int, polyorder: int):
-    if isinstance(polyorder, float):
-        polyorder = int(polyorder)
-    filtered_array = signal.savgol_filter(array, order, polyorder, mode="nearest")
+def savgol_filter(array: Union[np.ndarray, list], filter_settings: SavgolFilter):
+    if isinstance(filter_settings.polyorder, float):
+        polyorder = int(filter_settings.polyorder)
+    filtered_array = signal.savgol_filter(array,filter_settings.order, polyorder, mode="nearest")
     return filtered_array
 
 
-def ewma_filt(array: Union[np.ndarray, list], window: int, sum_proportion: float):
-    alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
-    b = [alpha]
-    a = [1, alpha - 1]
-    filtered = signal.filtfilt(b, a, array)
-    return filtered
-
-
-def ewma_afilt(array: Union[np.ndarray, list], window: int, sum_proportion: float):
-    alpha = 1 - np.exp(np.log(1 - sum_proportion) / window)
-    num = np.power(1.0 - alpha, np.arange(window + 1))
-    b = num / np.sum(num)
+def ewma_filter(array: Union[np.ndarray, list], filter_settings: EWMAFilter):
+    alpha = 1 - np.exp(np.log(1 - filter_settings.sum_proportion) / filter_settings.window)
+    if filter_settings.filter_type == "ewma_a":
+        num = np.power(1.0 - alpha, np.arange(filter_settings.window + 1))
+        b = num / np.sum(num)
+    else:
+        b = [alpha]
     a = 1
     filtered = signal.filtfilt(b, a, array)
     return filtered

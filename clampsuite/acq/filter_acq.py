@@ -16,78 +16,15 @@ from ..functions.filtering_functions import (
     remez_2,
     savgol_filt,
 )
-from . import acquisition
+
+from ..types import Filter
 
 
-class FilterAcq(acquisition.Acquisition, analysis="filter"):
-    """
-    This is the base class for acquisitions. It returns the array from a
-    matfile and filters the array.
+class FilterAcq:
+    def __init__(self, filter: Filter):
+        self.filter = filter
 
-    To remove DC from the signal, signal is baselined to the mean of the
-    chosen baseline of the array. A highpass filter is usually not needed to
-    for offline analysis because the signal can baselined using the mean.
-    """
-
-    def set_filter(
-        self,
-        baseline_start: Union[int, float] = 0,
-        baseline_end: Union[int, float] = 800,
-        filter_type: Literal[
-            "remez_2",
-            "remez_1",
-            "fir_zero_2",
-            "fir_zero_1",
-            "ewma",
-            "ewma_a",
-            "savgol",
-            "median",
-            "bessel",
-            "butterworth",
-            "bessel_zero",
-            "butterworth_zero",
-            "None",
-        ] = "fir_zero_2",
-        order: Union[None, int] = None,
-        high_pass: Union[int, float, None] = None,
-        high_width: Union[int, float, None] = None,
-        low_pass: Union[int, float, None] = None,
-        low_width: Union[int, float, None] = None,
-        window: Literal[
-            "hann",
-            "hamming",
-            "blackmanharris",
-            "barthann",
-            "nuttall",
-            "blackman",
-            "tukey",
-            "kaiser",
-            "gaussian",
-            "parzen",
-            "exponential",
-        ] = "hann",
-        beta_sigma: float = None,
-        polyorder: Union[int, None] = None,
-    ):
-        self._baseline_start = int(baseline_start * self.s_r_c)
-        self._baseline_end = int(baseline_end * self.s_r_c)
-        self.baseline_start = baseline_start
-        self.baseline_end = baseline_end
-        self.offset = np.mean(self.array[self._baseline_start : self._baseline_end])
-        self.filter_type = filter_type
-        self.order = order
-        self.high_pass = high_pass
-        self.high_width = high_width
-        self.low_pass = low_pass
-        self.low_width = low_width
-        self.window = window
-        self.polyorder = polyorder
-        self.beta_sigma = beta_sigma
-
-    def analyze(self):
-        self.filter_array(self.array)
-
-    def filter_array(self, array) -> None:
+    def analyze(self, array) -> None:
         """
         This funtion filters the array of data, with several different types
         of filters.
@@ -139,46 +76,43 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
         else:
             window = self.window
 
-        baselined_array = array - np.mean(
-            array[self._baseline_start : self._baseline_end]
-        )
         if self.filter_type == "median":
-            self.filtered_array = median_filter(array=baselined_array, order=self.order)
+            output = median_filter(array=array, order=self.order)
         elif self.filter_type == "bessel":
-            self.filtered_array = bessel(
-                array=baselined_array,
+            output = bessel(
+                array=array,
                 order=self.order,
                 sample_rate=self.sample_rate,
                 high_pass=self.high_pass,
                 low_pass=self.low_pass,
             )
         elif self.filter_type == "bessel_zero":
-            self.filtered_array = bessel_zero(
-                array=baselined_array,
+            output = bessel_zero(
+                array=array,
                 order=self.order,
                 sample_rate=self.sample_rate,
                 high_pass=self.high_pass,
                 low_pass=self.low_pass,
             )
         elif self.filter_type == "butterworth":
-            self.filtered_array = butterworth(
-                array=baselined_array,
+            output = butterworth(
+                array=array,
                 order=self.order,
                 sample_rate=self.sample_rate,
                 high_pass=self.high_pass,
                 low_pass=self.low_pass,
             )
         elif self.filter_type == "butterworth_zero":
-            self.filtered_array = butterworth_zero(
-                array=baselined_array,
+            output = butterworth_zero(
+                array=array,
                 order=self.order,
                 sample_rate=self.sample_rate,
                 high_pass=self.high_pass,
                 low_pass=self.low_pass,
             )
         elif self.filter_type == "fir_zero_1":
-            self.filtered_array = fir_zero_1(
-                array=baselined_array,
+            output = fir_zero_1(
+                array=array,
                 sample_rate=self.sample_rate,
                 order=self.order,
                 high_pass=self.high_pass,
@@ -188,8 +122,8 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 window=window,
             )
         elif self.filter_type == "fir_zero_2":
-            self.filtered_array = fir_zero_2(
-                array=baselined_array,
+            output = fir_zero_2(
+                array=array,
                 sample_rate=self.sample_rate,
                 order=self.order,
                 high_pass=self.high_pass,
@@ -199,8 +133,8 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 window=window,
             )
         elif self.filter_type == "remez_1":
-            self.filtered_array = remez_1(
-                array=baselined_array,
+            output = remez_1(
+                array=array,
                 sample_rate=self.sample_rate,
                 order=self.order,
                 high_pass=self.high_pass,
@@ -209,8 +143,8 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 low_width=self.low_width,
             )
         elif self.filter_type == "remez_2":
-            self.filtered_array = remez_2(
-                array=baselined_array,
+            output = remez_2(
+                array=array,
                 sample_rate=self.sample_rate,
                 order=self.order,
                 high_pass=self.high_pass,
@@ -219,16 +153,16 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 low_width=self.low_width,
             )
         elif self.filter_type == "savgol":
-            self.filtered_array = savgol_filt(
-                array=baselined_array, order=self.order, polyorder=self.polyorder
+            output = savgol_filt(
+                array=array, order=self.order, polyorder=self.polyorder
             )
 
         elif self.filter_type == "None":
-            self.filtered_array = baselined_array.copy()
+            output = array.copy()
 
         elif self.filter_type == "subtractive":
             array = fir_zero_2(
-                baselined_array,
+                array,
                 order=self.order,
                 sample_rate=self.sample_rate,
                 high_pass=self.high_pass,
@@ -237,19 +171,14 @@ class FilterAcq(acquisition.Acquisition, analysis="filter"):
                 low_width=self.low_width,
                 window=window,
             )
-            self.filtered_array = baselined_array - array
+            output = array - array
 
         elif self.filter_type == "ewma":
-            self.filtered_array = ewma_filt(
-                array=baselined_array, window=self.order, sum_proportion=self.polyorder
+            output = ewma_filt(
+                array=array, window=self.order, sum_proportion=self.polyorder
             )
         elif self.filter_type == "ewma_a":
-            self.filtered_array = ewma_afilt(
-                array=baselined_array, window=self.order, sum_proportion=self.polyorder
+            output = ewma_afilt(
+                array=array, window=self.order, sum_proportion=self.polyorder
             )
-
-    def plot_acq_x(self) -> np.ndarray:
-        return np.arange(len(self.filtered_array)) / self.s_r_c
-
-    def plot_acq_y(self) -> np.ndarray:
-        return self.filtered_array
+        return output
