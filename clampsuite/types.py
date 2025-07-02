@@ -1,7 +1,5 @@
 from typing import Literal, NamedTuple
 
-import numpy as np
-
 from .functions.current_clamp import ThresholdType
 
 

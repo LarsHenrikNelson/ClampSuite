@@ -8,7 +8,7 @@ from ..functions.evoked_psc import _detect_pos_neg
 from . import filter_acq
 
 
-class oEPSCAcq(filter_acq.FilterAcq, analysis="oepsc"):
+class oEPSCAcq(filter_acq.FilterAcq):
     def analyze(
         self,
         pulse_start: Union[int, float] = 1000,

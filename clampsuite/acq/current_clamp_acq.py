@@ -35,8 +35,8 @@ class CurrentClampAcq:
         self._analysis_variables["delta_v_mv"] = np.nan
         self._analysis_variables["freq_hz"] = 0.0
         self._analysis_variables["iei_index"] = 0.0
-        self._analysis_variables["peak_index"] = np.array([])
-        self._analysis_variables["peak_mv"] = np.array([])
+        self._analysis_variables["spike_index"] = np.array([])
+        self._analysis_variables["spike_mv"] = np.array([])
         self._analysis_variables["spike_number"] = np.array([])
         self._analysis_variables["mem_tau_min_index"] = np.nan
         self._analysis_variables["mem_tau_deltav_index"] = np.nan
@@ -83,31 +83,31 @@ class CurrentClampAcq:
         self._analysis_variables["baseline_mv"] = np.mean(
             self.acq_data.array[self.baseline_start : self.baseline_end]
         )
-        peak_index, _ = signal.find_peaks(
+        spike_index, _ = signal.find_peaks(
             self.acq_data.array[self.pulse_start : self.pulse_end],
             height=self.min_spike_voltage,
             width=int(0.5 * self.acq_data.s_r_c()),
         )
-        peak_index += self.pulse_start
-        self._analysis_variables["peak_index"] = peak_index
-        self._analysis_variables["peak_mv"] = self.acq_data.array[peak_index]
-        self._analysis_variables["spike_number"] = np.arange(1, peak_index.size + 1)
-        self._analysis_variables["hertz"] = len(peak_index) / (
+        spike_index += self.pulse_start
+        self._analysis_variables["spike_index"] = spike_index
+        self._analysis_variables["spike_mv"] = self.acq_data.array[spike_index]
+        self._analysis_variables["spike_number"] = np.arange(1, spike_index.size + 1)
+        self._analysis_variables["hertz"] = len(spike_index) / (
             (self.pulse_end - self.pulse_start) / self.acq_data.fs
         )
-        if len(peak_index) > 1:
-            self._analysis_variables["iei_index"] = np.mean(np.diff(peak_index))
-        if len(peak_index) > 0:
+        if len(spike_index) > 1:
+            self._analysis_variables["iei_index"] = np.mean(np.diff(spike_index))
+        if len(spike_index) > 0:
             self._analysis_variables.update(
                 find_all_spk_thresholds(
                     self.acq_data.array,
-                    peak_index,
+                    spike_index,
                     self.pulse_start,
                     self.threshold_method,
                 )
             )
             self._analysis_variables.update(
-                find_all_ahps(self.acq_data.array, peak_index, self.pulse_end)
+                find_all_ahps(self.acq_data.array, spike_index, self.pulse_end)
             )
             self._analysis_variables.update(
                 find_all_spk_widths(
@@ -130,15 +130,15 @@ class CurrentClampAcq:
                     self.pulse_end,
                 )
             )
-            self._analysis_variables["local_sfa"] = local_sfa(peak_index)
-            self._analysis_variables["divisor_sfa"] = divisor_sfa(peak_index)
-            self._analysis_variables["ai_sfa"] = ai_sfa(peak_index)
-            self._analysis_variables["adaptation"] = adaptation_index(peak_index)
+            self._analysis_variables["local_sfa"] = local_sfa(spike_index)
+            self._analysis_variables["divisor_sfa"] = divisor_sfa(spike_index)
+            self._analysis_variables["ai_sfa"] = ai_sfa(spike_index)
+            self._analysis_variables["adaptation"] = adaptation_index(spike_index)
             self._analysis_variables["coefficient_of_variation"] = (
-                coefficient_of_variation(peak_index)
+                coefficient_of_variation(spike_index)
             )
 
-        self._analysis_variables["delta_v_mv"] = self.get_delta_v(peak_index)
+        self._analysis_variables["delta_v_mv"] = self.get_delta_v(spike_index)
 
         if self.acq_data.pulse_amp < 0:
             self._analysis_variables.update(
@@ -195,7 +195,7 @@ class CurrentClampAcq:
                 self.acq_data.array[index] - self._analysis_variables["baseline_mv"]
             )
         # if self.ramp == "0":
-        #     if len(self.peak_index) > 0:
+        #     if len(self.spike_index) > 0:
         #         delta_v = delta(
         #             self.acq_data.array,
         #             self.pulse_start,
@@ -272,8 +272,8 @@ class CurrentClampAcq:
         return x, y
 
     def peaks(self):
-        x = self._analysis_variables["peak_index"] / self.acq_data.s_r_c()
-        y = self._analysis_variables["peak_mv"]
+        x = self._analysis_variables["spike_index"] / self.acq_data.s_r_c()
+        y = self._analysis_variables["spike_mv"]
         return x, y
 
     def ahps(self):
@@ -313,8 +313,8 @@ class CurrentClampAcq:
         for param in SPIKE_PARAMS:
             value = temp.pop(param)
             spk_data[param] = value
-        spk_data["peak_index"] = temp.pop("peak_index")
-        spk_data["peak_mv"] = temp.pop("peak_mv")
+        spk_data["spike_index"] = temp.pop("spike_index")
+        spk_data["spike_mv"] = temp.pop("spike_mv")
         spk_data["spike_number"] = temp.pop("spike_number")
         spk_data["epoch"] = [self.acq_data.epoch] * value.size
         spk_data["acq_number"] = [self.acq_data.acq_number] * value.size

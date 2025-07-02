@@ -4,14 +4,18 @@ import numpy as np
 from scipy import interpolate, signal
 from scipy.fft import fft, ifft
 
-from ..functions.filtering_functions import fir_zero_1
+from ..functions.filtering_functions import fir_filter
 from ..functions.template_psc import create_template
 from ..functions.rc_check import calc_rs
 from . import filter_acq
 from .postsynaptic_event import MiniEvent
 
 
-class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
+class MiniAnalysisAcq:
+    def __init__(self, array, filter_settings):
+        self.array = array
+        self.filter_settings = filter_settings
+
     def set_template(
         self,
         tmp_amplitude: Union[int, float] = -20,
@@ -203,16 +207,7 @@ class MiniAnalysisAcq(filter_acq.FilterAcq, analysis="mini"):
     def create_deconvolved_array(self) -> np.ndarray:
         deconvolved_array = self.deconvolve_array()
         if self.decon_type == "fft" or self.decon_type == "wiener":
-            filtered_decon_array = fir_zero_1(
-                array=deconvolved_array,
-                sample_rate=self.sample_rate,
-                order=351,
-                high_pass=None,
-                high_width=None,
-                low_pass=300,
-                low_width=100,
-                window="hann",
-            )
+            filtered_decon_array = fir_filter(deconvolved_array, self.filter_settings)
             return filtered_decon_array
         else:
             return deconvolved_array

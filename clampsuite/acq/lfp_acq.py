@@ -7,7 +7,7 @@ from scipy.stats import linregress
 from . import filter_acq
 
 
-class LFPAcq(filter_acq.FilterAcq, analysis="lfp"):
+class LFPAcq(filter_acq.FilterAcq):
     def analyze(
         self,
         pulse_start: Union[int, float] = 1000,
