@@ -12,7 +12,12 @@ WIDTH_KEYS = [
 
 
 def find_spk_width(voltages: np.array, start: int, end: int):
-    volts = np.asarray(voltages[int(start) : int(end)])
+    start = int(start)
+    end = int(end)
+    volts = np.asarray(voltages[start:end])
+    xvals = np.linspace(start, end, num=int((end - start) * 10))
+    x = np.linspace(start, end, num=int(end - start))
+    volts = np.interp(xvals, x, volts)
     spike_threshold = voltages[start]
     masked_array = volts.copy()
     mask = np.array(volts > spike_threshold)
@@ -21,11 +26,11 @@ def find_spk_width(voltages: np.array, start: int, end: int):
     hw = signal.peak_widths(masked_array, [peak_x], rel_height=0.5)
     fw = signal.peak_widths(masked_array, [peak_x], rel_height=1)
     return (
-        hw[2][0] + start,
-        hw[3][0] + start,
+        hw[2][0] / 10 + start,
+        hw[3][0] / 10 + start,
         hw[1][0],
-        fw[2][0] + start,
-        fw[3][0] + start,
+        fw[2][0] / 10 + start,
+        fw[3][0] / 10 + start,
         fw[1][0],
     )
 

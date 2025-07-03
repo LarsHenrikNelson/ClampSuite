@@ -1,31 +1,33 @@
 from collections import defaultdict
-from typing import Union
+from typing import Union, Literal
 
 import numpy as np
 import pandas as pd
 
 from . import final_analysis
 from ..acq import CurrentClampAcq
-from ..functions.curve_fit.iv_curve import fit_iv
 from ..functions.utilities import map_keys
+from ..functions.curve_fit import fit_sigmoid, fit_iv
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
     def __init__(self, acq_dict: dict[int, CurrentClampAcq]):
-        self.iv_start = 0
-        self.iv_end = -1
+        self.iv_start = None
+        self.iv_end = None
         self.df_dict = {}
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
         self.acq_dict = acq_dict
 
-    def analyze(self, iv_start: int = 1, iv_end: int = 6, debug=False):
+    def analyze(
+        self, iv_start: int | None = None, iv_end: int | None = None, debug=False
+    ):
         if not debug:
             self._analyze(self.acq_dict)
 
     def _analyze(self, acq_dict: dict):
-        self.create_raw_data(acq_dict)
+        self.create_raw_data()
         self.create_average_data()
         self.final_data_pulse()
         self.final_data_ramp()
@@ -47,10 +49,10 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
                 if i == "Ramp APs":
                     self.ramp_ap = True
 
-    def create_raw_data(self, acq_dict: dict[int, CurrentClampAcq]):
+    def create_raw_data(self):
         spk_params = []
         acq_params = []
-        for value in acq_dict.values():
+        for value in self.acq_dict.values():
             acq_data, spk_data = value.data()
             spk_params.append(pd.DataFrame(spk_data))
             acq_params.append(acq_data)
@@ -61,18 +63,83 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         acq_params = pd.DataFrame(acq_params)
         key_mapping = map_keys(acq_params.columns())
         acq_params = acq_params.rename(columns=key_mapping)
+        spk_params["HW (ms)"] = spk_params["HW Right (ms)"] - spk_params["HW Left (ms)"]
+        spk_params["FW (ms)"] = spk_params["FW Right (ms)"] - spk_params["FW Left (ms)"]
+
+        spk_params = spk_params.sort_values(
+            ["Epoch", "Cycle", "Acq Number", "Spike Number"]
+        ).reset_index()
+
+        acq_params = acq_params.sort_values(
+            ["Epoch", "Cycle", "Acq Number"]
+        ).reset_index()
 
         self.df_dict["Spike parameters"] = spk_params
         self.df_dict["Acq parameters"] = acq_params
 
-    def create_average_data(self):
-        ave_df = (
-            self.df_dict["Raw data"]
-            .groupby(["Epoch", "Pulse amp (pA)"])
+    def get_features(self):
+        rheo_features = self.df_dict["Spike parameters"].loc[
+            self.df_dict["Spike parameters"]
+            .groupby(["Epoch", "Cycle"])["Acq Number"]
+            .idxmin()
+        ]
+        rheo_features = (
+            rheo_features.drop(columns=["Acq Number", "Spike Number", "Cycle"])
+            .groupby("Epoch")
             .mean(numeric_only=True)
-            .reset_index()
         )
-        self.df_dict["Average data"] = ave_df
+        rheo_features = rheo_features.rename(
+            columns={"Pulse Amp (pA)": "Rheobase (pA)"}
+        )
+        avg_data = (
+            self.df_dict["Acq parameters"]
+            .groupby(["Epoch", "Pulse Amp (pA)"], as_index=False)
+            .mean(numeric_only=True)
+            .drop(columns=["Acq Number", "Cycle"])
+        )
+        sag_features = avg_data.loc[
+            avg_data.groupby(["Epoch"])["Pulse Amp (pA)"].idxmin(),
+            ["Epoch", "Sag (mV)", "Sag (ms)"],
+        ]
+        fi_features = self.fi_fit(self.df_dict["Acq parameters"])
+        features = (
+            avg_data.drop(
+                columns=["Sag (mV)", "Sag (ms)", "Pulse Amp (pA)", "Delta V (mV)"]
+            )
+            .groupby("Epoch")
+            .mean(numeric_only=True)
+        )
+        features = pd.merge(features, rheo_features, on="Epoch")
+        features = pd.merge(features, sag_features, on="Epoch")
+        features = pd.merge(features, fi_features, on="Epoch")
+        self.dict["Final"] = features
+
+    def fi_fit(self, acq_data):
+        fi_output = []
+        fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
+        for key, value in fi_data.groupby("Epoch").groups.items():
+            current = fi_data.loc[value, "Pulse Amp (pA)"]
+            firing_rate = fi_data.loc[value, "Freq (Hz)"]
+            temp = fit_sigmoid(current, firing_rate)
+            temp["Epoch"] = key
+            fi_output.append(temp)
+        fi_features = pd.DataFrame(fi_output)
+        key_mapping = map_keys(fi_features.columns())
+        fi_features = fi_features.rename(columns=key_mapping)
+        return fi_features
+
+    def iv_fit(self, acq_data, iv_type: Literal["rectified", "all", "subset"]):
+        iv_output = []
+        iv_data = acq_data[acq_data["Freq (Hz)"] < 1e-6]
+        for key, value in iv_data.groupby("Epoch").groups.items():
+            current = iv_data.loc[value, "Pulse Amp (pA)"]
+            voltage = iv_data.loc[value, "Delta V (mV)"]
+            temp = fit_iv(current, voltage)
+            temp["Epoch"] = key
+            iv_output.append(temp)
+        fi_features = pd.DataFrame(iv_output)
+        key_mapping = map_keys(fi_features.columns())
+        fi_features = fi_features.rename(columns=key_mapping)
 
     def create_first_ap_dfs(
         self,

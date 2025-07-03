@@ -11,9 +11,13 @@ class IVCurveOutput(NamedTuple):
     iv_x_end: float
 
 
+def linear(x, slope, intercept):
+    return slope * x + intercept
+
+
 def fit_iv(
-    voltage,
     current,
+    voltage,
     start: int,
     end: Union[int, None],
 ) -> NamedTuple:

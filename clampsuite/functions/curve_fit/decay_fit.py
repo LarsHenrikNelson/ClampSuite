@@ -121,10 +121,3 @@ def est_decay(
         est_tau_x = np.nan
         est_tau_y = np.nan
     return est_tau_y, est_tau_x
-
-
-if __name__ == "__main__":
-    s_exp_decay()
-    db_exp_decay()
-    t_exp_decay()
-    est_decay()

@@ -14,12 +14,16 @@ class SigmoidCurveFit(TypedDict):
 
 
 def sigmoid(x, max_value, midpoint, slope, offset):
-    return 1 / (1 + np.exp((x - midpoint) / slope)) * -max_value + offset
+    return 1 / (1 + np.exp((x - midpoint) / slope)) * max_value + offset
 
 
-def curve_fit_sigmoid(current, firing_rate):
-    p, _ = curve_fit(sigmoid, current, firing_rate)
+def fit_sigmoid(current, firing_rate):
+    lb = [-np.inf, -np.inf, 1e-6, -np.inf]
+    ub = [np.inf, np.inf, np.inf, np.inf]
+    p0 = [-np.max(firing_rate), np.mean(current), 30, np.max(firing_rate)]
+    p, _ = curve_fit(sigmoid, current, firing_rate, p0=p0, bounds=(lb, ub))
     upsampled_current = np.linspace(current.min(), current.max(), 1000)
+
     sigmoid_curve = sigmoid(upsampled_current, *p)
     diff = np.gradient(sigmoid_curve)
     max_gain_index = diff.argmax()

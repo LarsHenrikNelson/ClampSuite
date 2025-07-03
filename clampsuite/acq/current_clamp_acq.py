@@ -92,7 +92,7 @@ class CurrentClampAcq:
         self._analysis_variables["spike_index"] = spike_index
         self._analysis_variables["spike_mv"] = self.acq_data.array[spike_index]
         self._analysis_variables["spike_number"] = np.arange(1, spike_index.size + 1)
-        self._analysis_variables["hertz"] = len(spike_index) / (
+        self._analysis_variables["freq_hz"] = len(spike_index) / (
             (self.pulse_end - self.pulse_start) / self.acq_data.fs
         )
         if len(spike_index) > 1:
@@ -245,30 +245,30 @@ class CurrentClampAcq:
         x = (
             np.array(
                 [
-                    self._analysis_variables["hw_left"],
-                    self._analysis_variables["hw_right"],
+                    self._analysis_variables["hw_left_index"],
+                    self._analysis_variables["hw_right_index"],
                 ]
             )
             / self.acq_data.s_r_c()
-        ).T
+        )
         y = np.array(
-            [self._analysis_variables["hw_y"], self._analysis_variables["hw_y"]]
-        ).T
+            [self._analysis_variables["hw_mv"], self._analysis_variables["hw_mv"]]
+        )
         return x, y
 
     def spike_widths(self):
         x = (
             np.array(
                 [
-                    self._analysis_variables["fw_left"],
-                    self._analysis_variables["fw_right"],
+                    self._analysis_variables["fw_left_index"],
+                    self._analysis_variables["fw_right_index"],
                 ]
             )
             / self.acq_data.s_r_c()
-        ).T
+        )
         y = np.array(
-            [self._analysis_variables["fw_y"], self._analysis_variables["fw_y"]]
-        ).T
+            [self._analysis_variables["fw_mv"], self._analysis_variables["fw_mv"]]
+        )
         return x, y
 
     def peaks(self):
@@ -319,10 +319,16 @@ class CurrentClampAcq:
         spk_data["epoch"] = [self.acq_data.epoch] * value.size
         spk_data["acq_number"] = [self.acq_data.acq_number] * value.size
         spk_data["cycle"] = [self.acq_data.cycle] * value.size
+        spk_data["pulse_amp_pa"] = [self.acq_data.pulse_amp] * value.size
+
+        for key, value in spk_data.items():
+            if "index" in key:
+                spk_data[key] = value / self.acq_data.s_r_c()
 
         for key2, value2 in temp.items():
             acq_data[key2] = value2
         acq_data["epoch"] = self.acq_data.epoch
         acq_data["acq_number"] = self.acq_data.acq_number
         acq_data["cycle"] = self.acq_data.cycle
+        acq_data["pulse_amp_pa"] = self.acq_data.pulse_amp
         return acq_data, spk_data

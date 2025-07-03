@@ -174,32 +174,16 @@ class ScanImageLoader(BaseLoader):
         return AcquisitionData(**acq_dict)
 
     def set_cycle(self, acquisitions):
-        rows = len(acquisitions)
-        temp_data = np.zeros((rows, 5))
-        for index, key in enumerate(acquisitions):
-            temp_data[index, 0] = acquisitions[key].acq_number
-            temp_data[index, 1] = acquisitions[key].epoch
-            temp_data[index, 2] = acquisitions[key].pulse_amp
-            temp_data[index, 3] = int(acquisitions[key].ramp)
+        epochs = {i.epoch for i in acquisitions.values()}
 
-        temp_data = temp_data[temp_data[:, 1].argsort()]
-        temp_data = temp_data[temp_data[:, 0].argsort()]
+        amps = {i.pulse_amp for i in acquisitions.values()}
+        cycle_tracker = {key: {i: 1 for i in amps} for key in epochs}
 
-        current_epoch = temp_data[0, 1]
-        count = 0
-        for i in range(1, rows):
-            if current_epoch != temp_data[i, 1]:
-                count = -1
-                current_epoch = temp_data[i, 1]
-            if temp_data[i - 1, 2] > 0 and temp_data[i, 2] < 0:
-                count += 1
-                temp_data[i, 4] = count
-            else:
-                temp_data[i, 4] = count
-            if temp_data[i, 3] == 1:
-                temp_data[i, 4] = 0
-        for i in range(rows):
-            acquisitions[int(temp_data[i, 0])].cycle = int(temp_data[i, 4])
+        acq_numbers = sorted(acquisitions.keys())
+        for num in acq_numbers:
+            value = acquisitions[num]
+            value.cycle = cycle_tracker[value.epoch][value.pulse_amp]
+            cycle_tracker[value.epoch][value.pulse_amp] += 1
 
     def load_files(self, file_paths: list[str | Path]):
         acquisitions = {}
