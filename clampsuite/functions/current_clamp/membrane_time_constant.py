@@ -8,7 +8,7 @@ def membrane_time_constant_min(
     baseline_end: int = 3000,
 ):
     voltages = array - np.mean(array[baseline_start:baseline_end])
-    threshold1 = voltages.min() * 0.63
+    threshold1 = voltages.min() * (1/np.exp(1))
     min_val = voltages.argmin() + pulse_start
     tau = np.where(voltages[pulse_start:min_val] < threshold1)[0][0]
     return tau
@@ -22,7 +22,7 @@ def membrane_time_constant_deltav(
     baseline_end=3000,
 ):
     voltages = array - np.min(array[baseline_start:baseline_end])
-    threshold2 = deltav * 0.63
+    threshold2 = deltav * (1/np.exp(1))
     min_val = voltages.argmin() + pulse_start
     tau = np.where(voltages[pulse_start:min_val] < threshold2)[0][0]
     return tau
