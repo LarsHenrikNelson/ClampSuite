@@ -121,11 +121,11 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             .groupby("Epoch")
             .mean(numeric_only=True)
         )
-        features = pd.merge(features, rheo_features, on="Epoch")
-        features = pd.merge(features, sag_features, on="Epoch")
-        features = pd.merge(features, fi_features, on="Epoch")
-        features = pd.merge(features, iv_features, on="Epoch")
-        features = pd.merge(features, auc_features, on="Epoch")
+        features = pd.merge(features, rheo_features, on="Epoch", how="outer")
+        features = pd.merge(features, sag_features, on="Epoch", how="outer")
+        features = pd.merge(features, fi_features, on="Epoch", how="outer")
+        features = pd.merge(features, iv_features, on="Epoch", how="outer")
+        features = pd.merge(features, auc_features, on="Epoch", how="outer")
         self.df_dict["Epoch Parameters"] = features
 
     def fi_fit(self, acq_data):
@@ -133,8 +133,9 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         epochs = []
         fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
         for key, value in fi_data.groupby("Epoch").groups.items():
-            current = fi_data.loc[value, "Pulse Amp (pA)"]
-            firing_rate = fi_data.loc[value, "Freq (Hz)"]
+            if len(value) > 2:
+                current = fi_data.loc[value, "Pulse Amp (pA)"]
+                firing_rate = fi_data.loc[value, "Freq (Hz)"]
             temp = fit_sigmoid(current, firing_rate)
             epochs.append(key)
             fi_output.append(temp._asdict())

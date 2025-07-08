@@ -86,7 +86,6 @@ class CurrentClampAcq:
         spike_index, _ = signal.find_peaks(
             self.acq_data.array[self.pulse_start : self.pulse_end],
             height=self.min_spike_voltage,
-            width=int(0.5 * self.acq_data.s_r_c()),
         )
         spike_index += self.pulse_start
         self._analysis_variables["spike_index"] = spike_index
@@ -268,17 +267,26 @@ class CurrentClampAcq:
 
     def peaks(self):
         x = self._analysis_variables["spike_index"] / self.acq_data.s_r_c()
-        y = self._analysis_variables["spike_mv"]
+        if len(x) > 0:
+            y = self.acq_data.array[self._analysis_variables["spike_index"]]
+        else:
+            y = np.array([])
         return x, y
 
     def ahps(self):
-        x = self._analysis_variables["ahp_index"]
-        y = self._analysis_variables["ahp_voltages"]
+        x = self._analysis_variables["ahp_index"] / self.acq_data.s_r_c()
+        if len(x) > 0:
+            y = self.acq_data.array[self._analysis_variables["ahp_index"]]
+        else:
+            y = np.array([])
         return x, y
 
     def thresholds(self):
         x = self._analysis_variables["threshold_index"] / self.acq_data.s_r_c()
-        y = self.acq_data.array[self._analysis_variables["threshold_index"]]
+        if len(x) > 0:
+            y = self.acq_data.array[self._analysis_variables["threshold_index"]]
+        else:
+            y = np.array([])
         return x, y
 
     def min_velocity(self):
