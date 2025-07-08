@@ -61,7 +61,7 @@ class CurrentClampAcq:
         pulse_end: int = 10000,
         min_spike_voltage: Union[int, float] = 0,
         threshold_method: ThresholdType = "third_derivative",
-        min_spikes: int = 2,
+        min_spikes: int = 1,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
     ):
@@ -144,24 +144,19 @@ class CurrentClampAcq:
             self._analysis_variables.update(
                 voltage_sag(self.acq_data.array, self.pulse_start, self.pulse_end)
             )
+
+        if self._analysis_variables["delta_v_mv"] < 0 and self.acq_data.pulse_amp < 0:
             self._analysis_variables["mem_tau_deltav_index"] = (
                 membrane_time_constant_deltav(
                     self.acq_data.array,
                     self._analysis_variables["delta_v_mv"],
                     self.pulse_start,
-                    self.baseline_start,
-                    self.baseline_end,
                 )
             )
             self._analysis_variables["mem_tau_min_index"] = membrane_time_constant_min(
                 self.acq_data.array,
                 self.pulse_start,
-                self.baseline_start,
-                self.baseline_end,
             )
-        else:
-            self._analysis_variables["sag_mv"] = None
-            self._analysis_variables["sag_index"] = None
 
         self._analysis_variables["baseline_stability"] = baseline_stability(
             self.acq_data.array, self.pulse_start, self.pulse_end

@@ -1,14 +1,13 @@
-from typing import Union, NamedTuple
+from typing import NamedTuple, Literal
 
 from scipy.stats import linregress
+import numpy as np
 
 
 class IVCurveOutput(NamedTuple):
     membrane_resistance: float
     slope: float
     intercept: float
-    iv_x_start: float
-    iv_x_end: float
 
 
 def linear(x, slope, intercept):
@@ -18,13 +17,21 @@ def linear(x, slope, intercept):
 def fit_iv(
     current,
     voltage,
-    start: int,
-    end: Union[int, None],
+    start: int | float | None = None,
+    end: int | float | None = None,
+    iv_type: Literal["rectified", "all", "subset"] = "all",
 ) -> NamedTuple:
-    if end is None:
-        end = -1
-    y = voltage[start - 1 : end]
-    iv_x = current[start - 1 : end]
-    reg = linregress(x=iv_x, y=y)
+    if iv_type == "subset":
+        if start is None:
+            start = current.min()
+        if end is None:
+            end = current.max()
+        indices = (current >= start) & (current <= end)
+        current = current[indices]
+        voltage = voltage[indices]
+    if iv_type == "rectified":
+        current = np.abs(current)
+        voltage = np.abs(voltage)
+    reg = linregress(x=current, y=voltage)
     mem_res = reg.slope * 1000
-    return IVCurveOutput(mem_res, reg.slope, reg.intercept, iv_x[0], iv_x[-1])
+    return IVCurveOutput(mem_res, reg.slope, reg.intercept)

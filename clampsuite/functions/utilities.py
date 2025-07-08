@@ -154,7 +154,7 @@ def create_event_array(
 
 def map_keys(keys: Iterable):
     key_values = {"mv", "index", "pa", "hz"}
-    cap_values = {"hw", "fw", "auc", "ahp", "ai", "iei", "sfa"}
+    cap_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
     key_mapping = {}
     for key in keys:
         key_items = key.split("_")

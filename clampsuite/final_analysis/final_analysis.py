@@ -12,7 +12,12 @@ class FinalAnalysis:
         The function saves the data to the current directory so all that is
         needed is a name for the excel file.
         """
-        prog_data = pd.DataFrame(self.program_data, index=None)
+        program_data = {
+            "Program": ["ClampSuite"],
+            "Version": clampsuite.__version__,
+            "Time stamp": [str(datetime.datetime.now())],
+        }
+        prog_data = pd.DataFrame(program_data, index=None)
         with pd.ExcelWriter(
             f"{save_filename}.xlsx", mode="w", engine="xlsxwriter"
         ) as writer:
@@ -22,14 +27,6 @@ class FinalAnalysis:
 
     def load_data(self):
         raise NotImplementedError
-
-    def create_program_df(self):
-        self.program_data = {
-            "Program": self.program,
-            "Version": self.version,
-            "Time stamp": self.tmstp,
-            "Analysis": self.analysis,
-        }
 
     def set_program_data(self, df):
         self.program_data = df.to_dict()

@@ -1,37 +1,40 @@
 from collections import defaultdict
-from typing import Union, Literal
+from typing import Literal, Union
 
 import numpy as np
 import pandas as pd
 
-from . import final_analysis
 from ..acq import CurrentClampAcq
+from ..functions.curve_fit import fit_iv, fit_sigmoid, fit_log
 from ..functions.utilities import map_keys
-from ..functions.curve_fit import fit_sigmoid, fit_iv
+from . import final_analysis
 
 
 class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
-    def __init__(self, acq_dict: dict[int, CurrentClampAcq]):
-        self.iv_start = None
-        self.iv_end = None
+    def __init__(
+        self,
+        acq_dict: dict[int, CurrentClampAcq],
+        iv_start: int | None = None,
+        iv_end: int | None = None,
+        iv_type: Literal["rectified", "all", "subset"] = "all",
+    ):
+        self.iv_start = iv_start
+        self.iv_end = iv_end
         self.df_dict = {}
+        self.iv_type = iv_type
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
         self.acq_dict = acq_dict
 
     def analyze(
-        self, iv_start: int | None = None, iv_end: int | None = None, debug=False
+        self,
     ):
-        if not debug:
-            self._analyze(self.acq_dict)
-
-    def _analyze(self, acq_dict: dict):
         self.create_raw_data()
-        self.create_average_data()
-        self.final_data_pulse()
-        self.final_data_ramp()
-        self.create_first_ap_dfs(acq_dict, self.pulse_indexes, self.ramp_indexes)
+        self.get_features()
+        # self.final_data_pulse()
+        # self.final_data_ramp()
+        # self.create_first_ap_dfs(acq_dict, self.pulse_indexes, self.ramp_indexes)
 
     def load_data(self, file_path: str):
         self.df_dict = {}
@@ -57,29 +60,29 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             spk_params.append(pd.DataFrame(spk_data))
             acq_params.append(acq_data)
         spk_params = pd.concat(spk_params)
-        key_mapping = map_keys(spk_params.columns())
+        key_mapping = map_keys(spk_params.columns)
         spk_params = spk_params.rename(columns=key_mapping)
 
         acq_params = pd.DataFrame(acq_params)
-        key_mapping = map_keys(acq_params.columns())
+        key_mapping = map_keys(acq_params.columns)
         acq_params = acq_params.rename(columns=key_mapping)
         spk_params["HW (ms)"] = spk_params["HW Right (ms)"] - spk_params["HW Left (ms)"]
         spk_params["FW (ms)"] = spk_params["FW Right (ms)"] - spk_params["FW Left (ms)"]
 
         spk_params = spk_params.sort_values(
             ["Epoch", "Cycle", "Acq Number", "Spike Number"]
-        ).reset_index()
+        ).reset_index(drop=True)
 
         acq_params = acq_params.sort_values(
             ["Epoch", "Cycle", "Acq Number"]
-        ).reset_index()
+        ).reset_index(drop=True)
 
-        self.df_dict["Spike parameters"] = spk_params
-        self.df_dict["Acq parameters"] = acq_params
+        self.df_dict["Spike Parameters"] = spk_params
+        self.df_dict["Acq Parameters"] = acq_params
 
     def get_features(self):
-        rheo_features = self.df_dict["Spike parameters"].loc[
-            self.df_dict["Spike parameters"]
+        rheo_features = self.df_dict["Spike Parameters"].loc[
+            self.df_dict["Spike Parameters"]
             .groupby(["Epoch", "Cycle"])["Acq Number"]
             .idxmin()
         ]
@@ -92,7 +95,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             columns={"Pulse Amp (pA)": "Rheobase (pA)"}
         )
         avg_data = (
-            self.df_dict["Acq parameters"]
+            self.df_dict["Acq Parameters"]
             .groupby(["Epoch", "Pulse Amp (pA)"], as_index=False)
             .mean(numeric_only=True)
             .drop(columns=["Acq Number", "Cycle"])
@@ -101,7 +104,16 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             avg_data.groupby(["Epoch"])["Pulse Amp (pA)"].idxmin(),
             ["Epoch", "Sag (mV)", "Sag (ms)"],
         ]
-        fi_features = self.fi_fit(self.df_dict["Acq parameters"])
+        fi_features = self.fi_fit(self.df_dict["Acq Parameters"])
+        iv_params = self.df_dict["Acq Parameters"]
+        iv_params = iv_params.loc[iv_params["Freq (Hz)"] < 1e-6]
+        iv_features = self.iv_fit(
+            iv_params,
+            start=self.iv_start,
+            end=self.iv_end,
+            iv_type=self.iv_type,
+        )
+        auc_features = self.log_fit(self.df_dict["Spike Parameters"], column="AUC")
         features = (
             avg_data.drop(
                 columns=["Sag (mV)", "Sag (ms)", "Pulse Amp (pA)", "Delta V (mV)"]
@@ -112,67 +124,65 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         features = pd.merge(features, rheo_features, on="Epoch")
         features = pd.merge(features, sag_features, on="Epoch")
         features = pd.merge(features, fi_features, on="Epoch")
-        self.dict["Final"] = features
+        features = pd.merge(features, iv_features, on="Epoch")
+        features = pd.merge(features, auc_features, on="Epoch")
+        self.df_dict["Epoch Parameters"] = features
 
     def fi_fit(self, acq_data):
         fi_output = []
+        epochs = []
         fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
         for key, value in fi_data.groupby("Epoch").groups.items():
             current = fi_data.loc[value, "Pulse Amp (pA)"]
             firing_rate = fi_data.loc[value, "Freq (Hz)"]
             temp = fit_sigmoid(current, firing_rate)
-            temp["Epoch"] = key
-            fi_output.append(temp)
+            epochs.append(key)
+            fi_output.append(temp._asdict())
         fi_features = pd.DataFrame(fi_output)
-        key_mapping = map_keys(fi_features.columns())
+        key_mapping = map_keys(fi_features.columns)
+        key_mapping = {key: f"FI {value}" for key, value in key_mapping.items()}
         fi_features = fi_features.rename(columns=key_mapping)
+        fi_features["Epoch"] = epochs
         return fi_features
 
-    def iv_fit(self, acq_data, iv_type: Literal["rectified", "all", "subset"]):
-        iv_output = []
-        iv_data = acq_data[acq_data["Freq (Hz)"] < 1e-6]
-        for key, value in iv_data.groupby("Epoch").groups.items():
-            current = iv_data.loc[value, "Pulse Amp (pA)"]
-            voltage = iv_data.loc[value, "Delta V (mV)"]
-            temp = fit_iv(current, voltage)
-            temp["Epoch"] = key
-            iv_output.append(temp)
-        fi_features = pd.DataFrame(iv_output)
-        key_mapping = map_keys(fi_features.columns())
-        fi_features = fi_features.rename(columns=key_mapping)
-
-    def create_first_ap_dfs(
+    def iv_fit(
         self,
-        acq_dict: dict,
-        pulse_indexes: Union[list, np.ndarray],
-        ramp_indexes: Union[list, np.ndarray],
+        acq_data,
+        column: str = "Delta V (mV)",
+        start: int | float | None = None,
+        end: int | float | None = None,
+        iv_type: Literal["rectified", "all", "subset"] = "all",
     ):
-        pulse_dict = self.create_first_aps(acq_dict, pulse_indexes)
-        ramp_dict = self.create_first_aps(acq_dict, ramp_indexes)
+        iv_output = []
+        epochs = []
+        for key, value in acq_data.groupby("Epoch").groups.items():
+            current = acq_data.loc[value, "Pulse Amp (pA)"]
+            voltage = acq_data.loc[value, column]
+            temp = fit_iv(current, voltage, start, end, iv_type)
+            epochs.append(key)
+            iv_output.append(temp._asdict())
+        iv_features = pd.DataFrame(iv_output)
+        key_mapping = map_keys(iv_features.columns)
+        key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
+        iv_features = iv_features.rename(columns=key_mapping)
+        iv_features["Epoch"] = epochs
+        return iv_features
 
-        if pulse_dict:
-            pulse_ap = self.first_ap_dict(pulse_dict)
-        else:
-            pulse_ap = {}
-
-        if ramp_dict:
-            ramp_ap = self.first_ap_dict(ramp_dict)
-        else:
-            ramp_ap = {}
-
-        if pulse_ap:
-            pulse_ap_df = pd.DataFrame(
-                dict([(k, pd.Series(v)) for k, v in pulse_ap.items()])
-            )
-            self.pulse_ap = True
-            self.df_dict["Pulse APs"] = pulse_ap_df
-
-        if ramp_ap:
-            ramp_ap_df = pd.DataFrame(
-                dict([(k, pd.Series(v)) for k, v in ramp_ap.items()])
-            )
-            self.ramp_ap = True
-            self.df_dict["Ramp APs"] = ramp_ap_df
+    def log_fit(self, spike_data, column: str = "AUC"):
+        log_output = []
+        epochs = []
+        for key, value in spike_data.groupby("Epoch").groups.items():
+            y = spike_data.loc[value, column]
+            x = spike_data.loc[value, "Spike Number"]
+            temp = fit_log(x, y)
+            epochs.append(key)
+            log_output.append(temp._asdict())
+        log_features = pd.DataFrame(log_output)
+        key_mapping = map_keys(log_features.columns)
+        key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
+        log_features = log_features.rename(columns=key_mapping)
+        log_features["Epoch"] = epochs
+        return log_features
 
     def create_first_aps(
         self, acq_dict: dict, indexes: Union[list, np.ndarray]
@@ -181,18 +191,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         for i in indexes:
             if len(acq_dict[i].first_ap) >= 1:
                 ap_dict[acq_dict[i].epoch].append(acq_dict[i].first_ap)
-        return ap_dict
-
-    def first_ap_dict(self, dictionary: dict[int, np.ndarray]) -> dict[int, np.ndarray]:
-        ap_dict = {}
-        if len(dictionary.keys()) > 1:
-            for i in dictionary.keys():
-                average = self.average_aps(dictionary[i])
-                ap_dict[i] = average
-        else:
-            i = list(dictionary.keys())[0]
-            average = self.average_aps(dictionary[i])
-            ap_dict[i] = average
         return ap_dict
 
     def average_aps(self, ap_list: Union[list, np.ndarray]) -> np.ndarray:
@@ -221,40 +219,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         average = np.average(np.array(arrays), axis=0)
         return average
 
-    def test(self):
-        groups = self.df_dict["raw_data"].groupby(["Epoch"]).indices
-        output = defaultdict(list)
-        for epoch, indexes in groups.items():
-            output["Epoch"].append(epoch)
-            temp_df = self.df_dict["raw_data"].iloc[indexes]
-            pulse_amp = temp_df["Pulse amp (pA)"].to_numpy()
-            mem_res_output = fit_iv(
-                temp_df["Delta V (mV)"].to_numpy(),
-                pulse_amp,
-                self.iv_start,
-                self.iv_end,
-            )
-            output["Membrane resistance"].append(mem_res_output)
-            sag_index = np.where(pulse_amp <= 0)[0][0]
-            sag_res_output = fit_iv(
-                temp_df["Voltage sag (mV)"].to_numpy(), pulse_amp, 0, sag_index
-            )
-            output["Sag resistance"].append(sag_res_output)
-
-    def create_dataframe(
-        self,
-        data: Union[list, np.ndarray],
-        columns: list[str],
-        name: str,
-        tranpose: bool = True,
-    ):
-        if tranpose:
-            df = pd.DataFrame(data).T
-        else:
-            df = pd.DataFrame(data)
-        df.columns = columns
-        self.df_dict[name] = df
-
     def pulse_averages(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         df_pulse = raw_df.loc[raw_df["Ramp"] == 0]
         if df_pulse.empty:
@@ -273,63 +237,3 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         self.pulse_indexes = raw_df["Acquisition"].iloc[indexes].to_numpy()
         df_ave_spike = df_spikes.groupby(["Epoch"]).mean(numeric_only=True)
         return df_ave_spike
-
-    def final_data_pulse(self):
-        self.pulse_indexes = []
-        raw_df = self.df_dict["Raw data"]
-        df_pulses = raw_df[raw_df["Ramp"] == 0]
-        resistance = self.iv_curve(
-            df_pulses, self.iv_start, self.iv_end, "Delta V (mV)", "Membrane resistance"
-        )
-        sag_slope = self.iv_curve(
-            df_pulses,
-            1,
-            self.iv_end,
-            "Voltage sag (mV)",
-            "Voltage sag slope",
-        )
-        if len(df_pulses["Spike threshold (mV)"].unique()) == 1 and np.isnan(
-            df_pulses["Spike threshold (mV)"].unique()[0]
-        ):
-            temp = df_pulses.groupby(["Epoch"]).mean()
-            temp.rename(columns={"Pulse amp (pA)": "Rheobase (pA)"}, inplace=True)
-            temp = pd.concat([temp, resistance, sag_slope], axis=1).reset_index(
-                names="Epoch"
-            )
-            self.df_dict["Final data (pulse)"] = temp
-        else:
-            df_ave_spike = self.pulse_averages(raw_df)
-            iei = self.extract_features(df_pulses, "IEI").reset_index()
-            self.df_dict["IEI"] = iei
-            hertz = self.extract_features(df_pulses, "Hertz").reset_index()
-            hertz.fillna(0, inplace=True)
-            self.df_dict["Hertz"] = hertz
-            df_concat = pd.concat(
-                [df_ave_spike, resistance, sag_slope], axis=1
-            ).reset_index(names="Epoch")
-            df_concat.sort_values(by="Epoch")
-            df_concat.rename(columns={"Pulse amp (pA)": "Rheobase (pA)"}, inplace=True)
-            self.df_dict["Final data (pulse)"] = df_concat
-            self.hertz = True
-            self.pulse_ap = True
-
-    def extract_features(self, df: pd.DataFrame, values: str) -> pd.DataFrame:
-        df_average = df.groupby(
-            ["Epoch", "Pulse amp (pA)", "Pulse pattern"],
-            as_index=False,
-            group_keys="Epoch",
-        ).mean(numeric_only=True)
-        df_pivot = df_average.pivot(
-            index="Pulse amp (pA)", values=values, columns="Epoch"
-        )
-        return df_pivot
-
-    def final_data_ramp(self):
-        raw_df = self.df_dict["Raw data"]
-        df_ramp = raw_df[raw_df["Ramp"] == 1]
-        self.ramp_indexes = []
-        if not df_ramp.empty:
-            self.ramp_indexes = df_ramp["Acquisition"].to_numpy()
-            final_ramp = df_ramp.groupby(["Epoch"]).mean(numeric_only=True)
-            self.df_dict["Final data (ramp)"] = final_ramp
-            self.ramp_ap = True
