@@ -14,13 +14,13 @@ class SigmoidCurveFit(NamedTuple):
 
 
 def sigmoid(x, max_value, midpoint, slope, offset):
-    return 1 / (1 + np.exp((x - midpoint) / slope)) * max_value + offset
+    return 1 / (1 + np.exp((x - midpoint) / -slope)) * max_value + offset
 
 
 def fit_sigmoid(current, firing_rate):
-    lb = [-np.inf, -np.inf, 1e-6, -np.inf]
+    lb = [-np.inf, -np.inf, 1e-6, 0]
     ub = [np.inf, np.inf, np.inf, np.inf]
-    p0 = [-np.max(firing_rate), np.mean(current), 30, np.max(firing_rate)]
+    p0 = [np.max(firing_rate), np.mean(current), 30, 0]
     try:
         p, _ = curve_fit(sigmoid, current, firing_rate, p0=p0, bounds=(lb, ub))
         upsampled_current = np.linspace(current.min(), current.max(), 1000)
