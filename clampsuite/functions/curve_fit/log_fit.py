@@ -18,8 +18,17 @@ def fit_log(x, y):
     try:
         xmin= np.min(x)
         xmax = np.max(x)
-        divisor = max((xmax - xmin), 1)
-        p0 = [np.max(y) - np.min(y) / max(np.log(divisor), 1), np.min(y), 0]
+        ymin = np.min(y)
+        ymax = np.max(y)
+        if np.abs(ymin) > np.abs(ymax):
+            numerator = ymin-ymax
+            offset_est = ymax
+        else:
+            offset_est = ymin
+            numerator = ymax-ymin
+        divisor = max(np.abs(xmax - xmin), 1)
+        vscale_est = numerator / max(np.log(divisor), 1)
+        p0 = [vscale_est, offset_est, 0]
         ub = [np.inf, np.inf, xmin - 1e-6]
         lb = [-np.inf, -np.inf, -np.inf]
         p, _ = curve_fit(log_func, x, y, p0=p0, bounds=(lb, ub))
