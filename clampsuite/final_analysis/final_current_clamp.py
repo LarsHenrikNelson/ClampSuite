@@ -16,12 +16,12 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         acq_dict: dict[int, CurrentClampAcq],
         iv_start: int | None = None,
         iv_end: int | None = None,
-        iv_type: Literal["rectified", "all", "subset"] = "all",
+        rectify: bool = False,
     ):
         self.iv_start = iv_start
         self.iv_end = iv_end
         self.df_dict = {}
-        self.iv_type = iv_type
+        self.rectify = rectify
         self.hertz = False
         self.pulse_ap = False
         self.ramp_ap = False
@@ -111,7 +111,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             iv_params,
             start=self.iv_start,
             end=self.iv_end,
-            iv_type=self.iv_type,
+            rectify=self.rectify,
         )
         auc_features = self.log_fit(self.df_dict["Spike Parameters"], column="AUC")
         fr_features = (
@@ -162,14 +162,14 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         column: str = "Delta V (mV)",
         start: int | float | None = None,
         end: int | float | None = None,
-        iv_type: Literal["rectified", "all", "subset"] = "all",
+        rectify: bool = False,
     ):
         iv_output = []
         epochs = []
         for key, value in acq_data.groupby("Epoch").groups.items():
             current = acq_data.loc[value, "Pulse Amp (pA)"]
             voltage = acq_data.loc[value, column]
-            temp = fit_iv(current, voltage, start, end, iv_type)
+            temp = fit_iv(current, voltage, start, end, rectify)
             epochs.append(key)
             iv_output.append(temp._asdict())
         iv_features = pd.DataFrame(iv_output)

@@ -19,17 +19,16 @@ def fit_iv(
     voltage,
     start: int | float | None = None,
     end: int | float | None = None,
-    iv_type: Literal["rectified", "all", "subset"] = "all",
+    rectify: bool = False
 ) -> NamedTuple:
-    if iv_type == "subset":
-        if start is None:
-            start = current.min()
-        if end is None:
-            end = current.max()
-        indices = (current >= start) & (current <= end)
-        current = current[indices]
-        voltage = voltage[indices]
-    if iv_type == "rectified":
+    if start is None:
+        start = current.min()
+    if end is None:
+        end = current.max()
+    indices = (current >= start) & (current <= end)
+    current = current[indices]
+    voltage = voltage[indices]
+    if rectify:
         current = np.abs(current)
         voltage = np.abs(voltage)
     reg = linregress(x=current, y=voltage)
