@@ -1,39 +1,27 @@
 from typing import Literal, Union
 
 import numpy as np
-from scipy import interpolate, signal
-from scipy.fft import fft, ifft
 
-from ..functions.filtering_functions import fir_filter
-from ..functions.template_psc import create_template
+from ..functions.filtering_functions import FIRFilter
+from ..functions.mspsc import (
+    EventMethods,
+    deconvolve_array,
+    find_events,
+    template_match,
+)
 from ..functions.rc_check import calc_rs
-from . import filter_acq
+from ..functions.template_psc import TemplateParams
+from ..loader.acquisition_data import AcquisitionData
 from .postsynaptic_event import MiniEvent
 
 
 class MiniAnalysisAcq:
-    def __init__(self, array, filter_settings):
-        self.array = array
-        self.filter_settings = filter_settings
-
-    def set_template(
-        self,
-        tmp_amplitude: Union[int, float] = -20,
-        tmp_tau_1: Union[int, float] = 0.3,
-        tmp_tau_2: Union[int, float] = 5,
-        tmp_risepower: Union[int, float] = 0.5,
-        tmp_length: Union[int, float] = 30,
-        tmp_spacer: Union[int, float] = 1.5,
-    ):
-        self.tmp_amplitude = tmp_amplitude
-        self.tmp_tau_1 = tmp_tau_1
-        self.tmp_tau_2 = tmp_tau_2
-        self.tmp_risepower = tmp_risepower
-        self.tmp_length = tmp_length
-        self.tmp_spacer = tmp_spacer
+    def __init__(self, acq_data: AcquisitionData):
+        self.acq_data = acq_data
 
     def analyze(
         self,
+        template_params: TemplateParams,
         sensitivity: Union[int, float] = 4,
         amp_threshold: Union[int, float] = 4,
         mini_spacing: Union[int, float] = 2,
@@ -43,14 +31,11 @@ class MiniAnalysisAcq:
         event_length: Union[int, float] = 30,
         decay_rise: bool = True,
         invert: bool = False,
-        decon_type: Literal["fft", "wiener", "convolution"] = "wiener",
+        method: EventMethods = "wiener",
         curve_fit_decay: bool = False,
         curve_fit_type: Literal["s_exp", "db_exp"] = "s_exp",
         baseline_corr: bool = False,
-        rc_check: bool = True,
-        rc_check_start: Union[int, float] = 10000,
-        rc_check_end: Union[int, float] = 10300,
-        debug: bool = False,
+        deconvolve_filter: FIRFilter | None = None,
     ):
         # Set the attributes for the acquisition
         self.sensitivity = sensitivity
@@ -63,31 +48,32 @@ class MiniAnalysisAcq:
         self.decay_rise = decay_rise
         self.invert = invert
         self.curve_fit_decay = curve_fit_decay
-        self.decon_type = decon_type
+        self.method = method
         self.curve_fit_type = curve_fit_type
         self.deleted_events = 0
         self.baseline_corr = baseline_corr
-        self.rc_check = rc_check
+        self.template_params = template_params
 
-        # User must specify rc check start b/c due to how scanimage saves rc check info
-        self.rc_check_start = rc_check_start
-        self.rc_check_end = rc_check_end
-        self._rc_check_start = int(rc_check_start * self.s_r_c)
-        self._rc_check_end = int(rc_check_end * self.s_r_c)
+        if deconvolve_filter is None:
+            self.deconvolve_filter = FIRFilter(
+                filter_type="fir",
+                order=351,
+                high_pass=None,
+                high_width=None,
+                low_pass=300,
+                low_width=100,
+                window="hann",
+                fs=self.acq_data.fs,
+            )
+        else:
+            self.deconvolve_filter = deconvolve_filter
 
-        if not debug:
-            self.run_analysis()
+        if method == "template_match":
+            output = template_match(self.acq_data.array, template_params)
+        else:
+            output = deconvolve_array(self.acq_data.array, template_params, method, self.deconvolve_filter)
 
-    def run_analysis(self):
-        # Runs the functions to analyze the acquisition
-        # if self.baseline_corr:
-        #     self.baseline_correction()
-        self.create_mespc_array()
-        # self.filter_array(temp_array)
-        self.set_array()
-        self.set_sign()
-        self.create_events()
-        self.analyze_rc_check()
+        events = find_events(output, self.mini_spacing, self.sensitivity)
 
     def create_mespc_array(self):
         """The function creates the mEPSC array by removing the RC
@@ -138,170 +124,12 @@ class MiniAnalysisAcq:
         else:
             self.rs = 0.0
 
-    def baseline_correction(self):
-        end = len(self.array)
-        num_knots = 8
-        knots = np.arange(
-            int(end / num_knots),
-        )
-        spl = interpolate.LSQUnivariateSpline(self.plot_acq_x(), self.array, t=knots)
-        baseline = spl(self.plot_acq_x())
-        self.array = self.array - baseline
-
-    def deconvolve_array(self, lambd: Union[int, float] = 4) -> np.ndarray:
-        """The Wiener deconvolution equation can be found on GitHub from pbmanis
-        and danstowell. The basic idea behind this function is deconvolution
-        or divsion in the frequency domain. I have found that changing lambd
-        from 2-10 does not seem to affect the performance of the Wiener
-        equation. The fft deconvolution type is the most simple and default
-        choice and is also what the original paper used.
-
-        Pernía-Andrade, A. J. et al. A Deconvolution-Based Method with High
-        Sensitivity and Temporal Resolution for Detection of Spontaneous
-        Synaptic Currents In Vitro and In Vivo. Biophysical Journal 103,
-        1429–1439 (2012).
-
-
-        Parameters
-        ----------
-        array : Filtered signal in a numpy array form. There are edge effects if
-            an unfiltered signal is used.
-        kernel : A representative PSC or PSP. Can be an averaged or synthetic
-            template.
-        lambd : Signal to noise ratio. A SNR anywhere from 1 to 10 seems to work
-            without determining the exact noise level.
-
-        Returns
-        -------
-        deconvolved_array: numpy array
-            Time domain deconvolved signal that is returned for filtering.
-
-        """
-        # The kernel needs to be the same length as the array that is being
-        # deconvolved.
-        template = create_template(
-            amplitude=self.tmp_amplitude,
-            tau_1=self.tmp_tau_1,
-            tau_2=self.tmp_tau_2,
-            risepower=self.tmp_risepower,
-            length=self.tmp_length,
-            spacer=self.tmp_spacer,
-            sample_rate=self.sample_rate,
-        )
-
-        kernel = np.hstack((template, np.zeros(len(self.final_array) - len(template))))
-        H = fft(kernel)
-
-        # Choose the method for finding minis. FFT and Wiener are almost identical.
-        # Convolution is similar to template fitting (correlation).
-        if self.decon_type == "fft":
-            deconvolved_array = np.real(ifft(fft(self.final_array) / H))
-        elif self.decon_type == "wiener":
-            deconvolved_array = np.real(
-                ifft(fft(self.final_array) * np.conj(H) / (H * np.conj(H) + lambd**2))
-            )
-        elif self.decon_type == "convolution":
-            deconvolved_array = signal.convolve(self.final_array, template, mode="same")
-        return deconvolved_array
-
-    def create_deconvolved_array(self) -> np.ndarray:
-        deconvolved_array = self.deconvolve_array()
-        if self.decon_type == "fft" or self.decon_type == "wiener":
-            filtered_decon_array = fir_filter(deconvolved_array, self.filter_settings)
-            return filtered_decon_array
-        else:
-            return deconvolved_array
-
-    def deconvolved_rms(self, deconvolved_array: np.ndarray) -> Union[float, float]:
-        # Get the top and bottom 2.5% cutoff.
-        bottom, top = np.percentile(deconvolved_array, [2.5, 97.5])
-
-        # Return the middle values.
-        middle = np.hstack(
-            deconvolved_array[
-                np.argwhere((deconvolved_array > bottom) & (deconvolved_array < top))
-            ]
-        )
-        # Calculate the mean and rms.
-        mu = np.mean(middle)
-        rms = np.sqrt(np.mean(np.square(middle - mu)))
-
-        return mu, rms
-
-    def find_events(self) -> list:
-        # This is not the method from the original paper but it works a
-        # lot better. The original paper used 4*std of the deconvolved array.
-        # The problem with that method is that interneurons needs a
-        # different sensitivity setting. I wanted to keep the settings as
-        # consistent as possible between different cell types.
-
-        deconvolved_array = self.create_deconvolved_array()
-
-        mu, rms = self.deconvolved_rms(deconvolved_array)
-
-        # Find the events.
-        peaks, _ = signal.find_peaks(
-            deconvolved_array - mu,
-            height=self.sensitivity * (rms),
-            distance=self.mini_spacing * self.s_r_c,
-            prominence=rms,
-        )
-
-        # There was an issue with the peaks list being a numpy array
-        # so it is converted to a python list.
-        events = peaks.tolist()
-        return events
-
     def plot_deconvolved_acq(self):
         deconvolved_array = self.create_deconvolved_array()
         mu, rms = self.deconvolved_rms(deconvolved_array)
         baseline = np.full(deconvolved_array.size, self.sensitivity * rms)
         return (deconvolved_array - mu), baseline
 
-    def create_events(self):
-        """This functions creates the events based on the list of peaks found
-        from the deconvolution. Events less than 20 ms before the end of
-        the acquisitions are not counted. Events get screened out based on
-        the experimenters settings.
-        """
-        # Create the lists to store values need for analysis.
-        self.postsynaptic_events = []
-        self.final_events = []
-        event_number = 0
-        event_time = []
-
-        events = self.find_events()
-
-        # The for loop won't run if there are no events.
-        # So there is no need to catch instances when
-        # there are no events.
-
-        for peak in events:
-            if len(self.final_array) - peak < 20 * self.s_r_c:
-                pass
-            else:
-                # Create the mini class then analyze.
-                try:
-                    event = MiniEvent()
-                    event.analyze(
-                        acq_number=self.acq_number,
-                        event_pos=peak,
-                        y_array=self.final_array,
-                        event_length=self.event_length,
-                        sample_rate=self.sample_rate,
-                        curve_fit_decay=self.curve_fit_decay,
-                        curve_fit_type=self.curve_fit_type,
-                    )
-
-                    # Screen out methods using the function.
-                    # See the function below for further details.
-                    if self.check_event(event, event_time):
-                        self.postsynaptic_events += [event]
-                        self.final_events += [peak]
-                        event_time += [event.event_peak_x()]
-                        event_number += 1
-                except Exception:
-                    pass
 
     def check_event(self, event: MiniEvent, events: list) -> bool:
         """The function is used to screen out events based
