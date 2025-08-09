@@ -49,6 +49,9 @@ clampsuite = "clampsuite.__main__:main"
 [tool.setuptools.dynamic]
 version = {attr = "clampsuite.__version__"}
 
+[tool.setuptools.packages]
+find = {}
+
 [tool.mypy]
 mypy_path = "clampsuite"
 check_untyped_defs = true
