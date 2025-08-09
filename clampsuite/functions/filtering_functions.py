@@ -51,9 +51,9 @@ class FIRFilter(NamedTuple):
     high_width: int | float | None = None
     low_pass: int | float | None = 500
     low_width: int | float | None = 200
-    window: Windows = ("hann",)
-    beta_sigma: float = None
-    sample_rate: float = 10000.0
+    window: Windows = "hann"
+    beta_sigma: float | None = None
+    fs: float = 10000.0
 
 
 class RemezFilter(NamedTuple):
@@ -64,7 +64,7 @@ class RemezFilter(NamedTuple):
     high_width: int | float | None = None
     low_pass: int | float | None = 500
     low_width: int | float | None = 200
-    sample_rate: float = 10000.0
+    fs: float = 10000.0
 
 
 class IIRFilter(NamedTuple):
@@ -75,7 +75,7 @@ class IIRFilter(NamedTuple):
     order: int = 4
     high_pass: int | float | None = None
     low_pass: int | float | None = 500
-    sample_rate: float = 10000.0
+    fs: float = 10000.0
 
 
 Filters: TypeAlias = (
@@ -83,24 +83,24 @@ Filters: TypeAlias = (
 )
 
 
-def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_rate):
+def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
     if high_pass is not None and high_width is not None:
         if high_pass < high_width:
             return FilterError(False, "High_pass must be large than high_width.")
         if high_pass < 0 or high_width < 0:
             return FilterError(False, "Filter settings cannot be less than 0.")
-        if high_pass > (sample_rate / 2) or high_width > (sample_rate / 2):
+        if high_pass > (fs / 2) or high_width > (fs / 2):
             return FilterError(
                 False, "Filter settings cannot be greater than the sample rate."
             )
     if low_pass is not None and low_width is not None:
-        if (low_pass + low_width) >= (sample_rate / 2):
+        if (low_pass + low_width) >= (fs / 2):
             return FilterError(
-                False, "Low_pass + low_width must be less than sample_rate"
+                False, "Low_pass + low_width must be less than fs"
             )
         if low_pass < 0 or low_width < 0:
             return FilterError(False, "Filter settings cannot be less than 0.")
-        if low_pass > (sample_rate / 2) or low_width > (sample_rate / 2):
+        if low_pass > (fs / 2) or low_width > (fs / 2):
             return FilterError(
                 False,
                 "Filter settings cannot be greater than the half the sample rate.",
@@ -124,24 +124,24 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, sample_ra
         if low_pass == 0:
             return FilterError(False, "Low_pass must be greater than 0.")
     if high_pass is not None:
-        if high_pass > (sample_rate / 2):
+        if high_pass > (fs / 2):
             return FilterError(
-                False, "High pass must be greater than half the sample_rate"
+                False, "High pass must be greater than half the fs"
             )
         if high_pass == 0:
             return FilterError(False, "High_pass must be greater than 0")
     return FilterError(True, "")
 
 
-def check_iir_filter_input(high_pass, low_pass, sample_rate):
+def check_iir_filter_input(high_pass, low_pass, fs):
     if high_pass is None and low_pass is None:
         return FilterError(False, "High_pass or low_pass or both must be provided.")
     if high_pass is not None:
-        if high_pass > sample_rate:
-            return FilterError(False, "High_pass must be less than sample_rate.")
+        if high_pass > fs:
+            return FilterError(False, "High_pass must be less than fs.")
     if low_pass is not None:
-        if low_pass > sample_rate:
-            return FilterError(False, "High_pass must be less than sample_rate.")
+        if low_pass > fs:
+            return FilterError(False, "High_pass must be less than fs.")
     if high_pass is not None and low_pass is not None:
         if low_pass < high_pass:
             return FilterError(False, "High_pass must be less than low_pass.")
@@ -162,7 +162,7 @@ def iir_filter(
     check = check_iir_filter_input(
         filter_settings.high_pass,
         filter_settings.low_pass,
-        filter_settings.sample_rate,
+        filter_settings.fs,
     )
     if not check.passed:
         return check
@@ -182,7 +182,7 @@ def iir_filter(
             Wn=[filter_settings.high_pass, filter_settings.low_pass],
             btype="bandpass",
             output="sos",
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(sos, array)
         return filt_array
@@ -192,7 +192,7 @@ def iir_filter(
             Wn=filter_settings.high_pass,
             btype="highpass",
             output="sos",
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(sos, array)
     elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
@@ -201,7 +201,7 @@ def iir_filter(
             Wn=filter_settings.low_pass,
             btype="lowpass",
             output="sos",
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(sos, array)
     return filt_array
@@ -220,7 +220,7 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
         filter_settings.high_width,
         filter_settings.low_pass,
         filter_settings.low_width,
-        filter_settings.sample_rate,
+        filter_settings.fs,
     )
     if not check.passed:
         return check
@@ -237,11 +237,11 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 filter_settings.high_pass,
                 filter_settings.low_pass,
                 filter_settings.low_pass + filter_settings.low_width,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             gain=[0, 0, 1, 1, 0, 0],
             window=filter_settings.window,
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
     elif filter_settings.high_pass is not None and filter_settings.low_pass is None:
@@ -251,11 +251,11 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 0,
                 filter_settings.high_pass - filter_settings.high_width,
                 filter_settings.high_pass,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             gain=[0, 0, 1, 1],
             window=filter_settings.window,
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
     elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
@@ -265,11 +265,11 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 0,
                 filter_settings.low_pass,
                 filter_settings.low_pass + filter_settings.low_width,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             gain=[1, 1, 0, 0],
             window=filter_settings.window,
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
     return filt_array
@@ -281,7 +281,7 @@ def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
         filter_settings.high_width,
         filter_settings.low_pass,
         filter_settings.low_width,
-        filter_settings.sample_rate,
+        filter_settings.fs,
     )
     if not check.passed:
         return check
@@ -294,10 +294,10 @@ def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
                 filter_settings.high_pass,
                 filter_settings.low_pass,
                 filter_settings.low_pass + filter_settings.low_width,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             [0, 1, 0],
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_acq = signal.filtfilt(filt, 1.0, array)
     elif filter_settings.high_pass is not None and filter_settings.low_pass is None:
@@ -307,10 +307,10 @@ def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
                 0,
                 filter_settings.high_pass - filter_settings.high_width,
                 filter_settings.high_pass,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             [0, 1],
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_acq = signal.filtfilt(hi, 1.0, array)
     elif filter_settings.high_pass is None and filter_settings.low_pass is not None:
@@ -320,10 +320,10 @@ def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
                 0,
                 filter_settings.low_pass,
                 filter_settings.low_pass + filter_settings.low_width,
-                filter_settings.sample_rate / 2,
+                filter_settings.fs / 2,
             ],
             [1, 0],
-            fs=filter_settings.sample_rate,
+            fs=filter_settings.fs,
         )
         filt_acq = signal.filtfilt(lo, 1.0, array)
     return filt_acq

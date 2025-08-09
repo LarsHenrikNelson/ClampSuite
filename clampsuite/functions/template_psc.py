@@ -1,12 +1,21 @@
-from typing import Union
+from typing import Union, NamedTuple
 
 import numpy as np
+
+class TemplateParams(NamedTuple):
+    amplitude: float
+    rise_tau: float
+    decay_tau: float
+    risepower: float
+    length: float
+    spacer: float
+    sample_rate: float
 
 
 def create_template(
     amplitude: Union[int, float] = -20,
-    tau_1: Union[int, float] = 0.3,
-    tau_2: Union[int, float] = 5,
+    rise_tau: Union[int, float] = 0.3,
+    decay_tau: Union[int, float] = 5,
     risepower: Union[int, float] = 0.5,
     length: Union[int, float] = 30,
     spacer: Union[int, float] = 1.5,
@@ -16,8 +25,8 @@ def create_template(
 
     Args:
         amplitude (float): Amplitude of template
-        tau_1 (float): Rise tau (ms) of template
-        tau_2 (float): Decay tau (ms) of template
+        rise_tau (float): Rise tau (ms) of template
+        decay_tau (float): Decay tau (ms) of template
         risepower (float): Risepower of template
         length (float): Length of time (ms) for template
         spacer (int, optional): Delay (ms) until template starts. Defaults to 1.5.
@@ -26,18 +35,18 @@ def create_template(
         np.array: Numpy array of the template.
     """
     s_r_c = sample_rate / 1000
-    tau_1 = int(tau_1 * s_r_c)
-    tau_2 = int(tau_2 * s_r_c)
+    rise_tau = int(rise_tau * s_r_c)
+    decay_tau = int(decay_tau * s_r_c)
     length = int(length * s_r_c)
     spacer = int(spacer * s_r_c)
     template = np.zeros(length + spacer)
     t_length = np.arange(0, length)
     offset = len(template) - length
-    Aprime = (tau_2 / tau_1) ** (tau_1 / (tau_1 - tau_2))
+    Aprime = (decay_tau / rise_tau) ** (rise_tau / (rise_tau - decay_tau))
     y = (
         amplitude
         / Aprime
-        * ((1 - (np.exp(-t_length / tau_1))) ** risepower * np.exp((-t_length / tau_2)))
+        * ((1 - (np.exp(-t_length / rise_tau))) ** risepower * np.exp((-t_length / decay_tau)))
     )
     template[offset:] = y
     return template
