@@ -22,161 +22,38 @@ class MiniEvent:
         self,
         acq_number: int,
         event_pos: int,
-        y_array: Union[np.ndarray, list],
-        event_length: int,
+        array: Union[np.ndarray, list],
+        event_length: float,
         sample_rate: int,
-        curve_fit_decay: bool = False,
         curve_fit_type: Literal[
+            "none",
             "s_exp",
-            "db_exp",
-        ] = "dp_exp",
+            "d_exp",
+        ] = "s_exp",
     ):
         self.acq_number = acq_number
-        self._event_pos = int(event_pos)
+        self.event_pos = event_pos
         self.sample_rate = sample_rate
-        self.s_r_c = sample_rate / 1000
-        self.curve_fit_decay = curve_fit_decay
         self.curve_fit_type = curve_fit_type
-        self.fit_tau = np.nan
-        self.event_length = event_length
-        self._event_length = int(event_length * self.s_r_c)
-        self.create_event(y_array)
+        self.s_r_c = sample_rate / 1000
+        self.event_length = int(event_length * self.s_r_c)
+        self.array = array
+        self.event_start, self.event_end = self.find_event_limits(
+            self.array, 2 * self.s_r_c
+        )
         self.find_peak()
-        self.find_event_parameters(y_array)
+        self.find_event_parameters(array)
+        self.adjust_pos = int(self.event_pos - self.event_start)
 
-    def create_event(self, y_array: Union[np.ndarray, list], offset: int = 2):
-        self._array_start = int(self._event_pos - (offset * self.s_r_c))
-        self.adjust_pos = int(self._event_pos - self._array_start)
-        end = int(self._event_pos + self._event_length)
-        if end > len(y_array) - 1:
-            self._array_end = len(y_array) - 1
+    def find_event_limits(self, array: Union[np.ndarray, list], offset: int = 20):
+        event_start = int(self.event_pos - offset)
+        end = int(self.event_pos + self.event_length)
+        if end > len(array) - 1:
+            event_end = len(array) - 1
         else:
-            self._array_end = end
-        self.create_event_array(y_array)
+            event_end = end
+        return event_start, event_end
 
-    def create_event_array(self, y_array: Union[np.ndarray, list]):
-        self.event_array = y_array[self._array_start : self._array_end]
-
-    def find_peak(self):
-        peaks_1, _ = signal.find_peaks(
-            -1 * self.event_array,
-            prominence=4,
-            width=0.4 * self.s_r_c,
-            distance=int(3 * self.s_r_c),
-            # rel_height=1,
-        )
-        # peaks_1 = signal.argrelextrema(
-        #     self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
-        # )[0]
-        peaks_1 = peaks_1[peaks_1 > self.adjust_pos]
-        if len(peaks_1) == 0:
-            self.find_peak_alt()
-        else:
-            self.peak_corr(peaks_1[0])
-
-    def peak_corr(self, peak_1: int):
-        peaks_2 = signal.argrelextrema(
-            self.event_array[:peak_1],
-            comparator=np.less,
-            order=int(0.4 * self.s_r_c),
-        )[0]
-        peaks_2 = peaks_2[peaks_2 > peak_1 - 4 * self.s_r_c]
-        if len(peaks_2) == 0:
-            final_peak = peak_1
-        else:
-            peaks_3 = peaks_2[
-                self.event_array[peaks_2] < 0.85 * self.event_array[peak_1]
-            ]
-            if len(peaks_3) == 0:
-                final_peak = peak_1
-            else:
-                final_peak = peaks_3[0]
-        self._event_peak_x = self.x_array()[int(final_peak)]
-        self.event_peak_y = self.event_array[int(final_peak)]
-
-    def find_peak_alt(self):
-        peaks_1 = signal.argrelextrema(
-            self.event_array, comparator=np.less, order=int(3 * self.s_r_c)
-        )[0]
-        peaks_1 = peaks_1[peaks_1 > self.adjust_pos]
-        if len(peaks_1) == 0:
-            self._event_peak_x = np.nan
-            self.event_peak_y = np.nan
-        else:
-            self.peak_corr(peaks_1[0])
-
-    def find_alt_baseline(self):
-        baselined_array = self.event_array - np.mean(
-            self.event_array[: int(1 * self.s_r_c)]
-        )
-        masked_array = baselined_array.copy()
-        mask = np.argwhere(baselined_array <= 0)
-        masked_array[mask] = 0
-        peaks = signal.argrelmax(
-            masked_array[0 : int(self._event_peak_x - self._array_start)], order=2
-        )
-        if len(peaks[0]) > 0:
-            self._event_start_x = self.x_array()[peaks[0][-1]]
-            self.event_start_y = self.event_array[peaks[0][-1]]
-        else:
-            event_start = np.argmax(
-                masked_array[0 : int(self._event_peak_x - self._array_start)]
-            )
-            self._event_start_x = self.x_array()[event_start]
-            self.event_start_y = self.event_array[event_start]
-        self.event_baseline = self.event_start_y
-
-    def find_baseline(self):
-        """
-         This functions finds the baseline of an event. The biggest issue with
-         most methods that find the baseline is that they assume the baseline
-         does not deviate from zero, however this is often not true is real
-         life. This methods combines a slope finding method with a peak
-         finding method.
-
-        Returns
-        -------
-        None.
-
-        """
-        # baselined_array = self.event_array - np.mean(
-        #     self.event_array[: int(1 * self.s_r_c)]
-        # )
-        baselined_array = self.event_array - np.max(
-            self.event_array[: self._event_peak_x]
-        )
-        peak = int(self._event_peak_x - self._array_start)
-        # search_start = np.argwhere(
-        #     baselined_array[:peak] > 0.5 * self.event_peak_y
-        # ).flatten()
-        search_start = np.argwhere(
-            baselined_array[:peak] > 0.35 * self.event_peak_y
-        ).flatten()
-        if search_start.size > 0:
-            slope = (self.event_array[search_start[-1]] - self.event_peak_y) / (
-                peak - search_start[-1]
-            )
-            new_slope = slope + 1
-            i = search_start[-1]
-            while new_slope > slope and i > 0:
-                slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
-                i -= 1
-                new_slope = (self.event_array[i] - self.event_peak_y) / (peak - i)
-            baseline_start = signal.argrelmax(
-                baselined_array[int(i - 1 * self.s_r_c) : i + 2], order=2
-            )[0]
-            if baseline_start.size > 0:
-                temp = int(baseline_start[-1] + (i - 1 * self.s_r_c))
-                if temp < 0:
-                    temp = 0
-            else:
-                temp = int(baseline_start.size / 2 + (i - 1 * self.s_r_c))
-                if temp < 0:
-                    temp = 0
-            self._event_start_x = self.x_array()[temp]
-            self.event_start_y = self.event_array[temp]
-        else:
-            self.find_alt_baseline()
 
     def calc_event_amplitude(self):
         self.amplitude = abs(self.event_peak_y - self.event_start_y)

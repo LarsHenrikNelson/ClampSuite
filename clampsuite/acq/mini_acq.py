@@ -32,9 +32,7 @@ class MiniAnalysisAcq:
         decay_rise: bool = True,
         invert: bool = False,
         method: EventMethods = "wiener",
-        curve_fit_decay: bool = False,
-        curve_fit_type: Literal["s_exp", "db_exp"] = "s_exp",
-        baseline_corr: bool = False,
+        curve_fit_type: Literal["none", "s_exp", "db_exp"] = "s_exp",
         deconvolve_filter: FIRFilter | None = None,
     ):
         # Set the attributes for the acquisition
@@ -47,11 +45,9 @@ class MiniAnalysisAcq:
         self.event_length = event_length
         self.decay_rise = decay_rise
         self.invert = invert
-        self.curve_fit_decay = curve_fit_decay
         self.method = method
         self.curve_fit_type = curve_fit_type
         self.deleted_events = 0
-        self.baseline_corr = baseline_corr
         self.template_params = template_params
 
         if deconvolve_filter is None:
@@ -130,47 +126,6 @@ class MiniAnalysisAcq:
         baseline = np.full(deconvolved_array.size, self.sensitivity * rms)
         return (deconvolved_array - mu), baseline
 
-
-    def check_event(self, event: MiniEvent, events: list) -> bool:
-        """The function is used to screen out events based
-        on several values set by the experimenter.
-
-        Args:
-            event (MiniEvent): An analyzed MiniEvent
-            events (list): List of previous events
-
-        Returns:
-            Bool: Boolean value can be used to determine if
-            the event qualifies for inclusion in final events.
-        """
-
-        # Retrieve the peak of the previous event.
-        if len(events) > 0:
-            prior_peak = events[-1]
-        else:
-            prior_peak = 0
-
-        # Retrieve the peak to compare to values set
-        # by the experimenter.
-        event_peak = event.event_peak_x()
-
-        # The function checks, in order of importance, the
-        # qualities of the event.
-        if np.isnan(event_peak) or event_peak in events:
-            return False
-        elif (
-            event_peak - prior_peak < self.mini_spacing
-            or event.amplitude <= self.amp_threshold
-            or event.rise_time <= self.min_rise_time
-            or event.rise_time >= self.max_rise_time
-            or event.final_tau_x <= self.min_decay_time
-            or event.event_start_x() > event_peak
-        ):
-            return False
-        elif self.decay_rise and event.final_tau_x <= event.rise_time:
-            return False
-        else:
-            return True
 
     def create_new_event(self, x: Union[int, float]) -> bool:
         """Creates a new mini event based on the time
