@@ -5,7 +5,7 @@ from scipy.fft import fft, ifft
 from scipy import signal
 
 from ..template_psc import create_template, TemplateParams
-from ..filtering_functions import fir_filter, FIRFilter
+from ..filtering import fir_filter, filters
 
 
 EventMethods: TypeAlias = Literal["fft", "weiner", "template_match"]
@@ -14,7 +14,7 @@ def deconvolve_array(
     array: np.ndarray,
     template_params: TemplateParams,
     decon_type: Literal["fft", "weiner"],
-    filter_settings: FIRFilter,
+    filter_settings: filters.FIRFilter,
     lambd: int | float = 4,
 ) -> np.ndarray:
     """The Wiener deconvolution equation can be found on GitHub from pbmanis

@@ -2,16 +2,15 @@ from typing import Literal, Union
 
 import numpy as np
 
-from ..functions.filtering_functions import (
+from ..functions.filtering import (
     ewma_filter,
     savgol_filter,
     fir_filter,
     iir_filter,
     remez_filter,
     median_filter,
-    Filters,
 )
-
+from ..functions.filtering.filters import Filters
 
 class FilterAcq:
     def __init__(self, filter: Filters):

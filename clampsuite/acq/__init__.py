@@ -9,6 +9,6 @@ from .acquisition import Acquisition
 from .current_clamp_acq import CurrentClampAcq
 from .filter_acq import FilterAcq
 from .lfp_acq import LFPAcq
+from .postsynaptic_event import MiniEvent
 from .mini_acq import MiniAnalysisAcq
 from .oepsc_acq import oEPSCAcq
-from .postsynaptic_event import MiniEvent

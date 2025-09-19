@@ -2,12 +2,13 @@ from typing import Literal, Union
 
 import numpy as np
 
-from ..functions.filtering_functions import FIRFilter
+from ..functions.filtering.filters import FIRFilter
 from ..functions.mspsc import (
     EventMethods,
     deconvolve_array,
     find_events,
     template_match,
+    create_events,
 )
 from ..functions.rc_check import calc_rs
 from ..functions.template_psc import TemplateParams
@@ -67,9 +68,14 @@ class MiniAnalysisAcq:
         if method == "template_match":
             output = template_match(self.acq_data.array, template_params)
         else:
-            output = deconvolve_array(self.acq_data.array, template_params, method, self.deconvolve_filter)
+            output = deconvolve_array(
+                self.acq_data.array, template_params, method, self.deconvolve_filter
+            )
 
         events = find_events(output, self.mini_spacing, self.sensitivity)
+        self.events = create_events(
+            events, self.event_length, self.acq_data, self.curve_fit_type
+        )
 
     def create_mespc_array(self):
         """The function creates the mEPSC array by removing the RC
@@ -125,43 +131,6 @@ class MiniAnalysisAcq:
         mu, rms = self.deconvolved_rms(deconvolved_array)
         baseline = np.full(deconvolved_array.size, self.sensitivity * rms)
         return (deconvolved_array - mu), baseline
-
-
-    def create_new_event(self, x: Union[int, float]) -> bool:
-        """Creates a new mini event based on the time
-        of the event passed to the function. The new
-        event is not screened like the automatically
-        created events since creating new events is up
-        to the discresion of the experimenter.
-
-        Args:
-            x (float): Time of event
-
-        Returns:
-            Bool: The return value is used to determine
-            whether the event is valid.
-        """
-        # Convert from time to samples simce most people
-        # will likely think in time and not samples.
-        x = int(x * self.s_r_c)
-
-        # Create new event instance and analyzed.
-        event = MiniEvent()
-        event.analyze(
-            acq_number=self.acq_number,
-            event_pos=x,
-            y_array=self.final_array,
-            event_length=self.event_length,
-            sample_rate=self.sample_rate,
-            curve_fit_decay=self.curve_fit_decay,
-            curve_fit_type=self.curve_fit_type,
-        )
-        if not np.isnan(event.event_peak_x()):
-            self.final_events += [x]
-            self.postsynaptic_events += [event]
-            return True
-        else:
-            return False
 
     def acq_data(self) -> dict:
         """

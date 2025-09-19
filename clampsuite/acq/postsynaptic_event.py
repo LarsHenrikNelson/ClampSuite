@@ -1,6 +1,6 @@
 from typing import Literal, Union
 import numpy as np
-from scipy import optimize, signal
+from scipy import optimize
 from scipy.stats import linregress
 
 from ..functions.curve_fit.decay_fit import db_exp_decay, s_exp_decay

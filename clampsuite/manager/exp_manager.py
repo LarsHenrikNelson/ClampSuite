@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 
 from ..final_analysis import FinalAnalysis
-from ..functions.filtering_functions import Filters, Windows
+from ..functions.filtering.filters import Filters, Windows
 from ..functions.load_functions import NumpyEncoder
 from ..loader import JSONLoader, ScanImageLoader, NeoLoader
 from ..acq import Acquisition

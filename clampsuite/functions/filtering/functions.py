@@ -1,87 +1,21 @@
-from typing import Literal, Union, NamedTuple, TypeAlias
+from typing import NamedTuple
 
 import numpy as np
 from scipy import signal
+
+from .filters import (
+    EWMAFilter,
+    FIRFilter,
+    IIRFilter,
+    MedianFilter,
+    RemezFilter,
+    SavgolFilter,
+)
 
 
 class FilterError(NamedTuple):
     passed: bool
     error_message: str
-
-
-Windows = Literal[
-    "hann",
-    "hamming",
-    "blackmanharris",
-    "barthann",
-    "nuttall",
-    "blackman",
-    "tukey",
-    "kaiser",
-    "gaussian",
-    "parzen",
-]
-
-
-class MedianFilter(NamedTuple):
-    filter_family: str = "median"
-    filter_type: str = "median"
-    order: int = 4
-
-
-class EWMAFilter(NamedTuple):
-    filter_family: str = "ewma"
-    filter_type: Literal["ewma", "ewma_a"] = "ewma"
-    window: int = 30
-    sum_proportion: float = 0.5
-
-
-class SavgolFilter(NamedTuple):
-    filter_family: str = "savgol"
-    filter_type = "savgol"
-    order: int = 11
-    polyorder: int = 3
-
-
-class FIRFilter(NamedTuple):
-    filter_family: str = "fir"
-    filter_type: Literal["fir", "fir_zero"] = "fir_zero"
-    order: int = 301
-    high_pass: int | float | None = None
-    high_width: int | float | None = None
-    low_pass: int | float | None = 500
-    low_width: int | float | None = 200
-    window: Windows = "hann"
-    beta_sigma: float | None = None
-    fs: float = 10000.0
-
-
-class RemezFilter(NamedTuple):
-    filter_family: str = "remez"
-    filter_type: Literal["remez", "remez_zero"] = "remez_zero"
-    order: int = 301
-    high_pass: int | float | None = None
-    high_width: int | float | None = None
-    low_pass: int | float | None = 500
-    low_width: int | float | None = 200
-    fs: float = 10000.0
-
-
-class IIRFilter(NamedTuple):
-    filter_family: str = "iir"
-    filter_type: Literal["bessel", "butterworth", "bessel_zero", "butterworth_zero"] = (
-        "butterworth_zero"
-    )
-    order: int = 4
-    high_pass: int | float | None = None
-    low_pass: int | float | None = 500
-    fs: float = 10000.0
-
-
-Filters: TypeAlias = (
-    MedianFilter | EWMAFilter | SavgolFilter | FIRFilter | IIRFilter | RemezFilter
-)
-
 
 def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
     if high_pass is not None and high_width is not None:
@@ -148,7 +82,7 @@ def check_iir_filter_input(high_pass, low_pass, fs):
     return FilterError(True, "")
 
 
-def median_filter(array: Union[np.ndarray, list], filter_settings: MedianFilter):
+def median_filter(array: np.ndarray | list, filter_settings: MedianFilter):
     if isinstance(filter_settings.order, float):
         order = int(filter_settings.order)
     filt_array = signal.medfilt(array, order)
@@ -156,7 +90,7 @@ def median_filter(array: Union[np.ndarray, list], filter_settings: MedianFilter)
 
 
 def iir_filter(
-    array: Union[np.ndarray, list],
+    array: np.ndarray | list,
     filter_settings: IIRFilter,
 ):
     check = check_iir_filter_input(
@@ -275,7 +209,7 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
     return filt_array
 
 
-def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
+def remez_filter(array: np.ndarray | list, filter_settings: RemezFilter):
     check = check_fir_filter_input(
         filter_settings.high_pass,
         filter_settings.high_width,
@@ -329,7 +263,7 @@ def remez_filter(array: Union[np.ndarray, list], filter_settings: RemezFilter):
     return filt_acq
 
 
-def savgol_filter(array: Union[np.ndarray, list], filter_settings: SavgolFilter):
+def savgol_filter(array: np.ndarray | list, filter_settings: SavgolFilter):
     if isinstance(filter_settings.polyorder, float):
         polyorder = int(filter_settings.polyorder)
     filtered_array = signal.savgol_filter(
@@ -338,7 +272,7 @@ def savgol_filter(array: Union[np.ndarray, list], filter_settings: SavgolFilter)
     return filtered_array
 
 
-def ewma_filter(array: Union[np.ndarray, list], filter_settings: EWMAFilter):
+def ewma_filter(array: np.ndarray | list, filter_settings: EWMAFilter):
     alpha = 1 - np.exp(
         np.log(1 - filter_settings.sum_proportion) / filter_settings.window
     )
