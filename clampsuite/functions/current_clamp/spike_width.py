@@ -53,11 +53,7 @@ def find_all_spk_widths(
                 end = min(temp, pulse_end)
             else:
                 end = pulse_end
-        output = find_spk_width(
-            voltages,
-            spike_thresholds[index],
-            end,
-        )
+        output = find_spk_width(voltages, spike_thresholds[index], end)
         for key, value in zip(WIDTH_KEYS, output):
             width[key][index] = value
     return width

@@ -5,10 +5,17 @@ import numpy as np
 from scipy import signal
 
 from .base_loader import BaseLoader
+from .acquisition_data import AcquisitionData
+
 
 
 class NeoLoader(BaseLoader):
-    def __init__(self, callback_func: callable = print, nchannels=2):
+    def __init__(
+        self,
+        callback_func: callable = print,
+        nchannels: int = 2,
+        pulse_info: bool = False,
+    ):
         super().__init__(callback_func)
         self.main_channel = 0
         self.secondary_channel = None
@@ -16,6 +23,7 @@ class NeoLoader(BaseLoader):
         self.epoch_count = 0
         self.cycle_count = 0
         self.nchannels = nchannels
+        self.pulse_info = pulse_info
 
     def load_segment(self, file, segment: int, gain: float, channel_index: int = 0):
         acq = file.get_analogsignal_chunk(
@@ -39,14 +47,28 @@ class NeoLoader(BaseLoader):
                 acq_dict["pulse_end_index"] = indexes[1]
             else:
                 acq_dict["pulse_end_index"] = len(temp)
-            acq_dict["pulse_ramp"] = "0"
+            acq_dict["ramp"] = 0
         else:
             acq_dict["pulse_start_index"] = 0
             acq_dict["pulse_end_index"] = len(temp)
-            acq_dict["pulse_ramp"] = "0"
-            acq_dict["pulse_duration"] = 0
-            acq_dict["pulse_width"] = 0
+            acq_dict["ramp"] = 0
             acq_dict["pulse_amp"] = 0
+
+    def pulse_from_epoch(self, file, acq_dict):
+        epoch_info = file._axon_info["dictEpochInfoPerDAC"]
+        offset = file._axon_info["protocol"]["lNumSamplesPerEpisode"]//64
+        pulse_start_index = epoch_info[0][0]["lEpochInitDuration"] + offset
+        pulse_end_index = epoch_info[0][1]["lEpochInitDuration"] + pulse_start_index
+        amp_increment = epoch_info[0][1]["fEpochLevelInc"]
+        amp_start = epoch_info[0][1]["fEpochInitLevel"]
+        acqs_keys = sorted(list(acq_dict.keys()))
+        current_amp = amp_start
+        for index, key in enumerate(acqs_keys):
+            acq_dict[key]["pulse_start_index"] = pulse_start_index
+            acq_dict[key]["pulse_end_index"] = pulse_end_index
+            acq_dict[key]["ramp"] = 0
+            acq_dict[key]["pulse_amp"] = current_amp
+            current_amp += amp_increment
 
     def process_acquisitions(self, file: str | Path):
         temp_dict = {}
@@ -67,6 +89,7 @@ class NeoLoader(BaseLoader):
             acq_dict["ramp"] = 0
             acq_dict["rc_check_pulse_start_index"] = 0
             acq_dict["rc_check_pulse_end_index"] = 0
+            acq_dict["rc_amp"] = 0
             acq_dict["pulse_pattern"] = str(i)
             gain = file.header["signal_channels"][self.main_channel][5]
             acq_dict["array"] = self.load_segment(
@@ -79,14 +102,15 @@ class NeoLoader(BaseLoader):
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
         if self.secondary_channel is not None:
             self.set_pulse(file, nacqs, temp_dict)
+        if self.pulse_info:
+                self.pulse_from_epoch(file, temp_dict)
+        temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
 
     def set_pulse(self, file, nacqs, acq_dict: dict):
         gain = file.header["signal_channels"][self.secondary_channel][5]
-        pulse_start_indexs = [
-            value["_pulse_start_index"] for value in acq_dict.values()
-        ]
-        pulse_end_indexs = [value["_pulse_end_index"] for value in acq_dict.values()]
+        pulse_start_indexs = [value["pulse_start_index"] for value in acq_dict.values()]
+        pulse_end_indexs = [value["pulse_end_index"] for value in acq_dict.values()]
         ps, ps_count = np.unique(pulse_start_indexs, return_counts=True)
         pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)
         pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)

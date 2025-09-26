@@ -57,14 +57,14 @@ class CurrentClampAcq:
         self,
         baseline_start: int = 0,
         baseline_end: int = 3000,
-        pulse_start: int = 3000,
-        pulse_end: int = 10000,
         min_spike_voltage: Union[int, float] = 0,
         threshold_method: ThresholdType = "third_derivative",
         min_spikes: int = 1,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
     ):
+        pulse_start = self.acq_data.pulse_start_index
+        pulse_end = self.acq_data.pulse_end_index
         if pulse_end < pulse_start:
             raise ValueError("pulse_end must be greater than pulse_start")
         if baseline_end < baseline_start:
@@ -115,13 +115,14 @@ class CurrentClampAcq:
                     self.pulse_end,
                 )
             )
-            self._analysis_variables.update(
-                find_all_spk_auc(
-                    self.acq_data.array,
-                    self._analysis_variables["threshold_index"],
-                    self.pulse_end,
-                )
+            temp = find_all_spk_auc(
+                self.acq_data.array,
+                self._analysis_variables["threshold_index"],
+                self.pulse_end,
             )
+            for key in temp.keys():
+                temp[key] *= (1 / self.acq_data.fs) * 1000
+            self._analysis_variables.update(temp)
             self._analysis_variables.update(
                 find_all_spk_velocities(
                     self.acq_data.array,

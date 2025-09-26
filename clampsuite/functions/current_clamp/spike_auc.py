@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.integrate as sci
 
 AUC_KEYS = ["auc", "auc_left", "auc_right"]
 
@@ -16,9 +17,9 @@ def find_spk_auc(voltages: np.array, start: int, end: int):
         indices = indices[: splits[0]]
     yinterp = yinterp - yinterp[indices[0]]
     auc = (
-        np.trapezoid(yinterp[indices[:-1]], dx=x[1] / 10 - x[0] / 10),
-        np.trapezoid(yinterp[indices[0] : peak + 1], dx=x[1] / 10 - x[0] / 10),
-        np.trapezoid(yinterp[peak : indices[-1] + 1], dx=x[1] / 10 - x[0] / 10),
+        sci.trapezoid(yinterp[indices[:-1]], dx=x[1] / 10 - x[0] / 10),
+        sci.trapezoid(yinterp[indices[0] : peak + 1], dx=x[1] / 10 - x[0] / 10),
+        sci.trapezoid(yinterp[peak : indices[-1] + 1], dx=x[1] / 10 - x[0] / 10),
     )
     return auc
 
