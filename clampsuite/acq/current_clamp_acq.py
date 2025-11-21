@@ -290,6 +290,28 @@ class CurrentClampAcq:
             y = np.array([])
         return x, y
 
+    def sag(self):
+        sag = self._analysis_variables["sag_mv"]
+        x = self._analysis_variables["sag_index"] / self.acq_data.s_r_c()
+        delta = (
+            self._analysis_variables["baseline_mv"]
+            + self._analysis_variables["delta_v_mv"]
+        )
+        y = [delta, delta + sag]
+        x = [x, x]
+        return x, y
+
+    def delta_v(self):
+        b = self._analysis_variables["baseline_mv"]
+        delta = self._analysis_variables["delta_v_mv"]
+        y = [b, b + delta]
+        start = self.pulse_start
+        end = self.pulse_end
+        mid = (end-start)*self.proportion
+        mid = (start+mid)/self.acq_data.s_r_c()
+        x = [mid, mid]
+        return x, y
+
     def min_velocity(self):
         return self._analysis_variables["min_velocity"], self._analysis_variables[
             "min_velocity_index"

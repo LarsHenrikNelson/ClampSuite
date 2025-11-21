@@ -113,7 +113,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             end=self.iv_end,
             rectify=self.rectify,
         )
-        auc_features = self.log_fit(self.df_dict["Spike Parameters"], column="AUC")
         fr_features = (
             self.df_dict["Acq Parameters"]
             .groupby(["Epoch", "Cycle"], as_index=False)["Freq (Hz)"]
@@ -134,7 +133,6 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         features = pd.merge(features, sag_features, on="Epoch", how="outer")
         features = pd.merge(features, fi_features, on="Epoch", how="outer")
         features = pd.merge(features, iv_features, on="Epoch", how="outer")
-        features = pd.merge(features, auc_features, on="Epoch", how="outer")
         features = pd.merge(features, fr_features, on="Epoch", how="outer")
         self.df_dict["Epoch Parameters"] = features
 

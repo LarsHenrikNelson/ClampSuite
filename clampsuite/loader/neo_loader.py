@@ -24,6 +24,7 @@ class NeoLoader(BaseLoader):
         self.cycle_count = 0
         self.nchannels = nchannels
         self.pulse_info = pulse_info
+        self.file_type = None
 
     def load_segment(self, file, segment: int, gain: float, channel_index: int = 0):
         acq = file.get_analogsignal_chunk(
@@ -63,7 +64,7 @@ class NeoLoader(BaseLoader):
         amp_start = epoch_info[0][1]["fEpochInitLevel"]
         acqs_keys = sorted(list(acq_dict.keys()))
         current_amp = amp_start
-        for index, key in enumerate(acqs_keys):
+        for key in acqs_keys:
             acq_dict[key]["pulse_start_index"] = pulse_start_index
             acq_dict[key]["pulse_end_index"] = pulse_end_index
             acq_dict[key]["ramp"] = 0
@@ -100,10 +101,14 @@ class NeoLoader(BaseLoader):
                 self.process_secondary_channel(file, i, acq_dict)
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
+            if self.secondary_channel is not None and self.pulse_info != ".abf":
+                self.process_secondary_channel(file, i, acq_dict)
         if self.secondary_channel is not None:
             self.set_pulse(file, nacqs, temp_dict)
-        if self.pulse_info:
-                self.pulse_from_epoch(file, temp_dict)
+        if self.file_type == ".abf":
+            self.pulse_from_epoch(file, temp_dict)
+        else:
+            self.set_pulse(file, nacqs, temp_dict)
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
 
@@ -145,6 +150,8 @@ class NeoLoader(BaseLoader):
         self.epoch_count += 1
         files.sort()
         for i in files:
+            if self.file_type is None:
+                self.file_type = i.suffix
             output = neo.rawio.get_rawio(i)
             if isinstance(output, list):
                 output = output[0](i)
