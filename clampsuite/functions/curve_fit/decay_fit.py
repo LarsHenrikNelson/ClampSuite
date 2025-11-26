@@ -7,98 +7,80 @@ from .utilities import _detect_pos_neg
 class SExpDecayFit(NamedTuple):
     amplitude: float
     tau: float
-    rise_power: float
-
-
-def s_exp_decay(x, amplitude, tau):
-    y = amplitude * np.exp(-x / tau)
-    return y
-
-
-class SExpDecayOffsetFit(NamedTuple):
-    amplitude: float
-    tau: float
-    rise_power: float
     offset: float
 
 
-def s_exp_decay_offset(x, amplitude, tau, offset):
-    y = amplitude * np.exp((-x + offset) / tau)
+def s_exp_decay(x: np.ndarray, amplitude: float, tau: float, offset: float = 0.0):
+    y = amplitude * np.exp(-x / tau) + offset
     return y
 
 
 class DExpDecayFit(NamedTuple):
     amplitude_fast: float
-    tau_fast: float
     amplitude_slow: float
     tau_slow: float
-    rise_power: float
+    multiplier: float
+    offset: float
 
 
-def db_exp_decay(x, amplitude_fast, tau_fast, amplitude_slow, tau_slow):
-    y = (amplitude_fast * np.exp((-x) / tau_fast)) + (
-        amplitude_slow * np.exp((-x) / tau_slow)
-    )
-    return y
-
-
-class TExpDecayFit(NamedTuple):
-    amplitude_fast: float
-    tau_fast: float
-    amplitude_medium: float
-    tau_medium: float
-    amplitude_slow: float
-    tau_slow: float
-    rise_power: float
-
-
-def t_exp_decay(
-    x,
-    amplitude_fast,
-    tau_fast,
-    amplitude_medium,
-    tau_medium,
-    amplitude_slow,
-    tau_slow,
+def db_exp_decay(
+    x: np.ndarray,
+    amplitude_fast: float,
+    amplitude_slow: float,
+    tau_slow: float,
+    multiplier: float,
+    offset: float = 0.0,
 ):
+    tau_fast = tau_slow * multiplier
     y = (
-        (amplitude_fast * np.exp((-x) / tau_fast))
-        + (amplitude_medium * np.exp((-x) / tau_medium))
-        + (amplitude_slow * np.exp((-x) / tau_slow))
+        offset
+        + (amplitude_fast * np.exp(-x / tau_fast))
+        + (amplitude_slow * np.exp(-x / tau_slow))
     )
     return y
 
 
-CURVE_FIT_OUTPUT = {"0": SExpDecayFit, "1": DExpDecayFit, "2": TExpDecayFit}
-DECAY_FUNCS = {"0": s_exp_decay, "1": db_exp_decay, "2": t_exp_decay}
+CURVE_FIT_OUTPUT = {1: SExpDecayFit, 2: DExpDecayFit}
+DECAY_FUNCS = {1: s_exp_decay, 2: db_exp_decay}
 
 
-def _curve_fit_bounds(amplitude: float, length: float, num_decays: int, direction):
-    if "positive":
-        upper_bounds = [amplitude * 2, length] * num_decays
-        lower_bounds = [0.0, 0.0] * num_decays
+def _curve_fit_bounds(amplitude: float, length: float, num_decays: int):
+    if amplitude > 0:
+        if num_decays == 1:
+            upper_bounds = [amplitude * 2, length, np.inf]
+            lower_bounds = [0.0, 0.0, -np.inf]
+        else:
+            upper_bounds = [amplitude * 2, amplitude * 2, length, 1.0, np.inf]
+            lower_bounds = [0.0, 0.0, 0.0, 0.0, -np.inf]
     else:
-        upper_bounds = [0.0, length] * num_decays
-        lower_bounds = [amplitude * 2, 0.0] * num_decays
+        if num_decays == 1:
+            upper_bounds = [0.0, length, np.inf]
+            lower_bounds = [amplitude * 2, 0.0, -np.inf]
+        else:
+            upper_bounds = [0.0, 0.0, length, 1, np.inf]
+            lower_bounds = [amplitude * 2, amplitude * 2, 0.0, 0.0, -np.inf]
     return lower_bounds, upper_bounds
 
 
-def fit_decay(y, sample_rate, num_decays):
-    direction = _detect_pos_neg(y)
-    s_r_c = sample_rate / 1000
-    x = np.arange(y.size) / s_r_c
-    lower_bounds, upper_bounds = _curve_fit_bounds(y, x[-1], num_decays, direction)
+def fit_decay(x: np.ndarray, y: np.ndarray, num_decays: int):
+    amplitude = y[0] - y[-1]
+    lower_bounds, upper_bounds = _curve_fit_bounds(amplitude, x[-1], num_decays)
 
     popt, _ = optimize.curve_fit(
-        DECAY_FUNCS[str(num_decays)],
+        DECAY_FUNCS[num_decays],
         x,
         y,
         bounds=[lower_bounds, upper_bounds],
     )
 
-    output = CURVE_FIT_OUTPUT[str(num_decays)](*popt)
+    output = CURVE_FIT_OUTPUT[num_decays](*popt)
     return output
 
+def fit(x, params):
+    if isinstance(params, SExpDecayFit):
+        return s_exp_decay(x, *params)
+    else:
+        return db_exp_decay(x, *params)
 
 def est_decay(
     event_array,

@@ -22,6 +22,7 @@ from ..functions.current_clamp import (
     membrane_time_constant_min,
 )
 from ..functions.general import baseline_stability, delta
+from ..functions.curve_fit.decay_fit import fit_decay, fit
 from ..functions.utilities import map_keys
 from ..loader.acquisition_data import AcquisitionData
 
@@ -49,6 +50,7 @@ class CurrentClampAcq:
         self._analysis_variables["ai_sfa"] = np.nan
         self._analysis_variables["adaptation"] = np.nan
         self._analysis_variables["coefficient_of_variation"] = np.nan
+        self._analysis_variables["sag_fit"] = None
 
         for i in SPIKE_PARAMS:
             self._analysis_variables[i] = np.array([])
@@ -62,6 +64,7 @@ class CurrentClampAcq:
         min_spikes: int = 1,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
+        fit_sag_decay: None | Literal[1, 2] = None,
     ):
         pulse_start = self.acq_data.pulse_start_index
         pulse_end = self.acq_data.pulse_end_index
@@ -78,6 +81,7 @@ class CurrentClampAcq:
         self.baseline_end = baseline_end
         self.pulse_end = pulse_end
         self.pulse_start = pulse_start
+        self.fit_sag_decay = fit_sag_decay
 
         # Analysis functions
         self._analysis_variables["baseline_mv"] = np.mean(
@@ -144,6 +148,13 @@ class CurrentClampAcq:
             self._analysis_variables.update(
                 voltage_sag(self.acq_data.array, self.pulse_start, self.pulse_end)
             )
+            if self.fit_sag_decay is not None:
+                index = self._analysis_variables["sag_index"]
+                x_temp = np.arange(0, pulse_end - index) / self.acq_data.s_r_c()
+                temp_output = fit_decay(
+                    x_temp, self.acq_data.array[index:pulse_end], num_decays=self.fit_sag_decay
+                )
+                self._analysis_variables["sag_fit"] = temp_output
 
         if self._analysis_variables["delta_v_mv"] < 0 and self.acq_data.pulse_amp < 0:
             self._analysis_variables["mem_tau_deltav_index"] = (
@@ -169,6 +180,9 @@ class CurrentClampAcq:
         )
         if len(rebound_spikes) > 0:
             self._analysis_variables["rebound_spike"] = len(rebound_spikes)
+            self._analysis_variables["rebound_spike_start_index"] = (
+                rebound_spikes[0] + self.pulse_end
+            )
 
     def get_delta_v(self, peaks):
         """This function finds the delta-v for a pulse. It simply takes the mean
@@ -301,14 +315,27 @@ class CurrentClampAcq:
         x = [x, x]
         return x, y
 
+    def sag_decay(self):
+        if self._analysis_variables["sag_fit"] is not None:
+            start = self._analysis_variables["sag_index"]
+            params = self._analysis_variables["sag_fit"]
+            end = self.pulse_end
+            x = np.arange(0, end - start)
+            y = fit(x/self.acq_data.s_r_c(), params)
+            x = (x+start) / self.acq_data.s_r_c()
+        else:
+            x = []
+            y = []
+        return x, y
+
     def delta_v(self):
         b = self._analysis_variables["baseline_mv"]
         delta = self._analysis_variables["delta_v_mv"]
         y = [b, b + delta]
         start = self.pulse_start
         end = self.pulse_end
-        mid = (end-start)*self.proportion
-        mid = (start+mid)/self.acq_data.s_r_c()
+        mid = (end - start) * self.proportion
+        mid = (start + mid) / self.acq_data.s_r_c()
         x = [mid, mid]
         return x, y
 
@@ -333,15 +360,14 @@ class CurrentClampAcq:
         ) / self.acq_data.s_r_c(), -1 * np.gradient(self.acq_data.array)
 
     def data(self) -> dict:
-        temp = self._analysis_variables.copy()
-        acq_data = {}
+        acq_data = self._analysis_variables.copy()
         spk_data = {}
         for param in SPIKE_PARAMS:
-            value = temp.pop(param)
+            value = acq_data.pop(param)
             spk_data[param] = value
-        spk_data["spike_index"] = temp.pop("spike_index")
-        spk_data["spike_mv"] = temp.pop("spike_mv")
-        spk_data["spike_number"] = temp.pop("spike_number")
+        spk_data["spike_index"] = acq_data.pop("spike_index")
+        spk_data["spike_mv"] = acq_data.pop("spike_mv")
+        spk_data["spike_number"] = acq_data.pop("spike_number")
         spk_data["epoch"] = [self.acq_data.epoch] * value.size
         spk_data["acq_number"] = [self.acq_data.acq_number] * value.size
         spk_data["cycle"] = [self.acq_data.cycle] * value.size
@@ -351,8 +377,16 @@ class CurrentClampAcq:
             if "index" in key:
                 spk_data[key] = value / self.acq_data.s_r_c()
 
-        for key2, value2 in temp.items():
-            acq_data[key2] = value2
+        for key, value in acq_data.items():
+            if "index" in key:
+                acq_data[key] = value / self.acq_data.s_r_c()
+
+        sag_fit_data = acq_data.pop("sag_fit")
+        if sag_fit_data is not None:
+            sag_fit_data = sag_fit_data._asdict()
+            sag_fit_data = {f"sag_fit_{k}": v for k, v in sag_fit_data.items()}
+            acq_data.update(sag_fit_data)
+
         acq_data["epoch"] = self.acq_data.epoch
         acq_data["acq_number"] = self.acq_data.acq_number
         acq_data["cycle"] = self.acq_data.cycle
