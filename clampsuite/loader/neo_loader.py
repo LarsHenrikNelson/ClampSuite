@@ -57,7 +57,9 @@ class NeoLoader(BaseLoader):
 
     def pulse_from_epoch(self, file, acq_dict):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
-        offset = (file._axon_info["protocol"]["lNumSamplesPerEpisode"]//64)//2
+        n_adc = file._axon_info["protocol"]["lNumSamplesPerEpisode"]
+        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"]/n_adc
+        offset = int(n_samples * 15625 / 10**6)
         pulse_start_index = epoch_info[0][0]["lEpochInitDuration"] + offset
         pulse_end_index = epoch_info[0][1]["lEpochInitDuration"] + pulse_start_index
         amp_increment = epoch_info[0][1]["fEpochLevelInc"]
