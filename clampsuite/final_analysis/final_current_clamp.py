@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from ..acq import CurrentClampAcq
-from ..functions.curve_fit import fit_iv, fit_sigmoid, fit_log
+from ..functions.curve_fit import fit_iv, Sigmoid, Log
 from ..functions.utilities import map_keys
 from . import final_analysis
 
@@ -144,7 +144,9 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
             if len(value) > 2:
                 current = fi_data.loc[value, "Pulse Amp (pA)"]
                 firing_rate = fi_data.loc[value, "Freq (Hz)"]
-            temp = fit_sigmoid(current, firing_rate)
+            sig_fit = Sigmoid()
+            sig_fit.fit(current, firing_rate)
+            temp = sig_fit.params
             epochs.append(key)
             fi_output.append(temp._asdict())
         fi_features = pd.DataFrame(fi_output)
@@ -183,7 +185,9 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         for key, value in spike_data.groupby("Epoch").groups.items():
             y = spike_data.loc[value, column]
             x = spike_data.loc[value, "Spike Number"]
-            temp = fit_log(x, y)
+            log_fit = Log()
+            log_fit.fit(x, y)
+            temp = log_fit.params
             epochs.append(key)
             log_output.append(temp._asdict())
         log_features = pd.DataFrame(log_output)

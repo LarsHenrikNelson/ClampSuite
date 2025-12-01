@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Callable, Type
 
-import neo
+from neo.rawio import get_rawio, AxonRawIO
 import numpy as np
 from scipy import signal
 
@@ -8,11 +9,10 @@ from .base_loader import BaseLoader
 from .acquisition_data import AcquisitionData
 
 
-
 class NeoLoader(BaseLoader):
     def __init__(
         self,
-        callback_func: callable = print,
+        callback_func: Callable = print,
         nchannels: int = 2,
         pulse_info: bool = False,
     ):
@@ -24,17 +24,21 @@ class NeoLoader(BaseLoader):
         self.cycle_count = 0
         self.nchannels = nchannels
         self.pulse_info = pulse_info
-        self.file_type = None
+        self.file_type = ".abf"
 
-    def load_segment(self, file, segment: int, gain: float, channel_index: int = 0):
+    def load_segment(
+        self, file, segment: int, gain: float, channel_index: None | int = 0
+    ) -> np.ndarray:
         acq = file.get_analogsignal_chunk(
             block_index=0, seg_index=segment, channel_indexes=channel_index
         )
-        array = acq * gain
-        return array
+        return acq
 
-    def process_secondary_channel(self, file, segment: int, acq_dict: dict):
-        gain = file.header["signal_channels"][self.secondary_channel][5]
+    def process_secondary_channel(self, file: AxonRawIO, segment: int, acq_dict: dict):
+        if file.header is None:
+            raise ValueError("File header is None")
+        else:
+            gain = file.header["signal_channels"][self.secondary_channel][5]
         temp = self.load_segment(
             file, segment, gain=gain, channel_index=self.secondary_channel
         )
@@ -55,10 +59,10 @@ class NeoLoader(BaseLoader):
             acq_dict["ramp"] = 0
             acq_dict["pulse_amp"] = 0
 
-    def pulse_from_epoch(self, file, acq_dict):
+    def pulse_from_epoch(self, file: AxonRawIO, acq_dict: dict[int, dict]):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
-        n_adc = file._axon_info["protocol"]["lNumSamplesPerEpisode"]
-        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"]/n_adc
+        n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
+        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
         offset = int(n_samples * 15625 / 10**6)
         pulse_start_index = epoch_info[0][0]["lEpochInitDuration"] + offset
         pulse_end_index = epoch_info[0][1]["lEpochInitDuration"] + pulse_start_index
@@ -73,8 +77,10 @@ class NeoLoader(BaseLoader):
             acq_dict[key]["pulse_amp"] = current_amp
             current_amp += amp_increment
 
-    def process_acquisitions(self, file: str | Path):
+    def process_acquisitions(self, file: AxonRawIO) -> dict:
         temp_dict = {}
+        if file.header is None:
+            raise ValueError("File header is None")
         nacqs = file.header["nb_segment"][0]
         filename = Path(file.filename).stem
         t = file._axon_info["rec_datetime"]
@@ -95,6 +101,7 @@ class NeoLoader(BaseLoader):
             acq_dict["rc_amp"] = 0
             acq_dict["pulse_pattern"] = str(i)
             gain = file.header["signal_channels"][self.main_channel][5]
+            acq_dict["gain"] = gain
             acq_dict["array"] = self.load_segment(
                 file, i, gain=gain, channel_index=self.main_channel
             )
@@ -114,8 +121,11 @@ class NeoLoader(BaseLoader):
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
 
-    def set_pulse(self, file, nacqs, acq_dict: dict):
-        gain = file.header["signal_channels"][self.secondary_channel][5]
+    def set_pulse(self, file: AxonRawIO, nacqs, acq_dict: dict):
+        if file.header is None:
+            raise ValueError("File header is None")
+        else:
+            gain = file.header["signal_channels"][self.secondary_channel][5]
         pulse_start_indexs = [value["pulse_start_index"] for value in acq_dict.values()]
         pulse_end_indexs = [value["pulse_end_index"] for value in acq_dict.values()]
         ps, ps_count = np.unique(pulse_start_indexs, return_counts=True)
@@ -135,7 +145,7 @@ class NeoLoader(BaseLoader):
                 - np.mean(temp[: value["pulse_start_index"]])
             )
 
-    def process_data_files(self, data_files: list):
+    def process_data_files(self, data_files: list) -> dict[int, AcquisitionData]:
         output_dict = {}
         for file in data_files:
             self.cycle_count += 1
@@ -146,19 +156,14 @@ class NeoLoader(BaseLoader):
             output_dict.update(temp)
         return output_dict
 
-    def load_files(self, files=list[str | Path]):
+    def load_files(self, files: list[str | Path]):
         data_files = []
         self.cycle_count = 0
         self.epoch_count += 1
+        files = [Path(i) for i in files]
         files.sort()
         for i in files:
-            if self.file_type is None:
-                self.file_type = i.suffix
-            output = neo.rawio.get_rawio(i)
-            if isinstance(output, list):
-                output = output[0](i)
-            else:
-                output = output(i)
+            output = AxonRawIO(i)
             output.parse_header()
             data_files.append(output)
         output_dict = self.process_data_files(data_files)

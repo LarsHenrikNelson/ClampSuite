@@ -19,6 +19,12 @@ class AcquisitionData:
     time_stamp: str
     ramp: int = 0
     cycle: int = 0
+    gain: float = 1.0
 
+    @property
     def s_r_c(self):
         return self.fs / 1000
+
+    @property
+    def acquisition(self):
+        return self.array * self.gain

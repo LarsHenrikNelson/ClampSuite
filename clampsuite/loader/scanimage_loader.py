@@ -1,19 +1,19 @@
 import re
-from pathlib import PurePath, Path
-from typing import Union
+from pathlib import Path
+from typing import Callable, Any
 
 import numpy as np
 from scipy.io import loadmat, matlab
 
-from .base_loader import BaseLoader
 from .acquisition_data import AcquisitionData
+from .base_loader import BaseLoader
 
 
 class ScanImageLoader(BaseLoader):
-    def __init__(self, callback_func: callable = print):
+    def __init__(self, callback_func: Callable = print):
         super().__init__(callback_func)
 
-    def load_mat(self, filename: str) -> dict:
+    def load_mat(self, filename: str | Path) -> dict:
         """
         This function loads a matlab file and puts it into a dictionary that is
         easy to use in python. The function was written by  on Stack Overflow.
@@ -35,7 +35,7 @@ class ScanImageLoader(BaseLoader):
                     d[key] = _toarray(d[key])
             return d
 
-        def _todict(matobj):
+        def _todict(matobj) -> dict:
             """
             A recursive function which constructs from matobjects nested dictionaries
             """
@@ -50,7 +50,7 @@ class ScanImageLoader(BaseLoader):
                     d[strg] = elem
             return d
 
-        def _toarray(ndarray):
+        def _toarray(ndarray) -> np.ndarray:
             """
             A recursive function which constructs ndarray from cellarrays
             (which are loaded as numpy ndarrays), recursing into the elements
@@ -72,16 +72,20 @@ class ScanImageLoader(BaseLoader):
         data = loadmat(filename, struct_as_record=False, squeeze_me=True)
         return _check_vars(data)
 
-    def find_stim_pulses(self, data_string):
+    def find_stim_pulses(self, data_string: str) -> list[Any]:
         m = re.findall("lastLinesUsed={(.*?)}\rstate", data_string)
         pulse_output = 0
         if len(m) == 1:
             m = m[0].split()
             pulse_output = [i.replace("'", "") for i in m]
             pulse_output = [i for i in pulse_output if i not in {"ao1", "ao0"}]
+        else:
+            raise ValueError("No pulses found in the data string")
         return pulse_output
 
-    def find_pulse_data(self, data_string, component):
+    def find_pulse_data(
+        self, data_string: str, component: str
+    ) -> tuple[float, float, float, str, float]:
         temp_string = re.findall(component, data_string)
         amp = 0.0
         start = 0.0
@@ -92,24 +96,21 @@ class ScanImageLoader(BaseLoader):
         if len(temp_string) == 1:
             temp_string = temp_string[0]
             amp_temp = re.findall("amplitude=(.*?);", temp_string)
-            if len(amp_temp) == 1:
-                amp = float(amp_temp[0])
+            amp = float(amp_temp[0])
             start_temp = re.findall("delay=(.*?);", temp_string)
-            if len(start_temp) == 1:
-                start = float(start_temp[0])
+            start = float(start_temp[0])
             duration_temp = re.findall("duration=(.*?);", temp_string)
-            if len(duration_temp) == 1:
-                duration = float(duration_temp[0])
+            duration = float(duration_temp[0])
             width_temp = re.findall("pulseWidth=(.*?);", temp_string)
-            if len(width_temp) == 1:
-                width = float(width_temp[0])
-                end = start + width
+            width = float(width_temp[0])
+            end = start + width
             ramp_temp = re.findall(r"ramp=(.*?);", temp_string)
-            if len(width_temp) == 1:
-                ramp = ramp_temp[0]
+            ramp = ramp_temp[0]
         return amp, start, end, ramp, duration
 
-    def find_stim_pulse_data(self, data_string, component):
+    def find_stim_pulse_data(
+        self, data_string: str, component: str
+    ) -> tuple[int, float, float]:
         temp_string = re.findall(f"pulseString_{component}=(.*?)state", data_string)
         pulse_width = 0.0
         num_pulses = 0
@@ -118,26 +119,22 @@ class ScanImageLoader(BaseLoader):
         if len(temp_string) == 1:
             temp_string = temp_string[0]
             pulse_start_index = re.findall("delay=(.*?);", temp_string)
-            if len(pulse_start_index) == 1:
-                pulse_start_index = float(pulse_start_index[0])
+            pulse_start_index = float(pulse_start_index[0])
             pulse_width = re.findall("pulseWidth=(.*?);", temp_string)
-            if len(pulse_width) == 1:
-                pulse_width = float(pulse_width[0])
+            pulse_width = float(pulse_width[0])
             num_pulses = re.findall("numPulses=(.*?);", temp_string)
-            if len(num_pulses) == 1:
-                num_pulses = int(num_pulses[0])
+            num_pulses = int(num_pulses[0])
             isi = re.findall("isi=(.*?);", temp_string)
-            if len(isi) == 1:
-                isi = float(isi[0])
+            isi = float(isi[0])
         return num_pulses, isi, pulse_start_index
 
-    def load_scanimage_file(self, path: Union[str, PurePath]) -> dict:
+    def load_scanimage_file(self, path: str | Path) -> AcquisitionData:
         """
         This function takes pathlib.PurePath object or string as the input.
         All the data that is in time is converted to samples.
         """
         acq_dict = {}
-        acq_dict["name"] = PurePath(path).stem
+        acq_dict["name"] = Path(path).stem
         matfile1 = self.load_mat(path)
         name = [i for i in matfile1.keys() if "AD" in i][0]
         acq_dict["acq_number"] = int(name.split("_")[-1])
@@ -171,9 +168,10 @@ class ScanImageLoader(BaseLoader):
         acq_dict["rc_check_pulse_start_index"] = int(rc_start * s_r_c)
         acq_dict["rc_check_pulse_end_index"] = int(rc_end * s_r_c)
         acq_dict["rc_amp"] = float(rc_amp)
+        acq_dict["gain"] = 1.0
         return AcquisitionData(**acq_dict)
 
-    def set_cycle(self, acquisitions):
+    def set_cycle(self, acquisitions: dict[int, AcquisitionData]):
         epochs = {i.epoch for i in acquisitions.values()}
 
         amps = {i.pulse_amp for i in acquisitions.values()}
@@ -185,7 +183,7 @@ class ScanImageLoader(BaseLoader):
             value.cycle = cycle_tracker[value.epoch][value.pulse_amp]
             cycle_tracker[value.epoch][value.pulse_amp] += 1
 
-    def load_files(self, file_paths: list[str | Path]):
+    def load_files(self, file_paths: list[str | Path]) -> dict[int, AcquisitionData]:
         acquisitions = {}
         n_files = len(file_paths)
         for count, i in enumerate(file_paths):

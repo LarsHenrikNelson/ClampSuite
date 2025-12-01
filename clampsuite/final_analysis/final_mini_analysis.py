@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 
-from ..functions.curve_fit.decay_fit import s_exp_decay
+from ..functions.curve_fit.decay_fit import SExpDecay
 from . import final_analysis
 
 
@@ -139,18 +139,13 @@ class FinalMiniAnalysis(final_analysis.FinalAnalysis):
     def analyze_average_mini(self, average_mini: np.ndarray):
         average_mini = average_mini - np.mean(average_mini[0:10])
         event_peak_x = np.argmin(average_mini)
-        event_peak_y = np.min(average_mini)
-        est_tau_y = event_peak_y * (1 / np.exp(1))
         decay_y = average_mini[event_peak_x:]
         decay_x = np.arange(len(decay_y)) / self.s_r_c
-        est_tau_x = np.interp(est_tau_y, decay_y, decay_x)
-        init_param = np.array([event_peak_y, est_tau_x])
-        upper_bound = (0, np.inf)
-        lower_bound = (-np.inf, 0)
-        bounds = [lower_bound, upper_bound]
-        popt, _ = curve_fit(s_exp_decay, decay_x, decay_y, p0=init_param, bounds=bounds)
+        decay_fit = SExpDecay()
+        decay_fit.fit(decay_x, decay_y)
+        popt = decay_fit.params
         fit_amp, self.fit_tau_x = popt
-        fit_decay_y = s_exp_decay(decay_x, fit_amp, self.fit_tau_x)
+        fit_decay_y = decay_fit.predict(decay_x, *popt)
         decay_x = decay_x + event_peak_x / 10
         average_mini_x = np.arange(average_mini.shape[0]) / (self.sample_rate / 1000)
         temp_list = [

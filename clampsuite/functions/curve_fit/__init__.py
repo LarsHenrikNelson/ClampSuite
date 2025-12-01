@@ -1,4 +1,4 @@
-from .sigmoid_fit import fit_sigmoid, sigmoid
+from .sigmoid_fit import Sigmoid
 from .iv_curve import fit_iv, linear
-from .decay_fit import fit_decay
-from .log_fit import fit_log
+from .decay_fit import SExpDecay, DExpDecay
+from .log_fit import Log

@@ -3,45 +3,45 @@ from typing import NamedTuple
 import numpy as np
 from scipy.optimize import curve_fit
 
+from .curve_fit_base import CurveFitBase
+
 
 class LogCurveFit(NamedTuple):
-    vscale: float
-    offset: float
-    xshift: float
+    vscale: float = np.nan
+    offset: float = np.nan
+    xshift: float = np.nan
 
 
-def log_func(x, vscale, offset=0, xshift=0):
-    return vscale * np.log(x - xshift) + offset
+class Log(CurveFitBase):
+    @staticmethod
+    def _fit_function(
+        x: np.ndarray, vscale: float, offset: float = 0.0, xshift: float = 0.0
+    ):
+        return vscale * np.log(x - xshift) + offset
 
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> tuple[list, list]:
+        ub = [np.inf, np.inf, np.min(x) - 1e-6]
+        lb = [-np.inf, -np.inf, -np.inf]
+        return lb, ub
 
-def fit_log(x, y):
-    try:
-        xmin= np.min(x)
+    def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> list:
+        xmin = np.min(x)
         xmax = np.max(x)
         ymin = np.min(y)
         ymax = np.max(y)
         if np.abs(ymin) > np.abs(ymax):
-            numerator = ymin-ymax
+            numerator = ymin - ymax
             offset_est = ymax
         else:
             offset_est = ymin
-            numerator = ymax-ymin
+            numerator = ymax - ymin
         divisor = max(np.abs(xmax - xmin), 1)
         vscale_est = numerator / max(np.log(divisor), 1)
         p0 = [vscale_est, offset_est, 0]
-        ub = [np.inf, np.inf, xmin - 1e-6]
-        lb = [-np.inf, -np.inf, -np.inf]
-        p, _ = curve_fit(log_func, x, y, p0=p0, bounds=(lb, ub))
+        return p0
 
-        output = LogCurveFit(
-            vscale=p[0],
-            offset=p[1],
-            xshift=p[2],
-        )
-    except Exception:
-        output = LogCurveFit(
-            vscale=np.nan,
-            offset=np.nan,
-            xshift=np.nan,
-        )
-    return output
+    def _create_nan_result(self):
+        return LogCurveFit()
+
+    def _create_result(self, popt: tuple):
+        return LogCurveFit(*popt)

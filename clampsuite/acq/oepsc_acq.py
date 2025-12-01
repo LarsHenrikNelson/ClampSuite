@@ -3,7 +3,7 @@ from typing import Union
 import numpy as np
 from scipy import integrate, optimize
 
-from ..functions.curve_fit.decay_fit import db_exp_decay, s_exp_decay
+from ..functions.curve_fit import SExpDecay, DExpDecay
 from ..functions.evoked_psc import _detect_pos_neg
 from . import filter_acq
 
@@ -122,36 +122,11 @@ class oEPSCAcq(filter_acq.FilterAcq):
             self.est_tau_y = np.nan
 
     def find_fit_decay(self):
-        if self.peak_direction == "positive":
-            upper_bounds = [np.inf, np.inf, np.inf, np.inf]
-            lower_bounds = [0, 0, 0, 0]
-        else:
-            upper_bounds = [0, np.inf, 0, np.inf]
-            lower_bounds = [-np.inf, 0, -np.inf, 0]
         if self.curve_fit_type == "db_exp":
-            init_param = np.array([self.peak_y, self.final_tau_x, 0, 0])
-            popt, _ = optimize.curve_fit(
-                db_exp_decay,
-                self.decay_x,
-                self.decay_y,
-                p0=init_param,
-                bounds=[lower_bounds, upper_bounds],
-            )
-            amp_1, self.fit_tau, amp_2, tau_2 = popt
-            self.fit_decay_y = db_exp_decay(
-                self.decay_x, amp_1, self.fit_tau, amp_2, tau_2
-            )
-        elif self.curve_fit_type == "s_exp":
-            init_param = np.array([self.peak_y, self.final_tau_x])
-            popt, _ = optimize.curve_fit(
-                f=s_exp_decay,
-                xdata=self.decay_x,
-                ydata=self.decay_y,
-                p0=init_param,
-                bounds=[lower_bounds[:2], upper_bounds[:2]],
-            )
-            amp_1, self.fit_tau = popt
-            self.fit_decay_y = s_exp_decay(self.decay_x, amp_1, self.fit_tau)
+            fit_object = DExpDecay()
+        else:
+            fit_object = SExpDecay()
+        fit_object.curve_fit(self.decay_x, self.decay_y)
 
     def set_peak(self, x: Union[float, int], y: Union[float, int]):
         x = int(x * self.s_r_c)

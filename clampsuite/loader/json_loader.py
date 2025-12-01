@@ -1,7 +1,7 @@
 import json
 from math import nan
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
-from typing import Union
+from typing import Any, Callable
 
 import numpy as np
 
@@ -14,9 +14,9 @@ class NumpyEncoder(json.JSONEncoder):
     json encoder and need to be converted to python types.
     """
 
-    def default(self, obj):
+    def default(self, o: Any) -> Any:
         if isinstance(
-            obj,
+            o,
             (
                 np.intc,
                 np.intp,
@@ -30,14 +30,14 @@ class NumpyEncoder(json.JSONEncoder):
                 np.uint64,
             ),
         ):
-            return int(obj)
-        elif isinstance(obj, (np.float16, np.float32, np.float64)):
-            return float(obj)
-        elif isinstance(obj, (np.ndarray,)):
-            return obj.tolist()
-        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
-            return str(obj)
-        return json.JSONEncoder.default(self, obj)
+            return int(o)
+        elif isinstance(o, (np.float16, np.float32, np.float64)):
+            return float(o)
+        elif isinstance(o, (np.ndarray,)):
+            return o.tolist()
+        elif isinstance(o, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(o)
+        return super().default(o)
 
 
 class NumpyDecoder(json.JSONDecoder):
@@ -46,21 +46,20 @@ class NumpyDecoder(json.JSONDecoder):
     json encoder and need to be converted to python types.
     """
 
-    def default(self, obj):
-        if isinstance(obj, int):
-            return np.int64(obj)
-        elif obj is nan:
+    def default(self, o):
+        if isinstance(o, int):
+            return np.int64(o)
+        elif o is nan:
             return np.nan
-        elif isinstance(obj, float):
-            return np.float64(obj)
-        elif isinstance(obj, list):
-            return np.array(obj)
-        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
-            return str(obj)
-        return json.JSONDecoder.default(self, obj)
+        elif isinstance(o, float):
+            return np.float64(o)
+        elif isinstance(o, list):
+            return np.array(o)
+        elif isinstance(o, (PurePath, PurePosixPath, PureWindowsPath)):
+            return str(o)
 
 
-def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
+def load_json_file_legacy(path: PurePath | str) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
@@ -96,10 +95,10 @@ def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
 
 
 class JSONLoader(BaseLoader):
-    def __init__(self, callback_func: callable):
+    def __init__(self, callback_func: Callable):
         super().__init__(callback_func)
 
-    def load_json_file(self, path: Union[PurePath, str]) -> dict:
+    def load_json_file(self, path: PurePath | str) -> dict:
         """
         This function loads a json file and sets each key: value pair
         as an attribute of the an obj. The function has to catch a lot

@@ -3,92 +3,90 @@ from typing import NamedTuple
 from scipy import optimize
 from .utilities import _detect_pos_neg
 
+from .curve_fit_base import CurveFitBase
+
 
 class SExpDecayFit(NamedTuple):
-    amplitude: float
-    tau: float
-    offset: float
-
-
-def s_exp_decay(x: np.ndarray, amplitude: float, tau: float, offset: float = 0.0):
-    y = amplitude * np.exp(-x / tau) + offset
-    return y
+    amplitude: float = np.nan
+    tau: float = np.nan
+    offset: float = np.nan
 
 
 class DExpDecayFit(NamedTuple):
-    amplitude_fast: float
-    amplitude_slow: float
-    tau_slow: float
-    multiplier: float
-    offset: float
+    amplitude_fast: float = np.nan
+    amplitude_slow: float = np.nan
+    tau_slow: float = np.nan
+    multiplier: float = np.nan
+    offset: float = np.nan
 
 
-def db_exp_decay(
-    x: np.ndarray,
-    amplitude_fast: float,
-    amplitude_slow: float,
-    tau_slow: float,
-    multiplier: float,
-    offset: float = 0.0,
-):
-    tau_fast = tau_slow * multiplier
-    y = (
-        offset
-        + (amplitude_fast * np.exp(-x / tau_fast))
-        + (amplitude_slow * np.exp(-x / tau_slow))
-    )
-    return y
+class SExpDecay(CurveFitBase):
+    @staticmethod
+    def _fit_function(
+        x: np.ndarray, amplitude: float, tau: float, offset: float = 0.0
+    ) -> np.ndarray:
+        y = amplitude * np.exp(-x / tau) + offset
+        return y
 
-
-CURVE_FIT_OUTPUT = {1: SExpDecayFit, 2: DExpDecayFit}
-DECAY_FUNCS = {1: s_exp_decay, 2: db_exp_decay}
-
-
-def _curve_fit_bounds(amplitude: float, length: float, num_decays: int):
-    if amplitude > 0:
-        if num_decays == 1:
-            upper_bounds = [amplitude * 2, length, np.inf]
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray):
+        amplitude = y[0] - y[-1]
+        if amplitude > 0:
+            upper_bounds = [amplitude * 2, x[-1], np.inf]
             lower_bounds = [0.0, 0.0, -np.inf]
         else:
-            upper_bounds = [amplitude * 2, amplitude * 2, length, 1.0, np.inf]
-            lower_bounds = [0.0, 0.0, 0.0, 0.0, -np.inf]
-    else:
-        if num_decays == 1:
-            upper_bounds = [0.0, length, np.inf]
+            upper_bounds = [0.0, x[-1], np.inf]
             lower_bounds = [amplitude * 2, 0.0, -np.inf]
+        return lower_bounds, upper_bounds
+
+    def _create_nan_result(self):
+        return SExpDecayFit()
+
+    def _create_result(self, popt: tuple):
+        return SExpDecayFit(*popt)
+
+
+class DExpDecay(CurveFitBase):
+    @staticmethod
+    def _fit_function(
+        x: np.ndarray,
+        amplitude_fast: float,
+        amplitude_slow: float,
+        tau_slow: float,
+        multiplier: float,
+        offset: float = 0.0,
+    ) -> np.ndarray:
+        tau_fast = tau_slow * multiplier
+        y = (
+            offset
+            + (amplitude_fast * np.exp(-x / tau_fast))
+            + (amplitude_slow * np.exp(-x / tau_slow))
+        )
+        return y
+
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray):
+        amplitude = y[0] - y[-1]
+        if amplitude > 0:
+            upper_bounds = [amplitude * 2, amplitude * 2, x[-1], 1.0, np.inf]
+            lower_bounds = [0.0, 0.0, 0.0, 0.0, -np.inf]
         else:
-            upper_bounds = [0.0, 0.0, length, 1, np.inf]
+            upper_bounds = [0.0, 0.0, x[-1], 1, np.inf]
             lower_bounds = [amplitude * 2, amplitude * 2, 0.0, 0.0, -np.inf]
-    return lower_bounds, upper_bounds
+        return lower_bounds, upper_bounds
 
+    def _create_nan_result(self):
+        return DExpDecayFit()
 
-def fit_decay(x: np.ndarray, y: np.ndarray, num_decays: int):
-    amplitude = y[0] - y[-1]
-    lower_bounds, upper_bounds = _curve_fit_bounds(amplitude, x[-1], num_decays)
+    def _create_result(self, popt: tuple):
+        return DExpDecayFit(*popt)
 
-    popt, _ = optimize.curve_fit(
-        DECAY_FUNCS[num_decays],
-        x,
-        y,
-        bounds=[lower_bounds, upper_bounds],
-    )
-
-    output = CURVE_FIT_OUTPUT[num_decays](*popt)
-    return output
-
-def fit(x, params):
-    if isinstance(params, SExpDecayFit):
-        return s_exp_decay(x, *params)
-    else:
-        return db_exp_decay(x, *params)
 
 def est_decay(
-    event_array,
-    array_start,
-    event_peak_y,
-    event_peak_x,
-    event_start_y,
-):
+    event_array: np.ndarray,
+    array_start: int,
+    event_peak_y: float,
+    event_peak_x: int,
+    event_start_y: float,
+) -> tuple[float, float]:
     event_array
     return_to_baseline = int(
         (np.argmax(event_array[event_peak_x:] >= event_peak_y * 0.25)) + event_peak_x

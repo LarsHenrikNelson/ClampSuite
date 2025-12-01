@@ -3,7 +3,7 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import linregress
 
-from ..functions.curve_fit.decay_fit import db_exp_decay, s_exp_decay
+from ..functions.curve_fit import SExpDecay, DExpDecay
 
 
 class MiniEvent:
@@ -53,7 +53,6 @@ class MiniEvent:
         else:
             event_end = end
         return event_start, event_end
-
 
     def calc_event_amplitude(self):
         self.amplitude = abs(self.event_peak_y - self.event_start_y)
@@ -126,43 +125,13 @@ class MiniEvent:
         return decay_y, np.asarray(decay_x, dtype=np.float64)
 
     def fit_decay(self, fit_type):
-        try:
-            decay_y, decay_x = self.find_decay_array()
-            est_tau = self._event_tau_x - self._event_peak_x
-            if fit_type == "db_exp":
-                upper_bounds = [0, np.inf, 0, np.inf]
-                lower_bounds = [-np.inf, 0, -np.inf, 0]
-                init_param = np.array([self.event_peak_y, est_tau, 0, 0])
-                popt, _ = optimize.curve_fit(
-                    db_exp_decay,
-                    decay_x,
-                    decay_y,
-                    p0=init_param,
-                    bounds=[lower_bounds, upper_bounds],
-                )
-                amp_1, self.fit_tau, amp_2, tau_2 = popt
-                self.fit_decay_y = (
-                    db_exp_decay(decay_x, amp_1, self.fit_tau, amp_2, tau_2)
-                    + self.event_start_y
-                )
-            else:
-                upper_bounds = [0, np.inf]
-                lower_bounds = [-np.inf, 0]
-                init_param = np.array([self.event_peak_y, est_tau])
-                popt, _ = optimize.curve_fit(
-                    s_exp_decay,
-                    decay_x,
-                    decay_y,
-                    p0=init_param,
-                    bounds=[lower_bounds, upper_bounds],
-                )
-                amp_1, self.fit_tau = popt
-                self.fit_decay_y = s_exp_decay(decay_x, amp_1, self.fit_tau)
-            self.fit_decay_x = (decay_x + self._event_peak_x) / self.s_r_c
-        except (RuntimeError, ValueError):
-            self.fit_decay_x = np.nan
-            self.fit_decay_y = np.nan
-            self.fit_tau = np.nan
+        decay_y, decay_x = self.find_decay_array()
+        est_tau = self._event_tau_x - self._event_peak_x
+        if fit_type == "db_exp":
+            fit_object = DExpDecay()
+        else:
+            fit_object = SExpDecay()
+        fit_object.curve_fit(decay_x, decay_y)
 
     def find_event_parameters(self, y_array: Union[np.ndarray, list]):
         if self._event_peak_x is np.nan:
