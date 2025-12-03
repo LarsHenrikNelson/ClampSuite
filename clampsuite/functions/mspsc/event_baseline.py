@@ -3,7 +3,7 @@ from scipy import signal
 
 
 def find_alt_baseline(event_array: np.ndarray, event_peak, fs):
-    s_r_c = fs/1000
+    s_r_c = fs / 1000
     baselined_array = event_array - np.mean(event_array[: int(1 * s_r_c)])
     masked_array = baselined_array.copy()
     mask = np.argwhere(baselined_array <= 0)
@@ -16,7 +16,7 @@ def find_alt_baseline(event_array: np.ndarray, event_peak, fs):
     return event_baseline
 
 
-def find_baseline(event_array: np.ndarray, event_peak: int,  fs: float):
+def find_baseline(event_array: np.ndarray, event_peak: int, fs: float):
     """
         This functions finds the baseline of an event. The biggest issue with
         most methods that find the baseline is that they assume the baseline
@@ -29,8 +29,8 @@ def find_baseline(event_array: np.ndarray, event_peak: int,  fs: float):
     None.
 
     """
-    s_r_c = fs/1000
-    baselined_array = event_array - np.max(event_array[: event_peak])
+    s_r_c = fs / 1000
+    baselined_array = event_array - np.max(event_array[:event_peak])
     event_peak_y = event_array[event_peak]
     search_start = np.argwhere(
         baselined_array[:event_peak] > 0.35 * event_peak_y
@@ -57,5 +57,5 @@ def find_baseline(event_array: np.ndarray, event_peak: int,  fs: float):
             if event_baseline < 0:
                 event_baseline = 0
     else:
-        event_baseline = find_alt_baseline(event_array, event_peak)
+        event_baseline = find_alt_baseline(event_array, event_peak, fs=fs)
     return event_baseline

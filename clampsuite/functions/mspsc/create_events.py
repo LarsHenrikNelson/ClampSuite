@@ -27,7 +27,7 @@ def check_event(event: MiniEvent, events: list, event_criteria: dict) -> bool:
 
     # Retrieve the peak to compare to values set
     # by the experimenter.
-    event_peak = event.event_peak_x()
+    event_peak = event.peak_index
 
     # The function checks, in order of importance, the
     # qualities of the event.
@@ -52,7 +52,7 @@ def create_events(
     events: list[int],
     event_length: float,
     acq: AcquisitionData,
-    curve_fit_type: Literal["none", "s_exp", "d_exp"] = "None",
+    curve_fit_type: Literal["none", "s_exp", "d_exp"] = "none",
 ):
     """This functions creates the events based on the list of peaks found
     from the deconvolution. Events less than 20 ms before the end of
@@ -79,11 +79,9 @@ def create_events(
             try:
                 event = MiniEvent()
                 event.analyze(
-                    acq_number=acq.acq_number,
-                    event_pos=peak,
-                    array=acq.array,
+                    acq_data=acq,
+                    start_index=peak,
                     event_length=event_length,
-                    sample_rate=acq.fs,
                     curve_fit_type=curve_fit_type,
                 )
 

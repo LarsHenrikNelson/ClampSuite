@@ -13,8 +13,7 @@ class NeoLoader(BaseLoader):
     def __init__(
         self,
         callback_func: Callable = print,
-        nchannels: int = 2,
-        pulse_info: bool = False,
+        nchannels: int = 1,
     ):
         super().__init__(callback_func)
         self.main_channel = 0
@@ -23,7 +22,6 @@ class NeoLoader(BaseLoader):
         self.epoch_count = 0
         self.cycle_count = 0
         self.nchannels = nchannels
-        self.pulse_info = pulse_info
         self.file_type = ".abf"
 
     def load_segment(
@@ -64,10 +62,13 @@ class NeoLoader(BaseLoader):
         n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
         n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
         offset = int(n_samples * 15625 / 10**6)
-        pulse_start_index = epoch_info[0][0]["lEpochInitDuration"] + offset
-        pulse_end_index = epoch_info[0][1]["lEpochInitDuration"] + pulse_start_index
-        amp_increment = epoch_info[0][1]["fEpochLevelInc"]
-        amp_start = epoch_info[0][1]["fEpochInitLevel"]
+        epoch_key = list(epoch_info.keys())[0]
+        pulse_start_index = epoch_info[epoch_key][0]["lEpochInitDuration"] + offset
+        pulse_end_index = (
+            epoch_info[epoch_key][1]["lEpochInitDuration"] + pulse_start_index
+        )
+        amp_increment = epoch_info[epoch_key][1]["fEpochLevelInc"]
+        amp_start = epoch_info[epoch_key][1]["fEpochInitLevel"]
         acqs_keys = sorted(list(acq_dict.keys()))
         current_amp = amp_start
         for key in acqs_keys:
@@ -106,22 +107,18 @@ class NeoLoader(BaseLoader):
                 file, i, gain=gain, channel_index=self.main_channel
             )
             acq_dict["fs"] = file.header["signal_channels"][self.main_channel][2]
-            if self.secondary_channel is not None:
-                self.process_secondary_channel(file, i, acq_dict)
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
-            if self.secondary_channel is not None and self.pulse_info != ".abf":
+            if self.secondary_channel is not None and self.file_type != ".abf":
                 self.process_secondary_channel(file, i, acq_dict)
-        if self.secondary_channel is not None:
-            self.set_pulse(file, nacqs, temp_dict)
         if self.file_type == ".abf":
             self.pulse_from_epoch(file, temp_dict)
         else:
-            self.set_pulse(file, nacqs, temp_dict)
+            self.pulse_from_channel(file, nacqs, temp_dict)
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
 
-    def set_pulse(self, file: AxonRawIO, nacqs, acq_dict: dict):
+    def pulse_from_channel(self, file: AxonRawIO, nacqs, acq_dict: dict):
         if file.header is None:
             raise ValueError("File header is None")
         else:
@@ -156,7 +153,7 @@ class NeoLoader(BaseLoader):
             output_dict.update(temp)
         return output_dict
 
-    def load_files(self, files: list[str | Path]):
+    def load_files(self, files: list[str | Path]) -> dict[int, AcquisitionData]:
         data_files = []
         self.cycle_count = 0
         self.epoch_count += 1

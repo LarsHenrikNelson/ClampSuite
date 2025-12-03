@@ -159,7 +159,7 @@ class ScanImageLoader(BaseLoader):
         if end > 0:
             acq_dict["pulse_end_index"] = int(end * s_r_c)
         else:
-            acq_dict["pulse_end_index"] = int(duration * s_r_c)
+            acq_dict["pulse_end_index"] = int((start + duration) * s_r_c)
         acq_dict["ramp"] = int(ramp)
 
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(

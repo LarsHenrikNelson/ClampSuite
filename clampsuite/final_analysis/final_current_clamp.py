@@ -1,5 +1,6 @@
 from collections import defaultdict
 from typing import Literal, Union
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -36,21 +37,21 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         # self.final_data_ramp()
         # self.create_first_ap_dfs(acq_dict, self.pulse_indexes, self.ramp_indexes)
 
-    def load_data(self, file_path: str):
-        self.df_dict = {}
-        self.hertz = False
-        self.pulse_ap = False
-        self.ramp_ap = False
+    # def load_data(self, file_path: str | Path):
+    #     self.df_dict = {}
+    #     self.hertz = False
+    #     self.pulse_ap = False
+    #     self.ramp_ap = False
 
-        with pd.ExcelFile(file_path) as dfs:
-            for i in dfs.sheet_names:
-                self.df_dict[i] = pd.read_excel(file_path, sheet_name=i)
-                if i == "Hertz":
-                    self.hertz = True
-                if i == "Pulse APs":
-                    self.pulse_ap = True
-                if i == "Ramp APs":
-                    self.ramp_ap = True
+    #     with pd.ExcelFile(file_path) as dfs:
+    #         for i in dfs.sheet_names:
+    #             self.df_dict[i] = pd.read_excel(file_path, sheet_name=i)
+    #             if i == "Hertz":
+    #                 self.hertz = True
+    #             if i == "Pulse APs":
+    #                 self.pulse_ap = True
+    #             if i == "Ramp APs":
+    #                 self.ramp_ap = True
 
     def create_raw_data(self):
         spk_params = []
@@ -179,7 +180,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         iv_features["Epoch"] = epochs
         return iv_features
 
-    def log_fit(self, spike_data, column: str = "AUC"):
+    def log_fit(self, spike_data, column: str):
         log_output = []
         epochs = []
         for key, value in spike_data.groupby("Epoch").groups.items():
@@ -199,7 +200,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
 
     def create_first_aps(
         self, acq_dict: dict, indexes: Union[list, np.ndarray]
-    ) -> tuple[dict, dict]:
+    ) -> dict:
         ap_dict = defaultdict(list)
         for i in indexes:
             if len(acq_dict[i].first_ap) >= 1:

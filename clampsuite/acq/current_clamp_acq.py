@@ -26,6 +26,8 @@ from ..functions.curve_fit import SExpDecay, DExpDecay
 from ..functions.utilities import map_keys
 from ..loader.acquisition_data import AcquisitionData
 
+PlotOutput = tuple[np.ndarray, np.ndarray]
+
 
 class CurrentClampAcq:
     def __init__(self, acq_data: AcquisitionData):
@@ -65,7 +67,7 @@ class CurrentClampAcq:
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
         fit_sag_decay: None | Literal[1, 2] = None,
-    ):
+    ) -> None:
         pulse_start = self.acq_data.pulse_start_index
         pulse_end = self.acq_data.pulse_end_index
         if pulse_end < pulse_start:
@@ -159,9 +161,7 @@ class CurrentClampAcq:
 
                 else:
                     temp_output = DExpDecay()
-                temp_output.fit(
-                    x_temp, acquisition[index:pulse_end]
-                )
+                temp_output.fit(x_temp, acquisition[index:pulse_end])
                 self._analysis_variables["sag_fit"] = temp_output
 
         if self._analysis_variables["delta_v_mv"] < 0 and self.acq_data.pulse_amp < 0:
@@ -257,7 +257,7 @@ class CurrentClampAcq:
             y = np.array([])
         return x, y
 
-    def thresholds(self):
+    def thresholds(self) -> PlotOutput:
         x = self._analysis_variables["threshold_index"] / self.acq_data.s_r_c
         if len(x) > 0:
             y = self.acq_data.array[self._analysis_variables["threshold_index"]]
@@ -265,18 +265,18 @@ class CurrentClampAcq:
             y = np.array([])
         return x, y
 
-    def sag(self):
+    def sag(self) -> PlotOutput:
         sag = self._analysis_variables["sag_mv"]
         x = self._analysis_variables["sag_index"] / self.acq_data.s_r_c
         delta = (
             self._analysis_variables["baseline_mv"]
             + self._analysis_variables["delta_v_mv"]
         )
-        y = [delta, delta + sag]
-        x = [x, x]
+        y = np.ndarray([delta, delta + sag])
+        x = np.ndarray([x, x])
         return x, y
 
-    def sag_decay(self):
+    def sag_decay(self) -> PlotOutput:
         if self._analysis_variables["sag_fit"] is not None:
             start = self._analysis_variables["sag_index"]
             fit_object = self._analysis_variables["sag_fit"]
@@ -285,19 +285,19 @@ class CurrentClampAcq:
             y = fit_object.predict(x / self.acq_data.s_r_c)
             x = (x + start) / self.acq_data.s_r_c
         else:
-            x = []
-            y = []
+            x = np.ndarray([])
+            y = np.ndarray([])
         return x, y
 
-    def delta_v(self):
+    def delta_v(self) -> PlotOutput:
         b = self._analysis_variables["baseline_mv"]
         delta = self._analysis_variables["delta_v_mv"]
-        y = [b, b + delta]
+        y = np.ndarray([b, b + delta])
         start = self.pulse_start
         end = self.pulse_end
         mid = (end - start) * self.proportion
         mid = (start + mid) / self.acq_data.s_r_c
-        x = [mid, mid]
+        x = np.ndarray([mid, mid])
         return x, y
 
     def min_velocity(self):
@@ -310,12 +310,12 @@ class CurrentClampAcq:
             "max_velocity_index"
         ] / self.acq_data.s_r_c
 
-    def acquisition(self):
+    def acquisition(self) -> PlotOutput:
         return np.arange(
             self.acq_data.array.size
         ) / self.acq_data.s_r_c, self.acq_data.acquisition
 
-    def derivative(self):
+    def derivative(self) -> PlotOutput:
         return np.arange(
             self.acq_data.array.size
         ) / self.acq_data.s_r_c, -1 * np.gradient(self.acq_data.acquisition)
