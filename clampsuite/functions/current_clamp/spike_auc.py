@@ -4,7 +4,7 @@ import scipy.integrate as sci
 AUC_KEYS = ["auc", "auc_left", "auc_right"]
 
 
-def find_spk_auc(voltages: np.array, start: int, end: int):
+def find_spk_auc(voltages: np.ndarray, start: int, end: int):
     volts = np.asarray(voltages[int(start) : int(end)])
     spike_threshold = voltages[start]
     x = np.arange(len(volts))
@@ -15,11 +15,17 @@ def find_spk_auc(voltages: np.array, start: int, end: int):
     splits = np.where(np.diff(indices) > 1)[0]
     if len(splits) > 0:
         indices = indices[: splits[0]]
-    yinterp = yinterp - yinterp[indices[0]]
+    if len(indices) > 0:
+        start_index = indices[0]
+        end_index = indices[-1]
+    else:
+        start_index = 0
+        end_index = len(yinterp) - 2
+    yinterp = yinterp - yinterp[start_index]
     auc = (
         sci.trapezoid(yinterp[indices[:-1]], dx=x[1] / 10 - x[0] / 10),
-        sci.trapezoid(yinterp[indices[0] : peak + 1], dx=x[1] / 10 - x[0] / 10),
-        sci.trapezoid(yinterp[peak : indices[-1] + 1], dx=x[1] / 10 - x[0] / 10),
+        sci.trapezoid(yinterp[start_index : peak + 1], dx=x[1] / 10 - x[0] / 10),
+        sci.trapezoid(yinterp[peak : end_index + 1], dx=x[1] / 10 - x[0] / 10),
     )
     return auc
 
