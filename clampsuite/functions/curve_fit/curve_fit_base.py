@@ -5,13 +5,21 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
+class ModelMetrics(NamedTuple):
+    reduced_chisq: float = np.nan
+    r2: float = np.nan
+    residuals: np.ndarray = np.array([])
+    parameter_uncertainties: np.ndarray = np.array([])
+
+
 class CurveFitBase(ABC):
     def __init__(self):
-        self._params: NamedTuple | None = None
+        self._params: tuple | None = None
+        self._model_metrics = ModelMetrics()
         self._fit_success: bool = False
 
     @property
-    def params(self) -> NamedTuple | None:
+    def params(self) -> tuple | None:
         return self._params
 
     @staticmethod
@@ -24,7 +32,7 @@ class CurveFitBase(ABC):
         pass
 
     @abstractmethod
-    def _create_nan_result(self) -> NamedTuple:
+    def _create_nan_result(self) -> tuple:
         pass
 
     def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
@@ -39,15 +47,23 @@ class CurveFitBase(ABC):
         return self._fit_function(x, *self._params)
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs):
+        y = np.asarray(y)
+        x = np.asarray(x)
         try:
             p0 = self._get_initial_params(x, y)
             bounds = self._get_bounds(x, y)
 
-            popt, _ = curve_fit(
+            popt, pcov = curve_fit(
                 self._fit_function, x, y, p0=p0, bounds=bounds, **kwargs
             )
 
             self._params = self._create_result(popt)
+            chisq = self._reduced_chisq(popt, x, y)
+            uncertain = self._parameter_uncertainties(popt, pcov)
+            residuals = self._residuals(x, y)
+            r2 = self._r_squared(popt, x, y)
+            self._model_metrics = ModelMetrics(chisq, r2, residuals, uncertain)
+
             self._fit_success = True
 
         except Exception:
@@ -55,3 +71,26 @@ class CurveFitBase(ABC):
             self._fit_success = False
 
         return self._params
+
+    def _reduced_chisq(self, popt: tuple, x: np.ndarray, y: np.ndarray) -> float:
+        y_fit = self.predict(x)
+        resid = y - y_fit
+        chi_sq = np.sum(resid**2)
+        dof = len(y) - len(popt)
+        return chi_sq / dof
+
+    def _parameter_uncertainties(self, popt, pcov) -> np.ndarray:
+        param_errors = np.sqrt(np.diag(pcov))
+        relative_errors = param_errors / np.abs(popt) * 100
+        return relative_errors
+
+    def _r_squared(self, popt: tuple, x: np.ndarray, y: np.ndarray) -> float:
+        y_fit = self.predict(x)
+        ss_res = np.sum((y - y_fit) ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+        r_squared = 1 - (ss_res / ss_tot)
+        return r_squared
+
+    def _residuals(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        y_fit = self.predict(x)
+        return y - y_fit
