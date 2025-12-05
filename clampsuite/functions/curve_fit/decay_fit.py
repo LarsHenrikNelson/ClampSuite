@@ -22,13 +22,13 @@ class DExpDecayFit(NamedTuple):
 
 class SExpDecay(CurveFitBase):
     @staticmethod
-    def _fit_function(
+    def _fit_function(  # type: ignore[override]
         x: np.ndarray, amplitude: float, tau: float, offset: float = 0.0
     ) -> np.ndarray:
         y = amplitude * np.exp(-x / tau) + offset
         return y
 
-    def _get_bounds(self, x: np.ndarray, y: np.ndarray):
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> tuple:
         amplitude = y[0] - y[-1]
         if amplitude > 0:
             upper_bounds = [amplitude * 2, x[-1], np.inf]
@@ -47,7 +47,7 @@ class SExpDecay(CurveFitBase):
 
 class DExpDecay(CurveFitBase):
     @staticmethod
-    def _fit_function(
+    def _fit_function(  # type: ignore[override]
         x: np.ndarray,
         amplitude_fast: float,
         amplitude_slow: float,
@@ -63,7 +63,7 @@ class DExpDecay(CurveFitBase):
         )
         return y
 
-    def _get_bounds(self, x: np.ndarray, y: np.ndarray):
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> tuple:
         amplitude = y[0] - y[-1]
         if amplitude > 0:
             upper_bounds = [amplitude * 2, amplitude * 2, x[-1], 1.0, np.inf]
@@ -92,7 +92,7 @@ def est_decay(
         (np.argmax(event_array[event_peak_x:] >= event_peak_y * 0.25)) + event_peak_x
     )
     decay_y = event_array[event_peak_x:return_to_baseline]
-    x = np.arange(event_array)
+    x = np.arange(event_array.size)
     if decay_y.size > 0:
         est_tau_y = ((event_peak_y - event_start_y) * (1 / np.exp(1))) + event_start_y
         decay_x = x[event_peak_x - array_start : return_to_baseline]

@@ -78,7 +78,7 @@ def adaptation_index(peaks):
 
 
 def coefficient_of_variation(peaks):
-    if len(peaks) > 1:
+    if len(peaks) > 2:
         iei = np.diff(peaks)
         adapt = np.std(iei) / np.mean(iei)
     else:

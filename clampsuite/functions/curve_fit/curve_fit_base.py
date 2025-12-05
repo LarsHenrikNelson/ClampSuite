@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, Any
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -11,26 +11,26 @@ class CurveFitBase(ABC):
         self._fit_success: bool = False
 
     @property
-    def params(self) -> NamedTuple:
+    def params(self) -> NamedTuple | None:
         return self._params
 
     @staticmethod
     @abstractmethod
-    def _fit_function(x: np.ndarray, *params) -> np.ndarray:
+    def _fit_function(x: np.ndarray, *params: Any, **kwargs: Any) -> np.ndarray:
         pass
 
     @abstractmethod
-    def _create_result(popt):
+    def _create_result(self, popt: tuple):
         pass
 
     @abstractmethod
     def _create_nan_result(self) -> NamedTuple:
         pass
 
-    def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> None:
+    def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
         return None
 
-    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> None:
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
         return None
 
     def predict(self, x: np.ndarray) -> np.ndarray:

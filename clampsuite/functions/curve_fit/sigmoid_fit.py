@@ -15,7 +15,7 @@ class SigmoidCurveFit(NamedTuple):
 
 class Sigmoid(CurveFitBase):
     @staticmethod
-    def _fit_function(
+    def _fit_function(  # type: ignore[override]
         x: np.ndarray, max_value: float, midpoint: float, slope: float, offset: float
     ) -> np.ndarray:
         return 1 / (1 + np.exp((x - midpoint) / -slope)) * max_value + offset

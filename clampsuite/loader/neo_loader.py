@@ -9,11 +9,12 @@ from .base_loader import BaseLoader
 from .acquisition_data import AcquisitionData
 
 
-class NeoLoader(BaseLoader):
+class ABFLoader(BaseLoader):
     def __init__(
         self,
         callback_func: Callable = print,
         nchannels: int = 1,
+        pulse_data: bool = False,
     ):
         super().__init__(callback_func)
         self.main_channel = 0
@@ -22,7 +23,7 @@ class NeoLoader(BaseLoader):
         self.epoch_count = 0
         self.cycle_count = 0
         self.nchannels = nchannels
-        self.file_type = ".abf"
+        self.pulse_data = pulse_data
 
     def load_segment(
         self, file, segment: int, gain: float, channel_index: None | int = 0
@@ -101,20 +102,20 @@ class NeoLoader(BaseLoader):
             acq_dict["rc_check_pulse_end_index"] = 0
             acq_dict["rc_amp"] = 0
             acq_dict["pulse_pattern"] = str(i)
+
             gain = file.header["signal_channels"][self.main_channel][5]
             acq_dict["gain"] = gain
             acq_dict["array"] = self.load_segment(
                 file, i, gain=gain, channel_index=self.main_channel
             )
+            acq_dict["pulse_start_index"] = 0
+            acq_dict["pulse_end_index"] = acq_dict["array"].size
+            acq_dict["pulse_amp"] = 0
             acq_dict["fs"] = file.header["signal_channels"][self.main_channel][2]
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
-            if self.secondary_channel is not None and self.file_type != ".abf":
-                self.process_secondary_channel(file, i, acq_dict)
-        if self.file_type == ".abf":
+        if self.pulse_data:
             self.pulse_from_epoch(file, temp_dict)
-        else:
-            self.pulse_from_channel(file, nacqs, temp_dict)
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
 

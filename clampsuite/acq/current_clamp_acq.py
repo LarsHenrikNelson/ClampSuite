@@ -244,7 +244,7 @@ class CurrentClampAcq:
     def peaks(self):
         x = self._analysis_variables["spike_index"] / self.acq_data.s_r_c
         if len(x) > 0:
-            y = self.acq_data.array[self._analysis_variables["spike_index"]]
+            y = self.acq_data.acquisition[self._analysis_variables["spike_index"]]
         else:
             y = np.array([])
         return x, y
@@ -252,7 +252,7 @@ class CurrentClampAcq:
     def ahps(self):
         x = self._analysis_variables["ahp_index"] / self.acq_data.s_r_c
         if len(x) > 0:
-            y = self.acq_data.array[self._analysis_variables["ahp_index"]]
+            y = self.acq_data.acquisition[self._analysis_variables["ahp_index"]]
         else:
             y = np.array([])
         return x, y
@@ -260,7 +260,7 @@ class CurrentClampAcq:
     def thresholds(self) -> PlotOutput:
         x = self._analysis_variables["threshold_index"] / self.acq_data.s_r_c
         if len(x) > 0:
-            y = self.acq_data.array[self._analysis_variables["threshold_index"]]
+            y = self.acq_data.acquisition[self._analysis_variables["threshold_index"]]
         else:
             y = np.array([])
         return x, y
@@ -272,8 +272,8 @@ class CurrentClampAcq:
             self._analysis_variables["baseline_mv"]
             + self._analysis_variables["delta_v_mv"]
         )
-        y = np.ndarray([delta, delta + sag])
-        x = np.ndarray([x, x])
+        y = np.array([delta, delta + sag])
+        x = np.array([x, x])
         return x, y
 
     def sag_decay(self) -> PlotOutput:
@@ -285,19 +285,19 @@ class CurrentClampAcq:
             y = fit_object.predict(x / self.acq_data.s_r_c)
             x = (x + start) / self.acq_data.s_r_c
         else:
-            x = np.ndarray([])
-            y = np.ndarray([])
+            x = np.array([])
+            y = np.array([])
         return x, y
 
     def delta_v(self) -> PlotOutput:
         b = self._analysis_variables["baseline_mv"]
         delta = self._analysis_variables["delta_v_mv"]
-        y = np.ndarray([b, b + delta])
+        y = np.array([b, b + delta])
         start = self.pulse_start
         end = self.pulse_end
         mid = (end - start) * self.proportion
         mid = (start + mid) / self.acq_data.s_r_c
-        x = np.ndarray([mid, mid])
+        x = np.array([mid, mid])
         return x, y
 
     def min_velocity(self):
@@ -312,12 +312,12 @@ class CurrentClampAcq:
 
     def acquisition(self) -> PlotOutput:
         return np.arange(
-            self.acq_data.array.size
+            self.acq_data.acquisition.size
         ) / self.acq_data.s_r_c, self.acq_data.acquisition
 
     def derivative(self) -> PlotOutput:
         return np.arange(
-            self.acq_data.array.size
+            self.acq_data.acquisition.size
         ) / self.acq_data.s_r_c, -1 * np.gradient(self.acq_data.acquisition)
 
     def data(self) -> tuple[dict, dict]:

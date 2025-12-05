@@ -11,7 +11,7 @@ import yaml
 from ..final_analysis import FinalAnalysis
 from ..functions.filtering.filters import Filters, Windows
 from ..functions.load_functions import NumpyEncoder
-from ..loader import JSONLoader, ScanImageLoader, NeoLoader
+from ..loader import JSONLoader, ScanImageLoader, ABFLoader
 from ..acq import Acquisition
 
 
@@ -191,7 +191,7 @@ class ExpManager:
             elif file_path[0].suffix == ".json":
                 self.loader = JSONLoader(self.callback_func)
             else:
-                self.loader = NeoLoader(self.callback_func)
+                self.loader = ABFLoader(self.callback_func)
         acquisitions = self.loader.load_files(file_path)
         self._create_acquisitions(acquisitions, analysis)
         self.callback_func("Loaded acquisitions")

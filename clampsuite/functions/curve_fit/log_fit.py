@@ -14,7 +14,7 @@ class LogCurveFit(NamedTuple):
 
 class Log(CurveFitBase):
     @staticmethod
-    def _fit_function(
+    def _fit_function(  # type: ignore[override]
         x: np.ndarray, vscale: float, offset: float = 0.0, xshift: float = 0.0
     ):
         return vscale * np.log(x - xshift) + offset
