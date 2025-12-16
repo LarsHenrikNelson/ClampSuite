@@ -15,7 +15,7 @@ from ..gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
     MainAnalysisWidget,
-    FilterWidget,
+    filter,
     LoadAcqWidget,
     mini,
     RCCheckWidget,
@@ -57,7 +57,7 @@ class MiniAnalysisMain(MainAnalysisWidget):
         self.input_layout.addWidget(self.rc_widget)
         self._analysis_widgets[self.rc_widget.objectName()] = self.rc_widget
 
-        self.filter_widget = FilterWidget()
+        self.filter_widget = filter.FilterSettingsWidget()
         self.input_layout.addWidget(self.filter_widget)
         self._analysis_widgets[self.filter_widget.objectName()] = self.filter_widget
 

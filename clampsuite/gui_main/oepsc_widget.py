@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 from ..gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
-    FilterWidget,
+    filter,
     LoadAcqWidget,
     MainAnalysisWidget,
     QExpManager,
@@ -75,7 +75,7 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
             self.psc_baseline_widget
         )
 
-        self.psc_filter_widget = FilterWidget()
+        self.psc_filter_widget = filter.FilterSettingsWidget()
         self.psc_settings_layout.addWidget(self.psc_filter_widget)
         self._psc_analysis_widgets[self.psc_filter_widget.objectName()] = (
             self.psc_filter_widget
@@ -106,7 +106,7 @@ class EvokedPSCLFPWidget(MainAnalysisWidget):
             self.lfp_baseline_widget
         )
 
-        self.lfp_filter_widget = FilterWidget()
+        self.lfp_filter_widget = filter.FilterSettingsWidget()
         self.lfp_settings_layout.addWidget(self.lfp_filter_widget)
         self._lfp_analysis_widgets[self.lfp_filter_widget.objectName()] = (
             self.lfp_filter_widget

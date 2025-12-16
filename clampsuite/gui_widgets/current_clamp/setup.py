@@ -1,15 +1,14 @@
+from typing import get_args
+
 from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (
-    QComboBox,
-    QFormLayout,
-    QLabel,
-)
+from PySide6.QtWidgets import QComboBox, QFormLayout, QLabel
 
 from ..qtwidgets import FrameWidget, LineEdit
 
+from ...functions.current_clamp.spike_threshold import ThresholdType
+
 
 class CurrentClampSettingsWidget(FrameWidget):
-
     def __init__(self, parent=None):
         super().__init__(
             title="Current clamp",
@@ -21,53 +20,67 @@ class CurrentClampSettingsWidget(FrameWidget):
 
         self.setObjectName("current_clamp_setup")
 
-        self.min_spike_threshold_label = QLabel("Min spike threshold (mV)")
+        self.min_spike_threshold_label = QLabel("Min spike voltage (mV)")
         self.min_spike_threshold_edit = LineEdit()
         self.min_spike_threshold_edit.setObjectName("min_spike_threshold")
         self.min_spike_threshold_edit.setEnabled(True)
-        self.min_spike_threshold_edit.setText("-15")
+        self.min_spike_threshold_edit.setText("0")
         self.input_layout.addRow(
             self.min_spike_threshold_label, self.min_spike_threshold_edit
         )
 
         self.threshold_method = QComboBox()
-        methods = ["third_derivative", "max_curvature", "legacy"]
+        methods = get_args(ThresholdType)
         self.threshold_method.addItems(methods)
         self.threshold_method.setMinimumContentsLength(len(max(methods, key=len)))
-
         self.threshold_method.setObjectName("threshold_method")
         self.input_layout.addRow("Threshold method", self.threshold_method)
 
-        self.min_spikes_label = QLabel("Min spikes")
         self.min_spikes_edit = LineEdit()
         self.min_spikes_edit.setObjectName("min_spikes")
         self.min_spikes_edit.setText("1")
         self.min_spikes_edit.setValidator(QIntValidator())
-        self.input_layout.addRow(self.min_spikes_label, self.min_spikes_edit)
+        self.input_layout.addRow("Min spikes", self.min_spikes_edit)
 
-        self.iv_start_label = QLabel("IV curve start")
+        self.fit_sag_decay = QComboBox()
+        methods = [0, 1, 2]
+        self.fit_sag_decay.addItems([str(m) for m in methods])
+        self.fit_sag_decay.setMinimumContentsLength(
+            len(max([str(m) for m in methods], key=len))
+        )
+        self.fit_sag_decay.setObjectName("fit_sag_decay")
+        self.input_layout.addRow("Fit Sag Decay", self.fit_sag_decay)
+
+        self.side = QComboBox()
+        methods = ["left", "right"]
+        self.side.addItems([str(m) for m in methods])
+        self.side.setMinimumContentsLength(len(max([str(m) for m in methods], key=len)))
+        self.side.setObjectName("side")
+        self.input_layout.addRow("Side", self.side)
+
+        self.iv_start_label = QLabel("IV curve start (pA)")
         self.iv_start_edit = LineEdit()
         self.iv_start_edit.setObjectName("iv_start_edit")
         self.iv_start_edit.setText("1")
-        self.iv_start_edit.setValidator(QIntValidator())
         self.input_layout.addRow(self.iv_start_label, self.iv_start_edit)
 
-        self.iv_end_label = QLabel("IV curve end")
+        self.iv_end_label = QLabel("IV curve end (pA)")
         self.iv_end_edit = LineEdit()
         self.iv_end_edit.setObjectName("iv_end_edit")
         self.iv_end_edit.setText("6")
-        self.iv_end_edit.setValidator(QIntValidator())
         self.input_layout.addRow(self.iv_end_label, self.iv_end_edit)
 
     def getAnalysisSettings(self):
-        analysis_args = {
+        acquisition_args = {
             "threshold": self.min_spike_threshold_edit.toInt(),
             "min_spikes": self.min_spikes_edit.toInt(),
             "threshold_method": self.threshold_method.currentText(),
-            "iv_start": self.iv_start_edit.toInt(),
-            "iv_end": self.iv_end_edit.toInt(),
         }
-        return analysis_args
+        final_analysis_args = {
+            "iv_start": self.iv_start_edit.toFloat(),
+            "iv_end": self.iv_end_edit.toFloat(),
+        }
+        return acquisition_args, final_analysis_args
 
     def setAnalysisSettings(self, settings: dict[str, str | int | float | bool]):
         self.min_spike_threshold_edit.setText(settings["min_spike_threshold"])

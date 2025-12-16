@@ -66,7 +66,7 @@ class CurrentClampAcq:
         min_spikes: int = 1,
         side: Literal["left", "right"] = "right",
         proportion: float = 0.5,
-        fit_sag_decay: None | Literal[1, 2] = None,
+        fit_sag_decay: Literal[0, 1, 2] = 0,
     ) -> None:
         pulse_start = self.acq_data.pulse_start_index
         pulse_end = self.acq_data.pulse_end_index
@@ -153,7 +153,7 @@ class CurrentClampAcq:
             self._analysis_variables.update(
                 voltage_sag(acquisition, self.pulse_start, self.pulse_end)
             )
-            if self.fit_sag_decay is not None:
+            if self.fit_sag_decay > 0:
                 index = self._analysis_variables["sag_index"]
                 x_temp = np.arange(0, pulse_end - index) / self.acq_data.s_r_c
                 if self.fit_sag_decay == 1:

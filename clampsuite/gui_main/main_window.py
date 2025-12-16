@@ -35,15 +35,6 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle("Electrophysiology Analysis")
 
-        self.available_widgets = [
-            "Mini analysis",
-            "Current clamp",
-            "Evoked PSC/LFP",
-        ]
-        self.button_map = {
-            index: value for index, value in enumerate(self.available_widgets)
-        }
-
         # Set the menu bar
         self.bar = self.menuBar()
         self.file_menu = self.bar.addMenu("File")
@@ -94,7 +85,6 @@ class MainWindow(QMainWindow):
 
         homeicon = QIcon(QPixmap(":/icons/home.png"))
         home = QAction(homeicon, "Home", self)
-        home.triggered.connect(lambda _: self.setWidget("Home"))
         self.tool_bar.addAction(home)
 
         newicon = QIcon(QPixmap(":/icons/new-folder.png"))
@@ -116,12 +106,14 @@ class MainWindow(QMainWindow):
         self.central_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.central_widget)
 
-        self.current_widget = HomeWidget(button_map=self.button_map)
+        self.current_widget = HomeWidget()
         self._current_widget = "Home"
         self.current_widget.clicked.connect(self.setWidget)
         self.main_layout.addWidget(self.current_widget, 0, Qt.AlignCenter)
 
         self.working_dir = str(Path().home())
+
+        home.triggered.connect(lambda _: self.setWidget("Home"))
 
         self.load_dialog_open = False
         logger.info(f"Working directory set to: {self.working_dir}")
@@ -149,7 +141,7 @@ class MainWindow(QMainWindow):
                 self.current_widget = CurrentClampWidget()
                 logger.info("Central widget set as Current clamp")
             elif text == "Home":
-                self.current_widget = HomeWidget(button_map=self.button_map)
+                self.current_widget = HomeWidget()
                 logger.info("Central widget set as Home")
 
             self._current_widget = text

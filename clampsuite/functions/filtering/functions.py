@@ -17,6 +17,7 @@ class FilterError(NamedTuple):
     passed: bool
     error_message: str
 
+
 def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
     if high_pass is not None and high_width is not None:
         if high_pass < high_width:
@@ -29,9 +30,7 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
             )
     if low_pass is not None and low_width is not None:
         if (low_pass + low_width) >= (fs / 2):
-            return FilterError(
-                False, "Low_pass + low_width must be less than fs"
-            )
+            return FilterError(False, "Low_pass + low_width must be less than fs")
         if low_pass < 0 or low_width < 0:
             return FilterError(False, "Filter settings cannot be less than 0.")
         if low_pass > (fs / 2) or low_width > (fs / 2):
@@ -59,9 +58,7 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
             return FilterError(False, "Low_pass must be greater than 0.")
     if high_pass is not None:
         if high_pass > (fs / 2):
-            return FilterError(
-                False, "High pass must be greater than half the fs"
-            )
+            return FilterError(False, "High pass must be greater than half the fs")
         if high_pass == 0:
             return FilterError(False, "High_pass must be greater than 0")
     return FilterError(True, "")
@@ -162,6 +159,15 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
         filt_func = signal.filtfilt
     else:
         filt_func = zero_phase_convolve
+    if (
+        filter_settings.beta_sigma is not None
+        and filter_settings.filter_type == "kaiser"
+    ):
+        window = (filter_settings.filter_type, filter_settings.beta_sigma)
+    elif filter_settings.beta_sigma is None and filter_settings.filter_type == "kaiser":
+        window = ("kaiser", signal.kaiser_beta(-60))
+    else:
+        window = filter_settings.window
     if filter_settings.high_pass is not None and filter_settings.low_pass is not None:
         filt = signal.firwin2(
             filter_settings.order,
@@ -174,7 +180,7 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 filter_settings.fs / 2,
             ],
             gain=[0, 0, 1, 1, 0, 0],
-            window=filter_settings.window,
+            window=window,
             fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
@@ -188,7 +194,7 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 filter_settings.fs / 2,
             ],
             gain=[0, 0, 1, 1],
-            window=filter_settings.window,
+            window=window,
             fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
@@ -202,7 +208,7 @@ def fir_filter(array: np.ndarray, filter_settings: FIRFilter):
                 filter_settings.fs / 2,
             ],
             gain=[1, 1, 0, 0],
-            window=filter_settings.window,
+            window=window,
             fs=filter_settings.fs,
         )
         filt_array = filt_func(filt, 1.0, array)
