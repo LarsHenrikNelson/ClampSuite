@@ -5,16 +5,19 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ..acq import CurrentClampAcq
-from ..functions.curve_fit import fit_iv, Sigmoid, Log
-from ..functions.utilities import map_keys
-from . import final_analysis
+from .acq import AcquisitionAnalysis
+from ...functions.curve_fit import fit_iv, Sigmoid, Log
+from ...functions.utilities import map_keys
+from ..base import BaseFinalAnalysis
+from ..registry import register_final
+from .parameters import CurrentClampParameters
 
 
-class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
+@register_final(CurrentClampParameters)
+class FinalAnalysis(BaseFinalAnalysis):
     def __init__(
         self,
-        acq_dict: dict[int, CurrentClampAcq],
+        acq_dict: dict[int, AcquisitionAnalysis],
         iv_start: int | None = None,
         iv_end: int | None = None,
         rectify: bool = False,
@@ -28,9 +31,7 @@ class FinalCurrentClampAnalysis(final_analysis.FinalAnalysis):
         self.ramp_ap = False
         self.acq_dict = acq_dict
 
-    def analyze(
-        self,
-    ):
+    def analyze(self):
         self.create_raw_data()
         self.get_features()
         # self.final_data_pulse()

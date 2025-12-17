@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
+from ..preprocess.base import Preprocessor
 
 
 @dataclass
@@ -20,6 +21,7 @@ class AcquisitionData:
     ramp: int = 0
     cycle: int = 0
     gain: float = 1.0
+    _preprocessors: list[Preprocessor] = field(default=list)
 
     @property
     def s_r_c(self):
@@ -27,4 +29,17 @@ class AcquisitionData:
 
     @property
     def acquisition(self):
-        return self.array * self.gain
+        data = self.array * self.gain
+
+        for preprocessor in self._preprocessors:
+            data = preprocessor.process(data, self.fs)
+        return data[: self.rc_check_pulse_start_index]
+
+    def clear_preprocessors(self) -> None:
+        """Remove all preprocessing steps."""
+        self._preprocessors.clear()
+
+    def add_preprocessor(self, preprocessor: Preprocessor) -> "AcquisitionData":
+        """Add a preprocessing step. Returns self for chaining."""
+        self._preprocessors.append(preprocessor)
+        return self

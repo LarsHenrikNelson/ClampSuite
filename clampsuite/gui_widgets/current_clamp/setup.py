@@ -1,6 +1,6 @@
 from typing import get_args
 
-from PySide6.QtGui import QIntValidator
+from PySide6.QtGui import QIntValidator, QDoubleValidator
 from PySide6.QtWidgets import QComboBox, QFormLayout, QLabel
 
 from ..qtwidgets import FrameWidget, LineEdit
@@ -58,6 +58,12 @@ class CurrentClampSettingsWidget(FrameWidget):
         self.side.setObjectName("side")
         self.input_layout.addRow("Side", self.side)
 
+        self.proportion = LineEdit()
+        self.proportion.setObjectName("proportion")
+        self.proportion.setText("0.6")
+        self.proportion.setValidator(QDoubleValidator())
+        self.input_layout.addRow("Min spikes", self.proportion)
+
         self.iv_start_label = QLabel("IV curve start (pA)")
         self.iv_start_edit = LineEdit()
         self.iv_start_edit.setObjectName("iv_start_edit")
@@ -72,9 +78,12 @@ class CurrentClampSettingsWidget(FrameWidget):
 
     def getAnalysisSettings(self):
         acquisition_args = {
-            "threshold": self.min_spike_threshold_edit.toInt(),
+            "threshold": self.min_spike_threshold_edit.toFloat(),
             "min_spikes": self.min_spikes_edit.toInt(),
             "threshold_method": self.threshold_method.currentText(),
+            "fit_sag_decay": int(self.fit_sag_decay.currentText()),
+            "side": self.side.currentText(),
+            "proportion": self.proportion.toFloat(),
         }
         final_analysis_args = {
             "iv_start": self.iv_start_edit.toFloat(),
@@ -86,5 +95,7 @@ class CurrentClampSettingsWidget(FrameWidget):
         self.min_spike_threshold_edit.setText(settings["min_spike_threshold"])
         self.min_spikes_edit.setText(settings["min_spikes"])
         self.threshold_method.setCurrentText(settings["threshold_method"])
+        self.side.setCurrentText(settings["side"])
+        self.proportion.setText(settings["proprotion"])
         self.iv_start_edit.setText(settings["iv_start"])
         self.iv_end_edit.setText(settings["iv_end"])

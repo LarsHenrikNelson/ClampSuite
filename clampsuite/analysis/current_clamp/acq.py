@@ -1,10 +1,9 @@
-from typing import Literal, Union, NamedTuple
-from collections import defaultdict
+from typing import Union, Literal
 
 import numpy as np
 from scipy import signal
 
-from ..functions.current_clamp import (
+from ...functions.current_clamp import (
     SPIKE_PARAMS,
     ThresholdType,
     adaptation_index,
@@ -21,25 +20,40 @@ from ..functions.current_clamp import (
     membrane_time_constant_deltav,
     membrane_time_constant_min,
 )
-from ..functions.general import baseline_stability, delta
-from ..functions.curve_fit import SExpDecay, DExpDecay
-from ..functions.utilities import map_keys
-from ..loader.acquisition_data import AcquisitionData
+from ...functions.general import baseline_stability, delta
+from ...functions.curve_fit import SExpDecay, DExpDecay
+from ...loader.acquisition_data import AcquisitionData
+from ..base import BaseAcquisitionAnalysis
+from .parameters import CurrentClampParameters
+from ..registry import register_acquisition
+
 
 PlotOutput = tuple[np.ndarray, np.ndarray]
 
 
-class CurrentClampParameters(NamedTuple):
-    min_spike_voltage: Union[int, float] = 0
-    threshold_method: ThresholdType = "third_derivative"
-    min_spikes: int = 1
-    side: Literal["left", "right"] = "right"
-    proportion: float = 0.5
-
-
-class CurrentClampAcq:
-    def __init__(self, acq_data: AcquisitionData):
+@register_acquisition(CurrentClampParameters)
+class AcquisitionAnalysis(BaseAcquisitionAnalysis):
+    def __init__(
+        self,
+        acq_data: AcquisitionData,
+        min_spike_voltage: Union[int, float] = 0,
+        threshold_method: ThresholdType = "third_derivative",
+        min_spikes: int = 1,
+        side: Literal["left", "right"] = "right",
+        proportion: float = 0.5,
+        fit_sag_decay: Literal[0, 1, 2] = 0,
+    ):
         self.acq_data = acq_data
+        pulse_start = self.acq_data.pulse_start_index
+        pulse_end = self.acq_data.pulse_end_index
+        self.min_spike_voltage = min_spike_voltage
+        self.threshold_method = threshold_method
+        self.min_spikes = min_spikes
+        self.proportion = proportion
+        self.side = side
+        self.pulse_end = pulse_end
+        self.pulse_start = pulse_start
+        self.fit_sag_decay = fit_sag_decay
 
         self._analysis_variables = {}
         self._analysis_variables["baseline_mv"] = np.nan
@@ -65,26 +79,7 @@ class CurrentClampAcq:
         for i in SPIKE_PARAMS:
             self._analysis_variables[i] = np.array([])
 
-    def analyze(
-        self,
-        min_spike_voltage: Union[int, float] = 0,
-        threshold_method: ThresholdType = "third_derivative",
-        min_spikes: int = 1,
-        side: Literal["left", "right"] = "right",
-        proportion: float = 0.5,
-        fit_sag_decay: Literal[0, 1, 2] = 0,
-    ) -> None:
-        pulse_start = self.acq_data.pulse_start_index
-        pulse_end = self.acq_data.pulse_end_index
-        self.min_spike_voltage = min_spike_voltage
-        self.threshold_method = threshold_method
-        self.min_spikes = min_spikes
-        self.proportion = proportion
-        self.side = side
-        self.pulse_end = pulse_end
-        self.pulse_start = pulse_start
-        self.fit_sag_decay = fit_sag_decay
-
+    def analyze(self) -> None:
         # Analysis functions
         acquisition = self.acq_data.acquisition
         self._analysis_variables["baseline_mv"] = np.mean(
@@ -155,13 +150,13 @@ class CurrentClampAcq:
             )
             if self.fit_sag_decay > 0:
                 index = self._analysis_variables["sag_index"]
-                x_temp = np.arange(0, pulse_end - index) / self.acq_data.s_r_c
+                x_temp = np.arange(0, self.pulse_end - index) / self.acq_data.s_r_c
                 if self.fit_sag_decay == 1:
                     temp_output = SExpDecay()
 
                 else:
                     temp_output = DExpDecay()
-                temp_output.fit(x_temp, acquisition[index:pulse_end])
+                temp_output.fit(x_temp, acquisition[index : self.pulse_end])
                 self._analysis_variables["sag_fit"] = temp_output
 
         if self._analysis_variables["delta_v_mv"] < 0 and self.acq_data.pulse_amp < 0:

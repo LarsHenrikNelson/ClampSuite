@@ -12,3 +12,11 @@ from .lfp_acq import LFPAcq
 from .postsynaptic_event import MiniEvent
 from .mini_acq import MiniAnalysisAcq
 from .oepsc_acq import oEPSCAcq
+
+analyses = {
+    "current_clamp": CurrentClampAcq,
+    "filter": FilterAcq,
+    "lfp": LFPAcq,
+    "mini": MiniAnalysisAcq,
+    "oepsc": oEPSCAcq,
+}

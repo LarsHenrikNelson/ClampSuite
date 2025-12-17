@@ -1,5 +1,6 @@
 import logging
 from typing import _LiteralGenericAlias, get_args
+from dataclasses import fields
 
 import numpy as np
 import pyqtgraph as pg
@@ -14,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...functions.filtering.filters import Filters
+from ...preprocess.filter import Filters
 from ...functions.template_psc import create_template
 from ..qtwidgets import FrameWidget, LineEdit
 
@@ -27,7 +28,7 @@ class FilterSettingsWidget(FrameWidget):
 
         self.layout = QVBoxLayout(self)
         args = get_args(Filters)
-        values = [i._field_defaults["filter_family"] for i in args]
+        values = [i.filter_family for i in args]
         self.selector = QComboBox()
         self.selector.addItems(values)
         self.selector.currentTextChanged.connect(self._on_selection_changed)
@@ -38,7 +39,7 @@ class FilterSettingsWidget(FrameWidget):
 
         for a in args:
             form = SingleForm(a)
-            self.forms[a._field_defaults["filter_family"]] = form
+            self.forms[a.filter_family] = form
             self.stack.addWidget(form)
 
         self.layout.addWidget(self.stack)
@@ -57,12 +58,10 @@ class SingleForm(QWidget):
         layout = QFormLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        defaults = tuple_class._field_defaults
-        annotations = tuple_class.__annotations__
-        for field in tuple_class._fields:
-            widget = self._create_widget(annotations[field], defaults[field])
-            self.fields[field] = widget
-            layout.addRow(field, widget)
+        for f in fields(tuple_class):
+            widget = self._create_widget(f.type, f.default)
+            self.fields[f.name] = widget
+            layout.addRow(f.name, widget)
 
     def _create_widget(self, field_type, defaults) -> QWidget:
         if isinstance(field_type, (_LiteralGenericAlias)):

@@ -26,12 +26,17 @@ class ABFLoader(BaseLoader):
         self.pulse_data = pulse_data
 
     def load_segment(
-        self, file, segment: int, gain: float, channel_index: None | int = 0
+        self,
+        file,
+        segment: int,
+        gain: float,
+        channel_index: None | int = 0,
+        offset: int = 0,
     ) -> np.ndarray:
         acq = file.get_analogsignal_chunk(
             block_index=0, seg_index=segment, channel_indexes=channel_index
         )
-        return acq
+        return acq[offset:-offset]
 
     def process_secondary_channel(self, file: AxonRawIO, segment: int, acq_dict: dict):
         if file.header is None:
@@ -60,11 +65,8 @@ class ABFLoader(BaseLoader):
 
     def pulse_from_epoch(self, file: AxonRawIO, acq_dict: dict[int, dict]):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
-        n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
-        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
-        offset = int(n_samples * 15625 / 10**6)
         epoch_key = list(epoch_info.keys())[0]
-        pulse_start_index = epoch_info[epoch_key][0]["lEpochInitDuration"] + offset
+        pulse_start_index = epoch_info[epoch_key][0]["lEpochInitDuration"]
         pulse_end_index = (
             epoch_info[epoch_key][1]["lEpochInitDuration"] + pulse_start_index
         )
@@ -80,6 +82,9 @@ class ABFLoader(BaseLoader):
             current_amp += amp_increment
 
     def process_acquisitions(self, file: AxonRawIO) -> dict:
+        n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
+        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
+        offset = int(n_samples * 15625 / 10**6)
         temp_dict = {}
         if file.header is None:
             raise ValueError("File header is None")
@@ -98,16 +103,16 @@ class ABFLoader(BaseLoader):
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
             acq_dict["ramp"] = 0
-            acq_dict["rc_check_pulse_start_index"] = 0
-            acq_dict["rc_check_pulse_end_index"] = 0
-            acq_dict["rc_amp"] = 0
             acq_dict["pulse_pattern"] = str(i)
 
             gain = file.header["signal_channels"][self.main_channel][5]
             acq_dict["gain"] = gain
             acq_dict["array"] = self.load_segment(
-                file, i, gain=gain, channel_index=self.main_channel
+                file, i, gain=gain, channel_index=self.main_channel, offset=offset
             )
+            acq_dict["rc_check_pulse_start_index"] = acq_dict["array"].size
+            acq_dict["rc_check_pulse_end_index"] = acq_dict["array"].size
+            acq_dict["rc_amp"] = 0
             acq_dict["pulse_start_index"] = 0
             acq_dict["pulse_end_index"] = acq_dict["array"].size
             acq_dict["pulse_amp"] = 0

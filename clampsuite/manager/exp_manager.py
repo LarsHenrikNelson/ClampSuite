@@ -1,188 +1,26 @@
-import json
-import typing
-from collections import OrderedDict
-from copy import deepcopy
-from pathlib import Path, PurePath
-from typing import Callable, Literal, Union
+from pathlib import Path
+from typing import Callable, List, NamedTuple, Type
 
-import numpy as np
-import yaml
-
-from ..final_analysis import FinalAnalysis
-from ..functions.filtering.filters import Filters, Windows
-from ..functions.load_functions import NumpyEncoder
-from ..loader import JSONLoader, ScanImageLoader, ABFLoader
-from ..acq import Acquisition
+from ..analysis.registry import AnalysisRegistry
+from ..loader import ABFLoader, JSONLoader, ScanImageLoader
 
 
 class ExpManager:
-    filters = list(typing.get_args(Filters))
-    windows = list(typing.get_args(Windows))
-
-    def __init__(self) -> None:
+    def __init__(self):
+        self.analysis_params = []
+        self.analysis = {}
+        self.prepocessing_params = []
         self.acquisitions = {}
-        self.final_analysis = None
-        self.ui_prefs = None
-        self.analysis_prefs = {}
-        self.num_of_acqs = 0
-        self.callback_func = print
-        self.deleted_acqs = OrderedDict()
-        self.acqs_deleted = 0
-        self.start_acq = None
-        self.end_acq = None
-        self.analyzed = False
         self.loader = None
 
-    def create_exp(
+    def set_callback(self, callback_func: Callable) -> None:
+        self.callback_func = callback_func
+
+    def load_acqs(
         self,
-        analysis: Literal["mini", "current_clamp", "lfp", "oepsc", "filter"],
-        file: Union[list, tuple, str, Path, PurePath],
+        file_path: list[Path],
     ) -> None:
-        self._load_acqs(analysis, file)
-        self._set_start_end_acq()
-
-    def analyze_exp(self, exp: str, analysis_args: dict) -> None:
-        self.analysis_prefs = analysis_args
-        if self.exp_dict.get(exp):
-            acq_dict = self.exp_dict[exp]
-            for i in acq_dict.values():
-                i.analyze(analysis_args)
-                self.callback_func(f"Acquisition {i.acq_number} analyzed")
-            self.analyzed = True
-            self.callback_func(f"Analyzed {exp} acquisitions")
-
-    def run_final_analysis(self, **kwargs) -> None:
-        analysis = list(self.exp_dict.keys())
-        if len(analysis) == 1:
-            self.final_analysis = FinalAnalysis(analysis[0])
-            self.final_analysis.analyze(self.exp_dict[analysis[0]], **kwargs)
-        else:
-            self.final_analysis = FinalAnalysis("oepsc")
-            lfp = self.exp_dict.get("lfp")
-            oepsc = self.exp_dict.get("oepsc")
-            self.final_analysis.analyze(o_acq_dict=oepsc, lfp_acq_dict=lfp)
-
-    def save_data(self, file_path: Union[Path, PurePath, str]) -> None:
-        file_path = Path(file_path)
-        file_path.mkdir()
-        file_path = file_path / file_path.parts[-1]
-        if self.analysis_prefs is not None:
-            for key, data in self.deleted_acqs.items():
-                self.analysis_prefs["Deleted acqs"] = {key: list(data.keys())}
-            self.save_analysis_prefs(file_path, self.ui_prefs)
-        if self.final_analysis is not None:
-            self.save_final_analysis(file_path)
-        self._save_acqs(file_path)
-        self.callback_func("Finished saving")
-
-    @staticmethod
-    def save_acq(acq, save_filename) -> None:
-        x = deepcopy(acq)
-        if x.analysis == "mini":
-            x.save_postsynaptic_events()
-        with open(f"{save_filename}_{x.name}.json", "w") as write_file:
-            json.dump(x.__dict__, write_file, cls=NumpyEncoder)
-
-    @staticmethod
-    def save_acqs(acq_dict, file_path: Union[PurePath, Path, str]) -> None:
-        for i in acq_dict.values():
-            ExpManager.save_acq(i, file_path)
-        print("Finished saving")
-
-    def _save_acqs(self, file_path: Union[PurePath, Path, str]) -> None:
-        self.callback_func("Saving acquisitions")
-        count = 0
-        count += len(self.acquisitions)
-        count += len(self.deleted_acqs)
-        saved = 0
-        for acq in self.acquisitions.values():
-            self.save_acq(acq, file_path)
-            saved += 1
-            self.callback_func(f"Saved acquisition {acq.acq_number}")
-        for acq in self.deleted_acqs.values():
-            self.save_acq(acq, file_path)
-            saved += 1
-            self.callback_func(f"Saved acquisition {acq.acq_number}")
-        self.callback_func("Saved acqs")
-
-    def save_analysis_prefs(self, file_path: Union[PurePath, Path, str]) -> None:
-        with open(f"{file_path}.yaml", "w") as file:
-            yaml.dump(self.analysis_prefs, file)
-        self.callback_func("Saved user preferences")
-
-    def save_final_analysis(self, file_path: Union[PurePath, Path, str]) -> None:
-        self.callback_func("Saving final analysis")
-        self.final_analysis.save_data(file_path)
-        self.callback_func("Saved final analysis")
-
-    def load_file(self, file_path: str, extension: str) -> Union[list, PurePath]:
-        file_path = PurePath(file_path)
-        if file_path is None:
-            p = Path()
-            file_name = list(p.glob(f"*{extension}"))[0]
-        elif file_path.suffix == extension:
-            file_name = file_path
-        else:
-            directory = Path(file_path)
-            file_name = list(directory.glob(extension))[0]
-        return file_name
-
-    def load_ui_prefs(self, file_path: Union[None, str, Path, PurePath] = None) -> dict:
-        file_name = self.load_file(file_path, extension=".yaml")
-        with open(file_name, "r") as file:
-            ui_prefs = yaml.safe_load(file)
-            return ui_prefs
-
-    def load_analysis_prefs(
-        self, file_path: Union[None, str, Path, PurePath] = None
-    ) -> dict:
-        file_name = self.load_file(file_path, extension=".yaml")
-        with open(file_name, "r") as file:
-            analysis_prefs = yaml.safe_load(file)
-        return analysis_prefs
-
-    def load_final_analysis(self, analysis: str, file_path: Union[None, str] = None):
-        file_name = self.load_file(file_path, extension=".xlsx")
-        self.final_analysis = FinalAnalysis(analysis)
-        self.final_analysis.load_data(file_name)
-
-    def load_exp(
-        self, analysis: str, file_path: Union[str, list, tuple, PurePath, Path]
-    ):
-        if isinstance(file_path, (str, PurePath)):
-            temp_path = Path(file_path)
-            if temp_path.is_dir():
-                file_paths = list(temp_path.glob("*.*"))
-        elif isinstance(file_path, Path):
-            if file_path.is_dir():
-                file_paths = list(file_path.glob("*.*"))
-        else:
-            file_paths = [PurePath(i) for i in file_path]
-        file_paths_edit = [
-            i for i in file_paths if (i.suffix == ".json") & (i.name[0] != ".")
-        ]
-        for path in file_paths:
-            if path.suffix == ".yaml":
-                self.ui_prefs = self.load_ui_prefs(path)
-                can_load_data = True
-                self.analyzed = True
-                self.callback_func("Loaded settings")
-            elif path.suffix == ".xlsx":
-                self.load_final_analysis(analysis, path)
-                self.callback_func("Loaded final data")
-        if can_load_data:
-            self._load_acqs(analysis=analysis, file_path=file_paths_edit)
-            self._set_start_end_acq()
-            self._set_deleted_acqs()
-        else:
-            self.callback_func("No YAML file, cannot load data!")
-
-    def _load_acqs(
-        self,
-        analysis: Union[str, None],
-        file_path: Union[list, tuple, str, Path, PurePath],
-    ) -> None:
-        if isinstance(file_path, (str, Path, PurePath)):
+        if isinstance(file_path, (str, Path)):
             file_path = list(file_path)
         file_path = [Path(i) for i in file_path]
         if self.loader is None:
@@ -192,94 +30,22 @@ class ExpManager:
                 self.loader = JSONLoader(self.callback_func)
             else:
                 self.loader = ABFLoader(self.callback_func)
-        acquisitions = self.loader.load_files(file_path)
-        self._create_acquisitions(acquisitions, analysis)
+        self.acquisitions.update(self.loader.load_files(file_path))
         self.callback_func("Loaded acquisitions")
 
-    def _create_acquisitions(self, acquisitions: dict, analysis: str):
-        for vals in acquisitions.values():
-            obj = Acquisition(analysis)
-            vals["analysis"] = analysis
-            obj.load_data(vals)
-            self.acquisitions[int(obj.acq_number)] = obj
+    def add_analyses(self, param_type: List[Type[NamedTuple]]):
+        self.analysis_params.append(param_type)
 
-    def _set_start_end_acq(self) -> None:
-        self.start_acq = min(self.acquisitions.keys())
-        self.end_acq = max(self.acquisitions.keys())
+    def add_prepocessor(self, param_type: List[Type[NamedTuple]]):
+        self.prepocessing_params.extend(param_type)
 
-    def _set_deleted_acqs(self) -> None:
-        for acq, value in self.acquisitions.items():
-            deleted_acqs = []
-            if not value.accepted:
-                deleted_acqs.append(acq)
-        for i in deleted_acqs:
-            self.delete_acq(i)
-
-    def set_callback(self, func: Callable[[int, str], None]):
-        self.callback_func = func
-
-    def get_acqs(self) -> list:
-        return [i.name for i in self.acquisitions.values()]
-
-    def delete_acq(self, acq: int) -> None:
-        item = self.acquisitions.pop(acq)
-        item.delete()
-        self.deleted_acqs[acq] = item
-        self.acqs_deleted += 1
-
-    def reset_deleted_acqs(self) -> int:
-        if self.deleted_acqs:
-            del_dict = self.deleted_acqs
-            for i in del_dict.values():
-                i.accept()
-            self.acquisitions.update(del_dict)
-            self.acqs_deleted = 0
-            return 1
-        else:
-            return 0
-
-    def reset_recent_deleted_acq(self):
-        if self.deleted_acqs:
-            item = self.deleted_acqs.popitem()
-            item[1].accept()
-            self.acquisitions[item[0]] = item[1]
-            self.acqs_deleted -= 1
-            return item[0]
-        else:
-            return 0
-
-    def acqs_exist(self) -> bool:
-        if len(self.acquisitions) > 0:
-            return True
-        else:
-            return False
-
-    def acq_exists(self, acq_num) -> bool:
-        return acq_num in self.acquisitions
-
-    def num_of_del_acqs(self) -> int:
-        return len(self.deleted_acqs)
-
-    def set_current_acq(self) -> int:
-        if self.ui_prefs is not None:
-            return self.ui_prefs["Acq_number"]
-        else:
-            raise AttributeError("UI prefs do not exist")
-
-    def get_final_analysis_data(self) -> dict:
-        if self.final_analysis is not None:
-            return self.final_analysis.df_dict
-        else:
-            return {}
-
-    def clear(self):
-        self.exp_dict = {}
-        self.final_analysis = None
-        self.ui_prefs = None
-        self.analysis_prefs = {}
-        self.num_of_acqs = 0
-        self.deleted_acqs = {}
-        self.acqs_deleted = 0
-        self.start_acq = None
-        self.end_acq = None
-        self.analyzed = False
+    def run_analysis(self):
+        for i in self.analysis_params:
+            analysis_temp = {}
+            acq_analysis, final_analysis = AnalysisRegistry.get_analyses(i)
+            for key, value in self.acquisitions.items():
+                value.add_preprocessor(self.prepocessing_params)
+                analyzer = acq_analysis(value, **i.acquisition())
+                analyzer.analyze()
+                analysis_temp[key] = analyzer
+            self.analysis[i.analysis_key()] = analysis_temp
