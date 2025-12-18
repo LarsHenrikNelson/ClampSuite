@@ -29,7 +29,6 @@ class ABFLoader(BaseLoader):
         self,
         file,
         segment: int,
-        gain: float,
         channel_index: None | int = 0,
         offset: int = 0,
     ) -> np.ndarray:
@@ -63,6 +62,9 @@ class ABFLoader(BaseLoader):
             acq_dict["ramp"] = 0
             acq_dict["pulse_amp"] = 0
 
+    def get_units(self, file, channel=0):
+        return file._axon_info["listADCInfo"][channel]["ADCChUnits"].decode()
+
     def pulse_from_epoch(self, file: AxonRawIO, acq_dict: dict[int, dict]):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
         epoch_key = list(epoch_info.keys())[0]
@@ -82,9 +84,13 @@ class ABFLoader(BaseLoader):
             current_amp += amp_increment
 
     def process_acquisitions(self, file: AxonRawIO) -> dict:
-        n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
-        n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
-        offset = int(n_samples * 15625 / 10**6)
+        op_mode = file._axon_info["protocol"]["nOperationMode"]
+        if op_mode == 5:
+            n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
+            n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
+            offset = int(n_samples * 15625 / 10**6)
+        else:
+            offset = 0
         temp_dict = {}
         if file.header is None:
             raise ValueError("File header is None")
@@ -108,7 +114,7 @@ class ABFLoader(BaseLoader):
             gain = file.header["signal_channels"][self.main_channel][5]
             acq_dict["gain"] = gain
             acq_dict["array"] = self.load_segment(
-                file, i, gain=gain, channel_index=self.main_channel, offset=offset
+                file, i, channel_index=self.main_channel, offset=offset
             )
             acq_dict["rc_check_pulse_start_index"] = acq_dict["array"].size
             acq_dict["rc_check_pulse_end_index"] = acq_dict["array"].size
@@ -117,36 +123,13 @@ class ABFLoader(BaseLoader):
             acq_dict["pulse_end_index"] = acq_dict["array"].size
             acq_dict["pulse_amp"] = 0
             acq_dict["fs"] = file.header["signal_channels"][self.main_channel][2]
+            acq_dict["units"] = self.get_units(file, channel=0)
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
         if self.pulse_data:
             self.pulse_from_epoch(file, temp_dict)
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
-
-    def pulse_from_channel(self, file: AxonRawIO, nacqs, acq_dict: dict):
-        if file.header is None:
-            raise ValueError("File header is None")
-        else:
-            gain = file.header["signal_channels"][self.secondary_channel][5]
-        pulse_start_indexs = [value["pulse_start_index"] for value in acq_dict.values()]
-        pulse_end_indexs = [value["pulse_end_index"] for value in acq_dict.values()]
-        ps, ps_count = np.unique(pulse_start_indexs, return_counts=True)
-        pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)
-        pe, pe_count = np.unique(pulse_end_indexs, return_counts=True)
-        ps = ps[np.argmax(ps_count)]
-        pe = pe[np.argmax(pe_count)]
-        for index, value in zip(range(nacqs), acq_dict.values()):
-            value["pulse_start_index"] = ps
-            value["pulse_end_index"] = pe
-            gain = file.header["signal_channels"][self.secondary_channel][5]
-            temp = self.load_segment(
-                file, index, gain=gain, channel_index=self.secondary_channel
-            )
-            value["pulse_amp"] = int(
-                np.mean(temp[value["pulse_start_index"] : value["pulse_end_index"]])
-                - np.mean(temp[: value["pulse_start_index"]])
-            )
 
     def process_data_files(self, data_files: list) -> dict[int, AcquisitionData]:
         output_dict = {}

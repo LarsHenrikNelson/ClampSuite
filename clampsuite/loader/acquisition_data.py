@@ -21,6 +21,7 @@ class AcquisitionData:
     ramp: int = 0
     cycle: int = 0
     gain: float = 1.0
+    units: str = "mV"
     _preprocessors: list[Preprocessor] = field(default=list)
 
     @property
