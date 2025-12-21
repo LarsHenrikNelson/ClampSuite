@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Any
+from typing import NamedTuple, Any, TypeVar, Generic
 
 import numpy as np
 from scipy.optimize import curve_fit
 
+T = TypeVar('T', bound=NamedTuple) 
 
 class ModelMetrics(NamedTuple):
     reduced_chisq: float = np.nan
@@ -12,27 +13,31 @@ class ModelMetrics(NamedTuple):
     parameter_uncertainties: np.ndarray = np.array([])
 
 
-class CurveFitBase(ABC):
+class CurveFitBase(ABC, Generic[T]):
+    _params: T
+    _model_metrics: ModelMetrics
+    _fit_success: bool
+    
     def __init__(self):
-        self._params: tuple | None = None
+        self._params = self._create_nan_result()
         self._model_metrics = ModelMetrics()
-        self._fit_success: bool = False
+        self._fit_success = False
 
     @property
-    def params(self) -> tuple | None:
+    def params(self) -> T:
         return self._params
-
+    
     @staticmethod
     @abstractmethod
     def _fit_function(x: np.ndarray, *params: Any, **kwargs: Any) -> np.ndarray:
         pass
 
     @abstractmethod
-    def _create_result(self, popt: tuple):
+    def _create_result(self, popt: tuple) -> T:
         pass
 
     @abstractmethod
-    def _create_nan_result(self) -> tuple:
+    def _create_nan_result(self) -> T:
         pass
 
     def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
@@ -61,7 +66,7 @@ class CurveFitBase(ABC):
             chisq = self._reduced_chisq(popt, x, y)
             uncertain = self._parameter_uncertainties(popt, pcov)
             residuals = self._residuals(x, y)
-            r2 = self._r_squared(popt, x, y)
+            r2: int | float = self._r_squared(popt, x, y)
             self._model_metrics = ModelMetrics(chisq, r2, residuals, uncertain)
 
             self._fit_success = True

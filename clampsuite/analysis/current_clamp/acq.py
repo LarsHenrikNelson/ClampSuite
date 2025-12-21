@@ -24,15 +24,18 @@ from ...functions.general import baseline_stability, delta
 from ...functions.curve_fit import SExpDecay, DExpDecay
 from ...loader.acquisition_data import AcquisitionData
 from ..base import BaseAcquisitionAnalysis
-from .parameters import CurrentClampParameters
 from ..registry import register_acquisition
 
 
 PlotOutput = tuple[np.ndarray, np.ndarray]
 
 
-@register_acquisition(CurrentClampParameters)
+@register_acquisition
 class AcquisitionAnalysis(BaseAcquisitionAnalysis):
+    @staticmethod
+    def analysis_key():
+        return "current_clamp"
+
     def __init__(
         self,
         acq_data: AcquisitionData,

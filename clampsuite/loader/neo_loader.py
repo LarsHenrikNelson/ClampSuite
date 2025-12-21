@@ -1,7 +1,8 @@
+from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Type
+from typing import Callable
 
-from neo.rawio import get_rawio, AxonRawIO
+from neo.rawio import AxonRawIO
 import numpy as np
 from scipy import signal
 
@@ -38,12 +39,8 @@ class ABFLoader(BaseLoader):
         return acq[offset:-offset]
 
     def process_secondary_channel(self, file: AxonRawIO, segment: int, acq_dict: dict):
-        if file.header is None:
-            raise ValueError("File header is None")
-        else:
-            gain = file.header["signal_channels"][self.secondary_channel][5]
         temp = self.load_segment(
-            file, segment, gain=gain, channel_index=self.secondary_channel
+            file, segment, channel_index=self.secondary_channel
         )
         abs_tt = np.abs(np.diff(temp))
         ppeaks, _ = signal.find_peaks(abs_tt)
@@ -142,15 +139,17 @@ class ABFLoader(BaseLoader):
             output_dict.update(temp)
         return output_dict
 
-    def load_files(self, files: list[str | Path]) -> dict[int, AcquisitionData]:
+    def load_files(self, file_paths: list[str | Path]) -> defaultdict[int, dict[int, AcquisitionData]]:
         data_files = []
         self.cycle_count = 0
         self.epoch_count += 1
-        files = [Path(i) for i in files]
+        files = [Path(i) for i in file_paths]
         files.sort()
         for i in files:
             output = AxonRawIO(i)
             output.parse_header()
             data_files.append(output)
-        output_dict = self.process_data_files(data_files)
+        acquisition_dict: dict[int, AcquisitionData] = self.process_data_files(data_files)
+        output_dict: defaultdict[int, dict[int, AcquisitionData]] = self.group_epochs(acquisition_dict)
         return output_dict
+

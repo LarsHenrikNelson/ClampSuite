@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 from typing import Callable, Any
+from collections import defaultdict
 
 import numpy as np
 from scipy.io import loadmat, matlab
@@ -183,7 +184,7 @@ class ScanImageLoader(BaseLoader):
             value.cycle = cycle_tracker[value.epoch][value.pulse_amp]
             cycle_tracker[value.epoch][value.pulse_amp] += 1
 
-    def load_files(self, file_paths: list[str | Path]) -> dict[int, AcquisitionData]:
+    def load_files(self, file_paths: list[str | Path]) -> defaultdict[int, dict[int, AcquisitionData]]:
         acquisitions = {}
         n_files = len(file_paths)
         for count, i in enumerate(file_paths):
@@ -191,4 +192,5 @@ class ScanImageLoader(BaseLoader):
             self.callback_func(f"Acquisition {count + 1} of {n_files} loaded")
             acquisitions[int(acq_comp.acq_number)] = acq_comp
         self.set_cycle(acquisitions)
-        return acquisitions
+        epoch_dict = self.group_epochs(acquisitions)
+        return epoch_dict

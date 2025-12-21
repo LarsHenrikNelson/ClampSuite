@@ -22,7 +22,7 @@ class AcquisitionData:
     cycle: int = 0
     gain: float = 1.0
     units: str = "mV"
-    _preprocessors: list[Preprocessor] = field(default=list)
+    _preprocessors: list[Preprocessor] = field(default_factory=list)
 
     @property
     def s_r_c(self):

@@ -23,9 +23,8 @@ class FinalAnalysisProtocol(Protocol):
 
 
 class AnalysisRegistry:
-    _analyses: Dict[str, Type[Parameters]] = {}
     _acquisition: Dict[str, Type[AcquisitionAnalysisProtocol]] = {}
-    _final: Dict[str, Type[FinalAnalysisProtocol]] = {}
+    _epoch: Dict[str, Type[FinalAnalysisProtocol]] = {}
 
     @classmethod
     def register_acquisition(cls, param_type: Type[Parameters]):
@@ -36,9 +35,9 @@ class AnalysisRegistry:
         return decorator
 
     @classmethod
-    def register_final(cls, param_type: Type[Parameters]):
+    def register_epoch(cls, param_type: Type[Parameters]):
         def decorator(analysis_cls):
-            cls._final[param_type.analysis_key()] = analysis_cls
+            cls._epoch[param_type.analysis_key()] = analysis_cls
             return analysis_cls
 
         return decorator
@@ -49,11 +48,14 @@ class AnalysisRegistry:
         return param_class
 
     @classmethod
-    def get_analyses(cls, param_type: Type[NamedTuple]) -> List[Type]:
-        return (
-            cls._acquisition.get(param_type.analysis_key()),
-            cls._final.get(param_type.analysis_key()),
-        )
+    def get_acquisition(cls, param_type: Type[NamedTuple]) -> List[Type]:
+        return cls._acquisition.get(param_type.analysis_key())
+    
+    @classmethod
+    def get_epoch(cls, param_type: Type[NamedTuple]) -> List[Type]:
+        return cls._epoch.get(param_type.analysis_key())
+
+
 
     @classmethod
     def list_available(cls) -> tuple:
@@ -65,9 +67,5 @@ def register_acquisition(param_type: Type[Parameters]):
     return AnalysisRegistry.register_acquisition(param_type)
 
 
-def register_final(param_type: Type[Parameters]):
-    return AnalysisRegistry.register_final(param_type)
-
-
-def register_params(param_type: Type[Parameters]):
-    return AnalysisRegistry.register_param(param_type)
+def register_epoch(param_type: Type[Parameters]):
+    return AnalysisRegistry.register_epoch(param_type)
