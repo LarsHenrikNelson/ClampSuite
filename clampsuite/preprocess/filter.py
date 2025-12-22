@@ -86,7 +86,7 @@ def check_iir_filter_input(high_pass, low_pass, fs):
     return FilterError(True, "")
 
 
-def zero_phase_convolve(b: np.ndarray, a: None, array: np.ndarray):
+def zero_phase_convolve(b: np.ndarray, a: float | int | None, array: np.ndarray):
     output = np.convolve(array, b, mode="full")
     wlen = b.size // 2
     output = output[wlen : array.size + wlen]
@@ -100,7 +100,7 @@ class MedianFilter(Preprocessor):
     filter_type: str = "median"
     order: int = 4
 
-    def process(self, array: np.ndarray | list, fs: float | int):
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if isinstance(self.order, float):
             order = int(self.order)
         filt_array = signal.medfilt(array, order)
@@ -112,7 +112,7 @@ class MedianFilter(Preprocessor):
 class NoFilter(Preprocessor):
     filter_family: str = "None"
 
-    def process(self, array: np.ndarray, fs: float | int):
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return array
 
 
@@ -144,7 +144,7 @@ class SavgolFilter(Preprocessor):
     order: int = 11
     polyorder: int = 3
 
-    def process(self, array: np.ndarray | list, fs: float | int):
+    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.savgol_filter(
             array, self.order, self.polyorder, mode="nearest"
         )
@@ -158,22 +158,13 @@ class FIRFilter(Preprocessor):
     filter_type: Literal["fir", "fir_zero"] = "fir_zero"
     order: int = 301
     high_pass: int | float | None = None
-    high_width: int | float | None = None
+    high_width: int | float = 300
     low_pass: int | float | None = 500
-    low_width: int | float | None = 200
+    low_width: int | float = 200
     window: Windows = "hann"
     beta_sigma: float | None = None
 
     def process(self, array: np.ndarray, fs: float | int):
-        check = check_fir_filter_input(
-            self.high_pass,
-            self.high_width,
-            self.low_pass,
-            self.low_width,
-            fs,
-        )
-        if not check.passed:
-            return check
         if "zero" in self.filter_type:
             filt_func = signal.filtfilt
         else:
@@ -238,20 +229,11 @@ class RemezFilter(Preprocessor):
     filter_type: Literal["remez", "remez_zero"] = "remez_zero"
     order: int = 301
     high_pass: int | float | None = None
-    high_width: int | float | None = None
+    high_width: int | float = 300
     low_pass: int | float | None = 500
-    low_width: int | float | None = 200
+    low_width: int | float = 200
 
-    def process(self, array: np.ndarray | list, fs: float | int):
-        check = check_fir_filter_input(
-            self.high_pass,
-            self.high_width,
-            self.low_pass,
-            self.low_width,
-            fs,
-        )
-        if not check.passed:
-            return check
+    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if self.high_pass is not None and self.low_pass is not None:
             filt = signal.remez(
                 self.order,
@@ -307,14 +289,7 @@ class IIRFilter(Preprocessor):
     high_pass: int | float | None = None
     low_pass: int | float | None = 500
 
-    def process(self, array: np.ndarray | list, fs: float | int):
-        check = check_iir_filter_input(
-            self.high_pass,
-            self.low_pass,
-            fs,
-        )
-        if not check.passed:
-            return check
+    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if "bessel" in self.filter_type:
             filt_design = signal.bessel
         else:

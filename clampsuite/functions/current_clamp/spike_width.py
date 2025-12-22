@@ -11,7 +11,7 @@ WIDTH_KEYS = [
 ]
 
 
-def find_spk_width(voltages: np.array, start: int, end: int):
+def find_spk_width(voltages: np.ndarray, start: int, end: int):
     start = int(start)
     end = int(end)
     volts = np.asarray(voltages[start:end])

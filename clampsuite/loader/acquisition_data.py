@@ -29,12 +29,12 @@ class AcquisitionData:
         return self.fs / 1000
 
     @property
-    def acquisition(self):
-        data = self.array * self.gain
+    def acquisition(self) -> np.ndarray:
+        data = self.array[: self.rc_check_pulse_start_index] * self.gain
 
         for preprocessor in self._preprocessors:
             data = preprocessor.process(data, self.fs)
-        return data[: self.rc_check_pulse_start_index]
+        return data
 
     def clear_preprocessors(self) -> None:
         """Remove all preprocessing steps."""

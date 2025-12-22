@@ -44,14 +44,13 @@ class CurrentClampEpoch(BaseEpochAnalysis):
                 min_spikes=self.min_spikes,
                 side=self.side,
                 proportion=self.proportion,
-                fit_sag_decay=self.fit_sag_decay
-
+                fit_sag_decay=self.fit_sag_decay,
             )
             self._acquisitions[key] = temp
 
     def analyze(self):
-        for value in self._acquisitions.items():
-            pass
+        for value in self._acquisitions.values():
+            value.analyze()
         self.create_raw_data()
         self.get_features()
 
@@ -76,18 +75,16 @@ class CurrentClampEpoch(BaseEpochAnalysis):
             ["Cycle", "Acq Number", "Spike Number"]
         ).reset_index(drop=True)
 
-        acq_params = acq_params.sort_values(
-            ["Cycle", "Acq Number"]
-        ).reset_index(drop=True)
+        acq_params = acq_params.sort_values(["Cycle", "Acq Number"]).reset_index(
+            drop=True
+        )
 
         self.df_dict["Spike Parameters"] = spk_params
         self.df_dict["Acq Parameters"] = acq_params
 
     def get_features(self):
         rheo_features = self.df_dict["Spike Parameters"].loc[
-            self.df_dict["Spike Parameters"]
-            .groupby(["Cycle"])["Acq Number"]
-            .idxmin()
+            self.df_dict["Spike Parameters"].groupby(["Cycle"])["Acq Number"].idxmin()
         ]
         rheo_features = (
             rheo_features.drop(columns=["Acq Number", "Spike Number", "Cycle"])
@@ -130,11 +127,9 @@ class CurrentClampEpoch(BaseEpochAnalysis):
             .groupby("Epoch")
             .mean(numeric_only=True)
         )
-        features = pd.merge(features, rheo_features, on="Epoch", how="outer")
-        features = pd.merge(features, sag_features, on="Epoch", how="outer")
-        features = pd.merge(features, fi_features, on="Epoch", how="outer")
-        features = pd.merge(features, iv_features, on="Epoch", how="outer")
-        features = pd.merge(features, fr_features, on="Epoch", how="outer")
+        features = pd.concat(
+            [rheo_features, sag_features, fi_features, iv_features, fr_features], axis=1
+        )
         self.df_dict["Epoch Parameters"] = features
 
     def fi_fit(self, acq_data):
@@ -158,19 +153,13 @@ class CurrentClampEpoch(BaseEpochAnalysis):
         end: int | float | None = None,
         rectify: bool = False,
     ):
-        iv_output = []
-        epochs = []
-        for key, value in acq_data.groupby("Epoch").groups.items():
-            current = acq_data.loc[value, "Pulse Amp (pA)"]
-            voltage = acq_data.loc[value, column]
-            temp = fit_iv(current, voltage, start, end, rectify)
-            epochs.append(key)
-            iv_output.append(temp._asdict())
-        iv_features = pd.DataFrame(iv_output)
+        current = acq_data["Pulse Amp (pA)"].to_numpy()
+        voltage = acq_data[column].to_numpy()
+        temp = fit_iv(current, voltage, start, end, rectify)
+        iv_features = pd.DataFrame(temp._asdict())
         key_mapping = map_keys(iv_features.columns)
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         iv_features = iv_features.rename(columns=key_mapping)
-        iv_features["Epoch"] = epochs
         return iv_features
 
     def log_fit(self, spike_data, column: str):

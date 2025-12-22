@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 
 
-def find_alt_baseline(event_array: np.ndarray, event_peak, fs):
+def find_alt_baseline(event_array: np.ndarray, event_peak, fs) -> int:
     s_r_c = fs / 1000
     baselined_array = event_array - np.mean(event_array[: int(1 * s_r_c)])
     masked_array = baselined_array.copy()
@@ -10,24 +10,19 @@ def find_alt_baseline(event_array: np.ndarray, event_peak, fs):
     masked_array[mask] = 0
     peaks = signal.argrelmax(masked_array[0 : int(event_peak)], order=2)
     if len(peaks[0]) > 0:
-        event_baseline = peaks[0][-1]
+        event_baseline = int(peaks[0][-1])
     else:
-        event_baseline = np.argmax(masked_array[0 : int(event_peak)])
+        event_baseline = int(np.argmax(masked_array[0 : int(event_peak)]))
     return event_baseline
 
 
-def find_baseline(event_array: np.ndarray, event_peak: int, fs: float):
+def find_baseline(event_array: np.ndarray, event_peak: int, fs: float) -> int:
     """
-        This functions finds the baseline of an event. The biggest issue with
-        most methods that find the baseline is that they assume the baseline
-        does not deviate from zero, however this is often not true is real
-        life. This methods combines a slope finding method with a peak
-        finding method.
-
-    Returns
-    -------
-    None.
-
+    This functions finds the baseline of an event. The biggest issue with
+    most methods that find the baseline is that they assume the baseline
+    does not deviate from zero, however this is often not true is real
+    life. This methods combines a slope finding method with a peak
+    finding method.
     """
     s_r_c = fs / 1000
     baselined_array = event_array - np.max(event_array[:event_peak])

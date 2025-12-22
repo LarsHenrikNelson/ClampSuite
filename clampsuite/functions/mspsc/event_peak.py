@@ -1,8 +1,9 @@
 import numpy as np
 from scipy import signal
 
-def find_peak(event_array: np.ndarray, fs: float, adjust_pos: int):
-    s_r_c = fs/1000
+
+def find_peak(event_array: np.ndarray, fs: float, adjust_pos: int) -> int | float:
+    s_r_c = fs / 1000
     peaks_1, _ = signal.find_peaks(
         -1 * event_array,
         prominence=4,
@@ -16,7 +17,8 @@ def find_peak(event_array: np.ndarray, fs: float, adjust_pos: int):
         peak_x = peak_corr(event_array, peaks_1[0], s_r_c)
     return peak_x
 
-def peak_corr(event_array: np.ndarray, peak_1: int, s_r_c):
+
+def peak_corr(event_array: np.ndarray, peak_1: int, s_r_c) -> int:
     peaks_2 = signal.argrelextrema(
         event_array[:peak_1],
         comparator=np.less,
@@ -26,9 +28,7 @@ def peak_corr(event_array: np.ndarray, peak_1: int, s_r_c):
     if len(peaks_2) == 0:
         final_peak = peak_1
     else:
-        peaks_3 = peaks_2[
-            event_array[peaks_2] < 0.85 * event_array[peak_1]
-        ]
+        peaks_3 = peaks_2[event_array[peaks_2] < 0.85 * event_array[peak_1]]
         if len(peaks_3) == 0:
             final_peak = peak_1
         else:
@@ -36,7 +36,10 @@ def peak_corr(event_array: np.ndarray, peak_1: int, s_r_c):
     peak_x = final_peak
     return peak_x
 
-def find_peak_alt(event_array: np.ndarray, s_r_c: int, adjust_pos: int):
+
+def find_peak_alt(
+    event_array: np.ndarray, s_r_c: int | float, adjust_pos: int
+) -> int | float:
     peaks_1 = signal.argrelextrema(
         event_array, comparator=np.less, order=int(3 * s_r_c)
     )[0]

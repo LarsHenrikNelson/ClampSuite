@@ -5,16 +5,18 @@ from scipy.fft import fft, ifft
 from scipy import signal
 
 from ..template_psc import create_template, TemplateParams
-from ..filtering import fir_filter, filters
+from ...preprocess.filter import FIRFilter
 
 
 EventMethods: TypeAlias = Literal["fft", "weiner", "template_match"]
 
+
 def deconvolve_array(
     array: np.ndarray,
+    fs: float | int,
     template_params: TemplateParams,
     decon_type: Literal["fft", "weiner"],
-    filter_settings: filters.FIRFilter,
+    filter_settings: FIRFilter,
     lambd: int | float = 4,
 ) -> np.ndarray:
     """The Wiener deconvolution equation can be found on GitHub from pbmanis
@@ -56,18 +58,20 @@ def deconvolve_array(
     # Convolution is similar to template fitting (correlation).
     if decon_type == "fft":
         deconvolved_array = np.real(ifft(fft(array) / H))
-        deconvolved_array = fir_filter(array, filter_settings)
+        deconvolved_array = filter_settings.process(array, fs)
     elif decon_type == "wiener":
         deconvolved_array = np.real(
             ifft(fft(array) * np.conj(H) / (H * np.conj(H) + lambd**2))
         )
-    deconvolved_array = fir_filter(array, filter_settings)
+    deconvolved_array = filter_settings.process(array, fs)
     return deconvolved_array
 
-def template_match(array: np.ndarray, template_params: TemplateParams):
+
+def template_match(array: np.ndarray, template_params: TemplateParams) -> np.ndarray:
     template = create_template(**template_params._asdict())
     template_match = signal.correlate(array, template, mode="same")
     return template_match
+
 
 def _rms(array: np.ndarray) -> tuple[float, float]:
     # Get the top and bottom 2.5% cutoff.
@@ -81,7 +85,10 @@ def _rms(array: np.ndarray) -> tuple[float, float]:
 
     return mu, rms
 
-def find_events(array: np.ndarray, mini_spacing: float, sensitivity: float) -> list:
+
+def find_events(
+    array: np.ndarray, mini_spacing: float, sensitivity: float
+) -> np.ndarray:
     # This is not the method from the original paper but it works a
     # lot better. The original paper used 4*std of the deconvolved array.
     # The problem with that method is that interneurons needs a

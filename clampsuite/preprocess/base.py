@@ -11,7 +11,7 @@ class Preprocessor(ABC):
     """Base class for all preprocessing steps."""
 
     @abstractmethod
-    def process(self, data: np.ndarray, fs: float | int) -> np.ndarray:
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         """Process the acquisition data and return the result."""
         pass
 

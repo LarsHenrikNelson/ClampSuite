@@ -80,24 +80,21 @@ class DExpDecay(CurveFitBase):
         return DExpDecayFit(*popt)
 
 
-def est_decay(
+def estimate_decay(
     event_array: np.ndarray,
-    array_start: int,
-    event_peak_y: float,
-    event_peak_x: int,
-    event_start_y: float,
+    baseline_index: int,
+    peak_index: int,
 ) -> tuple[float, float]:
-    event_array
-    return_to_baseline = int(
-        (np.argmax(event_array[event_peak_x:] >= event_peak_y * 0.25)) + event_peak_x
-    )
-    decay_y = event_array[event_peak_x:return_to_baseline]
-    x = np.arange(event_array.size)
+    baseline = event_array[:baseline_index].mean()
+    event_array = np.abs(event_array[:peak_index] - baseline)
+    return_to_baseline = int((np.argmax(event_array >= event_array[0] * 0.25)))
+    decay_y = event_array[:return_to_baseline]
     if decay_y.size > 0:
-        est_tau_y = ((event_peak_y - event_start_y) * (1 / np.exp(1))) + event_start_y
-        decay_x = x[event_peak_x - array_start : return_to_baseline]
-        est_tau_x = np.interp(est_tau_y, decay_y, decay_x)
+        decay_x = np.arange(return_to_baseline)
+        est_tau_y = (decay_y[0]) * (1 / np.exp(1))
+        est_tau_index = np.interp(est_tau_y, decay_y, decay_x) + peak_index
+        est_tau_y += baseline
     else:
-        est_tau_x = np.nan
+        est_tau_index = np.nan
         est_tau_y = np.nan
-    return est_tau_y, est_tau_x
+    return est_tau_y, est_tau_index

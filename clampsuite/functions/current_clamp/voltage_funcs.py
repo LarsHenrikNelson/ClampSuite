@@ -4,7 +4,7 @@ SAG_KEYS = ["sag_index", "sag_mv"]
 
 
 def voltage_sag(
-    array: np.array, pulse_start: int, pulse_end: int, proportion: float = 0.3
+    array: np.ndarray, pulse_start: int, pulse_end: int, proportion: float = 0.3
 ):
     output = {}
     length = pulse_end - pulse_start
