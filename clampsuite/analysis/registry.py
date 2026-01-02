@@ -43,24 +43,17 @@ class AnalysisRegistry:
         return decorator
 
     @classmethod
-    def register_param(cls, param_class: Type[Parameters]):
-        cls._analyses[param_class.analysis_key()] = param_class
-        return param_class
+    def get_acquisition(cls, param_type: str) -> Type[Parameters] | None:
+        return cls._acquisition.get(param_type)
 
     @classmethod
-    def get_acquisition(cls, param_type: Type[NamedTuple]) -> List[Type]:
-        return cls._acquisition.get(param_type.analysis_key())
-    
-    @classmethod
-    def get_epoch(cls, param_type: Type[NamedTuple]) -> List[Type]:
-        return cls._epoch.get(param_type.analysis_key())
-
-
+    def get_epoch(cls, param_type: str) -> Type[Parameters] | None:
+        return cls._epoch.get(param_type)
 
     @classmethod
     def list_available(cls) -> tuple:
         """List all registered analyses."""
-        return cls._analyses
+        return cls._acquisition, cls._epoch
 
 
 def register_acquisition(param_type: Type[Parameters]):
