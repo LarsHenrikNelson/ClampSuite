@@ -1,4 +1,4 @@
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, Callable
 
 import numpy as np
 from scipy import signal
@@ -91,7 +91,15 @@ def legacy(derivatives: dict[str, np.ndarray], start: int, end: int):
     return peak
 
 
-ThresholdFunctions = {
+def derivative_threshold(
+    derivatives: dict[str, np.ndarray], start: int, end: int, threshold: float = 5.0
+):
+    dv = derivatives["dv"][start:end]
+    peak = np.argwhere(dv > threshold)[0] + start
+    return peak
+
+
+ThresholdFunctions: dict[str, Callable] = {
     "third_derivative": third_derivative,
     "max_curvature": max_curvature,
     "method_vii": method_vii,
@@ -99,6 +107,7 @@ ThresholdFunctions = {
     "first_derivative": first_derivative,
     "second_derivative": second_derivative,
     "legacy": legacy,
+    "allen_institute": derivative_threshold,
 }
 
 ThresholdType: TypeAlias = Literal[
@@ -109,6 +118,7 @@ ThresholdType: TypeAlias = Literal[
     "first_derivative",
     "second_derivative",
     "legacy",
+    "allen_institute",
 ]
 
 
@@ -123,6 +133,14 @@ def find_all_spk_thresholds(
     ddv = np.gradient(dv)
     dddv = np.gradient(ddv)
     derivatives = {"v": voltages, "dv": dv, "ddv": ddv, "dddv": dddv}
+    if threshold_method == "allen_institute":
+        threshold: list[float] = []
+        for index, peak in enumerate(peaks):
+            if index == 0:
+                threshold.append(np.max(dv[pulse_start:peak]))
+            else:
+                threshold.append(np.max(dv[peaks[index - 1], peak]))
+            threshold_value = float(np.mean(threshold))
     thresh_func = ThresholdFunctions[threshold_method]
     for index in range(len(peaks)):
         end_index = peaks[index]
@@ -133,7 +151,12 @@ def find_all_spk_thresholds(
         else:
             start_index = int((peaks[index] - pulse_start) * 0.1) + pulse_start
         try:
-            output[index] = thresh_func(derivatives, start_index, end_index)
+            if threshold_method == "allen_institute":
+                output[index] = derivative_threshold(
+                    derivatives, start_index, end_index, threshold_value
+                )
+            else:
+                output[index] = thresh_func(derivatives, start_index, end_index)
         except IndexError:
             output[index] = ThresholdFunctions["first_derivative"](
                 derivatives, start_index, end_index

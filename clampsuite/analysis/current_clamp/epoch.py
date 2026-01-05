@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict, Literal, Union
+from typing import Dict, Literal
 
 import pandas as pd
 
 from ...functions.current_clamp import ThresholdType
+from ...functions.curve_fit import Log, Sigmoid, fit_iv
 from ...functions.utilities import map_keys
-from ...functions.curve_fit import fit_iv, Sigmoid, Log
 from ...loader.acquisition_data import AcquisitionData
 from ..base import BaseEpochAnalysis
 from ..registry import register_epoch
@@ -16,9 +16,10 @@ from .acq import AcquisitionAnalysis
 @dataclass
 class CurrentClampEpoch(BaseEpochAnalysis):
     # Acquisition parameters
-    min_spike_voltage: Union[int, float] = 0
+    min_spike_voltage: int | float = 0
     threshold_method: ThresholdType = "third_derivative"
     min_spikes: int = 1
+    velocity_threshold: float = 0.0
     side: Literal["left", "right"] = "right"
     proportion: float = 0.5
     fit_sag_decay: Literal[0, 1, 2] = 0

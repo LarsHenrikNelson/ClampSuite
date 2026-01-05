@@ -1,4 +1,4 @@
-from typing import Union, Literal
+from typing import Literal
 
 import numpy as np
 from scipy import signal
@@ -16,16 +16,15 @@ from ...functions.current_clamp import (
     find_all_spk_velocities,
     find_all_spk_widths,
     local_sfa,
-    voltage_sag,
     membrane_time_constant_deltav,
     membrane_time_constant_min,
+    voltage_sag,
 )
+from ...functions.curve_fit import DExpDecay, SExpDecay
 from ...functions.general import baseline_stability, delta
-from ...functions.curve_fit import SExpDecay, DExpDecay
 from ...loader.acquisition_data import AcquisitionData
 from ..base import BaseAcquisitionAnalysis
 from ..registry import register_acquisition
-
 
 PlotOutput = tuple[np.ndarray, np.ndarray]
 
@@ -39,24 +38,12 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
     def __init__(
         self,
         acq_data: AcquisitionData,
-        min_spike_voltage: Union[int, float] = 0,
-        threshold_method: ThresholdType = "third_derivative",
-        min_spikes: int = 1,
-        side: Literal["left", "right"] = "right",
-        proportion: float = 0.5,
-        fit_sag_decay: Literal[0, 1, 2] = 0,
     ):
         self.acq_data = acq_data
         pulse_start = self.acq_data.pulse_start_index
         pulse_end = self.acq_data.pulse_end_index
-        self.min_spike_voltage = min_spike_voltage
-        self.threshold_method = threshold_method
-        self.min_spikes = min_spikes
-        self.proportion = proportion
-        self.side = side
         self.pulse_end = pulse_end
         self.pulse_start = pulse_start
-        self.fit_sag_decay = fit_sag_decay
 
         self._analysis_variables = {}
         self._analysis_variables["baseline_mv"] = np.nan
@@ -82,7 +69,16 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         for i in SPIKE_PARAMS:
             self._analysis_variables[i] = np.array([])
 
-    def analyze(self) -> None:
+    def analyze(
+        self,
+        min_spike_voltage: int | float = 0,
+        threshold_method: ThresholdType = "third_derivative",
+        min_spikes: int = 1,
+        velocity_threshold: float = 0.0,
+        side: Literal["left", "right"] = "right",
+        proportion: float = 0.5,
+        fit_sag_decay: Literal[0, 1, 2] = 0,
+    ) -> None:
         # Analysis functions
         acquisition = self.acq_data.acquisition
         self._analysis_variables["baseline_mv"] = np.mean(
@@ -90,8 +86,15 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         )
         spike_index, _ = signal.find_peaks(
             acquisition[self.pulse_start : self.pulse_end],
-            height=self.min_spike_voltage,
+            height=min_spike_voltage,
         )
+        if velocity_threshold > 0:
+            velocity_index, _ = signal.find_peaks(
+                np.gradient(acquisition[self.pulse_start : self.pulse_end]),
+                height=velocity_threshold,
+            )
+            num_spikes = min(len(velocity_index), len(spike_index))
+            spike_index = spike_index[:num_spikes]
         spike_index += self.pulse_start
         self._analysis_variables["spike_index"] = spike_index
         self._analysis_variables["spike_mv"] = acquisition[spike_index]
@@ -107,7 +110,7 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
                     acquisition,
                     spike_index,
                     self.pulse_start,
-                    self.threshold_method,
+                    threshold_method,
                 )
             )
             self._analysis_variables.update(
@@ -143,18 +146,20 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
                 coefficient_of_variation(spike_index)
             )
 
-        self._analysis_variables["delta_v_mv"] = self.get_delta_v(
-            acquisition, spike_index
+        delta_v_index, delta_v_mv = self.get_delta_v(
+            acquisition, spike_index, proportion, side
         )
+        self._analysis_variables["delta_v_mv"] = delta_v_mv
+        self._analysis_variables["delta_v_index"] = delta_v_index
 
         if self.acq_data.pulse_amp < 0:
             self._analysis_variables.update(
                 voltage_sag(acquisition, self.pulse_start, self.pulse_end)
             )
-            if self.fit_sag_decay > 0:
+            if fit_sag_decay > 0:
                 index = self._analysis_variables["sag_index"]
                 x_temp = np.arange(0, self.pulse_end - index) / self.acq_data.s_r_c
-                if self.fit_sag_decay == 1:
+                if fit_sag_decay == 1:
                     temp_output = SExpDecay()
 
                 else:
@@ -181,7 +186,7 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
 
         rebound_spikes, _ = signal.find_peaks(
             acquisition[self.pulse_end :],
-            height=self.min_spike_voltage,
+            height=min_spike_voltage,
             prominence=int(1 * self.acq_data.s_r_c),
         )
         if len(rebound_spikes) > 0:
@@ -190,24 +195,28 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
                 rebound_spikes[0] + self.pulse_end
             )
 
-    def get_delta_v(self, acquisition: np.ndarray, peaks: np.ndarray):
+    def get_delta_v(
+        self,
+        acquisition: np.ndarray,
+        peaks: np.ndarray,
+        proportion,
+        side,
+    ):
         """This function finds the delta-v for a pulse. It simply takes the mean
         value from the pulse start to end for pulses without spikes. For
         pulses with spikes it takes the mode of the moving mean.
         """
 
         if len(peaks) == 0:
-            delta_v = delta(
-                acquisition,
-                self.pulse_start,
-                self.pulse_end,
-                self.proportion,
-                self.side,
+            delta_v_index, delta_v = delta(
+                acquisition, self.pulse_start, self.pulse_end, proportion, side
             )
         else:
-            index = self._analysis_variables["threshold_index"][0]
-            delta_v = acquisition[index] - self._analysis_variables["baseline_mv"]
-        return delta_v
+            delta_v_index = self._analysis_variables["threshold_index"][0]
+            delta_v = (
+                acquisition[delta_v_index] - self._analysis_variables["baseline_mv"]
+            )
+        return delta_v_index, delta_v
 
     def spike_half_widths(self):
         x = (
@@ -290,12 +299,9 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
     def delta_v(self) -> PlotOutput:
         b = self._analysis_variables["baseline_mv"]
         delta = self._analysis_variables["delta_v_mv"]
+        delta_index = self._analysis_variables["delta_v_index"]
         y = np.array([b, b + delta])
-        start = self.pulse_start
-        end = self.pulse_end
-        mid = (end - start) * self.proportion
-        mid = (start + mid) / self.acq_data.s_r_c
-        x = np.array([mid, mid])
+        x = np.array([delta_index, delta_index]) / self.acq_data.s_r_c
         return x, y
 
     def min_velocity(self):
