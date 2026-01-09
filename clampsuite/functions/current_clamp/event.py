@@ -11,7 +11,6 @@ from .spike_width import WIDTH_KEYS, find_spk_width
 SPIKE_PARAMS = THRESHOLD_KEYS + WIDTH_KEYS + AUC_KEYS + VELOCITY_KEYS + AHP_KEYS
 
 
-@dataclass
 class Spike:
     def __init__(
         self,

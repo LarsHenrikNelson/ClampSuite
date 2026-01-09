@@ -10,11 +10,12 @@ from ...functions.current_clamp import (
     ai_sfa,
     coefficient_of_variation,
     divisor_sfa,
-    find_all_ahps,
-    find_all_spk_auc,
-    find_all_spk_thresholds,
-    find_all_spk_velocities,
-    find_all_spk_widths,
+    # find_all_ahps,
+    # find_all_spk_auc,
+    # find_all_spk_thresholds,
+    # find_all_spk_velocities,
+    # find_all_spk_widths,
+    Spike,
     local_sfa,
     membrane_time_constant_deltav,
     membrane_time_constant_min,
@@ -66,8 +67,9 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         self._analysis_variables["coefficient_of_variation"] = np.nan
         self._analysis_variables["sag_fit"] = None
 
-        for i in SPIKE_PARAMS:
-            self._analysis_variables[i] = np.array([])
+        # for i in SPIKE_PARAMS:
+        #     self._analysis_variables[i] = np.array([])
+        self._spikes = []
 
     def analyze(
         self,
@@ -88,11 +90,9 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
             acquisition[self.pulse_start : self.pulse_end],
             height=min_spike_voltage,
         )
+        dv = np.gradient(acquisition[self.pulse_start : self.pulse_end])
+        velocity_index, _ = signal.find_peaks(dv, height=velocity_threshold)
         if velocity_threshold > 0:
-            velocity_index, _ = signal.find_peaks(
-                np.gradient(acquisition[self.pulse_start : self.pulse_end]),
-                height=velocity_threshold,
-            )
             num_spikes = min(len(velocity_index), len(spike_index))
             spike_index = spike_index[:num_spikes]
         spike_index += self.pulse_start
@@ -104,40 +104,58 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         )
         if len(spike_index) > 1:
             self._analysis_variables["iei_index"] = np.mean(np.diff(spike_index))
-        if len(spike_index) > 0:
-            self._analysis_variables.update(
-                find_all_spk_thresholds(
-                    acquisition,
-                    spike_index,
-                    self.pulse_start,
-                    threshold_method,
-                )
-            )
-            self._analysis_variables.update(
-                find_all_ahps(acquisition, spike_index, self.pulse_end)
-            )
-            self._analysis_variables.update(
-                find_all_spk_widths(
-                    acquisition,
-                    self._analysis_variables["threshold_index"],
-                    self.pulse_end,
-                )
-            )
-            temp = find_all_spk_auc(
-                acquisition,
-                self._analysis_variables["threshold_index"],
-                self.pulse_end,
-            )
-            for key in temp.keys():
-                temp[key] *= (1 / self.acq_data.fs) * 1000
-            self._analysis_variables.update(temp)
-            self._analysis_variables.update(
-                find_all_spk_velocities(
-                    acquisition,
-                    self._analysis_variables["threshold_index"],
-                    self.pulse_end,
-                )
-            )
+
+        end = len(spike_index) - 1
+        for index, i in enumerate(spike_index):
+            if index == 0:
+                start_index = int((i - self.pulse_start) * 0.1) + self.pulse_start
+                end_index = spike_index[index + 1]
+            elif index == end:
+                end_index = self.pulse_end
+                start_index = spike_index[index - 1]
+            else:
+                start_index = spike_index[index - 1]
+                end_index: spike_index[index + 1]
+            spike = Spike(self.acq_data.acquisition, start_index, end_index, i)
+            if threshold_method == "allen_institue":
+                threshold = np.mean(dv[velocity_index])
+                spike.analyze(threshold_method, threshold)
+            self._spikes.append(spike)
+
+            # if len(spike_index) > 0:
+            #     self._analysis_variables.update(
+            #         find_all_spk_thresholds(
+            #             acquisition,
+            #             spike_index,
+            #             self.pulse_start,
+            #             threshold_method,
+            #         )
+            #     )
+            #     self._analysis_variables.update(
+            #         find_all_ahps(acquisition, spike_index, self.pulse_end)
+            #     )
+            #     self._analysis_variables.update(
+            #         find_all_spk_widths(
+            #             acquisition,
+            #             self._analysis_variables["threshold_index"],
+            #             self.pulse_end,
+            #         )
+            #     )
+            #     temp = find_all_spk_auc(
+            #         acquisition,
+            #         self._analysis_variables["threshold_index"],
+            #         self.pulse_end,
+            #     )
+            #     for key in temp.keys():
+            #         temp[key] *= (1 / self.acq_data.fs) * 1000
+            #     self._analysis_variables.update(temp)
+            #     self._analysis_variables.update(
+            #         find_all_spk_velocities(
+            #             acquisition,
+            #             self._analysis_variables["threshold_index"],
+            #             self.pulse_end,
+            #         )
+            #     )
             self._analysis_variables["local_sfa"] = local_sfa(spike_index)
             self._analysis_variables["divisor_sfa"] = divisor_sfa(spike_index)
             self._analysis_variables["ai_sfa"] = ai_sfa(spike_index)

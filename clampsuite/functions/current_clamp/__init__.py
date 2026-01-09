@@ -15,5 +15,6 @@ from .membrane_time_constant import (
     membrane_time_constant_min,
     membrane_time_constant_deltav,
 )
+from .event import Spike
 
 SPIKE_PARAMS = THRESHOLD_KEYS + WIDTH_KEYS + AUC_KEYS + VELOCITY_KEYS + AHP_KEYS
