@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+from numpy.polynomial import Polynomial as npPoly
+from scipy import interpolate
 
 from ..functions.curve_fit import DExpDecay, SExpDecay
 from .base import Preprocessor, register_preprocessor
@@ -9,7 +11,7 @@ from .base import Preprocessor, register_preprocessor
 
 @register_preprocessor("detrend")
 @dataclass
-class RemoveMean(Preprocessor):
+class Mean(Preprocessor):
     start: int = 0
     end: int = 0
 
@@ -23,7 +25,21 @@ class RemoveMean(Preprocessor):
 
 @register_preprocessor("detrend")
 @dataclass
-class RemoveExpDecay(Preprocessor):
+class Median(Preprocessor):
+    start: int = 0
+    end: int = 0
+
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+        if self.end == 0:
+            end = array.shape[1]
+        else:
+            end = self.end
+        return array - np.median(array[self.start : end], axis=-1, keepdims=True)
+
+
+@register_preprocessor("detrend")
+@dataclass
+class ExpDecay(Preprocessor):
     n_decays: Literal[1, 2] = 1
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
@@ -44,3 +60,28 @@ class RemoveExpDecay(Preprocessor):
         sub = np.zeros(array.size)
         sub[:peak] = y_fit
         return array - sub
+
+
+@register_preprocessor("detrend")
+@dataclass
+class Polynomial(Preprocessor):
+    degree: int = 3
+
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+        x = np.arange(array.size)
+        fit = npPoly.fit(x, array, deg=self.degree)
+        baseline = fit(x)
+        return array - baseline
+
+
+@register_preprocessor("detrend")
+@dataclass
+class Spline(Preprocessor):
+    degree: int = 3
+
+    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+        x = np.arange(array.size)
+        knots = np.linspace(0, array.size, num=self.degree + 2, dtype=int)[1:-2]
+        fit = interpolate.make_lsq_spline(x, array, x[knots], k=3)
+        baseline = fit(x)
+        return array - baseline
