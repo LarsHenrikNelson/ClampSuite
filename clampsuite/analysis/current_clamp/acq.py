@@ -120,6 +120,8 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
             if threshold_method == "allen_institue":
                 threshold = np.mean(dv[velocity_index])
                 spike.analyze(threshold_method, threshold)
+            else:
+                spike.analyze(threshold_method)
             self._spikes.append(spike)
 
             # if len(spike_index) > 0:

@@ -37,12 +37,18 @@ class AnalysisRegistry:
         return param_type
 
     @classmethod
-    def get_acquisition(cls, param_type: str) -> Type[Parameters] | None:
-        return cls._acquisition.get(param_type)
+    def get_acquisition(cls, param_type: str) -> Type[Parameters]:
+        if param_type in cls._acquisition:
+            return cls._acquisition[param_type]
+        else:
+            raise ValueError(f"{param_type} not in registered analyses.")
 
     @classmethod
-    def get_epoch(cls, param_type: str) -> Type[Parameters] | None:
-        return cls._epoch.get(param_type)
+    def get_epoch(cls, param_type: str) -> Type[Parameters]:
+        if param_type in cls._epoch:
+            return cls._epoch[param_type]
+        else:
+            raise ValueError(f"{param_type} not in registered analyses.")
 
     @classmethod
     def list_available(cls) -> tuple:
