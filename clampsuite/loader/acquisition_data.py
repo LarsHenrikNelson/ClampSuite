@@ -30,7 +30,10 @@ class AcquisitionData:
 
     @property
     def acquisition(self) -> np.ndarray:
-        data = self.array[: self.rc_check_pulse_start_index] * self.gain
+        if self.rc_check_pulse_end_index != self.rc_check_pulse_end_index:
+            data = self.array[: self.rc_check_pulse_start_index] * self.gain
+        else:
+            data = self.array
 
         for preprocessor in self._preprocessors:
             data = preprocessor.process(data, self.fs)
