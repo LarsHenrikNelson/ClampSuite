@@ -28,19 +28,13 @@ class AnalysisRegistry:
 
     @classmethod
     def register_acquisition(cls, param_type: Type[Parameters]):
-        def decorator(analysis_cls):
-            cls._acquisition[param_type.analysis_key()] = analysis_cls
-            return analysis_cls
-
-        return decorator
+        cls._acquisition[param_type.analysis_key()] = param_type
+        return param_type
 
     @classmethod
     def register_epoch(cls, param_type: Type[Parameters]):
-        def decorator(analysis_cls):
-            cls._epoch[param_type.analysis_key()] = analysis_cls
-            return analysis_cls
-
-        return decorator
+        cls._epoch[param_type.analysis_key()] = param_type
+        return param_type
 
     @classmethod
     def get_acquisition(cls, param_type: str) -> Type[Parameters] | None:

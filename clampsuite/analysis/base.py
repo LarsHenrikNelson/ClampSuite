@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from ..loader.acquisition_data import AcquisitionData
+from ..loader import AcquisitionData
 
 
 class BaseAcquisitionAnalysis(ABC):
@@ -15,7 +15,7 @@ class BaseAcquisitionAnalysis(ABC):
     def analysis_key() -> str: ...
 
     @abstractmethod
-    def analyze(self) -> None:
+    def analyze(self, *args, **kwargs) -> None:
         """Run analysis on a single acquisition."""
         pass
 
@@ -23,6 +23,7 @@ class BaseAcquisitionAnalysis(ABC):
     def data(self) -> tuple[dict, dict]:
         """Return the data for this acquisition."""
         pass
+
 
 @dataclass
 class BaseEpochAnalysis(ABC):
@@ -34,13 +35,15 @@ class BaseEpochAnalysis(ABC):
     @staticmethod
     @abstractmethod
     def analysis_key() -> str: ...
-    
+
     @abstractmethod
     def analyze(self) -> None:
         """Analyze acquisitions."""
         pass
 
     @abstractmethod
-    def load_acquisitions(self, epoch_id: int, acquisitions: Dict[int, AcquisitionData]):
+    def load_acquisitions(
+        self, epoch_id: int, acquisitions: Dict[int, AcquisitionData]
+    ):
         """Load acquisitions"""
         pass

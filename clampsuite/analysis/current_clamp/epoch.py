@@ -38,8 +38,12 @@ class CurrentClampEpoch(BaseEpochAnalysis):
     ):
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
-            temp = AcquisitionAnalysis(
-                acq_data=value,
+            temp = AcquisitionAnalysis(acq_data=value)
+            self._acquisitions[key] = temp
+
+    def analyze(self):
+        for value in self._acquisitions.values():
+            value.analyze(
                 min_spike_voltage=self.min_spike_voltage,
                 threshold_method=self.threshold_method,
                 min_spikes=self.min_spikes,
@@ -47,11 +51,6 @@ class CurrentClampEpoch(BaseEpochAnalysis):
                 proportion=self.proportion,
                 fit_sag_decay=self.fit_sag_decay,
             )
-            self._acquisitions[key] = temp
-
-    def analyze(self):
-        for value in self._acquisitions.values():
-            value.analyze()
         self.create_raw_data()
         self.get_features()
 

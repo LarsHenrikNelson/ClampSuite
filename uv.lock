@@ -65,7 +65,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'plotting'" },
     { name = "mypy", marker = "extra == 'testing'" },
     { name = "neo" },
-    { name = "numpy", specifier = ">=1.23.3" },
+    { name = "numpy", specifier = ">=1.23.3,<2.4" },
     { name = "openpyxl", specifier = ">=3.0.10" },
     { name = "pandas", specifier = ">=1.4.4" },
     { name = "pyqtgraph", specifier = ">=0.13.1" },

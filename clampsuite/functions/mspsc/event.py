@@ -3,7 +3,6 @@ import numpy as np
 from scipy import optimize
 from scipy.stats import linregress
 
-from ...loader.acquisition_data import AcquisitionData
 from ...functions.curve_fit import SExpDecay, DExpDecay, estimate_decay
 from .event_peak import find_peak
 from .event_baseline import find_baseline

@@ -1,6 +1,7 @@
 from typing import Literal
 
 import numpy as np
+from scipy import integrate
 
 
 def delta(
@@ -33,3 +34,13 @@ def baseline_stability(array: np.ndarray, pulse_start: int, pulse_end: int):
     else:
         baseline_stability = np.nan
     return baseline_stability
+
+
+def charge_transfer(x, y, method: Literal["trapezoid", "simpson"] = "simpson"):
+    if method == "trapezoid":
+        charge_transfer = integrate.trapezoid(y, x)
+    elif method == "simpson":
+        charge_transfer = integrate.simpson(y, x)
+    else:
+        raise ValueError("Method not recognized")
+    return charge_transfer

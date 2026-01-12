@@ -23,7 +23,7 @@ from ...functions.current_clamp import (
 )
 from ...functions.curve_fit import DExpDecay, SExpDecay
 from ...functions.general import baseline_stability, delta
-from ...loader.acquisition_data import AcquisitionData
+from ...loader import AcquisitionData
 from ..base import BaseAcquisitionAnalysis
 from ..registry import register_acquisition
 

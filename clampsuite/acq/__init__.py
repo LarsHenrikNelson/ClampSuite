@@ -6,11 +6,4 @@ import error.
 """
 
 from .acquisition import Acquisition
-from .lfp_acq import LFPAcq
 from .postsynaptic_event import MiniEvent
-from .oepsc_acq import oEPSCAcq
-
-analyses = {
-    "lfp": LFPAcq,
-    "oepsc": oEPSCAcq,
-}
