@@ -141,13 +141,29 @@ class EWMAFilter(Preprocessor):
 class SavgolFilter(Preprocessor):
     filter_family: str = "savgol"
     filter_type = "savgol"
-    order: int = 11
+    window_length: int = 11
     polyorder: int = 3
+    mode: Literal["mirror", "constant", "nearest", "wrap", "interp"] = "nearest"
+    deriv: int = 0
+    delta: float = 1.0
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.savgol_filter(
-            array, self.order, self.polyorder, mode="nearest"
+            array, self.window_length, self.polyorder, mode="nearest"
         )
+        return filtered_array
+
+
+@register_preprocessor("filter")
+@dataclass
+class WienerFilter(Preprocessor):
+    filter_family: str = "wiener"
+    filter_type = "wiener"
+    mysize: int = 3
+    noise: float | None = None
+
+    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+        filtered_array = signal.wiener(array, mysize=self.mysize, noise=self.noise)
         return filtered_array
 
 
