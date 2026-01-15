@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, ClassVar
 
 import numpy as np
 from numpy.polynomial import Polynomial as npPoly
@@ -15,9 +15,7 @@ class Mean(Preprocessor):
     start: int = 0
     end: int = 0
 
-    @property
-    def name(self) -> str:
-        return "mean"
+    name: ClassVar[str] = "mean"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
@@ -33,9 +31,7 @@ class Median(Preprocessor):
     start: int = 0
     end: int = 0
 
-    @property
-    def name(self) -> str:
-        return "median"
+    name: ClassVar[str] = "median"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
@@ -50,9 +46,7 @@ class Median(Preprocessor):
 class ExpDecay(Preprocessor):
     n_decays: Literal[1, 2] = 1
 
-    @property
-    def name(self) -> str:
-        return "exp_decay"
+    name: ClassVar[str] = "exp_decay"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         maximum = array.argmax()
@@ -79,9 +73,7 @@ class ExpDecay(Preprocessor):
 class Polynomial(Preprocessor):
     degree: int = 3
 
-    @property
-    def name(self) -> str:
-        return "polynomial"
+    name: ClassVar[str] = "polynomial"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
@@ -95,9 +87,7 @@ class Polynomial(Preprocessor):
 class LSQSpline(Preprocessor):
     degree: int = 3
 
-    @property
-    def name(self) -> str:
-        return "lsq_spline"
+    name: ClassVar[str] = "lsq_spline"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)

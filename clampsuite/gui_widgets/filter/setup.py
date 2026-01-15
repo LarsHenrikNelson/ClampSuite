@@ -1,6 +1,6 @@
 import logging
-from typing import _LiteralGenericAlias, get_args
 from dataclasses import fields
+from typing import Literal, get_args, get_origin
 
 import numpy as np
 import pyqtgraph as pg
@@ -15,8 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...preprocess.filter import Filters
 from ...functions.template_psc import create_template
+from ...preprocess.filter import Filters
 from ..qtwidgets import FrameWidget, LineEdit
 
 logger = logging.getLogger(__name__)
@@ -26,13 +26,13 @@ class FilterSettingsWidget(FrameWidget):
     def __init__(self, parent=None):
         super().__init__(title="Filter Settings", parent=parent)
 
-        self.layout = QVBoxLayout(self)
+        self._layout = QVBoxLayout(self)
         args = get_args(Filters)
-        values = [i.filter_family for i in args]
+        values = [i.name for i in args]
         self.selector = QComboBox()
         self.selector.addItems(values)
         self.selector.currentTextChanged.connect(self._on_selection_changed)
-        self.layout.addWidget(self.selector)
+        self._layout.addWidget(self.selector)
 
         self.stack = QStackedWidget()
         self.forms: dict[str, SingleForm] = {}
@@ -42,8 +42,8 @@ class FilterSettingsWidget(FrameWidget):
             self.forms[a.filter_family] = form
             self.stack.addWidget(form)
 
-        self.layout.addWidget(self.stack)
-        self.layout.addStretch()
+        self._layout.addWidget(self.stack)
+        self._layout.addStretch()
 
     def _on_selection_changed(self, name: str):
         self.stack.setCurrentWidget(self.forms[name])
@@ -64,7 +64,7 @@ class SingleForm(QWidget):
             layout.addRow(f.name, widget)
 
     def _create_widget(self, field_type, defaults) -> QWidget:
-        if isinstance(field_type, (_LiteralGenericAlias)):
+        if field_type is Literal:
             widget = QComboBox()
             widget.addItems(get_args(field_type))
             widget.setMinimumContentsLength(len(max(defaults, key=len)))

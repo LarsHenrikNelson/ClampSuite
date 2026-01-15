@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, NamedTuple, TypeAlias
+from typing import ClassVar, Literal, NamedTuple, TypeAlias
 
 import numpy as np
 from scipy import signal
@@ -99,9 +99,7 @@ class MedianFilter(Preprocessor):
     filter_type: str = "median"
     order: int = 4
 
-    @property
-    def name(self) -> str:
-        return "median"
+    name: ClassVar[str] = "median"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if isinstance(self.order, float):
@@ -113,9 +111,7 @@ class MedianFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class NoFilter(Preprocessor):
-    @property
-    def name(self) -> str:
-        return "None"
+    name: ClassVar[str] = "None"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return array
@@ -128,9 +124,7 @@ class EWMAFilter(Preprocessor):
     window: int = 30
     sum_proportion: float = 0.5
 
-    @property
-    def name(self) -> str:
-        return "ewma"
+    name: ClassVar[str] = "ewma"
 
     def ewma_filter(self, array: np.ndarray | list, fs: float | int):
         alpha = 1 - np.exp(np.log(1 - self.sum_proportion) / self.window)
@@ -154,9 +148,7 @@ class SavgolFilter(Preprocessor):
     deriv: int = 0
     delta: float = 1.0
 
-    @property
-    def name(self) -> str:
-        return "savgol"
+    name: ClassVar[str] = "savgol"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.savgol_filter(
@@ -172,9 +164,7 @@ class WienerFilter(Preprocessor):
     mysize: int = 3
     noise: float | None = None
 
-    @property
-    def name(self) -> str:
-        return "wiener"
+    name: ClassVar[str] = "wiener"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.wiener(array, mysize=self.mysize, noise=self.noise)
@@ -193,9 +183,7 @@ class FIRFilter(Preprocessor):
     window: Windows = "hann"
     beta_sigma: float | None = None
 
-    @property
-    def name(self) -> str:
-        return "fir"
+    name: ClassVar[str] = "fir"
 
     def process(self, array: np.ndarray, fs: float | int):
         if "zero" in self.filter_type:
@@ -265,9 +253,7 @@ class RemezFilter(Preprocessor):
     low_pass: int | float | None = 500
     low_width: int | float = 200
 
-    @property
-    def name(self) -> str:
-        return "remez"
+    name: ClassVar[str] = "remez"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if self.high_pass is not None and self.low_pass is not None:
@@ -324,9 +310,7 @@ class IIRFilter(Preprocessor):
     high_pass: int | float | None = None
     low_pass: int | float | None = 500
 
-    @property
-    def name(self) -> str:
-        return "iir"
+    name: ClassVar[str] = "iir"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if "bessel" in self.filter_type:

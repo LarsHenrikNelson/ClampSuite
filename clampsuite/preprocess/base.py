@@ -10,14 +10,12 @@ import numpy as np
 class Preprocessor(ABC):
     """Base class for all preprocessing steps."""
 
+    name: ClassVar[str]
+
     @abstractmethod
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         """Process the acquisition data and return the result."""
         pass
-
-    @property
-    @abstractmethod
-    def name(self) -> str: ...
 
 
 class PreprocessorRegistry:
@@ -30,6 +28,17 @@ class PreprocessorRegistry:
             return analysis_cls
 
         return decorator
+
+    @classmethod
+    def preprocessors(cls):
+        return cls._preprocessor.keys()
+
+    @classmethod
+    def get_preprocessor(cls, key: str):
+        if key in cls._preprocessor:
+            return cls._preprocessor[key]
+        else:
+            raise KeyError("Preprocessor not found")
 
 
 def register_preprocessor(param_type: str):

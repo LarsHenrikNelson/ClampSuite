@@ -1,9 +1,9 @@
-from scipy.signal import decimate
 from dataclasses import dataclass
-from typing import Literal
+from typing import ClassVar, Literal
 
 import numpy as np
 from scipy import interpolate, signal
+from scipy.signal import decimate
 
 from ..functions.curve_fit import DExpDecay, SExpDecay
 from .base import Preprocessor, register_preprocessor
@@ -15,9 +15,7 @@ class BSpline(Preprocessor):
     k: int = 3
     order: int = 4
 
-    @property
-    def name(self) -> str:
-        return "b_spline"
+    name: ClassVar[str] = "b_spline"
 
     def fs_multiplier(self):
         return self.order
@@ -35,9 +33,7 @@ class Pchip(Preprocessor):
     k: int = 3
     order: int = 4
 
-    @property
-    def name(self) -> str:
-        return "pchip_spline"
+    name: ClassVar[str] = "pchip_spline"
 
     @property
     def fs_multiplier(self):
@@ -56,9 +52,7 @@ class Polyphase(Preprocessor):
     up: int = 8
     down: int = 2
 
-    @property
-    def name(self) -> str:
-        return "polyphase"
+    name: ClassVar[str] = "polyphase"
 
     @property
     def fs_multiplier(self):
@@ -74,9 +68,7 @@ class Polyphase(Preprocessor):
 class Decimate(Preprocessor):
     q: int = 4
 
-    @property
-    def name(self) -> str:
-        return "decimate"
+    name: ClassVar[str] = "decimate"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return signal.decimate(array, self.q)
