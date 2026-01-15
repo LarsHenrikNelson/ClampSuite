@@ -1,14 +1,18 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
 from ..loader import AcquisitionData
 
 
+@dataclass
 class BaseAcquisitionAnalysis(ABC):
     """Base class for per-acquisition analysis."""
+
+    acq_data: AcquisitionData
+    _analysis_variables: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
     @abstractmethod
@@ -23,6 +27,19 @@ class BaseAcquisitionAnalysis(ABC):
     def data(self) -> tuple[dict, dict]:
         """Return the data for this acquisition."""
         pass
+
+    def __getitem__(self, index):
+        return self._analysis_variables[index]
+
+    def __setitem__(self, index, value):
+        if index in self._analysis_variables:
+            self._analysis_variables[index] = value
+        else:
+            raise KeyError(f"Key {index} not found in analysis variables.")
+
+    def update(self, dictionary: dict):
+        for key, value in dictionary:
+            self[key] = value
 
 
 @dataclass

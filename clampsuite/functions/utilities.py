@@ -152,7 +152,7 @@ def create_event_array(
     return event_array
 
 
-def map_keys(keys: Iterable):
+def map_keys(keys: Iterable) -> dict:
     key_values = {"mv", "index", "pa", "hz"}
     cap_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
     key_mapping = {}

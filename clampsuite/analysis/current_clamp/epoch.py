@@ -9,7 +9,7 @@ from ...functions.utilities import map_keys
 from ...loader.acquisition_data import AcquisitionData
 from ..base import BaseEpochAnalysis
 from ..registry import register_epoch
-from .acq import AcquisitionAnalysis
+from .acq import CurrentClampAcquisition
 
 
 @register_epoch
@@ -38,7 +38,7 @@ class CurrentClampEpoch(BaseEpochAnalysis):
     ):
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
-            temp = AcquisitionAnalysis(acq_data=value)
+            temp = CurrentClampAcquisition(acq_data=value)
             self._acquisitions[key] = temp
 
     def analyze(self):

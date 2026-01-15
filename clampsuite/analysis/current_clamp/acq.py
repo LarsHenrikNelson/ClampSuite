@@ -1,3 +1,5 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -5,17 +7,12 @@ from scipy import signal
 
 from ...functions.current_clamp import (
     SPIKE_PARAMS,
+    Spike,
     ThresholdType,
     adaptation_index,
     ai_sfa,
     coefficient_of_variation,
     divisor_sfa,
-    # find_all_ahps,
-    # find_all_spk_auc,
-    # find_all_spk_thresholds,
-    # find_all_spk_velocities,
-    # find_all_spk_widths,
-    Spike,
     local_sfa,
     membrane_time_constant_deltav,
     membrane_time_constant_min,
@@ -23,6 +20,7 @@ from ...functions.current_clamp import (
 )
 from ...functions.curve_fit import DExpDecay, SExpDecay
 from ...functions.general import baseline_stability, delta
+from ...functions.utilities import map_keys
 from ...loader import AcquisitionData
 from ..base import BaseAcquisitionAnalysis
 from ..registry import register_acquisition
@@ -31,29 +29,23 @@ PlotOutput = tuple[np.ndarray, np.ndarray]
 
 
 @register_acquisition
-class AcquisitionAnalysis(BaseAcquisitionAnalysis):
+@dataclass
+class CurrentClampAcquisition(BaseAcquisitionAnalysis):
     @staticmethod
     def analysis_key():
         return "current_clamp"
 
-    def __init__(
-        self,
-        acq_data: AcquisitionData,
-    ):
-        self.acq_data = acq_data
+    def __post_init__(self):
         pulse_start = self.acq_data.pulse_start_index
         pulse_end = self.acq_data.pulse_end_index
         self.pulse_end = pulse_end
         self.pulse_start = pulse_start
 
-        self._analysis_variables = {}
         self._analysis_variables["baseline_mv"] = np.nan
         self._analysis_variables["delta_v_mv"] = np.nan
+        self._analysis_variables["delta_v_index"] = np.nan
         self._analysis_variables["freq_hz"] = 0.0
         self._analysis_variables["iei_index"] = 0.0
-        self._analysis_variables["spike_index"] = np.array([])
-        self._analysis_variables["spike_mv"] = np.array([])
-        self._analysis_variables["spike_number"] = np.array([])
         self._analysis_variables["mem_tau_min_index"] = np.nan
         self._analysis_variables["mem_tau_deltav_index"] = np.nan
         self._analysis_variables["sag_mv"] = np.nan
@@ -83,94 +75,34 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
     ) -> None:
         # Analysis functions
         acquisition = self.acq_data.acquisition
-        self._analysis_variables["baseline_mv"] = np.mean(
-            acquisition[: self.pulse_start]
-        )
+        self["baseline_mv"] = np.mean(acquisition[: self.pulse_start])
         spike_index, _ = signal.find_peaks(
             acquisition[self.pulse_start : self.pulse_end],
             height=min_spike_voltage,
         )
-        dv = np.gradient(acquisition[self.pulse_start : self.pulse_end])
-        velocity_index, _ = signal.find_peaks(dv, height=velocity_threshold)
-        if velocity_threshold > 0:
-            num_spikes = min(len(velocity_index), len(spike_index))
-            spike_index = spike_index[:num_spikes]
+
         spike_index += self.pulse_start
-        self._analysis_variables["spike_index"] = spike_index
-        self._analysis_variables["spike_mv"] = acquisition[spike_index]
-        self._analysis_variables["spike_number"] = np.arange(1, spike_index.size + 1)
-        self._analysis_variables["freq_hz"] = len(spike_index) / (
+        self._spikes = self._analyze_spikes(
+            spike_index, threshold_method, velocity_threshold
+        )
+
+        self["freq_hz"] = len(self._spikes) / (
             (self.pulse_end - self.pulse_start) / self.acq_data.fs
         )
-        if len(spike_index) > 1:
-            self._analysis_variables["iei_index"] = np.mean(np.diff(spike_index))
-
-        end = len(spike_index) - 1
-        for index, i in enumerate(spike_index):
-            if index == 0:
-                start_index = int((i - self.pulse_start) * 0.1) + self.pulse_start
-                end_index = spike_index[index + 1]
-            elif index == end:
-                end_index = self.pulse_end
-                start_index = spike_index[index - 1]
-            else:
-                start_index = spike_index[index - 1]
-                end_index: spike_index[index + 1]
-            spike = Spike(self.acq_data.acquisition, start_index, end_index, i)
-            if threshold_method == "allen_institue":
-                threshold = np.mean(dv[velocity_index])
-                spike.analyze(threshold_method, threshold)
-            else:
-                spike.analyze(threshold_method)
-            self._spikes.append(spike)
-
-            # if len(spike_index) > 0:
-            #     self._analysis_variables.update(
-            #         find_all_spk_thresholds(
-            #             acquisition,
-            #             spike_index,
-            #             self.pulse_start,
-            #             threshold_method,
-            #         )
-            #     )
-            #     self._analysis_variables.update(
-            #         find_all_ahps(acquisition, spike_index, self.pulse_end)
-            #     )
-            #     self._analysis_variables.update(
-            #         find_all_spk_widths(
-            #             acquisition,
-            #             self._analysis_variables["threshold_index"],
-            #             self.pulse_end,
-            #         )
-            #     )
-            #     temp = find_all_spk_auc(
-            #         acquisition,
-            #         self._analysis_variables["threshold_index"],
-            #         self.pulse_end,
-            #     )
-            #     for key in temp.keys():
-            #         temp[key] *= (1 / self.acq_data.fs) * 1000
-            #     self._analysis_variables.update(temp)
-            #     self._analysis_variables.update(
-            #         find_all_spk_velocities(
-            #             acquisition,
-            #             self._analysis_variables["threshold_index"],
-            #             self.pulse_end,
-            #         )
-            #     )
-            self._analysis_variables["local_sfa"] = local_sfa(spike_index)
-            self._analysis_variables["divisor_sfa"] = divisor_sfa(spike_index)
-            self._analysis_variables["ai_sfa"] = ai_sfa(spike_index)
-            self._analysis_variables["adaptation"] = adaptation_index(spike_index)
-            self._analysis_variables["coefficient_of_variation"] = (
-                coefficient_of_variation(spike_index)
-            )
+        spike_times = (
+            np.array([i["peak_index"] for i in self._spikes]) / self.acq_data.fs
+        )
+        self["local_sfa"] = local_sfa(spike_times)
+        self["divisor_sfa"] = divisor_sfa(spike_times)
+        self["ai_sfa"] = ai_sfa(spike_times)
+        self["adaptation"] = adaptation_index(spike_times)
+        self["coefficient_of_variation"] = coefficient_of_variation(spike_times)
 
         delta_v_index, delta_v_mv = self.get_delta_v(
             acquisition, spike_index, proportion, side
         )
-        self._analysis_variables["delta_v_mv"] = delta_v_mv
-        self._analysis_variables["delta_v_index"] = delta_v_index
+        self["delta_v_mv"] = delta_v_mv
+        self["delta_v_index"] = delta_v_index
 
         if self.acq_data.pulse_amp < 0:
             self._analysis_variables.update(
@@ -215,6 +147,36 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
                 rebound_spikes[0] + self.pulse_end
             )
 
+    def _analyze_spikes(self, spike_index, threshold_method, velocity_threshold):
+        spike_list = []
+        end = len(spike_index) - 1
+        for index, i in enumerate(spike_index):
+            if index == 0:
+                start_index = int((i - self.pulse_start) * 0.1) + self.pulse_start
+                end_index = spike_index[index + 1]
+            elif index == end:
+                end_index = self.pulse_end
+                start_index = spike_index[index - 1]
+            else:
+                start_index = spike_index[index - 1]
+                end_index = spike_index[index + 1]
+            spike = Spike(self.acq_data.acquisition, start_index, end_index, i)
+            spike.find_threshold("first_derivative")
+            spike.find_velocity()
+            if len(spike_list) > 0:
+                spike_list[-1].set_end_index(spike["threshold_index"])
+            if spike["max_velocity"] > velocity_threshold:
+                spike_list.append(spike)
+
+            for spike in spike_list:
+                if threshold_method == "allen_institute":
+                    spike.find_threshold("first_derivative")
+                    thresholds = [i["threshold_mv"] for i in spike_list]
+                    spike.analyze(threshold_method, np.mean(thresholds))
+                else:
+                    spike.analyze(threshold_method)
+        return spike_list
+
     def get_delta_v(
         self,
         acquisition: np.ndarray,
@@ -232,81 +194,60 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
                 acquisition, self.pulse_start, self.pulse_end, proportion, side
             )
         else:
-            delta_v_index = self._analysis_variables["threshold_index"][0]
-            delta_v = (
-                acquisition[delta_v_index] - self._analysis_variables["baseline_mv"]
-            )
+            delta_v_index = self._spikes[0]["threshold_index"]
+            delta_v = acquisition[delta_v_index] - self["baseline_mv"]
         return delta_v_index, delta_v
 
     def spike_half_widths(self):
         x = (
-            np.array(
-                [
-                    self._analysis_variables["hw_left_index"],
-                    self._analysis_variables["hw_right_index"],
-                ]
-            )
+            np.array([[i["hw_left_index"], i["hw_right_index"]] for i in self._spikes])
             / self.acq_data.s_r_c
-        )
-        y = np.array(
-            [self._analysis_variables["hw_mv"], self._analysis_variables["hw_mv"]]
-        )
+        ).T
+        y = np.array([[i["hw_mv"], i["hw_mv"]] for i in self._spikes]).T
         return x, y
 
     def spike_widths(self):
         x = (
-            np.array(
-                [
-                    self._analysis_variables["fw_left_index"],
-                    self._analysis_variables["fw_right_index"],
-                ]
-            )
+            np.array([[i["fw_left_index"], i["fw_right_index"]] for i in self._spikes])
             / self.acq_data.s_r_c
-        )
-        y = np.array(
-            [self._analysis_variables["fw_mv"], self._analysis_variables["fw_mv"]]
-        )
+        ).T
+        y = np.array([[i["fw_mv"], i["fw_mv"]] for i in self._spikes]).T
         return x, y
+
+    def _get_spike_data(
+        self, key1: str, key2: str | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        x = np.array([i[key1] for i in self._spikes])
+        if len(x) > 0:
+            if key2 is None:
+                y = self.acq_data.acquisition[x]
+            else:
+                y = np.array([i[key2] for i in self._spikes])
+        else:
+            y = np.array([])
+        return x / self.acq_data.s_r_c, y
 
     def peaks(self):
-        x = self._analysis_variables["spike_index"] / self.acq_data.s_r_c
-        if len(x) > 0:
-            y = self.acq_data.acquisition[self._analysis_variables["spike_index"]]
-        else:
-            y = np.array([])
-        return x, y
+        return self._get_spike_data("peak_index")
 
     def ahps(self):
-        x = self._analysis_variables["ahp_index"] / self.acq_data.s_r_c
-        if len(x) > 0:
-            y = self.acq_data.acquisition[self._analysis_variables["ahp_index"]]
-        else:
-            y = np.array([])
-        return x, y
+        return self._get_spike_data("ahp_index")
 
     def thresholds(self) -> PlotOutput:
-        x = self._analysis_variables["threshold_index"] / self.acq_data.s_r_c
-        if len(x) > 0:
-            y = self.acq_data.acquisition[self._analysis_variables["threshold_index"]]
-        else:
-            y = np.array([])
-        return x, y
+        return self._get_spike_data("threshold_index")
 
     def sag(self) -> PlotOutput:
-        sag = self._analysis_variables["sag_mv"]
-        x = self._analysis_variables["sag_index"] / self.acq_data.s_r_c
-        delta = (
-            self._analysis_variables["baseline_mv"]
-            + self._analysis_variables["delta_v_mv"]
-        )
+        sag = self["sag_mv"]
+        x = self["sag_index"] / self.acq_data.s_r_c
+        delta = self["baseline_mv"] + self["delta_v_mv"]
         y = np.array([delta, delta + sag])
         x = np.array([x, x])
         return x, y
 
     def sag_decay(self) -> PlotOutput:
-        if self._analysis_variables["sag_fit"] is not None:
-            start = self._analysis_variables["sag_index"]
-            fit_object = self._analysis_variables["sag_fit"]
+        if self["sag_fit"] is not None:
+            start = self["sag_index"]
+            fit_object = self["sag_fit"]
             end = self.pulse_end
             x = np.arange(0, end - start)
             y = fit_object.predict(x / self.acq_data.s_r_c)
@@ -317,22 +258,18 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         return x, y
 
     def delta_v(self) -> PlotOutput:
-        b = self._analysis_variables["baseline_mv"]
-        delta = self._analysis_variables["delta_v_mv"]
-        delta_index = self._analysis_variables["delta_v_index"]
+        b = self["baseline_mv"]
+        delta = self["delta_v_mv"]
+        delta_index = self["delta_v_index"]
         y = np.array([b, b + delta])
         x = np.array([delta_index, delta_index]) / self.acq_data.s_r_c
         return x, y
 
     def min_velocity(self):
-        return self._analysis_variables["min_velocity"], self._analysis_variables[
-            "min_velocity_index"
-        ] / self.acq_data.s_r_c
+        return self._get_spike_data("min_velocity", "min_velocity_index")
 
     def max_velocity(self):
-        return self._analysis_variables["max_velocity"], self._analysis_variables[
-            "max_velocity_index"
-        ] / self.acq_data.s_r_c
+        return self._get_spike_data("max_velocity", "max_velocity_index")
 
     def acquisition(self) -> PlotOutput:
         return np.arange(
@@ -344,27 +281,31 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
             self.acq_data.acquisition.size
         ) / self.acq_data.s_r_c, -1 * np.gradient(self.acq_data.acquisition)
 
-    def data(self) -> tuple[dict, dict]:
+    def data(
+        self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
+    ) -> tuple[dict, dict]:
         acq_data = self._analysis_variables.copy()
-        spk_data = {}
-        for param in SPIKE_PARAMS:
-            value = acq_data.pop(param)
-            spk_data[param] = value
-        spk_data["spike_index"] = acq_data.pop("spike_index")
-        spk_data["spike_mv"] = acq_data.pop("spike_mv")
-        spk_data["spike_number"] = acq_data.pop("spike_number")
-        spk_data["epoch"] = [self.acq_data.epoch] * value.size
-        spk_data["acq_number"] = [self.acq_data.acq_number] * value.size
-        spk_data["cycle"] = [self.acq_data.cycle] * value.size
-        spk_data["pulse_amp_pa"] = [self.acq_data.pulse_amp] * value.size
+        spk_data = defaultdict(list)
+        for spike in self._spikes:
+            sdata = spike.data()
+            for key, value in sdata.items():
+                spk_data[key].append(value)
+        n_spikes = len(self._spikes)
+        spk_data = {key: np.array(value) for key, value in spk_data.items()}
+        spk_data["spike_number"] = np.arange(n_spikes)
+        spk_data["epoch"] = np.array([self.acq_data.epoch] * n_spikes)
+        spk_data["acq_number"] = np.array([self.acq_data.acq_number] * n_spikes)
+        spk_data["cycle"] = np.array([self.acq_data.cycle] * n_spikes)
+        spk_data["pulse_amp_pa"] = np.array([self.acq_data.pulse_amp] * n_spikes)
 
-        for key, value in spk_data.items():
-            if "index" in key:
-                spk_data[key] = value / self.acq_data.s_r_c
+        if output_type == "ms":
+            for key, value in spk_data.items():
+                if "index" in key:
+                    spk_data[key] = value / self.acq_data.s_r_c
 
-        for key, value in acq_data.items():
-            if "index" in key:
-                acq_data[key] = value / self.acq_data.s_r_c
+            for key, value in acq_data.items():
+                if "index" in key:
+                    acq_data[key] = value / self.acq_data.s_r_c
 
         sag_fit_data = acq_data.pop("sag_fit")
         if sag_fit_data is not None:
@@ -376,4 +317,10 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         acq_data["acq_number"] = self.acq_data.acq_number
         acq_data["cycle"] = self.acq_data.cycle
         acq_data["pulse_amp_pa"] = self.acq_data.pulse_amp
+
+        if format_keys:
+            key_mapper = map_keys(acq_data.keys())
+            acq_data = {key_mapper[k]: v for k, v in acq_data.items()}
+            key_mapper = map_keys(spk_data.keys())
+            spk_data = {key_mapper[k]: v for k, v in spk_data.items()}
         return acq_data, spk_data

@@ -56,7 +56,7 @@ def first_derivative(derivatives: dict[str, np.ndarray], start: int, end: int):
         base -= 1
         val = dv[base] - dv[index]
     base = np.where(dv > np.max(dv[:base]))[0][0]
-    peak = base + start + 1
+    peak = base + start
     return peak
 
 
