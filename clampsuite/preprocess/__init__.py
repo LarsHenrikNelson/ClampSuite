@@ -1,2 +1,2 @@
-from . import filter, detrend
+from . import filter, detrend, resample
 from .base import PreprocessorRegistry

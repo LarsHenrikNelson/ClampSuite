@@ -15,6 +15,10 @@ class Mean(Preprocessor):
     start: int = 0
     end: int = 0
 
+    @property
+    def name(self) -> str:
+        return "mean"
+
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
             end = array.shape[1]
@@ -29,6 +33,10 @@ class Median(Preprocessor):
     start: int = 0
     end: int = 0
 
+    @property
+    def name(self) -> str:
+        return "median"
+
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
             end = array.shape[1]
@@ -41,6 +49,10 @@ class Median(Preprocessor):
 @dataclass
 class ExpDecay(Preprocessor):
     n_decays: Literal[1, 2] = 1
+
+    @property
+    def name(self) -> str:
+        return "exp_decay"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         maximum = array.argmax()
@@ -67,6 +79,10 @@ class ExpDecay(Preprocessor):
 class Polynomial(Preprocessor):
     degree: int = 3
 
+    @property
+    def name(self) -> str:
+        return "polynomial"
+
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
         fit = npPoly.fit(x, array, deg=self.degree)
@@ -76,8 +92,12 @@ class Polynomial(Preprocessor):
 
 @register_preprocessor("detrend")
 @dataclass
-class Spline(Preprocessor):
+class LSQSpline(Preprocessor):
     degree: int = 3
+
+    @property
+    def name(self) -> str:
+        return "lsq_spline"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)

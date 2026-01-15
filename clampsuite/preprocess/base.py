@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
-from typing import Dict, List
+from typing import Dict, List, ClassVar
 from collections import defaultdict
 
 import numpy as np
@@ -15,14 +15,18 @@ class Preprocessor(ABC):
         """Process the acquisition data and return the result."""
         pass
 
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
 
 class PreprocessorRegistry:
-    _preprocessor: Dict[str, List[Preprocessor]] = defaultdict(list)
+    _preprocessor: Dict[str, dict[str, Preprocessor]] = defaultdict(dict)
 
     @classmethod
     def register_preprocessor(cls, param_type: str):
         def decorator(analysis_cls):
-            cls._preprocessor[param_type].append(analysis_cls)
+            cls._preprocessor[param_type][analysis_cls.name] = analysis_cls
             return analysis_cls
 
         return decorator

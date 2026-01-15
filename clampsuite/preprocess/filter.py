@@ -96,9 +96,12 @@ def zero_phase_convolve(b: np.ndarray, a: float | int | None, array: np.ndarray)
 @register_preprocessor("filter")
 @dataclass
 class MedianFilter(Preprocessor):
-    filter_family: str = "median"
     filter_type: str = "median"
     order: int = 4
+
+    @property
+    def name(self) -> str:
+        return "median"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if isinstance(self.order, float):
@@ -110,7 +113,9 @@ class MedianFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class NoFilter(Preprocessor):
-    filter_family: str = "None"
+    @property
+    def name(self) -> str:
+        return "None"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return array
@@ -119,10 +124,13 @@ class NoFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class EWMAFilter(Preprocessor):
-    filter_family: str = "ewma"
     filter_type: Literal["ewma", "ewma_a"] = "ewma"
     window: int = 30
     sum_proportion: float = 0.5
+
+    @property
+    def name(self) -> str:
+        return "ewma"
 
     def ewma_filter(self, array: np.ndarray | list, fs: float | int):
         alpha = 1 - np.exp(np.log(1 - self.sum_proportion) / self.window)
@@ -139,13 +147,16 @@ class EWMAFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class SavgolFilter(Preprocessor):
-    filter_family: str = "savgol"
     filter_type = "savgol"
     window_length: int = 11
     polyorder: int = 3
     mode: Literal["mirror", "constant", "nearest", "wrap", "interp"] = "nearest"
     deriv: int = 0
     delta: float = 1.0
+
+    @property
+    def name(self) -> str:
+        return "savgol"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.savgol_filter(
@@ -157,10 +168,13 @@ class SavgolFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class WienerFilter(Preprocessor):
-    filter_family: str = "wiener"
     filter_type = "wiener"
     mysize: int = 3
     noise: float | None = None
+
+    @property
+    def name(self) -> str:
+        return "wiener"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.wiener(array, mysize=self.mysize, noise=self.noise)
@@ -170,7 +184,6 @@ class WienerFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class FIRFilter(Preprocessor):
-    filter_family: str = "fir"
     filter_type: Literal["fir", "fir_zero"] = "fir_zero"
     order: int = 301
     high_pass: int | float | None = None
@@ -179,6 +192,10 @@ class FIRFilter(Preprocessor):
     low_width: int | float = 200
     window: Windows = "hann"
     beta_sigma: float | None = None
+
+    @property
+    def name(self) -> str:
+        return "fir"
 
     def process(self, array: np.ndarray, fs: float | int):
         if "zero" in self.filter_type:
@@ -241,13 +258,16 @@ class FIRFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class RemezFilter(Preprocessor):
-    filter_family: str = "remez"
     filter_type: Literal["remez", "remez_zero"] = "remez_zero"
     order: int = 301
     high_pass: int | float | None = None
     high_width: int | float = 300
     low_pass: int | float | None = 500
     low_width: int | float = 200
+
+    @property
+    def name(self) -> str:
+        return "remez"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if self.high_pass is not None and self.low_pass is not None:
@@ -297,13 +317,16 @@ class RemezFilter(Preprocessor):
 @register_preprocessor("filter")
 @dataclass
 class IIRFilter(Preprocessor):
-    filter_family: str = "iir"
     filter_type: Literal["bessel", "butterworth", "bessel_zero", "butterworth_zero"] = (
         "butterworth_zero"
     )
     order: int = 4
     high_pass: int | float | None = None
     low_pass: int | float | None = 500
+
+    @property
+    def name(self) -> str:
+        return "iir"
 
     def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if "bessel" in self.filter_type:
