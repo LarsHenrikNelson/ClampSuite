@@ -25,6 +25,10 @@ class AcquisitionData:
     _preprocessors: list[Preprocessor] = field(default_factory=list)
 
     @property
+    def sample_rate(self):
+        pass
+
+    @property
     def s_r_c(self):
         return self.fs / 1000
 

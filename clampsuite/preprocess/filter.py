@@ -93,9 +93,14 @@ def zero_phase_convolve(b: np.ndarray, a: float | int | None, array: np.ndarray)
     return output
 
 
-@register_preprocessor("filter")
 @dataclass
-class MedianFilter(Preprocessor):
+class Filter(Preprocessor):
+    module: ClassVar[str] = "filter"
+
+
+@register_preprocessor
+@dataclass
+class MedianFilter(Filter):
     filter_type: str = "median"
     order: int = 4
 
@@ -108,18 +113,18 @@ class MedianFilter(Preprocessor):
         return filt_array
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class NoFilter(Preprocessor):
+class NoFilter(Filter):
     name: ClassVar[str] = "None"
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return array
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class EWMAFilter(Preprocessor):
+class EWMAFilter(Filter):
     filter_type: Literal["ewma", "ewma_a"] = "ewma"
     window: int = 30
     sum_proportion: float = 0.5
@@ -138,9 +143,9 @@ class EWMAFilter(Preprocessor):
         return filtered
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class SavgolFilter(Preprocessor):
+class SavgolFilter(Filter):
     filter_type = "savgol"
     window_length: int = 11
     polyorder: int = 3
@@ -157,9 +162,9 @@ class SavgolFilter(Preprocessor):
         return filtered_array
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class WienerFilter(Preprocessor):
+class WienerFilter(Filter):
     filter_type = "wiener"
     mysize: int = 3
     noise: float | None = None
@@ -171,9 +176,9 @@ class WienerFilter(Preprocessor):
         return filtered_array
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class FIRFilter(Preprocessor):
+class FIRFilter(Filter):
     filter_type: Literal["fir", "fir_zero"] = "fir_zero"
     order: int = 301
     high_pass: int | float | None = None
@@ -243,9 +248,9 @@ class FIRFilter(Preprocessor):
         return filt_array
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class RemezFilter(Preprocessor):
+class RemezFilter(Filter):
     filter_type: Literal["remez", "remez_zero"] = "remez_zero"
     order: int = 301
     high_pass: int | float | None = None
@@ -300,9 +305,9 @@ class RemezFilter(Preprocessor):
         return filt_acq
 
 
-@register_preprocessor("filter")
+@register_preprocessor
 @dataclass
-class IIRFilter(Preprocessor):
+class IIRFilter(Filter):
     filter_type: Literal["bessel", "butterworth", "bessel_zero", "butterworth_zero"] = (
         "butterworth_zero"
     )

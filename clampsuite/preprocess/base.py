@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
-from typing import Dict, List, ClassVar
+from typing import Dict, List, ClassVar, Type
 from collections import defaultdict
 
 import numpy as np
@@ -11,6 +11,7 @@ class Preprocessor(ABC):
     """Base class for all preprocessing steps."""
 
     name: ClassVar[str]
+    module: ClassVar[str]
 
     @abstractmethod
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
@@ -19,15 +20,12 @@ class Preprocessor(ABC):
 
 
 class PreprocessorRegistry:
-    _preprocessor: Dict[str, dict[str, Preprocessor]] = defaultdict(dict)
+    _preprocessor: Dict[str, dict[str, Type[Preprocessor]]] = defaultdict(dict)
 
     @classmethod
-    def register_preprocessor(cls, param_type: str):
-        def decorator(analysis_cls):
-            cls._preprocessor[param_type][analysis_cls.name] = analysis_cls
-            return analysis_cls
-
-        return decorator
+    def register_preprocessor(cls, param_type: Type[Preprocessor]):
+        cls._preprocessor[param_type.module][param_type.name] = param_type
+        return param_type
 
     @classmethod
     def preprocessors(cls):
@@ -41,5 +39,5 @@ class PreprocessorRegistry:
             raise KeyError("Preprocessor not found")
 
 
-def register_preprocessor(param_type: str):
+def register_preprocessor(param_type: Type[Preprocessor]):
     return PreprocessorRegistry.register_preprocessor(param_type)

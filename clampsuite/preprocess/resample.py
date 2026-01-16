@@ -9,9 +9,14 @@ from ..functions.curve_fit import DExpDecay, SExpDecay
 from .base import Preprocessor, register_preprocessor
 
 
-@register_preprocessor("resample")
 @dataclass
-class BSpline(Preprocessor):
+class Resample(Preprocessor):
+    module: ClassVar[str] = "resample"
+
+
+@register_preprocessor
+@dataclass
+class BSpline(Resample):
     k: int = 3
     order: int = 4
 
@@ -27,9 +32,9 @@ class BSpline(Preprocessor):
         return bspline(x_new)
 
 
-@register_preprocessor("resample")
+@register_preprocessor
 @dataclass
-class Pchip(Preprocessor):
+class Pchip(Resample):
     k: int = 3
     order: int = 4
 
@@ -46,9 +51,9 @@ class Pchip(Preprocessor):
         return bspline(x_new)
 
 
-@register_preprocessor("resample")
+@register_preprocessor
 @dataclass
-class Polyphase(Preprocessor):
+class Polyphase(Resample):
     up: int = 8
     down: int = 2
 
@@ -63,9 +68,9 @@ class Polyphase(Preprocessor):
         return y_up
 
 
-@register_preprocessor("resample")
+@register_preprocessor
 @dataclass
-class Decimate(Preprocessor):
+class Decimate(Resample):
     q: int = 4
 
     name: ClassVar[str] = "decimate"

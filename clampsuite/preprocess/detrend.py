@@ -9,9 +9,14 @@ from ..functions.curve_fit import DExpDecay, SExpDecay
 from .base import Preprocessor, register_preprocessor
 
 
-@register_preprocessor("detrend")
 @dataclass
-class Mean(Preprocessor):
+class Detrend(Preprocessor):
+    module: ClassVar[str] = "detrend"
+
+
+@register_preprocessor
+@dataclass
+class Mean(Detrend):
     start: int = 0
     end: int = 0
 
@@ -25,9 +30,9 @@ class Mean(Preprocessor):
         return array - np.mean(array[self.start : end], axis=-1, keepdims=True)
 
 
-@register_preprocessor("detrend")
+@register_preprocessor
 @dataclass
-class Median(Preprocessor):
+class Median(Detrend):
     start: int = 0
     end: int = 0
 
@@ -41,9 +46,9 @@ class Median(Preprocessor):
         return array - np.median(array[self.start : end], axis=-1, keepdims=True)
 
 
-@register_preprocessor("detrend")
+@register_preprocessor
 @dataclass
-class ExpDecay(Preprocessor):
+class ExpDecay(Detrend):
     n_decays: Literal[1, 2] = 1
 
     name: ClassVar[str] = "exp_decay"
@@ -68,9 +73,9 @@ class ExpDecay(Preprocessor):
         return array - sub
 
 
-@register_preprocessor("detrend")
+@register_preprocessor
 @dataclass
-class Polynomial(Preprocessor):
+class Polynomial(Detrend):
     degree: int = 3
 
     name: ClassVar[str] = "polynomial"
@@ -82,9 +87,9 @@ class Polynomial(Preprocessor):
         return array - baseline
 
 
-@register_preprocessor("detrend")
+@register_preprocessor
 @dataclass
-class LSQSpline(Preprocessor):
+class LSQSpline(Detrend):
     degree: int = 3
 
     name: ClassVar[str] = "lsq_spline"
