@@ -27,7 +27,7 @@ class BSpline(Resample):
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size) / fs
-        x_new = np.linspace(x[0], x[-1], num=array.size * self.order)
+        x_new = np.arange(array.size * self.order) / (fs * self.order)
         bspline = interpolate.make_interp_spline(x, array, k=self.k)
         return bspline(x_new)
 
@@ -46,7 +46,7 @@ class Pchip(Resample):
 
     def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size) / fs
-        x_new = np.linspace(x[0], x[-1], num=array.size * self.order)
+        x_new = np.arange(array.size * self.order) / (fs * self.order)
         bspline = interpolate.make_interp_spline(x, array, k=self.k)
         return bspline(x_new)
 
