@@ -17,8 +17,8 @@ class Detrend(Preprocessor):
 @register_preprocessor
 @dataclass
 class Mean(Detrend):
-    start: int = 0
-    end: int = 0
+    start: float = 0
+    end: float = 0
 
     name: ClassVar[str] = "mean"
 
@@ -27,14 +27,16 @@ class Mean(Detrend):
             end = array.shape[1]
         else:
             end = self.end
-        return array - np.mean(array[self.start : end], axis=-1, keepdims=True)
+        start = int(self.start * fs / 1000)
+        end = int(end * fs / 1000)
+        return array - np.mean(array[start:end], axis=-1, keepdims=True)
 
 
 @register_preprocessor
 @dataclass
 class Median(Detrend):
-    start: int = 0
-    end: int = 0
+    start: float = 0
+    end: float = 0
 
     name: ClassVar[str] = "median"
 
@@ -43,7 +45,9 @@ class Median(Detrend):
             end = array.shape[1]
         else:
             end = self.end
-        return array - np.median(array[self.start : end], axis=-1, keepdims=True)
+        start = int(self.start * fs / 1000)
+        end = int(end * fs / 1000)
+        return array - np.median(array[start:end], axis=-1, keepdims=True)
 
 
 @register_preprocessor
