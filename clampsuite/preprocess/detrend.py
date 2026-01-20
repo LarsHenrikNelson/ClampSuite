@@ -22,7 +22,7 @@ class Mean(Detrend):
 
     name: ClassVar[str] = "mean"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
             end = array.shape[1]
         else:
@@ -38,7 +38,7 @@ class Median(Detrend):
 
     name: ClassVar[str] = "median"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
             end = array.shape[1]
         else:
@@ -53,7 +53,7 @@ class ExpDecay(Detrend):
 
     name: ClassVar[str] = "exp_decay"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         maximum = array.argmax()
         minimum = array.argmin()
         if np.abs(array[maximum]) > np.abs(array[minimum]):
@@ -80,7 +80,7 @@ class Polynomial(Detrend):
 
     name: ClassVar[str] = "polynomial"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
         fit = npPoly.fit(x, array, deg=self.degree)
         baseline = fit(x)
@@ -94,7 +94,7 @@ class LSQSpline(Detrend):
 
     name: ClassVar[str] = "lsq_spline"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
         knots = np.linspace(0, array.size, num=self.degree + 2, dtype=int)[1:-2]
         fit = interpolate.make_lsq_spline(x, array, x[knots], k=3)

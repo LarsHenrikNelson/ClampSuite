@@ -39,23 +39,21 @@ class ABFLoader(BaseLoader):
         return acq[offset:-offset]
 
     def process_secondary_channel(self, file: AxonRawIO, segment: int, acq_dict: dict):
-        temp = self.load_segment(
-            file, segment, channel_index=self.secondary_channel
-        )
+        temp = self.load_segment(file, segment, channel_index=self.secondary_channel)
         abs_tt = np.abs(np.diff(temp))
         ppeaks, _ = signal.find_peaks(abs_tt)
         threshold = np.mean(abs_tt[ppeaks])
         indexes = np.where(abs_tt > threshold * 3)[0]
         if len(indexes) > 0:
-            acq_dict["pulse_start_index"] = indexes[0]
+            acq_dict["_pulse_start_index"] = indexes[0]
             if len(indexes) > 1:
-                acq_dict["pulse_end_index"] = indexes[1]
+                acq_dict["_pulse_end_index"] = indexes[1]
             else:
-                acq_dict["pulse_end_index"] = len(temp)
+                acq_dict["_pulse_end_index"] = len(temp)
             acq_dict["ramp"] = 0
         else:
-            acq_dict["pulse_start_index"] = 0
-            acq_dict["pulse_end_index"] = len(temp)
+            acq_dict["_pulse_start_index"] = 0
+            acq_dict["_pulse_end_index"] = len(temp)
             acq_dict["ramp"] = 0
             acq_dict["pulse_amp"] = 0
 
@@ -74,8 +72,8 @@ class ABFLoader(BaseLoader):
         acqs_keys = sorted(list(acq_dict.keys()))
         current_amp = amp_start
         for key in acqs_keys:
-            acq_dict[key]["pulse_start_index"] = pulse_start_index
-            acq_dict[key]["pulse_end_index"] = pulse_end_index
+            acq_dict[key]["_pulse_start_index"] = pulse_start_index
+            acq_dict[key]["_pulse_end_index"] = pulse_end_index
             acq_dict[key]["ramp"] = 0
             acq_dict[key]["pulse_amp"] = current_amp
             current_amp += amp_increment
@@ -116,10 +114,10 @@ class ABFLoader(BaseLoader):
             acq_dict["rc_check_pulse_start_index"] = acq_dict["array"].size
             acq_dict["rc_check_pulse_end_index"] = acq_dict["array"].size
             acq_dict["rc_amp"] = 0
-            acq_dict["pulse_start_index"] = 0
-            acq_dict["pulse_end_index"] = acq_dict["array"].size
+            acq_dict["_pulse_start_index"] = 0
+            acq_dict["_pulse_end_index"] = acq_dict["array"].size
             acq_dict["pulse_amp"] = 0
-            acq_dict["fs"] = file.header["signal_channels"][self.main_channel][2]
+            acq_dict["_fs"] = file.header["signal_channels"][self.main_channel][2]
             acq_dict["units"] = self.get_units(file, channel=0)
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
@@ -139,7 +137,9 @@ class ABFLoader(BaseLoader):
             output_dict.update(temp)
         return output_dict
 
-    def load_files(self, file_paths: list[str | Path]) -> defaultdict[int, dict[int, AcquisitionData]]:
+    def load_files(
+        self, file_paths: list[str | Path]
+    ) -> defaultdict[int, dict[int, AcquisitionData]]:
         data_files = []
         self.cycle_count = 0
         self.epoch_count += 1
@@ -149,7 +149,10 @@ class ABFLoader(BaseLoader):
             output = AxonRawIO(i)
             output.parse_header()
             data_files.append(output)
-        acquisition_dict: dict[int, AcquisitionData] = self.process_data_files(data_files)
-        output_dict: defaultdict[int, dict[int, AcquisitionData]] = self.group_epochs(acquisition_dict)
+        acquisition_dict: dict[int, AcquisitionData] = self.process_data_files(
+            data_files
+        )
+        output_dict: defaultdict[int, dict[int, AcquisitionData]] = self.group_epochs(
+            acquisition_dict
+        )
         return output_dict
-

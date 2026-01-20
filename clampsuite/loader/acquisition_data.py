@@ -1,6 +1,8 @@
+from pyqtgraph.units import pre
 from dataclasses import dataclass, field
 import numpy as np
 from ..preprocess.base import Preprocessor
+from ..preprocess.resample import Resample
 
 
 @dataclass
@@ -10,23 +12,34 @@ class AcquisitionData:
     epoch: int
     name: str
     pulse_amp: float
-    pulse_end_index: int
     pulse_pattern: int
-    pulse_start_index: int
     rc_amp: float
     rc_check_pulse_end_index: int
     rc_check_pulse_start_index: int
-    fs: float
+    _fs: float = field(repr=False)
+    _pulse_start_index: int = field(repr=False)
+    _pulse_end_index: int = field(repr=False)
     time_stamp: str
     ramp: int = 0
     cycle: int = 0
     gain: float = 1.0
     units: str = "mV"
+
+    _fs_multiplier: float | float = field(default=1.0, repr=False)
+
     _preprocessors: list[Preprocessor] = field(default_factory=list)
 
     @property
-    def sample_rate(self):
-        pass
+    def fs(self):
+        return self._fs * self._fs_multiplier
+
+    @property
+    def pulse_start_index(self):
+        return int(self._pulse_start_index * self._fs_multiplier)
+
+    @property
+    def pulse_end_index(self):
+        return int(self._pulse_end_index * self._fs_multiplier)
 
     @property
     def s_r_c(self):
@@ -34,13 +47,15 @@ class AcquisitionData:
 
     @property
     def acquisition(self) -> np.ndarray:
-        if self.rc_check_pulse_end_index != self.rc_check_pulse_end_index:
+        if self.rc_check_pulse_start_index != self.rc_check_pulse_end_index:
             data = self.array[: self.rc_check_pulse_start_index] * self.gain
         else:
             data = self.array
 
         for preprocessor in self._preprocessors:
-            data = preprocessor.process(data, self.fs)
+            data = preprocessor(data, self.fs)
+            if isinstance(preprocessor, Resample):
+                self._fs_multiplier = preprocessor.fs_multiplier
         return data
 
     def clear_preprocessors(self) -> None:

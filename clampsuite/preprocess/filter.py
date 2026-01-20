@@ -106,7 +106,7 @@ class MedianFilter(Filter):
 
     name: ClassVar[str] = "median"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if isinstance(self.order, float):
             order = int(self.order)
         filt_array = signal.medfilt(array, order)
@@ -118,7 +118,7 @@ class MedianFilter(Filter):
 class NoFilter(Filter):
     name: ClassVar[str] = "None"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return array
 
 
@@ -155,7 +155,7 @@ class SavgolFilter(Filter):
 
     name: ClassVar[str] = "savgol"
 
-    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.savgol_filter(
             array, self.window_length, self.polyorder, mode="nearest"
         )
@@ -171,7 +171,7 @@ class WienerFilter(Filter):
 
     name: ClassVar[str] = "wiener"
 
-    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         filtered_array = signal.wiener(array, mysize=self.mysize, noise=self.noise)
         return filtered_array
 
@@ -190,7 +190,7 @@ class FIRFilter(Filter):
 
     name: ClassVar[str] = "fir"
 
-    def process(self, array: np.ndarray, fs: float | int):
+    def __call__(self, array: np.ndarray, fs: float | int):
         if "zero" in self.filter_type:
             filt_func = signal.filtfilt
         else:
@@ -260,7 +260,7 @@ class RemezFilter(Filter):
 
     name: ClassVar[str] = "remez"
 
-    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if self.high_pass is not None and self.low_pass is not None:
             filt = signal.remez(
                 self.order,
@@ -317,7 +317,7 @@ class IIRFilter(Filter):
 
     name: ClassVar[str] = "iir"
 
-    def process(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
         if "bessel" in self.filter_type:
             filt_design = signal.bessel
         else:

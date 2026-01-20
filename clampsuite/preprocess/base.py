@@ -14,7 +14,7 @@ class Preprocessor(ABC):
     module: ClassVar[str]
 
     @abstractmethod
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         """Process the acquisition data and return the result."""
         pass
 

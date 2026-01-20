@@ -144,8 +144,8 @@ class ScanImageLoader(BaseLoader):
         acq_dict["epoch"] = int(re.findall(r"epoch=(\D?\d*)", data_string)[0])
         analog_input = matfile1[name]["UserData"]["ai"]
         acq_dict["time_stamp"] = matfile1[name]["timeStamp"]
-        acq_dict["fs"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
-        s_r_c = int(acq_dict["fs"] / 1000)
+        acq_dict["_fs"] = int(re.findall(r"inputRate=([0-9]*)", data_string)[0])
+        s_r_c = int(acq_dict["_fs"] / 1000)
         acq_dict["pulse_amp"] = 0.0
 
         acq_dict["pulse_pattern"] = int(
@@ -156,11 +156,11 @@ class ScanImageLoader(BaseLoader):
         )
 
         acq_dict["pulse_amp"] = float(amp)
-        acq_dict["pulse_start_index"] = int(start * s_r_c)
+        acq_dict["_pulse_start_index"] = int(start * s_r_c)
         if end > 0:
-            acq_dict["pulse_end_index"] = int(end * s_r_c)
+            acq_dict["_pulse_end_index"] = int(end * s_r_c)
         else:
-            acq_dict["pulse_end_index"] = int((start + duration) * s_r_c)
+            acq_dict["_pulse_end_index"] = int((start + duration) * s_r_c)
         acq_dict["ramp"] = int(ramp)
 
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(
@@ -184,7 +184,9 @@ class ScanImageLoader(BaseLoader):
             value.cycle = cycle_tracker[value.epoch][value.pulse_amp]
             cycle_tracker[value.epoch][value.pulse_amp] += 1
 
-    def load_files(self, file_paths: list[str | Path]) -> defaultdict[int, dict[int, AcquisitionData]]:
+    def load_files(
+        self, file_paths: list[str | Path]
+    ) -> defaultdict[int, dict[int, AcquisitionData]]:
         acquisitions = {}
         n_files = len(file_paths)
         for count, i in enumerate(file_paths):

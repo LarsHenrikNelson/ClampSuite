@@ -13,6 +13,10 @@ from .base import Preprocessor, register_preprocessor
 class Resample(Preprocessor):
     module: ClassVar[str] = "resample"
 
+    @property
+    def fs_multiplier(self):
+        raise NotImplementedError("Resample class must implement fs_multiplier method.")
+
 
 @register_preprocessor
 @dataclass
@@ -22,10 +26,11 @@ class BSpline(Resample):
 
     name: ClassVar[str] = "b_spline"
 
+    @property
     def fs_multiplier(self):
         return self.order
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size) / fs
         x_new = np.arange(array.size * self.order) / (fs * self.order)
         bspline = interpolate.make_interp_spline(x, array, k=self.k)
@@ -44,7 +49,7 @@ class Pchip(Resample):
     def fs_multiplier(self):
         return self.order
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size) / fs
         x_new = np.arange(array.size * self.order) / (fs * self.order)
         bspline = interpolate.make_interp_spline(x, array, k=self.k)
@@ -63,7 +68,7 @@ class Polyphase(Resample):
     def fs_multiplier(self):
         return self.up / self.down
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         y_up = signal.resample_poly(array - array[0], 8, 2) + array[0]
         return y_up
 
@@ -75,5 +80,9 @@ class Decimate(Resample):
 
     name: ClassVar[str] = "decimate"
 
-    def process(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    @property
+    def fs_multiplier(self):
+        return 1 / self.q
+
+    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         return signal.decimate(array, self.q)
