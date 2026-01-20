@@ -62,7 +62,12 @@ class AcquisitionData:
         """Remove all preprocessing steps."""
         self._preprocessors.clear()
 
-    def add_preprocessor(self, preprocessor: Preprocessor) -> "AcquisitionData":
+    def add_preprocessor(
+        self, preprocessor: Preprocessor | list[Preprocessor]
+    ) -> "AcquisitionData":
         """Add a preprocessing step. Returns self for chaining."""
-        self._preprocessors.append(preprocessor)
+        if isinstance(preprocessor, Preprocessor):
+            self._preprocessors.append(preprocessor)
+        else:
+            self._preprocessors.extend(preprocessor)
         return self

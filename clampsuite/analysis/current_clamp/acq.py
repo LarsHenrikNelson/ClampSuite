@@ -1,3 +1,5 @@
+from clampsuite.types import CurrentClamp
+from fontTools.misc.bezierTools import curveCurveIntersections
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
@@ -22,10 +24,26 @@ from ...functions.curve_fit import DExpDecay, SExpDecay
 from ...functions.general import baseline_stability, delta
 from ...functions.utilities import map_keys
 from ...loader import AcquisitionData
-from ..base import BaseAcquisitionAnalysis
-from ..registry import register_acquisition
+from ..base import BaseAcquisitionAnalysis, BaseAcquisitionConfig
+from ..registry import register_acquisition, register_acq_config
 
 PlotOutput = tuple[np.ndarray, np.ndarray]
+
+
+@register_acq_config
+@dataclass(frozen=True)
+class CurrentClampAcquisitionConfig(BaseAcquisitionConfig):
+    @staticmethod
+    def analysis_key() -> str:
+        return "current_clamp"
+
+    min_spike_voltage: int | float = 0
+    threshold_method: ThresholdType = "third_derivative"
+    min_spikes: int = 1
+    velocity_threshold: float = 0.0
+    side: Literal["left", "right"] = "right"
+    proportion: float = 0.5
+    fit_sag_decay: Literal[0, 1, 2] = 0
 
 
 @register_acquisition
@@ -63,27 +81,20 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         #     self._analysis_variables[i] = np.array([])
         self._spikes = []
 
-    def analyze(
-        self,
-        min_spike_voltage: int | float = 0,
-        threshold_method: ThresholdType = "third_derivative",
-        min_spikes: int = 1,
-        velocity_threshold: float = 0.0,
-        side: Literal["left", "right"] = "right",
-        proportion: float = 0.5,
-        fit_sag_decay: Literal[0, 1, 2] = 0,
-    ) -> None:
+    def analyze(self, config: CurrentClampAcquisitionConfig | None) -> None:
+        if config is None:
+            config = CurrentClampAcquisitionConfig()
         # Analysis functions
         acquisition = self.acq_data.acquisition
         self["baseline_mv"] = np.mean(acquisition[: self.pulse_start])
         spike_index, _ = signal.find_peaks(
             acquisition[self.pulse_start : self.pulse_end],
-            height=min_spike_voltage,
+            height=config.min_spike_voltage,
         )
 
         spike_index += self.pulse_start
         self._spikes = self._analyze_spikes(
-            spike_index, threshold_method, velocity_threshold
+            spike_index, config.threshold_method, config.velocity_threshold
         )
 
         self["freq_hz"] = len(self._spikes) / (
@@ -99,7 +110,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         self["coefficient_of_variation"] = coefficient_of_variation(spike_times)
 
         delta_v_index, delta_v_mv = self.get_delta_v(
-            acquisition, spike_index, proportion, side
+            acquisition, spike_index, config.proportion, config.side
         )
         self["delta_v_mv"] = delta_v_mv
         self["delta_v_index"] = delta_v_index
@@ -108,10 +119,10 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             self._analysis_variables.update(
                 voltage_sag(acquisition, self.pulse_start, self.pulse_end)
             )
-            if fit_sag_decay > 0:
+            if config.fit_sag_decay > 0:
                 index = self._analysis_variables["sag_index"]
                 x_temp = np.arange(0, self.pulse_end - index) / self.acq_data.s_r_c
-                if fit_sag_decay == 1:
+                if config.fit_sag_decay == 1:
                     temp_output = SExpDecay()
 
                 else:
@@ -138,7 +149,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
 
         rebound_spikes, _ = signal.find_peaks(
             acquisition[self.pulse_end :],
-            height=min_spike_voltage,
+            height=config.min_spike_voltage,
             prominence=int(1 * self.acq_data.s_r_c),
         )
         if len(rebound_spikes) > 0:

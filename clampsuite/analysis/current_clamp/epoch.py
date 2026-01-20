@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Literal
 
 import pandas as pd
@@ -7,27 +7,38 @@ from ...functions.current_clamp import ThresholdType
 from ...functions.curve_fit import Log, Sigmoid, fit_iv
 from ...functions.utilities import map_keys
 from ...loader.acquisition_data import AcquisitionData
-from ..base import BaseEpochAnalysis
-from ..registry import register_epoch
-from .acq import CurrentClampAcquisition
+from ..base import BaseEpochAnalysis, BaseConfig
+from ..registry import register_epoch, register_epoch_config
+from .acq import CurrentClampAcquisition, CurrentClampAcquisitionConfig
+
+
+@register_epoch_config
+@dataclass(frozen=True)
+class CurrentClampConfig(BaseConfig):
+    """Single source of truth for current clamp analysis parameters.
+
+    This class can be used for GUI generation and passed through ExpManager.
+    """
+
+    # Acquisition-level parameters
+    acquisition_config: CurrentClampAcquisitionConfig = field(
+        default_factory=CurrentClampAcquisitionConfig
+    )
+
+    # Epoch-level parameters
+    iv_start: float | None = None
+    iv_end: float | None = None
+    rectify: bool = False
+
+    @staticmethod
+    def analysis_key() -> str:
+        return "current_clamp"
 
 
 @register_epoch
 @dataclass
-class CurrentClampEpoch(BaseEpochAnalysis):
-    # Acquisition parameters
-    min_spike_voltage: int | float = 0
-    threshold_method: ThresholdType = "third_derivative"
-    min_spikes: int = 1
-    velocity_threshold: float = 0.0
-    side: Literal["left", "right"] = "right"
-    proportion: float = 0.5
-    fit_sag_decay: Literal[0, 1, 2] = 0
-
-    # Epoch parameters
-    iv_start: float | None = None
-    iv_end: float | None = None
-    rectify: bool = False
+class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
+    config: CurrentClampConfig = field(default_factory=CurrentClampConfig)
 
     @staticmethod
     def analysis_key():
@@ -43,14 +54,7 @@ class CurrentClampEpoch(BaseEpochAnalysis):
 
     def analyze(self):
         for value in self._acquisitions.values():
-            value.analyze(
-                min_spike_voltage=self.min_spike_voltage,
-                threshold_method=self.threshold_method,
-                min_spikes=self.min_spikes,
-                side=self.side,
-                proportion=self.proportion,
-                fit_sag_decay=self.fit_sag_decay,
-            )
+            value.analyze(self.config.acquisition_config)
         self.create_raw_data()
         self.get_features()
 
@@ -109,9 +113,9 @@ class CurrentClampEpoch(BaseEpochAnalysis):
         iv_params = iv_params.loc[iv_params["Freq (Hz)"] < 1e-6]
         iv_features = self.iv_fit(
             iv_params,
-            start=self.iv_start,
-            end=self.iv_end,
-            rectify=self.rectify,
+            start=self.config.iv_start,
+            end=self.config.iv_end,
+            rectify=self.config.rectify,
         )
         fr_features = (
             self.df_dict["Acq Parameters"]

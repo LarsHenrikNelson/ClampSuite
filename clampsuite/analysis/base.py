@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Generic, TypeVar
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -42,8 +42,33 @@ class BaseAcquisitionAnalysis(ABC):
             self[key] = value
 
 
+@dataclass(frozen=True)
+class BaseAcquisitionConfig(ABC):
+    """Base class for analysis parameters."""
+
+    @staticmethod
+    @abstractmethod
+    def analysis_key() -> str: ...
+
+
+@dataclass(frozen=True)
+class BaseConfig(ABC):
+    """Base class for analysis parameters."""
+
+    acquisition_config: BaseAcquisitionConfig
+
+    @staticmethod
+    @abstractmethod
+    def analysis_key() -> str: ...
+
+
+ConfigT = TypeVar("ConfigT", bound=BaseConfig)
+
+
 @dataclass
-class BaseEpochAnalysis(ABC):
+class BaseEpochAnalysis(ABC, Generic[ConfigT]):
+    config: ConfigT
+
     def __post_init__(self):
         self._acquisitions: Dict[str | int, BaseAcquisitionAnalysis] = {}
         self.epoch_id: int = 0
