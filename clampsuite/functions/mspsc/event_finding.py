@@ -11,6 +11,12 @@ from ...preprocess.filter import FIRFilter
 EventMethods: TypeAlias = Literal["fft", "weiner", "template_match"]
 
 
+def noise_mad(signal):
+    mad = np.median(np.abs(signal - np.median(signal)))
+    noise_std = mad / 0.6745
+    return noise_std
+
+
 def deconvolve_array(
     array: np.ndarray,
     fs: float | int,
@@ -60,8 +66,12 @@ def deconvolve_array(
         deconvolved_array = np.real(ifft(fft(array) / H))
         deconvolved_array = filter_settings.process(array, fs)
     elif decon_type == "wiener":
+        noise_std = noise_mad(signal)
+        signal_var = np.var(signal)
+        lambda_reg = noise_std**2 / (signal_var + 1e-10)
+
         deconvolved_array = np.real(
-            ifft(fft(array) * np.conj(H) / (H * np.conj(H) + lambd**2))
+            ifft(fft(array) * np.conj(H) / (H * np.conj(H) + lambda_reg**2))
         )
     deconvolved_array = filter_settings.process(array, fs)
     return deconvolved_array
