@@ -1,23 +1,26 @@
+from scipy.spatial.distance import correlation
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Any, TypeVar, Generic
 
 import numpy as np
 from scipy.optimize import curve_fit
 
-T = TypeVar('T', bound=NamedTuple) 
+T = TypeVar("T", bound=NamedTuple)
+
 
 class ModelMetrics(NamedTuple):
     reduced_chisq: float = np.nan
     r2: float = np.nan
     residuals: np.ndarray = np.array([])
     parameter_uncertainties: np.ndarray = np.array([])
+    correlation_matrix: np.ndarray = np.array([])
 
 
 class CurveFitBase(ABC, Generic[T]):
     _params: T
     _model_metrics: ModelMetrics
     _fit_success: bool
-    
+
     def __init__(self):
         self._params = self._create_nan_result()
         self._model_metrics = ModelMetrics()
@@ -26,7 +29,7 @@ class CurveFitBase(ABC, Generic[T]):
     @property
     def params(self) -> T:
         return self._params
-    
+
     @staticmethod
     @abstractmethod
     def _fit_function(x: np.ndarray, *params: Any, **kwargs: Any) -> np.ndarray:
@@ -66,8 +69,11 @@ class CurveFitBase(ABC, Generic[T]):
             chisq = self._reduced_chisq(popt, x, y)
             uncertain = self._parameter_uncertainties(popt, pcov)
             residuals = self._residuals(x, y)
-            r2: int | float = self._r_squared(popt, x, y)
-            self._model_metrics = ModelMetrics(chisq, r2, residuals, uncertain)
+            r2 = self._r_squared(popt, x, y)
+            correlate = self._correlation(pcov)
+            self._model_metrics = ModelMetrics(
+                chisq, r2, residuals, uncertain, correlate
+            )
 
             self._fit_success = True
 
@@ -95,6 +101,11 @@ class CurveFitBase(ABC, Generic[T]):
         ss_tot = np.sum((y - np.mean(y)) ** 2)
         r_squared = 1 - (ss_res / ss_tot)
         return r_squared
+
+    def _correlation(self, pcov) -> np.ndarray:
+        std_devs = np.sqrt(np.diag(pcov))
+        correlation_matrix = pcov / np.outer(std_devs, std_devs)
+        return correlation_matrix
 
     def _residuals(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         y_fit = self.predict(x)
