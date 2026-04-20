@@ -138,7 +138,7 @@ class ABFLoader(BaseLoader):
         return output_dict
 
     def load_files(
-        self, file_paths: list[str | Path]
+        self, file_paths: list[Path] | list[str]
     ) -> defaultdict[int, dict[int, AcquisitionData]]:
         data_files = []
         self.cycle_count = 0

@@ -185,7 +185,7 @@ class ScanImageLoader(BaseLoader):
             cycle_tracker[value.epoch][value.pulse_amp] += 1
 
     def load_files(
-        self, file_paths: list[str | Path]
+        self, file_paths: list[Path] | list[str]
     ) -> defaultdict[int, dict[int, AcquisitionData]]:
         acquisitions = {}
         n_files = len(file_paths)

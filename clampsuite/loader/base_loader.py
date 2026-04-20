@@ -10,15 +10,18 @@ from .acquisition_data import AcquisitionData
 
 
 class BaseLoader(ABC):
-
     def __init__(self, callback_func: Callable = print):
         self.callback_func = callback_func
 
     @abstractmethod
-    def load_files(self, file_paths: list[str | Path]) -> defaultdict[int, dict[int, AcquisitionData]]:
+    def load_files(
+        self, file_paths: list[Path] | list[str]
+    ) -> defaultdict[int, dict[int, AcquisitionData]]:
         pass
 
-    def group_epochs(self, acquisitions) -> defaultdict[int, dict[int, AcquisitionData]]:
+    def group_epochs(
+        self, acquisitions
+    ) -> defaultdict[int, dict[int, AcquisitionData]]:
         epoch_dict: defaultdict[int, dict[int, AcquisitionData]] = defaultdict(dict)
         for key, value in acquisitions.items():
             epoch_dict[value.epoch][key] = value

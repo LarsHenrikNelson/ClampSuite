@@ -120,11 +120,11 @@ class JSONLoader(BaseLoader):
                     data[key] = np.array(data[key])
         return data
 
-    def load_files(self, file_paths: list[str | Path]):
+    def load_files(self, file_paths: list[Path] | list[str]):
         nacqs = len(file_paths)
         acquisitions = {}
         for count, i in enumerate(file_paths):
             data = self.load_json_file(i)
             acquisitions[int(data["acq_number"])] = data
-            self.callback_func(f"Loaded {count+1} of {nacqs}")
+            self.callback_func(f"Loaded {count + 1} of {nacqs}")
         return acquisitions
