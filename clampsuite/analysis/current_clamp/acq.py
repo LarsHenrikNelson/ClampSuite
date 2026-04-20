@@ -162,7 +162,10 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         spike_list = []
         end = len(spike_index) - 1
         for index, i in enumerate(spike_index):
-            if index == 0:
+            if len(spike_index) == 1:
+                start_index = int((i - self.pulse_start) * 0.1) + self.pulse_start
+                end_index = self.pulse_end
+            elif index == 0:
                 start_index = int((i - self.pulse_start) * 0.1) + self.pulse_start
                 end_index = spike_index[index + 1]
             elif index == end:
