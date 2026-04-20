@@ -132,7 +132,9 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             .mean(numeric_only=True)
         )
         features = pd.concat(
-            [rheo_features, sag_features, fi_features, iv_features, fr_features], axis=1
+            [rheo_features, sag_features, fi_features, iv_features, fr_features],
+            ignore_index=True,
+            axis=1,
         )
         self.df_dict["Epoch Parameters"] = features
 
@@ -140,10 +142,10 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
         selector = fi_data["Freq (Hz)"] <= fi_data["Freq (Hz)"].max()
         current = fi_data.loc[selector, "Pulse Amp (pA)"]
-        firing_rate = fi_data[selector, "Freq (Hz)"]
+        firing_rate = fi_data.loc[selector, "Freq (Hz)"]
         sig_fit = Sigmoid()
         sig_fit.fit(current, firing_rate)
-        fi_features = pd.DataFrame(sig_fit.params._asdict())
+        fi_features = pd.DataFrame(sig_fit.params._asdict(), index=[0])
         key_mapping = map_keys(fi_features.columns)
         key_mapping = {key: f"FI {value}" for key, value in key_mapping.items()}
         fi_features = fi_features.rename(columns=key_mapping)
@@ -160,7 +162,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         current = acq_data["Pulse Amp (pA)"].to_numpy()
         voltage = acq_data[column].to_numpy()
         temp = fit_iv(current, voltage, start, end, rectify)
-        iv_features = pd.DataFrame(temp._asdict())
+        iv_features = pd.DataFrame(temp._asdict(), index=[0])
         key_mapping = map_keys(iv_features.columns)
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         iv_features = iv_features.rename(columns=key_mapping)
@@ -177,7 +179,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             temp = log_fit.params
             epochs.append(key)
             log_output.append(temp._asdict())
-        log_features = pd.DataFrame(log_output)
+        log_features = pd.DataFrame(log_output, index=[0])
         key_mapping = map_keys(log_features.columns)
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         log_features = log_features.rename(columns=key_mapping)
