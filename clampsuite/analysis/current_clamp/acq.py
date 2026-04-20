@@ -63,7 +63,6 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         self._analysis_variables["delta_v_mv"] = np.nan
         self._analysis_variables["delta_v_index"] = np.nan
         self._analysis_variables["freq_hz"] = 0.0
-        self._analysis_variables["iei_index"] = 0.0
         self._analysis_variables["mem_tau_min_index"] = np.nan
         self._analysis_variables["mem_tau_deltav_index"] = np.nan
         self._analysis_variables["sag_mv"] = np.nan
@@ -100,6 +99,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         self["freq_hz"] = len(self._spikes) / (
             (self.pulse_end - self.pulse_start) / self.acq_data.fs
         )
+
         spike_times = (
             np.array([i["peak_index"] for i in self._spikes]) / self.acq_data.fs
         )
