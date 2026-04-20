@@ -50,7 +50,7 @@ class AcquisitionData:
         if self.rc_check_pulse_start_index != self.rc_check_pulse_end_index:
             data = self.array[: self.rc_check_pulse_start_index] * self.gain
         else:
-            data = self.array
+            data = self.array * self.gain
 
         for preprocessor in self._preprocessors:
             data = preprocessor(data, self.fs)
