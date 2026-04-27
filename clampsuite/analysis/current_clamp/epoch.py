@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Literal
 
+import numpy as np
 import pandas as pd
 
 from ...functions.current_clamp import ThresholdType
@@ -103,11 +104,16 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             .groupby(["Pulse Amp (pA)"], as_index=False)
             .mean(numeric_only=True)
             .drop(columns=["Acq Number", "Cycle"])
+            .reset_index()
         )
-        sag_features = avg_data.loc[
-            avg_data["Pulse Amp (pA)"].idxmin(),
-            ["Epoch", "Sag (mV)", "Sag (ms)"],
-        ]
+        sag_features = (
+            avg_data.loc[
+                avg_data["Pulse Amp (pA)"].idxmin(),
+                ["Sag (mV)", "Sag (ms)"],
+            ]
+            .to_frame()
+            .T
+        )
         fi_features = self.fi_fit(self.df_dict["Acq Parameters"])
         iv_params = self.df_dict["Acq Parameters"]
         iv_params = iv_params.loc[iv_params["Freq (Hz)"] < 1e-6]
@@ -122,21 +128,30 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             .groupby(["Cycle"], as_index=False)["Freq (Hz)"]
             .max()
             .rename(columns={"Freq (Hz)": "Max Freq (Hz)"})
+            .drop(columns=["Cycle"])
             .mean()
+            .to_frame()
+            .T
         )
-        features = (
+        avg_data = (
             avg_data.drop(
                 columns=["Sag (mV)", "Sag (ms)", "Pulse Amp (pA)", "Delta V (mV)"]
             )
             .groupby("Epoch")
             .mean(numeric_only=True)
         )
-        features = pd.concat(
-            [rheo_features, sag_features, fi_features, iv_features, fr_features],
-            ignore_index=True,
+        avg_data = pd.concat(
+            [
+                avg_data.reset_index(drop=True),
+                rheo_features.reset_index(drop=True),
+                sag_features,
+                fi_features.reset_index(drop=True),
+                iv_features.reset_index(drop=True),
+                fr_features,
+            ],
             axis=1,
         )
-        self.df_dict["Epoch Parameters"] = features
+        self.df_dict["Epoch Parameters"] = avg_data
 
     def fi_fit(self, acq_data):
         fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
@@ -145,7 +160,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         firing_rate = fi_data.loc[selector, "Freq (Hz)"]
         sig_fit = Sigmoid()
         sig_fit.fit(current, firing_rate)
-        fi_features = pd.DataFrame(sig_fit.params._asdict(), index=[0])
+        fi_features = pd.DataFrame(sig_fit.params._asdict(), index=np.array([1]))
         key_mapping = map_keys(fi_features.columns)
         key_mapping = {key: f"FI {value}" for key, value in key_mapping.items()}
         fi_features = fi_features.rename(columns=key_mapping)
@@ -162,7 +177,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         current = acq_data["Pulse Amp (pA)"].to_numpy()
         voltage = acq_data[column].to_numpy()
         temp = fit_iv(current, voltage, start, end, rectify)
-        iv_features = pd.DataFrame(temp._asdict(), index=[0])
+        iv_features = pd.DataFrame(temp._asdict(), index=np.array([1]))
         key_mapping = map_keys(iv_features.columns)
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         iv_features = iv_features.rename(columns=key_mapping)
@@ -179,7 +194,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             temp = log_fit.params
             epochs.append(key)
             log_output.append(temp._asdict())
-        log_features = pd.DataFrame(log_output, index=[0])
+        log_features = pd.DataFrame(log_output, index=np.array([1]))
         key_mapping = map_keys(log_features.columns)
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         log_features = log_features.rename(columns=key_mapping)
