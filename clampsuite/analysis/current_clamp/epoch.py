@@ -104,7 +104,6 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             .groupby(["Pulse Amp (pA)"], as_index=False)
             .mean(numeric_only=True)
             .drop(columns=["Acq Number", "Cycle"])
-            .reset_index()
         )
         sag_features = (
             avg_data.loc[
@@ -144,10 +143,10 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             [
                 avg_data.reset_index(drop=True),
                 rheo_features.reset_index(drop=True),
-                sag_features,
+                sag_features.reset_index(drop=True),
                 fi_features.reset_index(drop=True),
                 iv_features.reset_index(drop=True),
-                fr_features,
+                fr_features.reset_index(drop=True),
             ],
             axis=1,
         )
