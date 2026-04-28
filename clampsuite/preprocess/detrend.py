@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, ClassVar
 
 import numpy as np
@@ -12,6 +12,7 @@ from .base import Preprocessor, register_preprocessor
 @dataclass
 class Detrend(Preprocessor):
     module: ClassVar[str] = "detrend"
+    baseline_: np.ndarray | None = field(default=None, repr=False, init=False)
 
 
 @register_preprocessor
@@ -29,7 +30,8 @@ class Mean(Detrend):
             end = self.end
         start = int(self.start * fs / 1000)
         end = int(end * fs / 1000)
-        return array - np.mean(array[start:end], axis=-1, keepdims=True)
+        self.baseline_ = np.mean(array[start:end], axis=-1, keepdims=True)
+        return array - self.baseline_
 
 
 @register_preprocessor
@@ -47,7 +49,8 @@ class Median(Detrend):
             end = self.end
         start = int(self.start * fs / 1000)
         end = int(end * fs / 1000)
-        return array - np.median(array[start:end], axis=-1, keepdims=True)
+        self.baseline_ = np.median(array[start:end], axis=-1, keepdims=True)
+        return array - self.baseline_
 
 
 @register_preprocessor
@@ -72,9 +75,9 @@ class ExpDecay(Detrend):
         x = np.arange(y.size) / fs
         fit_object.fit(x, y)
         y_fit = fit_object.predict(x)
-        sub = np.zeros(array.size)
-        sub[:peak] = y_fit
-        return array - sub
+        self.baseline_ = np.zeros(array.size)
+        self.baseline_[:peak] = y_fit
+        return array - self.baseline_
 
 
 @register_preprocessor
@@ -87,8 +90,8 @@ class Polynomial(Detrend):
     def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
         fit = npPoly.fit(x, array, deg=self.degree)
-        baseline = fit(x)
-        return array - baseline
+        self.baseline_ = fit(x)
+        return array - self.baseline_
 
 
 @register_preprocessor
@@ -108,5 +111,5 @@ class LSQSpline(Detrend):
             [x[0]] * (self.degree + 1), internal_knots, [x[-1]] * (self.degree + 1)
         ]
         fit = interpolate.make_lsq_spline(x, array, t, k=self.degree)
-        baseline = fit(x)
-        return array - baseline
+        self.baseline_ = fit(x)
+        return array - self.baseline_

@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from ..preprocess.base import Preprocessor
 from ..preprocess.resample import Resample
+from ..preprocess.detrend import Detrend
 
 
 @dataclass
@@ -57,6 +58,22 @@ class AcquisitionData:
             if isinstance(preprocessor, Resample):
                 self._fs_multiplier = preprocessor.fs_multiplier
         return data
+
+    def get_baseline(self, step: int | None = None) -> np.ndarray:
+        if self.rc_check_pulse_start_index != self.rc_check_pulse_end_index:
+            data = self.array[: self.rc_check_pulse_start_index] * self.gain
+        else:
+            data = self.array * self.gain
+
+        if step is None:
+            step = len(self._preprocessors)
+        for i in np.arange(step):
+            data = self._preprocessors[i](data, self.fs)
+            if isinstance(self._preprocessors[i], Detrend):
+                baseline = self._preprocessors[i].baseline_
+            if not isinstance(baseline, np.ndarray):
+                baseline = np.full(baseline, data)
+        return baseline
 
     def clear_preprocessors(self) -> None:
         """Remove all preprocessing steps."""
