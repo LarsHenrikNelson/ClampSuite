@@ -95,12 +95,18 @@ class Polynomial(Detrend):
 @dataclass
 class LSQSpline(Detrend):
     degree: int = 3
+    n_knots: int = 5
 
     name: ClassVar[str] = "lsq_spline"
 
     def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         x = np.arange(array.size)
-        knots = np.linspace(0, array.size, num=self.degree + 2, dtype=int)[1:-2]
-        fit = interpolate.make_lsq_spline(x, array, x[knots], k=3)
+        internal_knots = np.linspace(0, array.size, num=self.n_knots + 2, dtype=int)[
+            1:-1
+        ]
+        t = np.r_[
+            [x[0]] * (self.degree + 1), internal_knots, [x[-1]] * (self.degree + 1)
+        ]
+        fit = interpolate.make_lsq_spline(x, array, t, k=self.degree)
         baseline = fit(x)
         return array - baseline
