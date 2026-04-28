@@ -36,7 +36,9 @@ class ABFLoader(BaseLoader):
         acq = file.get_analogsignal_chunk(
             block_index=0, seg_index=segment, channel_indexes=channel_index
         )
-        return acq[offset:-offset]
+        if offset > 0:
+            acq = acq[offset:-offset]
+        return acq
 
     def process_secondary_channel(self, file: AxonRawIO, segment: int, acq_dict: dict):
         temp = self.load_segment(file, segment, channel_index=self.secondary_channel)
