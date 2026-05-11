@@ -89,6 +89,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         spike_index, _ = signal.find_peaks(
             acquisition[self.pulse_start : self.pulse_end],
             height=config.min_spike_voltage,
+            distance=int(1 * (self.acq_data.fs / 1000)),
         )
 
         spike_index += self.pulse_start
@@ -160,6 +161,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
 
     def _analyze_spikes(self, spike_index, threshold_method, velocity_threshold):
         spike_list = []
+        velocity_threshold = velocity_threshold * (self.acq_data.fs / 1000)
         end = len(spike_index) - 1
         for index, i in enumerate(spike_index):
             if len(spike_index) == 1:
@@ -174,7 +176,9 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             else:
                 start_index = spike_index[index - 1]
                 end_index = spike_index[index + 1]
-            spike = Spike(self.acq_data.acquisition, start_index, end_index, i)
+            spike = Spike(
+                self.acq_data.acquisition, start_index, end_index, i, self.acq_data.fs
+            )
             spike.find_threshold("first_derivative")
             spike.find_velocity()
             if len(spike_list) > 0:
@@ -182,13 +186,13 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             if spike["max_velocity"] > velocity_threshold:
                 spike_list.append(spike)
 
-            for spike in spike_list:
-                if threshold_method == "allen_institute":
-                    spike.find_threshold("first_derivative")
-                    thresholds = [i["threshold_mv"] for i in spike_list]
-                    spike.analyze(threshold_method, np.mean(thresholds))
-                else:
-                    spike.analyze(threshold_method)
+        for spike in spike_list:
+            if threshold_method == "allen_institute":
+                spike.find_threshold("first_derivative")
+                thresholds = [i["threshold_mv"] for i in spike_list]
+                spike.analyze(threshold_method, np.mean(thresholds))
+            else:
+                spike.analyze(threshold_method)
         return spike_list
 
     def get_delta_v(

@@ -18,6 +18,7 @@ class Spike:
         start_index: int,
         end_index: int,
         peak_index: int,
+        fs: float | int,
     ):
         self.array = array
         self._analysis_variables: dict[str, int | float] = dict(
@@ -26,6 +27,7 @@ class Spike:
             start_index=start_index,
             end_index=end_index,
         )
+        self.fs = fs
         for i in SPIKE_PARAMS:
             self._analysis_variables[i] = np.nan
 
@@ -43,7 +45,10 @@ class Spike:
         try:
             if method == "allen_institute":
                 threshold_index = ThresholdFunctions["allen_institute"](
-                    derivatives, 0, peak_index - self["start_index"], threshold_value
+                    derivatives,
+                    0,
+                    peak_index - self["start_index"],
+                    threshold_value * (self.fs / 1000),
                 )
             else:
                 threshold_index = ThresholdFunctions[method](
