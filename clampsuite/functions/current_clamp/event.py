@@ -48,7 +48,7 @@ class Spike:
                     derivatives,
                     0,
                     peak_index - self["start_index"],
-                    threshold_value * (self.fs / 1000),
+                    threshold_value,
                 )
             else:
                 threshold_index = ThresholdFunctions[method](

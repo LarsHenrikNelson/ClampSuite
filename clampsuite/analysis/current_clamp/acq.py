@@ -111,7 +111,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         self["coefficient_of_variation"] = coefficient_of_variation(spike_times)
 
         delta_v_index, delta_v_mv = self.get_delta_v(
-            acquisition, spike_index, config.proportion, config.side
+            acquisition, self._spikes, config.proportion, config.side
         )
         self["delta_v_mv"] = delta_v_mv
         self["delta_v_index"] = delta_v_index
@@ -161,7 +161,6 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
 
     def _analyze_spikes(self, spike_index, threshold_method, velocity_threshold):
         spike_list = []
-        velocity_threshold = velocity_threshold * (self.acq_data.fs / 1000)
         end = len(spike_index) - 1
         for index, i in enumerate(spike_index):
             if len(spike_index) == 1:
@@ -179,18 +178,17 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             spike = Spike(
                 self.acq_data.acquisition, start_index, end_index, i, self.acq_data.fs
             )
-            spike.find_threshold("first_derivative")
+            spike.find_threshold("percentage")
             spike.find_velocity()
             if len(spike_list) > 0:
                 spike_list[-1].set_end_index(spike["threshold_index"])
             if spike["max_velocity"] > velocity_threshold:
                 spike_list.append(spike)
 
+        thresholds = [i["max_velocity"] for i in spike_list]
         for spike in spike_list:
             if threshold_method == "allen_institute":
-                spike.find_threshold("first_derivative")
-                thresholds = [i["threshold_mv"] for i in spike_list]
-                spike.analyze(threshold_method, np.mean(thresholds))
+                spike.analyze(threshold_method, np.mean(thresholds) * 0.05)
             else:
                 spike.analyze(threshold_method)
         return spike_list
@@ -198,7 +196,7 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
     def get_delta_v(
         self,
         acquisition: np.ndarray,
-        peaks: np.ndarray,
+        peaks: np.ndarray | list,
         proportion,
         side,
     ):

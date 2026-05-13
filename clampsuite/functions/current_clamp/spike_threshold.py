@@ -95,7 +95,15 @@ def derivative_threshold(
     derivatives: dict[str, np.ndarray], start: int, end: int, threshold: float = 5.0
 ):
     dv = derivatives["dv"][start:end]
-    peak = np.argwhere(dv > threshold)[0] + start
+    peak = np.argwhere(dv > threshold)[0][0] + start - 1
+    return peak
+
+
+def percentage_threshold(
+    derivatives: dict[str, np.ndarray], start: int, end: int, threshold: float = 5.0
+):
+    dv = derivatives["dv"][start:end]
+    peak = np.where(dv > dv.max() * 0.05)[0][0] - 1
     return peak
 
 
@@ -108,6 +116,7 @@ ThresholdFunctions: dict[str, Callable] = {
     "second_derivative": second_derivative,
     "legacy": legacy,
     "allen_institute": derivative_threshold,
+    "percentage": percentage_threshold,
 }
 
 ThresholdType: TypeAlias = Literal[
@@ -119,6 +128,7 @@ ThresholdType: TypeAlias = Literal[
     "second_derivative",
     "legacy",
     "allen_institute",
+    "percentage",
 ]
 
 
