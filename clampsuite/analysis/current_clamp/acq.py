@@ -86,16 +86,9 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         # Analysis functions
         acquisition = self.acq_data.acquisition
         self["baseline_mv"] = np.mean(acquisition[: self.pulse_start])
-        spike_index, _ = signal.find_peaks(
-            acquisition[self.pulse_start : self.pulse_end],
-            height=config.min_spike_voltage,
-            distance=int(1 * (self.acq_data.fs / 1000)),
-        )
 
-        spike_index += self.pulse_start
-        self._spikes = self._analyze_spikes(
-            spike_index, config.threshold_method, config.velocity_threshold
-        )
+        spike_list = self._create_spikes(acquisition, config)
+        self._spikes = self._analyze_spikes(spike_list, config.threshold_method)
 
         self["freq_hz"] = len(self._spikes) / (
             (self.pulse_end - self.pulse_start) / self.acq_data.fs
@@ -159,7 +152,15 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
                 rebound_spikes[0] + self.pulse_end
             )
 
-    def _analyze_spikes(self, spike_index, threshold_method, velocity_threshold):
+    def _create_spikes(self, acquisition, config):
+        spike_index, _ = signal.find_peaks(
+            acquisition[self.pulse_start : self.pulse_end],
+            height=config.min_spike_voltage,
+            distance=int(2 * (self.acq_data.fs / 1000)),
+            prominence=2,
+        )
+
+        spike_index += self.pulse_start
         spike_list = []
         end = len(spike_index) - 1
         for index, i in enumerate(spike_index):
@@ -182,9 +183,11 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             spike.find_velocity()
             if len(spike_list) > 0:
                 spike_list[-1].set_end_index(spike["threshold_index"])
-            if spike["max_velocity"] > velocity_threshold:
+            if spike["max_velocity"] > config.velocity_threshold:
                 spike_list.append(spike)
+        return spike_list
 
+    def _analyze_spikes(self, spike_list: list[Spike], threshold_method: ThresholdType):
         thresholds = [i["max_velocity"] for i in spike_list]
         for spike in spike_list:
             if threshold_method == "allen_institute":
