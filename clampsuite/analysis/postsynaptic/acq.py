@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Literal, Union
 
 import numpy as np
@@ -18,48 +18,41 @@ from ...functions.template_psc import TemplateParams
 from ...functions.utilities import map_keys
 from ...loader.acquisition_data import AcquisitionData
 from ...preprocess.filter import FIRFilter
-from ..base import BaseAcquisitionAnalysis, BaseEpochAnalysis
-from ..registry import register_acquisition, register_epoch
+from ..base import BaseAcquisitionAnalysis, BaseAcquisitionConfig
+from ..registry import register_acq_config, register_acquisition
+
+
+@register_acq_config
+@dataclass(frozen=True)
+class PostSynapticAcquisitionConfig(BaseAcquisitionConfig):
+    @staticmethod
+    def analysis_key() -> str:
+        return "psc"
+
+    template_params: TemplateParams = field(
+        default_factory=TemplateParams
+    )
+    sensitivity: int | float = 4
+    amp_threshold: int | float = 4
+    mini_spacing: int | float = 2
+    min_rise_time: int | float = 0.5
+    max_rise_time: int | float = 4
+    min_decay_time: int | float = 0.5
+    event_length: int | float = 30
+    decay_rise: bool = True
+    invert: bool = False
+    method: EventMethods = "weiner"
+    est_decay: bool = False
+    curve_fit_decay: Literal[0, 1, 2] = 0
 
 
 @register_acquisition
-class AcquisitionAnalysis(BaseAcquisitionAnalysis):
+class PostSynapticAcquisition(BaseAcquisitionAnalysis):
     @staticmethod
     def analysis_key():
         return "postsynaptic"
 
-    def __init__(
-        self,
-        acq_data: AcquisitionData,
-        template_params: TemplateParams,
-        sensitivity: Union[int, float] = 4,
-        amp_threshold: Union[int, float] = 4,
-        mini_spacing: Union[int, float] = 2,
-        min_rise_time: Union[int, float] = 0.5,
-        max_rise_time: Union[int, float] = 4,
-        min_decay_time: Union[int, float] = 0.5,
-        event_length: Union[int, float] = 30,
-        decay_rise: bool = True,
-        invert: bool = False,
-        method: EventMethods = "weiner",
-        est_decay: bool = False,
-        curve_fit_decay: Literal[0, 1, 2] = 0,
-    ):
-        self.acq_data = acq_data
-        self.template_params = template_params
-        self.sensitivity = sensitivity
-        self.amp_threshold = amp_threshold
-        self.mini_spacing = mini_spacing
-        self.min_rise_time = min_rise_time
-        self.max_rise_time = max_rise_time
-        self.min_decay_time = min_decay_time
-        self.event_length = event_length
-        self.decay_rise = decay_rise
-        self.invert: bool = invert
-        self.method = method
-        self.est_decay = est_decay
-        self.curve_fit_decay = curve_fit_decay
-
+    def __post_init__(self):
         self._analysis_variables = {}
         self._analysis_variables["events"]: list[PostsynapticEvent] = []
         self._decon_filter = FIRFilter(
@@ -71,43 +64,46 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
             window="hann",
         )
 
-    @property
-    def event_criteria(self) -> create_events.EventCriteria:
-        return create_events.EventCriteria(
-            mini_spacing=self.mini_spacing,
-            amp_threshold=self.amp_threshold,
-            min_rise_time=self.min_rise_time,
-            max_rise_time=self.max_rise_time,
-            min_decay_time=self.min_decay_time,
-            decay_rise=self.decay_rise,
-        )
+    # @property
+    # def event_criteria(self) -> create_events.EventCriteria:
+    #     return create_events.EventCriteria(
+    #         mini_spacing=self.mini_spacing,
+    #         amp_threshold=self.amp_threshold,
+    #         min_rise_time=self.min_rise_time,
+    #         max_rise_time=self.max_rise_time,
+    #         min_decay_time=self.min_decay_time,
+    #         decay_rise=self.decay_rise,
+    #     )
 
-    def analyze(self) -> None:
+    def analyze(self, config: PostSynapticAcquisitionConfig | None) -> None:
+        if config is None:
+            config = PostSynapticAcquisitionConfig()
+
         acquisition = self.acq_data.acquisition
 
-        if self.method == "template_match":
-            output = template_match(acquisition, self.template_params)
+        if config.method == "template_match":
+            output = template_match(acquisition, config.template_params)
         else:
             output = deconvolve_array(
                 acquisition,
                 self.acq_data.fs,
-                self.template_params,
-                self.method,
+                config.template_params,
+                config.method,
                 self._decon_filter,
             )
 
-        events = find_events(output, self.mini_spacing, self.sensitivity)
+        events = find_events(output, config.mini_spacing, config.sensitivity)
         size = acquisition.size
         event_peaks: list[int] = []
         postsynaptic_events: list[PostsynapticEvent] = []
         for peak in events:
-            if (size - peak) >= (self.event_length * self.acq_data.s_r_c):
+            if (size - peak) >= (config.event_length * self.acq_data.s_r_c):
                 event = PostsynapticEvent(
                     array=acquisition,
                     fs=self.acq_data.fs,
                     start_index=peak,
-                    event_length=self.event_length,
-                    curve_fit_type=self.curve_fit_decay,
+                    event_length=config.event_length,
+                    curve_fit_type=config.curve_fit_decay,
                 )
                 event.find_peak()
                 event_peak = event._analysis_variables["event_index"]
@@ -125,8 +121,8 @@ class AcquisitionAnalysis(BaseAcquisitionAnalysis):
         for index, event in enumerate(postsynaptic_events):
             if index < len(postsynaptic_events) and index > 0:
                 event.curve_fit_decay(
-                    self.curve_fit_decay,
-                    event[index + 1]._analysis_variables["baseline_index"],
+                    config.curve_fit_decay,
+                    postsynaptic_events[index + 1]._analysis_variables["baseline_index"],
                 )
             else:
-                event.curve_fit_decay(self.curve_fit_decay)
+                event.curve_fit_decay(config.curve_fit_decay, None)

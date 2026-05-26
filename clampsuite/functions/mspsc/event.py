@@ -91,7 +91,7 @@ class PostsynapticEvent:
         )
         self._analysis_variables["est_tau"] = (est_tau_index - peak) / self.s_r_c
 
-    def curve_fit_decay(self, curve_fit_type: Literal[1, 2], end_index: int | None):
+    def curve_fit_decay(self, curve_fit_type: Literal[0, 1, 2], end_index: int | None):
         peak = self._analysis_variables["peak_index"]
         if end_index is None:
             end_index = self._analysis_variables["end_index"]

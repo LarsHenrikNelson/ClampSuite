@@ -1,15 +1,18 @@
+from dataclasses import dataclass
 from typing import Union, NamedTuple
 
 import numpy as np
 
-class TemplateParams(NamedTuple):
-    amplitude: float
-    rise_tau: float
-    decay_tau: float
-    risepower: float
-    length: float
-    spacer: float
-    sample_rate: float
+
+@dataclass(frozen=True)
+class TemplateParams:
+    amplitude: float = 15
+    rise_tau: float = 0.3
+    decay_tau: float = 5
+    risepower: float = 0.5
+    length: float = 30
+    spacer: float = 1.5
+    sample_rate: float = 10000
 
 
 def create_template(
@@ -46,7 +49,10 @@ def create_template(
     y = (
         amplitude
         / Aprime
-        * ((1 - (np.exp(-t_length / rise_tau))) ** risepower * np.exp((-t_length / decay_tau)))
+        * (
+            (1 - (np.exp(-t_length / rise_tau))) ** risepower
+            * np.exp((-t_length / decay_tau))
+        )
     )
     template[offset:] = y
     return template
