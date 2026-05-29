@@ -37,7 +37,7 @@ class PostSynapticConfig(BaseConfig):
 
     @staticmethod
     def analysis_key() -> str:
-        return "current_clamp"
+        return "psc"
 
 
 @register_epoch
@@ -56,13 +56,13 @@ class PostSynapticEpoch(BaseEpochAnalysis):
         for key, value in acquisitions.items():
             temp = PostSynapticAcquisition(acq_data=value)
             self._acquisitions[key] = temp
-    
+
         def analyze(self):
             for value in self._acquisitions.values():
                 value.analyze(self.config.acquisition_config)
             self.create_raw_data()
             self.get_features()
-        
+
         def create_raw_data(self):
             pass
 

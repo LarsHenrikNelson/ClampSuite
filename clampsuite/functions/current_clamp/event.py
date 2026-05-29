@@ -85,6 +85,7 @@ class Spike:
             np.gradient(self.array),
             int(self["threshold_index"]),
             self["end_index"],
+            self.fs,
         )
         self._analysis_variables.update(
             {key: a for key, a in zip(VELOCITY_KEYS, output)}

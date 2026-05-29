@@ -188,9 +188,9 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         return spike_list
 
     def _analyze_spikes(self, spike_list: list[Spike], threshold_method: ThresholdType):
-        thresholds = [i["max_velocity"] for i in spike_list]
         for spike in spike_list:
             if threshold_method == "allen_institute":
+                thresholds = [i["max_velocity"] for i in spike_list]
                 spike.analyze(threshold_method, np.mean(thresholds) * 0.05)
             else:
                 spike.analyze(threshold_method)

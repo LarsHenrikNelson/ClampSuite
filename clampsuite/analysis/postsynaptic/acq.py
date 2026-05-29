@@ -29,9 +29,7 @@ class PostSynapticAcquisitionConfig(BaseAcquisitionConfig):
     def analysis_key() -> str:
         return "psc"
 
-    template_params: TemplateParams = field(
-        default_factory=TemplateParams
-    )
+    template_params: TemplateParams = field(default_factory=TemplateParams)
     sensitivity: int | float = 4
     amp_threshold: int | float = 4
     mini_spacing: int | float = 2
@@ -50,7 +48,7 @@ class PostSynapticAcquisitionConfig(BaseAcquisitionConfig):
 class PostSynapticAcquisition(BaseAcquisitionAnalysis):
     @staticmethod
     def analysis_key():
-        return "postsynaptic"
+        return "psc"
 
     def __post_init__(self):
         self._analysis_variables = {}
@@ -122,7 +120,9 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             if index < len(postsynaptic_events) and index > 0:
                 event.curve_fit_decay(
                     config.curve_fit_decay,
-                    postsynaptic_events[index + 1]._analysis_variables["baseline_index"],
+                    postsynaptic_events[index + 1]._analysis_variables[
+                        "baseline_index"
+                    ],
                 )
             else:
                 event.curve_fit_decay(config.curve_fit_decay, None)
