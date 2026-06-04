@@ -25,7 +25,7 @@ class Mean(Detrend):
 
     def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
-            end = array.shape[1]
+            end = array.shape[-1]
         else:
             end = self.end
         start = int(self.start * fs / 1000)
@@ -44,7 +44,7 @@ class Median(Detrend):
 
     def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
         if self.end == 0:
-            end = array.shape[1]
+            end = array.shape[-1]
         else:
             end = self.end
         start = int(self.start * fs / 1000)
