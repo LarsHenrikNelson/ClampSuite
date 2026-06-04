@@ -1,3 +1,4 @@
+from concurrent.interpreters import create
 from dataclasses import dataclass, field
 from typing import Dict, Literal, Union
 
@@ -45,6 +46,7 @@ class PostSynapticAcquisitionConfig(BaseAcquisitionConfig):
 
 
 @register_acquisition
+@dataclass
 class PostSynapticAcquisition(BaseAcquisitionAnalysis):
     @staticmethod
     def analysis_key():
@@ -52,7 +54,8 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
 
     def __post_init__(self):
         self._analysis_variables = {}
-        self._analysis_variables["events"]: list[PostsynapticEvent] = []
+        events: list[PostsynapticEvent] = []
+        self._analysis_variables["events"] = events
         self._decon_filter = FIRFilter(
             order=351,
             high_pass=None,
@@ -61,17 +64,6 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             low_width=100,
             window="hann",
         )
-
-    # @property
-    # def event_criteria(self) -> create_events.EventCriteria:
-    #     return create_events.EventCriteria(
-    #         mini_spacing=self.mini_spacing,
-    #         amp_threshold=self.amp_threshold,
-    #         min_rise_time=self.min_rise_time,
-    #         max_rise_time=self.max_rise_time,
-    #         min_decay_time=self.min_decay_time,
-    #         decay_rise=self.decay_rise,
-    #     )
 
     def analyze(self, config: PostSynapticAcquisitionConfig | None) -> None:
         if config is None:
@@ -90,9 +82,11 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                 self._decon_filter,
             )
 
-        events = find_events(output, config.mini_spacing, config.sensitivity)
+        events = find_events(
+            output, config.mini_spacing, config.sensitivity, self.acq_data.fs
+        )
         size = acquisition.size
-        event_peaks: list[int] = []
+        event_peaks: list[int | float] = []
         postsynaptic_events: list[PostsynapticEvent] = []
         for peak in events:
             if (size - peak) >= (config.event_length * self.acq_data.s_r_c):
@@ -101,10 +95,9 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                     fs=self.acq_data.fs,
                     start_index=peak,
                     event_length=config.event_length,
-                    curve_fit_type=config.curve_fit_decay,
                 )
                 event.find_peak()
-                event_peak = event._analysis_variables["event_index"]
+                event_peak: int | float = event._analysis_variables["peak_index"]
 
                 # Screen out methods using the function.
                 # See the function below for further details.
@@ -113,16 +106,38 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                     postsynaptic_events += [event]
 
         for event in postsynaptic_events:
-            event.find_baseline()
-            event.estimate_decay()
+            event.analyze()
 
+        criteria = create_events.EventCriteria(
+            config.mini_spacing,
+            config.amp_threshold,
+            config.min_rise_time,
+            config.max_rise_time,
+            config.min_decay_time,
+            config.decay_rise,
+        )
+        cleaned_events: list[PostsynapticEvent] = []
         for index, event in enumerate(postsynaptic_events):
-            if index < len(postsynaptic_events) and index > 0:
+            if index > 0:
+                check = create_events.check_event(
+                    event, postsynaptic_events[index - 1], criteria
+                )
+            else:
+                check = create_events.check_event(event, None, criteria)
+            if check:
+                cleaned_events.append(event)
+        postsynaptic_events: list[PostsynapticEvent] = cleaned_events
+
+        end_index = len(postsynaptic_events) - 1
+        for index, event in enumerate(postsynaptic_events):
+            if index < end_index and index > 0:
                 event.curve_fit_decay(
                     config.curve_fit_decay,
-                    postsynaptic_events[index + 1]._analysis_variables[
-                        "baseline_index"
-                    ],
+                    postsynaptic_events[index + 1]["baseline_index"],
                 )
             else:
                 event.curve_fit_decay(config.curve_fit_decay, None)
+        self._analysis_variables["events"] = postsynaptic_events
+
+    def data(self):
+        pass

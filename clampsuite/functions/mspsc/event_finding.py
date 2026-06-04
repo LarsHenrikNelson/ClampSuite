@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Literal, TypeAlias
 
 import numpy as np
@@ -55,7 +56,7 @@ def deconvolve_array(
     """
     # The kernel needs to be the same length as the array that is being
     # deconvolved.
-    template = create_template(**template_params._asdict())
+    template = create_template(**asdict(template_params))
 
     kernel = np.hstack((template, np.zeros(len(array) - len(template))))
     H = fft(kernel)
@@ -64,21 +65,22 @@ def deconvolve_array(
     # Convolution is similar to template fitting (correlation).
     if decon_type == "fft":
         deconvolved_array = np.real(ifft(fft(array) / H))
-        deconvolved_array = filter_settings.process(array, fs)
-    elif decon_type == "wiener":
-        noise_std = noise_mad(signal)
-        signal_var = np.var(signal)
+    elif decon_type == "weiner":
+        noise_std = noise_mad(array)
+        signal_var = np.var(array)
         lambda_reg = noise_std**2 / (signal_var + 1e-10)
 
         deconvolved_array = np.real(
             ifft(fft(array) * np.conj(H) / (H * np.conj(H) + lambda_reg**2))
         )
-    deconvolved_array = filter_settings.process(array, fs)
+    deconvolved_array = filter_settings(
+        deconvolved_array - deconvolved_array.mean(), fs
+    )
     return deconvolved_array
 
 
 def template_match(array: np.ndarray, template_params: TemplateParams) -> np.ndarray:
-    template = create_template(**template_params._asdict())
+    template = create_template(**asdict(template_params))
     template_match = signal.correlate(array, template, mode="same")
     return template_match
 
@@ -97,7 +99,7 @@ def _rms(array: np.ndarray) -> tuple[float, float]:
 
 
 def find_events(
-    array: np.ndarray, mini_spacing: float, sensitivity: float
+    array: np.ndarray, mini_spacing: float, sensitivity: float, fs: int | float
 ) -> np.ndarray:
     # This is not the method from the original paper but it works a
     # lot better. The original paper used 4*std of the deconvolved array.
@@ -111,7 +113,7 @@ def find_events(
     peaks, _ = signal.find_peaks(
         array - mu,
         height=sensitivity * (rms),
-        distance=mini_spacing,
+        distance=mini_spacing * (fs / 1000),
         prominence=rms,
     )
     return peaks

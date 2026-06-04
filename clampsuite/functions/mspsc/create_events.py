@@ -16,7 +16,9 @@ class EventCriteria(NamedTuple):
 
 
 def check_event(
-    event: PostsynapticEvent, event_peaks: list, event_criteria: EventCriteria
+    event: PostsynapticEvent,
+    previous_event: PostsynapticEvent | None,
+    event_criteria: EventCriteria,
 ) -> bool:
     """The function is used to screen out events based
     on several values set by the experimenter.
@@ -31,31 +33,29 @@ def check_event(
     """
 
     # Retrieve the peak of the previous event.
-    if len(event_peaks) > 0:
-        prior_peak = event_peaks[-1]
-    else:
+    if previous_event is None:
         prior_peak = 0
+    else:
+        prior_peak = previous_event["peak_index"] / (previous_event.fs / 1000)
 
     # Retrieve the peak to compare to values set
     # by the experimenter.
-    event_peak = event._analysis_variables["peak_index"]
+    event_peak = event["peak_index"] / (event.fs / 1000)
 
     # The function checks, in order of importance, the
     # qualities of the event.
+    event_start = event["start_index"] / (event.fs / 1000)
     if (
-        event_peak - prior_peak < event_criteria.mini_spacing
-        or event.amplitude <= event_criteria.amp_threshold
-        or event._analysis_variables["rise_time"] <= event_criteria.min_rise_time
-        or event._analysis_variables["rise_time"] >= event_criteria.max_rise_time
-        or event._analysis_variables["est_decay_tau"] <= event_criteria.min_decay_time
-        or event._analysis_variables["event_start_index"] > event_peak
+        (event_peak - prior_peak) < event_criteria.mini_spacing
+        or event.amplitude() <= event_criteria.amp_threshold
+        or event.rise_time() <= event_criteria.min_rise_time
+        or event.rise_time() >= event_criteria.max_rise_time
+        or event.est_tau() <= event_criteria.min_decay_time
+        or event.est_tau() < 0
+        or event_start > event_peak
     ):
         return False
-    elif (
-        event_criteria.decay_rise
-        and event._analysis_variables["est_decay_tau"]
-        <= event._analysis_variables["rise_time"]
-    ):
+    elif event_criteria.decay_rise and event.est_tau() <= event.rise_time():
         return False
     else:
         return True
@@ -96,7 +96,6 @@ def create_events(
                     fs=fs,
                     start_index=peak,
                     event_length=event_length,
-                    curve_fit_type=curve_fit_type,
                 )
                 event.find_peak()
                 event_peak = event._analysis_variables["event_index"]
