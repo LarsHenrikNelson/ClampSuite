@@ -1,4 +1,4 @@
-from concurrent.interpreters import create
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, Literal, Union
 
@@ -53,9 +53,8 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
         return "psc"
 
     def __post_init__(self):
-        self._analysis_variables = {}
         events: list[PostsynapticEvent] = []
-        self._analysis_variables["events"] = events
+        self._events = events
         self._decon_filter = FIRFilter(
             order=351,
             high_pass=None,
@@ -137,7 +136,29 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                 )
             else:
                 event.curve_fit_decay(config.curve_fit_decay, None)
-        self._analysis_variables["events"] = postsynaptic_events
+        self._events = postsynaptic_events
+    
+    def events(self)-> tuple[np.ndarray, np.ndarray]:
+        y = []
+        x = []
+        for event in self._events:
+            x_, y_ = event.event()
+            y.append(y_)
+            x.append(x_)
+        return np.array(x), np.array(y)
 
-    def data(self):
-        pass
+    def data(
+        self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
+    ):
+        acq_data = {}
+        event_data = defaultdict(list)
+        for event in self._events:
+            sdata = event.data(output_type=output_type)
+            for key, value in sdata.items():
+                event_data[key].append(value)
+        event_data = {key: np.array(value) for key, value in event_data.items()}
+        for i in ["est_tau_ms", "rise_time_ms", "amplitude_pa", "rise_rate_pa_ms"]:
+            temp = event_data[i][(event_data[i] > 0) & ~np.isnan(event_data[i])]
+            acq_data[i] = np.mean(temp)
+            acq_data[f"{i}_log"] = np.exp(np.mean(np.log(temp)))
+        return acq_data, event_data

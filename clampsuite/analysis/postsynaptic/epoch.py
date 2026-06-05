@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Literal, Union
 
+import numpy as np
 import pandas as pd
 
 from ...functions.current_clamp import ThresholdType
@@ -52,19 +53,54 @@ class PostSynapticEpoch(BaseEpochAnalysis):
     def load_acquisitions(
         self, epoch_id: int, acquisitions: Dict[int, AcquisitionData]
     ):
+        self._acquisitions: dict[int, PostSynapticAcquisition] = {}
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
             temp = PostSynapticAcquisition(acq_data=value)
             self._acquisitions[key] = temp
 
-        def analyze(self):
-            for value in self._acquisitions.values():
-                value.analyze(self.config.acquisition_config)
-            self.create_raw_data()
-            self.get_features()
+    def analyze(self):
+        for value in self._acquisitions.values():
+            value.analyze(self.config.acquisition_config)
+        self.create_raw_data()
+        # self.get_features()
 
-        def create_raw_data(self):
-            pass
+    def create_raw_data(self):
+        event_params = []
+        acq_params = []
+        for value in self._acquisitions.values():
+            acq_data, event_data = value.data()
+            event_params.append(pd.DataFrame(event_data))
+            acq_params.append(acq_data)
 
-        def get_features(self):
-            pass
+        acq_params = pd.DataFrame(acq_params)
+        key_mapping = map_keys(acq_params.columns)
+        acq_params = acq_params.rename(columns=key_mapping)
+
+        event_params = pd.concat(event_params)
+        key_mapping = map_keys(event_params.columns)
+        event_params = event_params.rename(columns=key_mapping)
+
+        self.df_dict["Event Parameters"] = event_params
+        self.df_dict["Acq Parameters"] = acq_params
+
+
+    def events(self):
+        x = []
+        y = []
+        for key, value in self._acquisitions.items():
+            x_, y_ = value.events()
+            x.append(x_)
+            y.append(y_)
+        x = np.concat(x)
+        y = np.concat(y)
+        return x, y
+
+    def avg_event(self):
+        _, y = self.events()
+        y = y.mean(axis=0)
+        return y
+        
+
+    def get_features(self):
+        pass

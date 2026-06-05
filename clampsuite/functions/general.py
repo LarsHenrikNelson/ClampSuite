@@ -1,7 +1,7 @@
 from typing import Literal
 
 import numpy as np
-from scipy import integrate
+from scipy import integrate, stats
 
 
 def delta(
@@ -44,3 +44,15 @@ def charge_transfer(x, y, method: Literal["trapezoid", "simpson"] = "simpson"):
     else:
         raise ValueError("Method not recognized")
     return charge_transfer
+
+def regress_subset(array, start: float = 0.1, stop: float = 0.9, fs: float | None = None):
+    length = len(array)
+    ten = int(length*start)
+    ninety = int(length*stop)
+    y = array[ten:ninety]
+    if fs is not None:
+        x = np.arange(y.size)/fs
+    else:
+        x = np.arange(y.size)
+    reg = stats.linregress(x, y)
+    return reg.slope

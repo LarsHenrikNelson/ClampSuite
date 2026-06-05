@@ -82,12 +82,21 @@ class DExpDecay(CurveFitBase):
 
 def estimate_decay(
     event_array: np.ndarray,
-    baseline_index: int,
-    peak_index: int,
 ) -> tuple[float, float]:
-    baseline = event_array[:baseline_index].mean()
-    event_array = np.abs(event_array[peak_index:] - baseline)
-    return_to_baseline = np.where(event_array <= (event_array[0] * 0.25))[0]
+    """Estimates the single exponential decay. Signal is expected to have been baselined where
+    The first sample is assumed to be amplitude. 
+
+    Parameters
+    ----------
+    event_array : np.ndarray
+        Numpy array
+
+    Returns
+    -------
+    tuple[float, float]
+        Estimated y value which tau occurs as, the estimated index at which y occurs at. 
+    """
+    return_to_baseline = np.where(np.abs(event_array) <= (np.abs(event_array[0]) * 0.25))[0]
     if return_to_baseline.size == 0:
         est_tau_index = np.nan
         est_tau_y = np.nan
@@ -95,8 +104,7 @@ def estimate_decay(
         decay_y = event_array[: return_to_baseline[0]]
         decay_x = np.arange(return_to_baseline[0])
         est_tau_y = (decay_y[0]) * (1 / np.exp(1))
-        est_tau_index = np.interp(est_tau_y, decay_y, decay_x) + peak_index
-        est_tau_y += baseline
+        est_tau_index = np.interp(est_tau_y, decay_y, decay_x)
     else:
         est_tau_index = np.nan
         est_tau_y = np.nan

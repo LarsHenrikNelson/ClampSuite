@@ -4,6 +4,7 @@ from scipy import optimize
 from scipy.stats import linregress
 
 from ...functions.curve_fit import SExpDecay, DExpDecay, estimate_decay
+from ...functions.general import regress_subset
 from .event_peak import find_peak
 from .event_baseline import find_baseline
 
@@ -51,12 +52,12 @@ class PostsynapticEvent:
         return self._analysis_variables[variable]
 
     def _event_array(self) -> np.ndarray:
-        event_array = self.array[
+        y = self.array[
             self._analysis_variables["start_index"] : self._analysis_variables[
                 "end_index"
             ]
         ]
-        return event_array
+        return y
 
     def find_peak(self):
         peak = find_peak(
@@ -64,28 +65,20 @@ class PostsynapticEvent:
             self.fs,
             adjust_pos=10,
         )
-        self._analysis_variables["peak_index"] = int(
-            peak + int(self._analysis_variables["start_index"])
-        )
+        self["peak_index"] = int(peak + int(self["start_index"]))
 
     def find_baseline(self):
-        peak = (
-            self._analysis_variables["peak_index"]
-            - self._analysis_variables["start_index"]
-        )
+        peak = self["peak_index"] - self["start_index"]
         baseline = find_baseline(self._event_array(), int(peak), self.fs)
-        self._analysis_variables["baseline_index"] = int(
-            baseline + self._analysis_variables["start_index"]
-        )
+        self["baseline_index"] = int(baseline + self["start_index"])
 
     def estimate_decay(self):
-        peak = self["peak_index"] - self["start_index"]
-        baseline = int(self["baseline_index"] - self["start_index"])
-        est_tau_y, est_tau_index = estimate_decay(
-            self._event_array(), baseline, int(peak)
-        )
-        self["est_tau_y"] = est_tau_y
-        self["est_tau_index"] = est_tau_index + self["start_index"]
+        event_array = self.array[self["peak_index"] : self["end_index"]]
+        baseline = self.array[self["baseline_index"]]
+        event_array = event_array - baseline
+        est_tau_y, est_tau_index = estimate_decay(event_array)
+        self["est_tau_y"] = est_tau_y + baseline
+        self["est_tau_index"] = est_tau_index + self["peak_index"]
 
     def curve_fit_decay(self, curve_fit_type: Literal[0, 1, 2], end_index: int | None):
         peak = self["peak_index"]
@@ -121,11 +114,58 @@ class PostsynapticEvent:
             self.array[self["peak_index"]] - self.array[self["baseline_index"]]
         )
 
-    def rise_time(self) -> float:
-        return (self["peak_index"] - self["baseline_index"]) / (self.fs / 1000)
+    def rise_time(
+        self,
+        output_type: Literal["ms", "samples"] = "ms",
+    ) -> float | int:
+        if output_type == "ms":
+            return (self["peak_index"] - self["baseline_index"]) / (self.fs / 1000)
+        else:
+            return self["peak_index"] - self["baseline_index"]
 
-    def est_tau(self) -> float:
-        return (self["est_tau_index"] - self["baseline_index"]) / (self.fs / 1000)
+    def rise_rate_regress(
+        self,
+        start: float = 0.1,
+        stop: float = 0.9,
+        output_type: Literal["ms", "samples"] = "ms",
+    ):
+        slope = regress_subset(
+            self.array[self["baseline_index"] : self["peak_index"]], start, stop
+        )
+        if output_type == "ms":
+            return slope * (self.fs / 1000)
+        else:
+            return slope
 
-    def data(self) -> dict:
-        return self._analysis_variables
+    def est_tau(
+        self,
+        output_type: Literal["ms", "samples"] = "ms",
+    ) -> float:
+        if output_type == "ms":
+            return (self["est_tau_index"] - self["baseline_index"]) / (self.fs / 1000)
+        else:
+            return self["est_tau_index"] - self["baseline_index"]
+
+    def rise_rate(self, output_type: Literal["ms", "samples"] = "ms"):
+        return self.amplitude() / self.rise_time(output_type=output_type)
+
+    def data(
+        self,
+        output_type: Literal["ms", "samples"] = "ms",
+    ) -> dict:
+        output = {}
+        output["est_tau_ms"] = self.est_tau(output_type=output_type)
+        output["rise_time_ms"] = self.rise_time(output_type=output_type)
+        output["rise_rate_ms_regress"] = self.rise_rate_regress(output_type=output_type)
+        output["amplitude_pa"] = self.amplitude()
+        output["rise_rate_pa_ms"] = self.rise_rate()
+        output["peak_ms"] = self._analysis_variables["peak_index"] / (self.fs / 1000)
+        return output
+
+    def event(self) -> tuple[np.ndarray, np.ndarray]:
+        y = self._event_array()
+        x = np.arange(
+            self._analysis_variables["start_index"],
+            self._analysis_variables["end_index"],
+        ) / (self.fs / 1000)
+        return x, y
