@@ -96,8 +96,12 @@ class PostSynapticEpoch(BaseEpochAnalysis):
         y = np.concat(y)
         return x, y
 
-    def avg_event(self):
+    def avg_event(self, scale: bool = False) -> np.ndarray:
         _, y = self.events()
+        if scale:
+            ymin = y[:, :150].min(axis=1, keepdims=True)
+            ymax = y[:, :150].max(axis=1, keepdims=True)
+            y = (y - ymin) / (ymax - ymin)
         y = y.mean(axis=0)
         return y
         
