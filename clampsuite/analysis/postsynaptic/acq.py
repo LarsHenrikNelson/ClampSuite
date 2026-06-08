@@ -161,8 +161,10 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             for key, value in sdata.items():
                 event_data[key].append(value)
         event_data = {key: np.array(value) for key, value in event_data.items()}
+        event_data["acq_number"] = np.array([self.acq_data.acq_number] * len(self._events))
         for i in ["est_tau_ms", "rise_time_ms", "amplitude_pa", "rise_rate_pa_ms"]:
             temp = event_data[i][(event_data[i] > 0) & ~np.isnan(event_data[i])]
             acq_data[i] = np.mean(temp)
             acq_data[f"{i}_log"] = np.exp(np.mean(np.log(temp)))
+        acq_data["acq_number"] = self.acq_data.acq_number
         return acq_data, event_data

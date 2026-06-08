@@ -83,12 +83,18 @@ class PostSynapticEpoch(BaseEpochAnalysis):
 
         self.df_dict["Event Parameters"] = event_params
         self.df_dict["Acq Parameters"] = acq_params
+        ep_data = event_params.mean().to_frame().T
+        ep_data = ep_data.drop(columns=["Acq Number"])
+        for i in ep_data.columns:
+            temp = event_params.loc[(event_params[i] > 0) & ~np.isnan(event_params[i]), i]
+            ep_data[f"exp(log({i}))"] = np.exp(np.mean(np.log(temp)))
+        self.df_dict["Epoch Parameters"] = ep_data
 
 
     def events(self):
         x = []
         y = []
-        for key, value in self._acquisitions.items():
+        for value in self._acquisitions.values():
             x_, y_ = value.events()
             x.append(x_)
             y.append(y_)

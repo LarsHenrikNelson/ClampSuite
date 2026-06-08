@@ -161,7 +161,7 @@ class PostsynapticEvent:
         if output_type == "ms":
             return slope * (self.fs / 1000)
         else:
-            return slope
+            return np.abs(slope)
 
     def est_tau(
         self,
