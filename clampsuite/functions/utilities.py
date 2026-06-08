@@ -155,13 +155,16 @@ def create_event_array(
 def map_keys(keys: Iterable) -> dict:
     key_values = {"mv", "index", "pa", "hz"}
     cap_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
+    lower_values = {"ms"}
     key_mapping = {}
     for key in keys:
         key_items = key.split("_")
         temp = []
         for k in key_items:
             if k not in key_values:
-                if k not in cap_values:
+                if k in lower_values:
+                    temp.append(k)
+                elif k not in cap_values:
                     temp.append(k.capitalize())
                 else:
                     temp.append(k.upper())
