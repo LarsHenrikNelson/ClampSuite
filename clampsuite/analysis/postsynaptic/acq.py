@@ -63,10 +63,12 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             low_width=100,
             window="hann",
         )
+        self._config = None
 
     def analyze(self, config: PostSynapticAcquisitionConfig | None) -> None:
         if config is None:
             config = PostSynapticAcquisitionConfig()
+        self._config = config
 
         acquisition = self.acq_data.acquisition
 
@@ -150,6 +152,8 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
     def data(
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
     ):
+        if self._config is None:
+            raise ValueError("No config detected. Run analysis first.")
         acq_data = {}
         event_data = defaultdict(list)
         for event in self._events:

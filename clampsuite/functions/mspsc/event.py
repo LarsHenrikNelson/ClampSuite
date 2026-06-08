@@ -82,8 +82,20 @@ class PostsynapticEvent:
 
     def curve_fit_decay(self, curve_fit_type: Literal[0, 1, 2], end_index: int | None):
         peak = self["peak_index"]
-        if end_index is None:
-            end_index = int(self["end_index"])
+        est_tau = self.est_tau()
+        if np.isnan(est_tau):
+            if end_index is not None:
+                end_index = min(self["end_index"], end_index)
+            else:
+                end_index = self["end_index"]
+        elif end_index is not None:
+            event_end = int((est_tau*5)*self.s_r_c)+self["start_index"]
+            if  event_end < end_index:
+                end_index = event_end
+        else:
+            event_end = int((est_tau*5)*self.s_r_c)+self["start_index"]
+            end_index = min(self["end_index"], event_end)
+
         y = self.array[peak:end_index]
         x = np.arange(y.size) / self.s_r_c
         if curve_fit_type > 0:
@@ -113,6 +125,20 @@ class PostsynapticEvent:
         return np.abs(
             self.array[self["peak_index"]] - self.array[self["baseline_index"]]
         )
+
+    def peak(self) -> tuple[float, float]:
+        return self["peak_index"]/self.s_r_c, self.array[self["peak_index"]]
+    
+    def baseline(self) -> tuple[float, float]:
+        return self["baseline_index"]/self.s_r_c, self.array[self["baseline_index"]]
+
+    def decay_fit(self) -> tuple[np.ndarray, np.ndarray]:
+        if self._decay_fit is None:
+            return np.array([]), np.array([])
+        else:
+            x = np.arange(self["peak_index"], self["end_index"])/self.s_r_c
+            y= self._decay_fit.predict(x-x[0])
+            return x, y
 
     def rise_time(
         self,
@@ -160,6 +186,9 @@ class PostsynapticEvent:
         output["amplitude_pa"] = self.amplitude()
         output["rise_rate_pa_ms"] = self.rise_rate()
         output["peak_ms"] = self._analysis_variables["peak_index"] / (self.fs / 1000)
+        if self._decay_fit:
+            fit_values = self._decay_fit.params._asdict()
+            output.update({f"fit_{key}": value for key,value in fit_values.items()})
         return output
 
     def event(self) -> tuple[np.ndarray, np.ndarray]:
