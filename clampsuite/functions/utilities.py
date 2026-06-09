@@ -1,5 +1,6 @@
 import math
-from typing import Union, Literal, Iterable
+import re
+from typing import Iterable, Literal, Union
 
 import numpy as np
 from numpy.random import default_rng
@@ -153,30 +154,28 @@ def create_event_array(
 
 
 def map_keys(keys: Iterable) -> dict:
-    key_values = {"mv", "index", "pa", "hz"}
-    cap_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
-    lower_values = {"ms"}
+    upper_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
+    capitalize_values = {"acq", "number"}
+    lower_values = {"exp", "log"}
+    unit_map = {"mv": "(mV)", "pa": "(pA)", "hz": "(Hz)", "ms": "(ms)", "pa/ms": "pA/ms"}
     key_mapping = {}
     for key in keys:
-        key_items = key.split("_")
-        temp = []
-        for k in key_items:
-            if k not in key_values:
-                if k in lower_values:
-                    temp.append(k)
-                elif k not in cap_values:
-                    temp.append(k.capitalize())
-                else:
-                    temp.append(k.upper())
+        tokens = re.split(r'([_()\s])', key)
+        
+        result = []
+        for token in tokens:
+            if token == "_":
+                result.append(" ")
+            elif token.lower() in upper_values:
+                result.append(token.upper())
+            elif token.lower() in lower_values:
+                result.append(token.lower())
+            elif token in unit_map:
+                result.append(unit_map[token])
+            elif token.isalpha() or token in capitalize_values:
+                result.append(token.capitalize())
             else:
-                if k == "index":
-                    temp.append("(ms)")
-                elif k == "pa":
-                    temp.append("(pA)")
-                elif k == "hz":
-                    temp.append("(Hz)")
-                else:
-                    temp.append("(mV)")
-        temp = " ".join(temp)
+                result.append(token)
+        temp = "".join(result)
         key_mapping[key] = temp
     return key_mapping

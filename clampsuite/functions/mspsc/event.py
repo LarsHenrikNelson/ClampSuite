@@ -182,9 +182,9 @@ class PostsynapticEvent:
         output = {}
         output["est_tau_ms"] = self.est_tau(output_type=output_type)
         output["rise_time_ms"] = self.rise_time(output_type=output_type)
-        output["rise_rate_ms_regress"] = self.rise_rate_regress(output_type=output_type)
+        output["rise_rate_pa/ms_regress"] = self.rise_rate_regress(output_type=output_type)
         output["amplitude_pa"] = self.amplitude()
-        output["rise_rate_pa_ms"] = self.rise_rate()
+        output["rise_rate_pa/ms"] = self.rise_rate()
         output["peak_ms"] = self._analysis_variables["peak_index"] / (self.fs / 1000)
         if self._decay_fit:
             fit_values = self._decay_fit.params._asdict()

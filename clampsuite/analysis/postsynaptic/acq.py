@@ -166,7 +166,7 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
         iei = np.diff(event_data["peak_ms"])
         acq_data["iei_ms"] = np.mean(iei)
         acq_data["exp(log(iei_ms))"] = np.exp(np.mean(np.log(iei)))
-        for i in ["est_tau_ms", "rise_time_ms", "amplitude_pa", "rise_rate_pa_ms"]:
+        for i in ["est_tau_ms", "rise_time_ms", "amplitude_pa", "rise_rate_pa/ms"]:
             temp = event_data[i][(event_data[i] > 0) & ~np.isnan(event_data[i])]
             acq_data[i] = np.mean(temp)
             acq_data[f"{i}_log"] = np.exp(np.mean(np.log(temp)))
