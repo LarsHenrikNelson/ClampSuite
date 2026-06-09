@@ -139,8 +139,8 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             else:
                 event.curve_fit_decay(config.curve_fit_decay, None)
         self._events = postsynaptic_events
-    
-    def events(self)-> tuple[np.ndarray, np.ndarray]:
+
+    def events(self) -> tuple[np.ndarray, np.ndarray]:
         y = []
         x = []
         for event in self._events:
@@ -161,8 +161,12 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             for key, value in sdata.items():
                 event_data[key].append(value)
         event_data = {key: np.array(value) for key, value in event_data.items()}
-        event_data["acq_number"] = np.array([self.acq_data.acq_number] * len(self._events))
-        acq_data["freq_hz"] = len(self._events)/(len(self.acq_data.acquisition)/self.acq_data.fs)
+        event_data["acq_number"] = np.array(
+            [self.acq_data.acq_number] * len(self._events)
+        )
+        acq_data["freq_hz"] = len(self._events) / (
+            len(self.acq_data.acquisition) / self.acq_data.fs
+        )
         iei = np.diff(event_data["peak_ms"])
         acq_data["iei_ms"] = np.mean(iei)
         acq_data["exp(log(iei_ms))"] = np.exp(np.mean(np.log(iei)))

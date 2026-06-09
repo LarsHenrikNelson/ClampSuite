@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Literal, Union
+from typing import Dict, Literal, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -63,7 +63,7 @@ class PostSynapticEpoch(BaseEpochAnalysis):
         for value in self._acquisitions.values():
             value.analyze(self.config.acquisition_config)
         self.create_raw_data()
-        # self.get_features()
+        self.get_features()
 
     def create_raw_data(self):
         event_params = []
@@ -83,13 +83,6 @@ class PostSynapticEpoch(BaseEpochAnalysis):
 
         self.df_dict["Event Parameters"] = event_params
         self.df_dict["Acq Parameters"] = acq_params
-        ep_data = event_params.mean().to_frame().T
-        ep_data = ep_data.drop(columns=["Acq Number"])
-        for i in ep_data.columns:
-            temp = event_params.loc[(event_params[i] > 0) & ~np.isnan(event_params[i]), i]
-            ep_data[f"exp(log({i}))"] = np.exp(np.mean(np.log(temp)))
-        self.df_dict["Epoch Parameters"] = ep_data
-
 
     def events(self):
         x = []
@@ -110,7 +103,15 @@ class PostSynapticEpoch(BaseEpochAnalysis):
             y = (y - ymin) / (ymax - ymin)
         y = y.mean(axis=0)
         return y
-        
 
     def get_features(self):
-        pass
+        event_params = self.df_dict["Event Parameters"]
+        acq_params = self.df_dict["Acq Parameters"]
+        ep_data = event_params.mean().to_frame().T
+        ep_data = ep_data.drop(columns=["Acq Number"])
+        iei = event_params.groupby("Acq Number")["Peak (ms)"].diff().values
+        iei = iei[~np.isnan(iei)]
+        ep_data["IEI (ms)"] = np.mean(iei)
+        ep_data["exp(log(IEI (ms)))"] = np.exp(np.mean(np.log(iei)))
+        ep_data["Freq (Hz)"] = np.mean(acq_params["Freq (Hz)"])
+        self.df_dict["Epoch Parameters"] = ep_data
