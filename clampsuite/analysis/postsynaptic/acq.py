@@ -167,4 +167,10 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             acq_data[i] = np.mean(temp)
             acq_data[f"{i}_log"] = np.exp(np.mean(np.log(temp)))
         acq_data["acq_number"] = self.acq_data.acq_number
+
+        if format_keys:
+            key_mapper = map_keys(acq_data.keys())
+            acq_data = {key_mapper[k]: v for k, v in acq_data.items()}
+            key_mapper = map_keys(event_data.keys())
+            event_data = {key_mapper[k]: v for k, v in event_data.items()}
         return acq_data, event_data
