@@ -65,7 +65,8 @@ class PostsynapticEvent:
             self.fs,
             adjust_pos=10,
         )
-        self["peak_index"] = int(peak + int(self["start_index"]))
+        if peak > -1:
+            self["peak_index"] = int(peak + int(self["start_index"]))
 
     def find_baseline(self):
         peak = self["peak_index"] - self["start_index"]
@@ -118,8 +119,10 @@ class PostsynapticEvent:
         return x, y
 
     def analyze(self):
-        self.find_baseline()
-        self.estimate_decay()
+        self.find_peak()
+        if self["peak_index"] > 0:
+            self.find_baseline()
+            self.estimate_decay()
 
     def amplitude(self) -> float:
         return np.abs(

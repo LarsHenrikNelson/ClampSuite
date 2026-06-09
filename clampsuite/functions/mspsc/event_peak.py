@@ -45,7 +45,7 @@ def find_peak_alt(
     )[0]
     peaks_1 = peaks_1[peaks_1 > adjust_pos]
     if len(peaks_1) == 0:
-        peak_x = np.nan
+        peak_x = -1
     else:
         peak_x = peak_corr(event_array, peaks_1[0], s_r_c)
     return peak_x

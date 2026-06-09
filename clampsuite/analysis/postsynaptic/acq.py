@@ -98,16 +98,17 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                     event_length=config.event_length,
                 )
                 event.find_peak()
-                event_peak: int | float = event._analysis_variables["peak_index"]
+                event_peak: int | float = event["peak_index"]
 
                 # Screen out methods using the function.
                 # See the function below for further details.
-                if not np.isnan(event_peak) or event_peak not in event_peaks:
+                if event_peak > 0 and event_peak not in event_peaks:
                     event_peaks.append(event_peak)
                     postsynaptic_events += [event]
 
         for event in postsynaptic_events:
-            event.analyze()
+            event.find_baseline()
+            event.estimate_decay()
 
         criteria = create_events.EventCriteria(
             config.mini_spacing,
