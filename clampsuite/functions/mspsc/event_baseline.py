@@ -25,6 +25,8 @@ def find_baseline(event_array: np.ndarray, peak_index: int, fs: float) -> int:
     finding method.
     """
     s_r_c = fs / 1000
+    if event_array[peak_index] > 0:
+        event_array = event_array * -1
     baselined_array = event_array - np.max(event_array[:peak_index])
     event_peak_y = event_array[peak_index]
     search_start = np.argwhere(
