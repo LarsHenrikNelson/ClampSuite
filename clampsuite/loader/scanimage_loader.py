@@ -11,6 +11,8 @@ from .base_loader import BaseLoader
 
 
 class ScanImageLoader(BaseLoader):
+    _epoch_map = {0: "step", 1: "ramp"}
+
     def __init__(self, callback_func: Callable = print):
         super().__init__(callback_func)
 
@@ -156,12 +158,13 @@ class ScanImageLoader(BaseLoader):
         )
 
         acq_dict["pulse_amp"] = float(amp)
+        acq_dict["amp_start"] = 0.0
         acq_dict["_pulse_start_index"] = int(start * s_r_c)
         if end > 0:
             acq_dict["_pulse_end_index"] = int(end * s_r_c)
         else:
             acq_dict["_pulse_end_index"] = int((start + duration) * s_r_c)
-        acq_dict["ramp"] = int(ramp)
+        acq_dict["acq_type"] = self._epoch_map[int(ramp)]
 
         rc_amp, rc_start, rc_end, _, _ = self.find_pulse_data(
             data_string, "RCCheck='(.*);'"

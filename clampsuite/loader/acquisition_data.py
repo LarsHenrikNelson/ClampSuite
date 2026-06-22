@@ -1,4 +1,5 @@
-from pyqtgraph.units import pre
+from typing import Literal
+
 from dataclasses import dataclass, field
 import numpy as np
 from ..preprocess.base import Preprocessor
@@ -13,6 +14,7 @@ class AcquisitionData:
     epoch: int
     name: str
     pulse_amp: float
+    amp_start: float
     pulse_pattern: int
     rc_amp: float
     rc_check_pulse_end_index: int
@@ -21,7 +23,7 @@ class AcquisitionData:
     _pulse_start_index: int = field(repr=False)
     _pulse_end_index: int = field(repr=False)
     time_stamp: str
-    ramp: int = 0
+    acq_type: Literal["step", "ramp", "other"] = "other"
     cycle: int = 0
     gain: float = 1.0
     units: str = "mV"

@@ -11,6 +11,8 @@ from .acquisition_data import AcquisitionData
 
 
 class ABFLoader(BaseLoader):
+    _epoch_map = {1: "step", 2: "ramp"}
+
     def __init__(
         self,
         callback_func: Callable = print,
@@ -52,11 +54,11 @@ class ABFLoader(BaseLoader):
                 acq_dict["_pulse_end_index"] = indexes[1]
             else:
                 acq_dict["_pulse_end_index"] = len(temp)
-            acq_dict["ramp"] = 0
+            acq_dict["acq_type"] = "other"
         else:
             acq_dict["_pulse_start_index"] = 0
             acq_dict["_pulse_end_index"] = len(temp)
-            acq_dict["ramp"] = 0
+            acq_dict["acq_type"] = "other"
             acq_dict["pulse_amp"] = 0
 
     def get_units(self, file, channel=0):
@@ -65,10 +67,14 @@ class ABFLoader(BaseLoader):
     def pulse_from_epoch(self, file: AxonRawIO, acq_dict: dict[int, dict]):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
         epoch_key = list(epoch_info.keys())[0]
+        epoch_type = epoch_info[epoch_key][1]["nEpochType"]
         pulse_start_index = epoch_info[epoch_key][0]["lEpochInitDuration"]
         pulse_end_index = (
             epoch_info[epoch_key][1]["lEpochInitDuration"] + pulse_start_index
         )
+        amp_start = epoch_info[epoch_key][0]["fEpochInitLevel"]
+        amp_start_increment = epoch_info[epoch_key][0]["fEpochLevelInc"]
+        current_start = amp_start
         amp_increment = epoch_info[epoch_key][1]["fEpochLevelInc"]
         amp_start = epoch_info[epoch_key][1]["fEpochInitLevel"]
         acqs_keys = sorted(list(acq_dict.keys()))
@@ -76,9 +82,11 @@ class ABFLoader(BaseLoader):
         for key in acqs_keys:
             acq_dict[key]["_pulse_start_index"] = pulse_start_index
             acq_dict[key]["_pulse_end_index"] = pulse_end_index
-            acq_dict[key]["ramp"] = 0
+            acq_dict[key]["acq_type"] = self._epoch_map[epoch_type]
             acq_dict[key]["pulse_amp"] = current_amp
+            acq_dict[key]["amp_start"] = current_start
             current_amp += amp_increment
+            current_start += amp_start_increment
 
     def process_acquisitions(self, file: AxonRawIO) -> dict:
         op_mode = file._axon_info["protocol"]["nOperationMode"]
@@ -105,7 +113,7 @@ class ABFLoader(BaseLoader):
             acq_dict["epoch"] = self.epoch_count
             acq_dict["cycle"] = self.cycle_count
             acq_dict["name"] = f"{filename}_{str(self.acq_count).zfill(3)}"
-            acq_dict["ramp"] = 0
+            acq_dict["acq_type"] = "other"
             acq_dict["pulse_pattern"] = str(i)
 
             gain = file.header["signal_channels"][self.main_channel][5]
@@ -118,12 +126,14 @@ class ABFLoader(BaseLoader):
             acq_dict["rc_amp"] = 0
             acq_dict["_pulse_start_index"] = 0
             acq_dict["_pulse_end_index"] = acq_dict["array"].size
-            acq_dict["pulse_amp"] = 0
+            acq_dict["pulse_amp"] = 0.0
+            acq_dict["amp_start"] = 0.0
             acq_dict["_fs"] = file.header["signal_channels"][self.main_channel][2]
             acq_dict["units"] = self.get_units(file, channel=0)
             temp_dict[self.acq_count] = acq_dict
             self.callback_func(f"Acquisition {i + 1} of {nacqs} from {filename}")
-        if self.pulse_data:
+        epoch_info = file._axon_info["dictEpochInfoPerDAC"]
+        if epoch_info:
             self.pulse_from_epoch(file, temp_dict)
         temp_dict = {key: AcquisitionData(**val) for key, val in temp_dict.items()}
         return temp_dict
