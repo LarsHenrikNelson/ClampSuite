@@ -157,11 +157,18 @@ def map_keys(keys: Iterable) -> dict:
     upper_values = {"hw", "fw", "auc", "ahp", "ai", "iv", "fi", "iei", "sfa"}
     capitalize_values = {"acq", "number"}
     lower_values = {"exp", "log"}
-    unit_map = {"mv": "(mV)", "pa": "(pA)", "hz": "(Hz)", "ms": "(ms)", "pa/ms": "pA/ms"}
+    unit_map = {
+        "mv": "(mV)",
+        "pa": "(pA)",
+        "hz": "(Hz)",
+        "ms": "(ms)",
+        "pa/ms": "pA/ms",
+        "index": "(ms)",
+    }
     key_mapping = {}
     for key in keys:
-        tokens = re.split(r'([_()\s])', key)
-        
+        tokens = re.split(r"([_()\s])", key)
+
         result = []
         for token in tokens:
             if token == "_":
