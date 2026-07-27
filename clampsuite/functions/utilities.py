@@ -1,6 +1,7 @@
 import math
 import re
-from typing import Iterable, Literal, Union
+from collections.abc import Iterable
+from typing import Literal
 
 import numpy as np
 from numpy.random import default_rng
@@ -37,16 +38,16 @@ def create_acq_data(
     acq_num: int = 1,
     acq_name: str = "AD0_1",
     epoch: int = 1,
-    sample_rate: Union[float, int] = 10000,
-    pulse_start: Union[int, float] = 0.0,
-    pulse_end: Union[int, float] = 10000,
-    timestamp: Union[int, float] = 10110010,
-    pulse_amp: Union[float, int] = 0.0,
-    ramp: int = "0",
+    sample_rate: float = 10000,
+    pulse_start: float = 0.0,
+    pulse_end: float = 10000,
+    timestamp: float = 10110010,
+    pulse_amp: float = 0.0,
+    ramp: str = "0",
     ai: str = "0",
-    rc_amp: Union[float, int] = 0.0,
-    rc_start: Union[float, int] = 0.0,
-    rc_end: Union[float, int] = 0.0,
+    rc_amp: float = 0.0,
+    rc_start: float = 0.0,
+    rc_end: float = 0.0,
 ):
     data = {
         "name": acq_name,

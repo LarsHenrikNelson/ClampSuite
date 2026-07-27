@@ -18,15 +18,15 @@ class Spike:
         start_index: int,
         end_index: int,
         peak_index: int,
-        fs: float | int,
+        fs: float,
     ):
         self.array = array
-        self._analysis_variables: dict[str, int | float] = dict(
-            peak_index=peak_index,
-            peak_mv=array[peak_index],
-            start_index=start_index,
-            end_index=end_index,
-        )
+        self._analysis_variables: dict[str, int | float] = {
+            "peak_index": peak_index,
+            "peak_mv": array[peak_index],
+            "start_index": start_index,
+            "end_index": end_index,
+        }
         self.fs = fs
         for i in SPIKE_PARAMS:
             self._analysis_variables[i] = np.nan

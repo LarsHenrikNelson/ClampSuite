@@ -1,11 +1,12 @@
-from clampsuite.types import CurrentClamp
-from fontTools.misc.bezierTools import curveCurveIntersections
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+from fontTools.misc.bezierTools import curveCurveIntersections
 from scipy import signal
+
+from clampsuite.types import CurrentClamp
 
 from ...functions.current_clamp import (
     SPIKE_PARAMS,
@@ -25,7 +26,7 @@ from ...functions.general import baseline_stability, delta
 from ...functions.utilities import map_keys
 from ...loader import AcquisitionData
 from ..base import BaseAcquisitionAnalysis, BaseAcquisitionConfig
-from ..registry import register_acquisition, register_acq_config
+from ..registry import register_acq_config, register_acquisition
 
 PlotOutput = tuple[np.ndarray, np.ndarray]
 
