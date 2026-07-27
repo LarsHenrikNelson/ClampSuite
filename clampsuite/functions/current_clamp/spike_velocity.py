@@ -2,9 +2,9 @@ import numpy as np
 
 VELOCITY_KEYS = [
     "min_velocity_index",
-    "min_velocity",
+    "min_velocity_mv/ms",
     "max_velocity_index",
-    "max_velocity",
+    "max_velocity_mv/ms",
 ]
 
 
