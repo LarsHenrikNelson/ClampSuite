@@ -72,12 +72,17 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         acq_params = pd.DataFrame(acq_params)
         key_mapping = map_keys(acq_params.columns)
         acq_params = acq_params.rename(columns=key_mapping)
-        spk_params["HW (ms)"] = spk_params["HW Right (ms)"] - spk_params["HW Left (ms)"]
-        spk_params["FW (ms)"] = spk_params["FW Right (ms)"] - spk_params["FW Left (ms)"]
+        if not spk_params.empty:
+            spk_params["HW (ms)"] = (
+                spk_params["HW Right (ms)"] - spk_params["HW Left (ms)"]
+            )
+            spk_params["FW (ms)"] = (
+                spk_params["FW Right (ms)"] - spk_params["FW Left (ms)"]
+            )
 
-        spk_params = spk_params.sort_values(
-            ["Cycle", "Acq Number", "Spike Number"]
-        ).reset_index(drop=True)
+            spk_params = spk_params.sort_values(
+                ["Cycle", "Acq Number", "Spike Number"]
+            ).reset_index(drop=True)
 
         acq_params = acq_params.sort_values(["Cycle", "Acq Number"]).reset_index(
             drop=True
