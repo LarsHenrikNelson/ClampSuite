@@ -9,7 +9,7 @@ VELOCITY_KEYS = [
 
 
 def spk_velocity(
-    dv: np.ndarray, start: int, end: int, fs: float | int
+    dv: np.ndarray, start: int, end: int, fs: float
 ) -> tuple[int, float, int, float]:
     min_pos = np.argmin(dv[start:end]) + start
     min_val = dv[min_pos] * (fs / 1000)
@@ -19,7 +19,7 @@ def spk_velocity(
 
 
 def find_all_spk_velocities(
-    voltages: np.ndarray, spike_thresholds: np.ndarray, pulse_end: int, fs: float | int
+    voltages: np.ndarray, spike_thresholds: np.ndarray, pulse_end: int, fs: float
 ) -> dict[str, int | float]:
     velocity_measures = {}
     for key in VELOCITY_KEYS:

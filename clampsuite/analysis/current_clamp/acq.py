@@ -184,14 +184,14 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             spike.find_velocity()
             if len(spike_list) > 0:
                 spike_list[-1].set_end_index(spike["threshold_index"])
-            if spike["max_velocity"] > config.velocity_threshold:
+            if spike["max_velocity_mv/ms"] > config.velocity_threshold:
                 spike_list.append(spike)
         return spike_list
 
     def _analyze_spikes(self, spike_list: list[Spike], threshold_method: ThresholdType):
         for spike in spike_list:
             if threshold_method == "allen_institute":
-                thresholds = [i["max_velocity"] for i in spike_list]
+                thresholds = [i["max_velocity_mv/ms"] for i in spike_list]
                 spike.analyze(threshold_method, np.mean(thresholds) * 0.05)
             else:
                 spike.analyze(threshold_method)
@@ -286,10 +286,10 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         return x, y
 
     def min_velocity(self):
-        return self._get_spike_data("min_velocity", "min_velocity_index")
+        return self._get_spike_data("min_velocity_mv/ms", "min_velocity_index")
 
     def max_velocity(self):
-        return self._get_spike_data("max_velocity", "max_velocity_index")
+        return self._get_spike_data("max_velocity_mv/ms", "max_velocity_index")
 
     def acquisition(self) -> PlotOutput:
         return np.arange(
