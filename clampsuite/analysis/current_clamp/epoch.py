@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Dict, Literal
 
 import numpy as np
 import pandas as pd
@@ -8,7 +7,7 @@ from ...functions.current_clamp import ThresholdType
 from ...functions.curve_fit import Log, Sigmoid, fit_iv
 from ...functions.utilities import map_keys
 from ...loader.acquisition_data import AcquisitionData
-from ..base import BaseEpochAnalysis, BaseConfig
+from ..base import BaseConfig, BaseEpochAnalysis
 from ..registry import register_epoch, register_epoch_config
 from .acq import CurrentClampAcquisition, CurrentClampAcquisitionConfig
 
@@ -46,7 +45,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         return "current_clamp"
 
     def load_acquisitions(
-        self, epoch_id: int, acquisitions: Dict[int, AcquisitionData]
+        self, epoch_id: int, acquisitions: dict[int, AcquisitionData]
     ):
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
@@ -169,8 +168,8 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         self,
         acq_data,
         column: str = "Delta V (mV)",
-        start: int | float | None = None,
-        end: int | float | None = None,
+        start: float | None = None,
+        end: float | None = None,
         rectify: bool = False,
     ):
         current = acq_data["Pulse Amp (pA)"].to_numpy()

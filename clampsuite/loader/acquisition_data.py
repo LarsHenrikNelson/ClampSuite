@@ -1,10 +1,11 @@
+from dataclasses import dataclass, field
 from typing import Literal
 
-from dataclasses import dataclass, field
 import numpy as np
+
 from ..preprocess.base import Preprocessor
-from ..preprocess.resample import Resample
 from ..preprocess.detrend import Detrend
+from ..preprocess.resample import Resample
 
 
 @dataclass
@@ -28,7 +29,7 @@ class AcquisitionData:
     gain: float = 1.0
     units: str = "mV"
 
-    _fs_multiplier: float | float = field(default=1.0, repr=False)
+    _fs_multiplier: float = field(default=1.0, repr=False)
 
     _preprocessors: list[Preprocessor] = field(default_factory=list)
 

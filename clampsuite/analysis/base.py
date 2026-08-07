@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, TypeVar
 from dataclasses import dataclass, field
+from typing import Any, Generic, TypeVar
 
 import pandas as pd
 
@@ -21,12 +21,10 @@ class BaseAcquisitionAnalysis(ABC):
     @abstractmethod
     def analyze(self, *args, **kwargs) -> None:
         """Run analysis on a single acquisition."""
-        pass
 
     @abstractmethod
     def data(self) -> tuple[dict, dict]:
         """Return the data for this acquisition."""
-        pass
 
     def __getitem__(self, index):
         return self._analysis_variables[index]
@@ -70,9 +68,9 @@ class BaseEpochAnalysis(ABC, Generic[ConfigT]):
     config: ConfigT
 
     def __post_init__(self):
-        self._acquisitions: Dict[str | int, BaseAcquisitionAnalysis] = {}
+        self._acquisitions: dict[str | int, BaseAcquisitionAnalysis] = {}
         self.epoch_id: int = 0
-        self.df_dict: Dict[str, pd.DataFrame] = {}
+        self.df_dict: dict[str, pd.DataFrame] = {}
 
     @staticmethod
     @abstractmethod
@@ -81,11 +79,9 @@ class BaseEpochAnalysis(ABC, Generic[ConfigT]):
     @abstractmethod
     def analyze(self) -> None:
         """Analyze acquisitions."""
-        pass
 
     @abstractmethod
     def load_acquisitions(
-        self, epoch_id: int, acquisitions: Dict[int, AcquisitionData]
+        self, epoch_id: int, acquisitions: dict[int, AcquisitionData]
     ):
         """Load acquisitions"""
-        pass

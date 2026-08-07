@@ -1,7 +1,8 @@
 import re
-from pathlib import Path
-from typing import Callable, Any
 from collections import defaultdict
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any, ClassVar
 
 import numpy as np
 from scipy.io import loadmat, matlab
@@ -11,7 +12,7 @@ from .base_loader import BaseLoader
 
 
 class ScanImageLoader(BaseLoader):
-    _epoch_map = {0: "step", 1: "ramp"}
+    _epoch_map: ClassVar = {0: "step", 1: "ramp"}
 
     def __init__(self, callback_func: Callable = print):
         super().__init__(callback_func)
@@ -139,7 +140,7 @@ class ScanImageLoader(BaseLoader):
         acq_dict = {}
         acq_dict["name"] = Path(path).stem
         matfile1 = self.load_mat(path)
-        name = [i for i in matfile1.keys() if "AD" in i][0]
+        name = next(i for i in matfile1 if "AD" in i)
         acq_dict["acq_number"] = int(name.split("_")[-1])
         acq_dict["array"] = matfile1[name]["data"]
         data_string = matfile1[name]["UserData"]["headerString"]

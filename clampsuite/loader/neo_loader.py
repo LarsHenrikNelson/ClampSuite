@@ -1,17 +1,18 @@
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
+from typing import ClassVar
 
-from neo.rawio import AxonRawIO
 import numpy as np
+from neo.rawio import AxonRawIO
 from scipy import signal
 
-from .base_loader import BaseLoader
 from .acquisition_data import AcquisitionData
+from .base_loader import BaseLoader
 
 
 class ABFLoader(BaseLoader):
-    _epoch_map = {1: "step", 2: "ramp"}
+    _epoch_map: ClassVar = {1: "step", 2: "ramp"}
 
     def __init__(
         self,
@@ -66,7 +67,7 @@ class ABFLoader(BaseLoader):
 
     def pulse_from_epoch(self, file: AxonRawIO, acq_dict: dict[int, dict]):
         epoch_info = file._axon_info["dictEpochInfoPerDAC"]
-        epoch_key = list(epoch_info.keys())[0]
+        epoch_key = next(iter(epoch_info.keys()))
         epoch_type = epoch_info[epoch_key][1]["nEpochType"]
         pulse_start_index = epoch_info[epoch_key][0]["lEpochInitDuration"]
         pulse_end_index = (
@@ -77,7 +78,7 @@ class ABFLoader(BaseLoader):
         current_start = amp_start
         amp_increment = epoch_info[epoch_key][1]["fEpochLevelInc"]
         amp_start = epoch_info[epoch_key][1]["fEpochInitLevel"]
-        acqs_keys = sorted(list(acq_dict.keys()))
+        acqs_keys = sorted(acq_dict.keys())
         current_amp = amp_start
         for key in acqs_keys:
             acq_dict[key]["_pulse_start_index"] = pulse_start_index
