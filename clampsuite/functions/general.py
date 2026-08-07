@@ -45,13 +45,16 @@ def charge_transfer(x, y, method: Literal["trapezoid", "simpson"] = "simpson"):
         raise ValueError("Method not recognized")
     return charge_transfer
 
-def regress_subset(array, start: float = 0.1, stop: float = 0.9, fs: float | None = None):
+
+def regress_subset(
+    array, start: float = 0.1, stop: float = 0.9, fs: float | None = None
+):
     length = len(array)
-    ten = int(length*start)
-    ninety = int(length*stop)
+    ten = int(length * start)
+    ninety = int(length * stop)
     y = array[ten:ninety]
     if fs is not None:
-        x = np.arange(y.size)/fs
+        x = np.arange(y.size) / fs
     else:
         x = np.arange(y.size)
     reg = stats.linregress(x, y)
