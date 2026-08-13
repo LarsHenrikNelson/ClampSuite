@@ -56,7 +56,8 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         for value in self._acquisitions.values():
             value.analyze(self.config.acquisition_config)
         self.create_raw_data()
-        self.get_features()
+        self.get_epoch_features()
+        self.get_acq_features()
 
     def create_raw_data(self):
         spk_params = []
@@ -91,7 +92,15 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         self.df_dict["Spike Parameters"] = spk_params
         self.df_dict["Acq Parameters"] = acq_params
 
-    def get_features(self):
+    def get_acq_features(self):
+        spk_params = self.df_dict["Spike Parameters"]
+        spk_params = spk_params[spk_params["Spike Number"] == 0]
+        acq = self.df_dict["Acq Parameters"]
+        self.df_dict["Acq Parameters"] = acq.merge(
+            spk_params.drop(["Pulse Amp (pA)", "Cycle"]), on="Acq Number", how="left"
+        )
+
+    def get_epoch_features(self):
         rheo_features = self.df_dict["Spike Parameters"].loc[
             self.df_dict["Spike Parameters"].groupby(["Cycle"])["Acq Number"].idxmin()
         ]
