@@ -164,7 +164,7 @@ def map_keys(keys: Iterable) -> dict:
         "hz": "(Hz)",
         "ms": "(ms)",
         "pa/ms": "pA/ms",
-        "mv/ms": "pA/ms",
+        "mv/ms": "pV/ms",
         "index": "(ms)",
     }
     key_mapping = {}
