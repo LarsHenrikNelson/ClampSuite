@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, Literal, Union
+from typing import Literal, Union
 
 import numpy as np
 import pandas as pd

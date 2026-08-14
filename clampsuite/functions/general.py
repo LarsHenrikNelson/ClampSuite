@@ -8,22 +8,15 @@ def delta(
     array: np.ndarray,
     pulse_start: int,
     pulse_end: int,
-    proportion: float,
-    side: Literal["left", "right"] = "right",
+    fraction_window: tuple[float, float],
     baseline_mean: np.ndarray | None = None,
 ) -> tuple[int, float]:
-    length = int((pulse_end - pulse_start) * proportion)
-    if side == "left":
-        end = pulse_start + length
-        start = pulse_start
-        index = pulse_start + length // 2
-    else:
-        end = pulse_end
-        start = pulse_end - length
-        index = start + length // 2
+    length = pulse_end - pulse_start
+    start = int(pulse_start + fraction_window[0] * length)
+    end = int(pulse_start + fraction_window[1] * length)
     if baseline_mean is None:
         baseline_mean = np.mean(array[:pulse_start])
-    return index, np.mean(array[start:end]) - baseline_mean
+    return start, np.mean(array[start:end]) - baseline_mean
 
 
 def baseline_stability(array: np.ndarray, pulse_start: int, pulse_end: int):

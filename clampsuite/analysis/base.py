@@ -65,6 +65,8 @@ ConfigT = TypeVar("ConfigT", bound=BaseConfig)
 
 @dataclass
 class BaseEpochAnalysis(ABC, Generic[ConfigT]):
+    """Base class for epoch analysis"""
+
     config: ConfigT
 
     def __post_init__(self):

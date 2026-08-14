@@ -15,9 +15,21 @@ from .acq import CurrentClampAcquisition, CurrentClampAcquisitionConfig
 @register_epoch_config
 @dataclass(frozen=True)
 class CurrentClampConfig(BaseConfig):
-    """Single source of truth for current clamp analysis parameters.
+    """Configuration for current clamp epoch and acquisition analysis.
 
-    This class can be used for GUI generation and passed through ExpManager.
+    Serves as the single source of truth for current clamp analysis
+    parameters. Instances are immutable and can be used for GUI
+    generation and passed through ``ExpManager``.
+
+    Attributes:
+        acquisition_config: Parameters controlling per-acquisition
+            spike detection and feature extraction.
+        iv_start: Start time (s) of the window used to fit the I-V
+            curve. If ``None``, the fit uses the full trace.
+        iv_end: End time (s) of the window used to fit the I-V curve.
+            If ``None``, the fit uses the full trace.
+        rectify: Whether to fit the I-V curve as a rectifying
+            (piecewise) relationship rather than a single line.
     """
 
     # Acquisition-level parameters
@@ -38,21 +50,46 @@ class CurrentClampConfig(BaseConfig):
 @register_epoch
 @dataclass
 class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
+    """Aggregates current clamp acquisitions into epoch-level features.
+
+    A ``CurrentClampEpoch`` represents one current-clamp stimulation
+    protocol (e.g. a family of current-step sweeps) and computes
+    summary statistics across all acquisitions in that protocol,
+    including rheobase, sag, f-I curve fits, and I-V curve fits.
+
+    Attributes:
+        config: Configuration for acquisition- and epoch-level
+            analysis parameters.
+    """
+
     config: CurrentClampConfig = field(default_factory=CurrentClampConfig)
 
     @staticmethod
-    def analysis_key():
+    def analysis_key() -> str:
+        """Analysis key for the registry identification
+
+        Returns:
+            str: Key
+        """
         return "current_clamp"
 
     def load_acquisitions(
         self, epoch_id: int, acquisitions: dict[int, AcquisitionData]
     ):
+        """Loads the acquisitions and creates ``CurrentClampAcquistion`` instances.
+
+        Args:
+            epoch_id (int): Epoch that the acquisitions belong to.
+            acquisitions (dict[int, AcquisitionData]): Acquisitions used for the
+            current clamp analysis.
+        """
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
             temp = CurrentClampAcquisition(acq_data=value)
             self._acquisitions[key] = temp
 
     def analyze(self):
+        """Analyzes the acquistions in an epoch."""
         for value in self._acquisitions.values():
             value.analyze(self.config.acquisition_config)
         self.create_raw_data()
@@ -60,6 +97,9 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         self.get_acq_features()
 
     def create_raw_data(self):
+        """Generates the ``Spike Parameters`` and `` Acq Parameters`` dataframes from
+        the raw acquisition data.
+        """
         spk_params = []
         acq_params = []
         for value in self._acquisitions.values():
@@ -93,6 +133,9 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         self.df_dict["Acq Parameters"] = acq_params
 
     def get_acq_features(self):
+        """Adds spike data to the ``Acquistion Parameters`` dataframe. Only the first
+        spike is used from ``Spike parameters``.
+        """
         spk_params = self.df_dict["Spike Parameters"]
         spk_params = spk_params[spk_params["Spike Number"] == 0]
         acq = self.df_dict["Acq Parameters"]
@@ -101,6 +144,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         )
 
     def get_epoch_features(self):
+        """Pulls all relevant data into a single epoch based summary."""
         rheo_features = self.df_dict["Spike Parameters"].loc[
             self.df_dict["Spike Parameters"].groupby(["Cycle"])["Acq Number"].idxmin()
         ]
@@ -165,7 +209,18 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         )
         self.df_dict["Epoch Parameters"] = avg_data
 
-    def fi_fit(self, acq_data):
+    def fi_fit(self, acq_data: pd.DataFrame) -> pd.DataFrame:
+        """Fit an F-I curve to per-acquisition frequency and current data.
+
+        Args:
+            acq_data (pd.DataFrame): Per-acquisition parameters, must contain
+                ``"Pulse Amp (pA)"`` and ``Freq (Hz)``. FI curve fit is limited
+                by to the Pulse Amp (pA) > 0 and Freq (Hz) < max(Freq (Hz))
+
+        Returns:
+            pd.DataFrame: A one-row DataFrame of fit parameters, with column names
+                prefixed by ``column``.
+        """
         fi_data = acq_data[acq_data["Pulse Amp (pA)"] >= 0]
         selector = fi_data["Freq (Hz)"] <= fi_data["Freq (Hz)"].max()
         current = fi_data.loc[selector, "Pulse Amp (pA)"]
@@ -180,12 +235,28 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
 
     def iv_fit(
         self,
-        acq_data,
+        acq_data: pd.DataFrame,
         column: str = "Delta V (mV)",
         start: float | None = None,
         end: float | None = None,
         rectify: bool = False,
-    ):
+    ) -> pd.DataFrame:
+        """Fit an I-V curve to per-acquisition voltage/current data.
+
+        Args:
+            acq_data (pd.DataFrame): Per-acquisition parameters, must contain
+                ``"Pulse Amp (pA)"`` and ``column``.
+            column: Name of the voltage column to fit against current.
+            start: Start time (s) of the fit window, or ``None`` to
+                use the full trace.
+            end: End time (s) of the fit window, or ``None`` to use
+                the full trace.
+            rectify: Whether to fit a rectifying (piecewise) I-V curve.
+
+        Returns:
+            A one-row DataFrame of fit parameters, with column names
+            prefixed by ``column``.
+        """
         current = acq_data["Pulse Amp (pA)"].to_numpy()
         voltage = acq_data[column].to_numpy()
         temp = fit_iv(current, voltage, start, end, rectify)
@@ -194,21 +265,3 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
         iv_features = iv_features.rename(columns=key_mapping)
         return iv_features
-
-    def log_fit(self, spike_data, column: str):
-        log_output = []
-        epochs = []
-        for key, value in spike_data.groupby("Epoch").groups.items():
-            y = spike_data.loc[value, column]
-            x = spike_data.loc[value, "Spike Number"]
-            log_fit = Log()
-            log_fit.fit(x, y)
-            temp = log_fit.params
-            epochs.append(key)
-            log_output.append(temp._asdict())
-        log_features = pd.DataFrame(log_output, index=np.array([1]))
-        key_mapping = map_keys(log_features.columns)
-        key_mapping = {key: f"{column} {value}" for key, value in key_mapping.items()}
-        log_features = log_features.rename(columns=key_mapping)
-        log_features["Epoch"] = epochs
-        return log_features
