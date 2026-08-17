@@ -1,15 +1,14 @@
 import json
+import math
 import re
-from math import nan
-from pathlib import PurePath, PurePosixPath, PureWindowsPath
-from typing import Union, Literal
-import urllib.request as request
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
+from typing import Literal, Union
+from urllib import request
 
 import numpy as np
 from scipy.io import loadmat, matlab
 
 from .startup import check_dir
-
 
 SCANIMAGE_DATA_URL = (
     "https://gin.g-node.org/LarsHenrikNelson/ClampSuite/raw/master/ScanImage"
@@ -28,7 +27,7 @@ URLS = {
 }
 
 
-def load_mat(filename: str) -> dict:
+def load_mat(filename: str | Path) -> dict:
     """
     This function loads a matlab file and puts it into a dictionary that is
     easy to use in python. The function was written by  on Stack Overflow.
@@ -150,13 +149,13 @@ def find_stim_pulse_data(data_string, component):
     return num_pulses, isi, pulse_start
 
 
-def load_scanimage_file(path: Union[str, PurePath]) -> dict:
+def load_scanimage_file(path: str | Path) -> dict:
     """
     This function takes pathlib.PurePath object or string as the input.
     All the data that is in time is converted to samples.
     """
     acq_dict = {}
-    name = PurePath(path).stem
+    name = Path(path).stem
     acq_dict["name"] = name
     acq_dict["acq_number"] = name.split("_")[-1]
     matfile1 = load_mat(path)
@@ -250,7 +249,7 @@ class NumpyEncoder(json.JSONEncoder):
             return float(obj)
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
-        elif isinstance(obj, (PurePath, PurePosixPath, PureWindowsPath)):
+        elif isinstance(obj, (Path, PurePath, PurePosixPath, PureWindowsPath)):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
 
@@ -264,7 +263,7 @@ class NumpyDecoder(json.JSONDecoder):
     def default(self, obj):
         if isinstance(obj, int):
             return np.int64(obj)
-        elif obj is nan:
+        elif math.isnan(obj):
             return np.nan
         elif isinstance(obj, float):
             return np.float64(obj)
@@ -275,7 +274,7 @@ class NumpyDecoder(json.JSONDecoder):
         return json.JSONDecoder.default(self, obj)
 
 
-def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
+def load_json_file_legacy(path: str | Path) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
@@ -300,9 +299,11 @@ def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
             new_key = "_" + key
             data[key] = data[key] * 10
             data[new_key] = data.pop(key)
-        if isinstance(data[key], list):
-            if key not in ["postsynaptic_events", "final_events"]:
-                data[key] = np.array(data[key])
+        if isinstance(data[key], list) and key not in [
+            "postsynaptic_events",
+            "final_events",
+        ]:
+            data[key] = np.array(data[key])
     if "pulse_amp" in data:
         data["pulse_amp"] = float(data["pulse_amp"])
     if "sample_rate_correction" in data and data["sample_rate_correction"] is not None:
@@ -310,7 +311,7 @@ def load_json_file_legacy(path: Union[PurePath, str]) -> dict:
     return data
 
 
-def load_json_file(path: Union[PurePath, str]) -> dict:
+def load_json_file(path: str | Path) -> dict:
     """
     This function loads a json file and sets each key: value pair
     as an attribute of the an obj. The function has to catch a lot
@@ -326,10 +327,12 @@ def load_json_file(path: Union[PurePath, str]) -> dict:
             data["find_est_deay"] = False
         if not data.get("find_ct"):
             data["curve_fit_decay"] = False
-    for key in data.keys():
-        if isinstance(data[key], list):
-            if key not in ["postsynaptic_events", "final_events"]:
-                data[key] = np.array(data[key])
+    for key in data:
+        if isinstance(data[key], list) and key not in [
+            "postsynaptic_events",
+            "final_events",
+        ]:
+            data[key] = np.array(data[key])
     return data
 
 

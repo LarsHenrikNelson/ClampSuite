@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from ...loader.acquisition_data import AcquisitionData
 from ..base import BaseEpochAnalysis
 from ..registry import register_epoch

@@ -2,16 +2,14 @@ import logging
 import sys
 
 import pyqtgraph as pg
-
-from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSize, QTimer
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
+from . import resources
 from .functions.startup import check_dir
 from .gui_main.main_window import MainWindow
 from .gui_widgets.palettes import DarkPalette
-
-from . import resources  # noqa: F401
 
 try:
     from ctypes import windll  # Only exists on Windows.

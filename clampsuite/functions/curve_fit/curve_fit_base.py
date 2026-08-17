@@ -1,9 +1,9 @@
-from scipy.spatial.distance import correlation
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Any, TypeVar, Generic
+from typing import Any, Generic, NamedTuple, TypeVar
 
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.spatial.distance import correlation
 
 T = TypeVar("T", bound=NamedTuple)
 
@@ -77,7 +77,7 @@ class CurveFitBase(ABC, Generic[T]):
 
             self._fit_success = True
 
-        except Exception:
+        except RuntimeError as _:
             self._params = self._create_nan_result()
             self._fit_success = False
 

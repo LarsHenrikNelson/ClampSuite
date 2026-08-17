@@ -1,4 +1,5 @@
-from typing import Literal, TypeAlias, Callable
+from collections.abc import Callable
+from typing import Literal, TypeAlias
 
 import numpy as np
 from scipy import signal

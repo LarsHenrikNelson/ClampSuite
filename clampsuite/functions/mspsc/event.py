@@ -1,12 +1,13 @@
 from typing import Literal, Union
+
 import numpy as np
 from scipy import optimize
 from scipy.stats import linregress
 
-from ...functions.curve_fit import SExpDecay, DExpDecay, estimate_decay
+from ...functions.curve_fit import DExpDecay, SExpDecay, estimate_decay
 from ...functions.general import regress_subset
-from .event_peak import find_peak
 from .event_baseline import find_baseline
+from .event_peak import find_peak
 
 
 class PostsynapticEvent:
@@ -27,16 +28,16 @@ class PostsynapticEvent:
     def __init__(
         self,
         array: np.ndarray,
-        fs: float | int,
+        fs: float,
         start_index: int,
-        event_length: int | float,
+        event_length: float,
     ):
         self.array = array
         self.event_length = event_length
         self.s_r_c = fs / 1000
         self.fs = fs
 
-        self._analysis_variables: dict[str, int | float] = {}
+        self._analysis_variables: dict[str, float] = {}
         self._analysis_variables["peak_index"] = -1
         self._analysis_variables["baseline_index"] = -1
         self._analysis_variables["start_index"] = start_index
@@ -48,7 +49,7 @@ class PostsynapticEvent:
         self._analysis_variables["est_tau_y"] = np.nan
         self._decay_fit = None
 
-    def get_variable(self, variable: str) -> None | float | int:
+    def get_variable(self, variable: str) -> None | float:
         return self._analysis_variables[variable]
 
     def _event_array(self) -> np.ndarray:
@@ -91,8 +92,7 @@ class PostsynapticEvent:
                 end_index = self["end_index"]
         elif end_index is not None:
             event_end = int((est_tau * 5) * self.s_r_c) + self["start_index"]
-            if event_end < end_index:
-                end_index = event_end
+            end_index = min(event_end, end_index)
         else:
             event_end = int((est_tau * 5) * self.s_r_c) + self["start_index"]
             end_index = min(self["end_index"], event_end)
@@ -146,7 +146,7 @@ class PostsynapticEvent:
     def rise_time(
         self,
         output_type: Literal["ms", "samples"] = "ms",
-    ) -> float | int:
+    ) -> float:
         if output_type == "ms":
             return (self["peak_index"] - self["baseline_index"]) / (self.fs / 1000)
         else:

@@ -1,10 +1,11 @@
 from typing import Literal, Union
+
 import numpy as np
 from scipy import optimize
 from scipy.stats import linregress
 
+from ..functions.curve_fit import DExpDecay, SExpDecay
 from ..loader.acquisition_data import AcquisitionData
-from ..functions.curve_fit import SExpDecay, DExpDecay
 
 
 class MiniEvent:

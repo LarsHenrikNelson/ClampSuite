@@ -1,5 +1,5 @@
-from ast import Call
 from abc import ABC, abstractmethod
+from ast import Call
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable

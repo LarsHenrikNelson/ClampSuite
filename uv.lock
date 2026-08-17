@@ -58,6 +58,11 @@ testing = [
     { name = "tox" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "h5py", marker = "extra == 'data'" },
@@ -79,6 +84,9 @@ requires-dist = [
     { name = "xlsxwriter", specifier = ">=3.0.3" },
 ]
 provides-extras = ["plotting", "data", "testing"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.14.9" }]
 
 [[package]]
 name = "colorama"

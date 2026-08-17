@@ -1,20 +1,18 @@
 import logging
 from pathlib import Path, PurePath
 
-from PySide6.QtCore import QThreadPool
+from PySide6.QtCore import Qt, QThreadPool, Signal, Slot
 from PySide6.QtWidgets import (
-    QTabWidget,
-    QWidget,
-    QProgressBar,
-    QVBoxLayout,
     QHBoxLayout,
-    QScrollArea,
     QMessageBox,
+    QProgressBar,
+    QScrollArea,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Slot, Qt, Signal
 
 from .qtwidgets import QExpManager, ThreadWorker
-
 
 logger = logging.getLogger(__name__)
 

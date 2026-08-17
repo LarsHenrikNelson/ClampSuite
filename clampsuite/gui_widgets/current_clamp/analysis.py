@@ -7,14 +7,14 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
-    QHBoxLayout,
 )
 
 from ...functions.utilities import round_sig
-from ..qtwidgets import LineEdit, AnalysisWidget
+from ..qtwidgets import AnalysisWidget, LineEdit
 
 logger = logging.getLogger(__name__)
 

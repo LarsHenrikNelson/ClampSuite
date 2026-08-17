@@ -1,2 +1,2 @@
-from .event_finding import find_events, deconvolve_array, template_match, EventMethods
 from .event import PostsynapticEvent
+from .event_finding import EventMethods, deconvolve_array, find_events, template_match

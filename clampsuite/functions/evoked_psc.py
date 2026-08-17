@@ -1,8 +1,9 @@
 from typing import Literal, TypedDict
 
 import numpy as np
-from .curve_fit.psc_fit import _detect_pos_neg, _fit_psc, psc_sexp
 from scipy import signal
+
+from .curve_fit.psc_fit import _detect_pos_neg, _fit_psc, psc_sexp
 
 
 class Event(TypedDict):
@@ -42,7 +43,7 @@ def _iterative_peak_window(
     pulse_starts: np.ndarray,
     window_starts: np.ndarray,
     window_ends: np.ndarray,
-    sample_rate: float | int,
+    sample_rate: float,
     baseline_size: float = 10,
     statistic: Literal["max", "mean", "median"] = "mean",
     direction: Literal["positive", "negative"] | None = None,
@@ -55,7 +56,7 @@ def _iterative_peak_window(
         pulse_starts (np.nadarray): Start of pulses in milliseconds.
         window_starts (np.ndarray): Start of windows in milliseconds.
         window_ends (np.ndarray): End of windows in milliseconds.
-        sample_rate (float | int): Sample rate of data.
+        sample_rate (float): Sample rate of data.
         baseline_size (float, optional): Size of the baseline before the peak. Defaults to 10.
         statistic (Literal[&quot;max&quot;, &quot;mean&quot;, &quot;median&quot;], optional): Statistic of the window. Defaults to "mean".
 
@@ -88,7 +89,7 @@ def iterative_peak_window(
     window_offset: float,
     window_size: float,
     pulse_starts: np.ndarray,
-    sample_rate: float | int,
+    sample_rate: float,
     baseline_size: float = 10,
     statistic: Literal["max", "mean", "median"] = "mean",
     direction: Literal["positive", "negative"] | None = None,
@@ -159,7 +160,7 @@ def iterative_full_fit(
     y: np.ndarray,
     pulse_starts: np.ndarray,
     offset: float,
-    sample_rate: float | int,
+    sample_rate: float,
     direction: Literal["positive", "negative"] | None = None,
 ):
     """Data is an array that contains multiple events. Pulse starts note the beginning of each
@@ -215,7 +216,7 @@ class EvokedPSC:
     def __init__(
         self,
         data: np.ndarray,
-        sample_rate: float | int,
+        sample_rate: float,
         pulse_starts: list[float],
         start: float | None = None,
         end: float | None = None,

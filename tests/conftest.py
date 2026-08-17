@@ -1,10 +1,10 @@
 import pytest
 
 from clampsuite.functions.load_functions import (
-    download_test_acquisitions,
-    SCANIMAGE_DATA_URL,
     CSJSON_DATA_URL,
+    SCANIMAGE_DATA_URL,
     URLS,
+    download_test_acquisitions,
 )
 
 

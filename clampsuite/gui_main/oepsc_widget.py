@@ -17,13 +17,13 @@ from PySide6.QtWidgets import (
 from ..gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
-    filter,
     LoadAcqWidget,
     MainAnalysisWidget,
     QExpManager,
     ThreadWorker,
     evoked_lfp,
     evoked_psc,
+    filter,
 )
 from ..gui_widgets.qtwidgets import FrameWidget
 

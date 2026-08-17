@@ -2,12 +2,11 @@ from dataclasses import asdict
 from typing import Literal, TypeAlias
 
 import numpy as np
-from scipy.fft import fft, ifft
 from scipy import signal
+from scipy.fft import fft, ifft
 
-from ..template_psc import create_template, TemplateParams
 from ...preprocess.filter import FIRFilter
-
+from ..template_psc import TemplateParams, create_template
 
 EventMethods: TypeAlias = Literal["fft", "weiner", "template_match"]
 
@@ -20,11 +19,11 @@ def noise_mad(signal):
 
 def deconvolve_array(
     array: np.ndarray,
-    fs: float | int,
+    fs: float,
     template_params: TemplateParams,
     decon_type: Literal["fft", "weiner"],
     filter_settings: FIRFilter,
-    lambd: int | float = 4,
+    lambd: float = 4,
 ) -> np.ndarray:
     """The Wiener deconvolution equation can be found on GitHub from pbmanis
     and danstowell. The basic idea behind this function is deconvolution
@@ -99,7 +98,7 @@ def _rms(array: np.ndarray) -> tuple[float, float]:
 
 
 def find_events(
-    array: np.ndarray, mini_spacing: float, sensitivity: float, fs: int | float
+    array: np.ndarray, mini_spacing: float, sensitivity: float, fs: float
 ) -> np.ndarray:
     # This is not the method from the original paper but it works a
     # lot better. The original paper used 4*std of the deconvolved array.

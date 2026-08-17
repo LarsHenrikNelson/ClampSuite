@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Callable, List, NamedTuple, Type
 
 from ..analysis.registry import AnalysisRegistry
-from ..loader import ABFLoader, JSONLoader, ScanImageLoader, AcquisitionData
+from ..loader import ABFLoader, AcquisitionData, JSONLoader, ScanImageLoader
 from ..preprocess.base import Preprocessor
 
 

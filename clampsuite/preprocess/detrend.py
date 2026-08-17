@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Literal, ClassVar
+from typing import ClassVar, Literal
 
 import numpy as np
 from numpy.polynomial import Polynomial as npPoly
@@ -23,7 +23,7 @@ class Mean(Detrend):
 
     name: ClassVar[str] = "mean"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         if self.end == 0:
             end = array.shape[-1]
         else:
@@ -42,7 +42,7 @@ class Median(Detrend):
 
     name: ClassVar[str] = "median"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         if self.end == 0:
             end = array.shape[-1]
         else:
@@ -60,7 +60,7 @@ class ExpDecay(Detrend):
 
     name: ClassVar[str] = "exp_decay"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         maximum = array.argmax()
         minimum = array.argmin()
         if np.abs(array[maximum]) > np.abs(array[minimum]):
@@ -87,7 +87,7 @@ class Polynomial(Detrend):
 
     name: ClassVar[str] = "polynomial"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         x = np.arange(array.size)
         fit = npPoly.fit(x, array, deg=self.degree)
         self.baseline_ = fit(x)
@@ -102,7 +102,7 @@ class LSQSpline(Detrend):
 
     name: ClassVar[str] = "lsq_spline"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         x = np.arange(array.size)
         internal_knots = np.linspace(0, array.size, num=self.n_knots + 2, dtype=int)[
             1:-1

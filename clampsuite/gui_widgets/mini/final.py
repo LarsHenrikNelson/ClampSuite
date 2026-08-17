@@ -1,16 +1,15 @@
 import logging
 
 import numpy as np
+import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-import pyqtgraph as pg
 from PySide6.QtWidgets import (
-    QTabWidget,
     QComboBox,
+    QTabWidget,
 )
 
 from ...functions.kde import create_kde
-
 
 logger = logging.getLogger(__name__)
 

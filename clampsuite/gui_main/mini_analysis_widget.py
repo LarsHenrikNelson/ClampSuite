@@ -14,13 +14,13 @@ from PySide6.QtWidgets import (
 from ..gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
-    MainAnalysisWidget,
-    filter,
     LoadAcqWidget,
-    mini,
+    MainAnalysisWidget,
     RCCheckWidget,
     ThreadWorker,
     WorkerSignals,
+    filter,
+    mini,
 )
 
 logger = logging.getLogger(__name__)

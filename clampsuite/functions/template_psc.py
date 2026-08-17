@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, NamedTuple
+from typing import NamedTuple, Union
 
 import numpy as np
 
@@ -16,12 +16,12 @@ class TemplateParams:
 
 
 def create_template(
-    amplitude: Union[int, float] = -20,
-    rise_tau: Union[int, float] = 0.3,
-    decay_tau: Union[int, float] = 5,
-    risepower: Union[int, float] = 0.5,
-    length: Union[int, float] = 30,
-    spacer: Union[int, float] = 1.5,
+    amplitude: float = -20,
+    rise_tau: float = 0.3,
+    decay_tau: float = 5,
+    risepower: float = 0.5,
+    length: float = 30,
+    spacer: float = 1.5,
     sample_rate: int = 10000,
 ) -> np.ndarray:
     """Creates a template based on several factors.
@@ -51,7 +51,7 @@ def create_template(
         / Aprime
         * (
             (1 - (np.exp(-t_length / rise_tau))) ** risepower
-            * np.exp((-t_length / decay_tau))
+            * np.exp(-t_length / decay_tau)
         )
     )
     template[offset:] = y

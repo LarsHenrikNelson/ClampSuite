@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields
-from typing import Dict, List, ClassVar, Type
 from collections import defaultdict
+from dataclasses import dataclass, fields
+from typing import ClassVar
 
 import numpy as np
 
@@ -14,16 +14,17 @@ class Preprocessor(ABC):
     module: ClassVar[str]
 
     @abstractmethod
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         """Process the acquisition data and return the result."""
-        pass
 
 
 class PreprocessorRegistry:
-    _preprocessor: Dict[str, dict[str, Type[Preprocessor]]] = defaultdict(dict)
+    _preprocessor: ClassVar[dict[str, dict[str, type[Preprocessor]]]] = defaultdict(
+        dict
+    )
 
     @classmethod
-    def register_preprocessor(cls, param_type: Type[Preprocessor]):
+    def register_preprocessor(cls, param_type: type[Preprocessor]):
         cls._preprocessor[param_type.module][param_type.name] = param_type
         return param_type
 
@@ -39,5 +40,5 @@ class PreprocessorRegistry:
             raise KeyError("Preprocessor not found")
 
 
-def register_preprocessor(param_type: Type[Preprocessor]):
+def register_preprocessor(param_type: type[Preprocessor]):
     return PreprocessorRegistry.register_preprocessor(param_type)

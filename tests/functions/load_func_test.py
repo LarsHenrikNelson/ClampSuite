@@ -1,14 +1,14 @@
 from pathlib import Path
 
 from clampsuite.functions.load_functions import (
+    SCANIMAGE_DATA_URL,
+    URLS,
     download_test_acquisitions,
     find_stim_pulse_data,
     find_stim_pulses,
     load_json_file,
     load_mat,
     load_scanimage_file,
-    SCANIMAGE_DATA_URL,
-    URLS,
 )
 
 

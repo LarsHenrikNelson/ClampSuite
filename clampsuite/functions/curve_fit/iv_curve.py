@@ -1,7 +1,7 @@
-from typing import NamedTuple, Literal
+from typing import Literal, NamedTuple
 
-from scipy.stats import linregress
 import numpy as np
+from scipy.stats import linregress
 
 
 class IVCurveOutput(NamedTuple):
@@ -17,9 +17,9 @@ def linear(x, slope, intercept):
 def fit_iv(
     current,
     voltage,
-    start: int | float | None = None,
-    end: int | float | None = None,
-    rectify: bool = False
+    start: float | None = None,
+    end: float | None = None,
+    rectify: bool = False,
 ) -> NamedTuple:
     if start is None:
         start = current.min()

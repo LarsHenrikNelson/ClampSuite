@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 
 
-def find_alt_baseline(event_array: np.ndarray, peak_index: int, fs: float | int) -> int:
+def find_alt_baseline(event_array: np.ndarray, peak_index: int, fs: float) -> int:
     s_r_c = fs / 1000
     baselined_array = event_array - np.mean(event_array[: int(1 * s_r_c)])
     masked_array = baselined_array.copy()

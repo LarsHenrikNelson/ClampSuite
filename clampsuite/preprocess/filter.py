@@ -57,12 +57,10 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
         )
     if low_width is not None and low_pass is None:
         return FilterError(False, "Low_pass must be provided if low_width is provided")
-    if low_pass is not None and high_pass is not None:
-        if low_pass < high_pass:
-            return FilterError(False, "Low_pass must be greater than high_pass.")
-    if low_pass is not None:
-        if low_pass == 0:
-            return FilterError(False, "Low_pass must be greater than 0.")
+    if low_pass is not None and high_pass is not None and low_pass < high_pass:
+        return FilterError(False, "Low_pass must be greater than high_pass.")
+    if low_pass is not None and low_pass == 0:
+        return FilterError(False, "Low_pass must be greater than 0.")
     if high_pass is not None:
         if high_pass > (fs / 2):
             return FilterError(False, "High pass must be greater than half the fs")
@@ -74,19 +72,16 @@ def check_fir_filter_input(high_pass, high_width, low_pass, low_width, fs):
 def check_iir_filter_input(high_pass, low_pass, fs):
     if high_pass is None and low_pass is None:
         return FilterError(False, "High_pass or low_pass or both must be provided.")
-    if high_pass is not None:
-        if high_pass > fs:
-            return FilterError(False, "High_pass must be less than fs.")
-    if low_pass is not None:
-        if low_pass > fs:
-            return FilterError(False, "High_pass must be less than fs.")
-    if high_pass is not None and low_pass is not None:
-        if low_pass < high_pass:
-            return FilterError(False, "High_pass must be less than low_pass.")
+    if high_pass is not None and high_pass > fs / 2:
+        return FilterError(False, "High_pass must be less than fs.")
+    if low_pass is not None and low_pass > fs / 2:
+        return FilterError(False, "High_pass must be less than fs.")
+    if high_pass is not None and low_pass is not None and low_pass < high_pass:
+        return FilterError(False, "High_pass must be less than low_pass.")
     return FilterError(True, "")
 
 
-def zero_phase_convolve(b: np.ndarray, a: float | int | None, array: np.ndarray):
+def zero_phase_convolve(b: np.ndarray, a: float | None, array: np.ndarray):
     output = np.convolve(array, b, mode="full")
     wlen = b.size // 2
     output = output[wlen : array.size + wlen]
@@ -106,7 +101,7 @@ class MedianFilter(Filter):
 
     name: ClassVar[str] = "median"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         if isinstance(self.order, float):
             order = int(self.order)
         filt_array = signal.medfilt(array, order)
@@ -118,7 +113,7 @@ class MedianFilter(Filter):
 class NoFilter(Filter):
     name: ClassVar[str] = "None"
 
-    def __call__(self, array: np.ndarray, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray, fs: float) -> np.ndarray:
         return array
 
 
@@ -131,7 +126,7 @@ class EWMAFilter(Filter):
 
     name: ClassVar[str] = "ewma"
 
-    def ewma_filter(self, array: np.ndarray | list, fs: float | int):
+    def ewma_filter(self, array: np.ndarray | list, fs: float):
         alpha = 1 - np.exp(np.log(1 - self.sum_proportion) / self.window)
         if self.filter_type == "ewma_a":
             num = np.power(1.0 - alpha, np.arange(self.window + 1))
@@ -155,7 +150,7 @@ class SavgolFilter(Filter):
 
     name: ClassVar[str] = "savgol"
 
-    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float) -> np.ndarray:
         filtered_array = signal.savgol_filter(
             array, self.window_length, self.polyorder, mode="nearest"
         )
@@ -171,7 +166,7 @@ class WienerFilter(Filter):
 
     name: ClassVar[str] = "wiener"
 
-    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float) -> np.ndarray:
         filtered_array = signal.wiener(array, mysize=self.mysize, noise=self.noise)
         return filtered_array
 
@@ -190,7 +185,7 @@ class FIRFilter(Filter):
 
     name: ClassVar[str] = "fir"
 
-    def __call__(self, array: np.ndarray, fs: float | int):
+    def __call__(self, array: np.ndarray, fs: float):
         if "zero" in self.filter_type:
             filt_func = signal.filtfilt
         else:
@@ -260,7 +255,7 @@ class RemezFilter(Filter):
 
     name: ClassVar[str] = "remez"
 
-    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float) -> np.ndarray:
         if self.high_pass is not None and self.low_pass is not None:
             filt = signal.remez(
                 self.order,
@@ -317,7 +312,7 @@ class IIRFilter(Filter):
 
     name: ClassVar[str] = "iir"
 
-    def __call__(self, array: np.ndarray | list, fs: float | int) -> np.ndarray:
+    def __call__(self, array: np.ndarray | list, fs: float) -> np.ndarray:
         if "bessel" in self.filter_type:
             filt_design = signal.bessel
         else:

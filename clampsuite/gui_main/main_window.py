@@ -1,26 +1,25 @@
 import logging
 from pathlib import Path, PurePath
 
-from PySide6.QtGui import QAction, QIcon, QPixmap, Qt
 from PySide6 import QtCore
+from PySide6.QtGui import QAction, QIcon, QPixmap, Qt
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QFileDialog,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QToolBar,
-    QBoxLayout,
     QWidget,
 )
 
 from ..functions.startup import check_dir
 from .current_clamp_widget import CurrentClampWidget
+from .home_widget import HomeWidget
 from .mini_analysis_widget import MiniAnalysisMain
 from .oepsc_widget import EvokedPSCLFPWidget
 from .pref_widget import PreferencesWidget
-from .home_widget import HomeWidget
-
 
 logger = logging.getLogger(__name__)
 

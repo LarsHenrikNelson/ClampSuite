@@ -1,9 +1,10 @@
-import numpy as np
 from typing import NamedTuple
+
+import numpy as np
 from scipy import optimize
-from .utilities import _detect_pos_neg
 
 from .curve_fit_base import CurveFitBase
+from .utilities import _detect_pos_neg
 
 
 class SExpDecayFit(NamedTuple):

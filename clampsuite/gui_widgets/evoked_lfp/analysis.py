@@ -3,10 +3,10 @@ from collections import namedtuple
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtGui import QFont, QAction
+from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
-    QHBoxLayout,
     QFormLayout,
+    QHBoxLayout,
     QLineEdit,
     QPushButton,
 )

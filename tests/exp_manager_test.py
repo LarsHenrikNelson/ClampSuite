@@ -1,6 +1,6 @@
-from clampsuite.manager import ExpManager
-
 import pytest
+
+from clampsuite.manager import ExpManager
 
 
 def test_exp_manager_data():

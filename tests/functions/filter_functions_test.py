@@ -1,13 +1,12 @@
-import pytest
 import numpy as np
-
+import pytest
 from clampsuite.functions.filtering_functions import (
-    check_fir_filter_input,
-    check_iir_filter_input,
     bessel,
     bessel_zero,
     butterworth,
     butterworth_zero,
+    check_fir_filter_input,
+    check_iir_filter_input,
 )
 
 

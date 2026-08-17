@@ -2,11 +2,10 @@ import logging
 
 import numpy as np
 import pandas as pd
+import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-import pyqtgraph as pg
 from PySide6.QtWidgets import QTabWidget
-
 
 logger = logging.getLogger(__name__)
 

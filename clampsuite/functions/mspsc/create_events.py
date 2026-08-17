@@ -7,12 +7,12 @@ from .event import PostsynapticEvent
 
 
 class EventCriteria(NamedTuple):
-    mini_spacing: float | int
-    amp_threshold: float | int
-    min_rise_time: float | int
-    max_rise_time: float | int
-    min_decay_time: float | int
-    decay_rise: float | int
+    mini_spacing: float
+    amp_threshold: float
+    min_rise_time: float
+    max_rise_time: float
+    min_decay_time: float
+    decay_rise: float
 
 
 def check_event(
@@ -65,7 +65,7 @@ def create_events(
     events: list | np.ndarray,
     event_length: float,
     array: np.ndarray,
-    fs: float | int,
+    fs: float,
     event_criteria: EventCriteria,
     curve_fit_type: Literal[0, 1, 2] = 0,
 ) -> list[PostsynapticEvent]:

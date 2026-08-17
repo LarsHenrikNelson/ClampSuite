@@ -2,8 +2,7 @@ from clampsuite.acq import (
     Acquisition,
     MiniAnalysisAcq,
 )
-
-from clampsuite.functions.utilities import create_event_array, create_acq_data
+from clampsuite.functions.utilities import create_acq_data, create_event_array
 
 
 def test_mini_acq():

@@ -84,7 +84,7 @@ def _fit_psc(
     y: np.ndarray,
     start: float,
     end: float,
-    sample_rate: float | int,
+    sample_rate: float,
     direction: Literal["positive", "negative"] | None = None,
 ):
     s_r_c = sample_rate / 1000

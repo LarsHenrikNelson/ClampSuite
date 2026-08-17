@@ -14,12 +14,12 @@ from PySide6.QtWidgets import (
 )
 
 from ..gui_widgets import (
-    MainAnalysisWidget,
+    AnalysisButtonsWidget,
+    BaselineWidget,
     LoadAcqWidget,
+    MainAnalysisWidget,
     ThreadWorker,
     current_clamp,
-    BaselineWidget,
-    AnalysisButtonsWidget,
 )
 from ..manager import ExpManager
 
