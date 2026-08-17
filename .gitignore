@@ -17,3 +17,4 @@ share
 docs/build
 docs/source/_build
 testing.py
+testing.ipynb

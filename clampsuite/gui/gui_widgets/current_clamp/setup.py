@@ -3,6 +3,7 @@ from typing import get_args
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QComboBox, QFormLayout, QLabel
 
+from ....analysis import AnalysisRegistry
 from ....functions.current_clamp.spike_threshold import ThresholdType
 from ..qtwidgets import FrameWidget, LineEdit
 
