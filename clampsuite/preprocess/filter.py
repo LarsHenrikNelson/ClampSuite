@@ -176,10 +176,10 @@ class WienerFilter(Filter):
 class FIRFilter(Filter):
     filter_type: Literal["fir", "fir_zero"] = "fir_zero"
     order: int = 301
-    high_pass: int | float | None = None
-    high_width: int | float = 300
-    low_pass: int | float | None = 500
-    low_width: int | float = 200
+    high_pass: float | None = None
+    high_width: float = 300
+    low_pass: float | None = 500
+    low_width: float = 200
     window: Windows = "hann"
     beta_sigma: float | None = None
 
@@ -248,10 +248,10 @@ class FIRFilter(Filter):
 class RemezFilter(Filter):
     filter_type: Literal["remez", "remez_zero"] = "remez_zero"
     order: int = 301
-    high_pass: int | float | None = None
-    high_width: int | float = 300
-    low_pass: int | float | None = 500
-    low_width: int | float = 200
+    high_pass: float | None = None
+    high_width: float = 300
+    low_pass: float | None = 500
+    low_width: float = 200
 
     name: ClassVar[str] = "remez"
 
@@ -307,8 +307,8 @@ class IIRFilter(Filter):
         "butterworth_zero"
     )
     order: int = 4
-    high_pass: int | float | None = None
-    low_pass: int | float | None = 500
+    high_pass: float | None = None
+    low_pass: float | None = 500
 
     name: ClassVar[str] = "iir"
 

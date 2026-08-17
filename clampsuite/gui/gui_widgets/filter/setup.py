@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from ....functions.template_psc import create_template
 from ....preprocess.filter import Filters
+from ..generate_form import DataclassForm
 from ..qtwidgets import FrameWidget, LineEdit
 
 logger = logging.getLogger(__name__)
@@ -35,11 +36,11 @@ class FilterSettingsWidget(FrameWidget):
         self._layout.addWidget(self.selector)
 
         self.stack = QStackedWidget()
-        self.forms: dict[str, SingleForm] = {}
+        self.forms: dict[str, DataclassForm] = {}
 
         for a in args:
-            form = SingleForm(a)
-            self.forms[a.filter_family] = form
+            form = DataclassForm(a)
+            self.forms[a.name] = form
             self.stack.addWidget(form)
 
         self._layout.addWidget(self.stack)
@@ -47,28 +48,3 @@ class FilterSettingsWidget(FrameWidget):
 
     def _on_selection_changed(self, name: str):
         self.stack.setCurrentWidget(self.forms[name])
-
-
-class SingleForm(QWidget):
-    def __init__(self, tuple_class: type):
-        super().__init__()
-        self.tuple_class = tuple_class
-        self.fields: dict[str, QWidget] = {}
-
-        layout = QFormLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        for f in fields(tuple_class):
-            widget = self._create_widget(f.type, f.default)
-            self.fields[f.name] = widget
-            layout.addRow(f.name, widget)
-
-    def _create_widget(self, field_type, defaults) -> QWidget:
-        if field_type is Literal:
-            widget = QComboBox()
-            widget.addItems(get_args(field_type))
-            widget.setMinimumContentsLength(len(max(defaults, key=len)))
-        else:
-            widget = LineEdit()
-            widget.setText(str(defaults))
-        return widget
