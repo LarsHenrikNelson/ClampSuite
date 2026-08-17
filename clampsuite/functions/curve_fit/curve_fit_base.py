@@ -69,7 +69,7 @@ class CurveFitBase(ABC, Generic[T]):
             chisq = self._reduced_chisq(popt, x, y)
             uncertain = self._parameter_uncertainties(popt, pcov)
             residuals = self._residuals(x, y)
-            r2 = self._r_squared(popt, x, y)
+            r2 = self._r_squared(x, y)
             correlate = self._correlation(pcov)
             self._model_metrics = ModelMetrics(
                 chisq, r2, residuals, uncertain, correlate
@@ -95,7 +95,7 @@ class CurveFitBase(ABC, Generic[T]):
         relative_errors = param_errors / np.abs(popt) * 100
         return relative_errors
 
-    def _r_squared(self, popt: tuple, x: np.ndarray, y: np.ndarray) -> float:
+    def _r_squared(self, x: np.ndarray, y: np.ndarray) -> float:
         y_fit = self.predict(x)
         ss_res = np.sum((y - y_fit) ** 2)
         ss_tot = np.sum((y - np.mean(y)) ** 2)
