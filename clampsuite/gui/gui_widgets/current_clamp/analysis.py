@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from ...functions.utilities import round_sig
+from ....functions.utilities import round_sig
 from ..qtwidgets import AnalysisWidget, LineEdit
 
 logger = logging.getLogger(__name__)
