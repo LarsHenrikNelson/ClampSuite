@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List, NamedTuple, Type
+from typing import NamedTuple
 
 from ..analysis.registry import AnalysisRegistry
 from ..loader import ABFLoader, AcquisitionData, JSONLoader, ScanImageLoader
@@ -39,7 +40,7 @@ class ExpManager:
         self.epochs.update(self.loader.load_files(paths))
         self.callback_func("Loaded acquisitions")
 
-    def add_analyses(self, param_type: List[Type[NamedTuple]]):
+    def add_analyses(self, param_type: list[type[NamedTuple]]):
         self.analysis_config.extend(param_type)
 
     def add_prepocessor(self, preprocessor: Preprocessor | list[Preprocessor]):
@@ -47,15 +48,22 @@ class ExpManager:
             for acq in epoch.values():
                 acq.add_preprocessor(preprocessor)
 
-    def clear_prepocessors(self):
-        pass
-
-        # def run_analysis(self):
+    def analyze(self):
         for cfg in self.analysis_config:
-            analysis_temp = {}
+            analyzed_epochs = {}
             epoch_analysis = AnalysisRegistry.get_epoch(cfg)
-            for key, value in self.epochs.items():
+            for key in self.epochs:
                 analyzer = epoch_analysis(cfg)
-                analyzer.analyze()
-                analysis_temp[key] = analyzer
-            self.analysis[cfg] = analysis_temp
+                analyzer.load_acquisitions(key, self.epochs[key])
+                analyzed_epochs[key] = analyzer
+            self.analysis[cfg.analysis_key] = analyzed_epochs
+
+    def get_all_data(self):
+        output = {}
+        if len(self.analysis) == 0:
+            return output
+        else:
+            for key in self.analysis:
+                self.analysis[key].features()
+                output[key] = self.analysis[key].df_dict
+            return output

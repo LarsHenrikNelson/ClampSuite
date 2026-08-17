@@ -92,6 +92,8 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         """Analyzes the acquistions in an epoch."""
         for value in self._acquisitions.values():
             value.analyze(self.config.acquisition_config)
+
+    def features(self):
         self.create_raw_data()
         self.get_epoch_features()
         self.get_acq_features()
