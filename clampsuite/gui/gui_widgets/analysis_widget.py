@@ -121,33 +121,33 @@ class MainAnalysisWidget(QWidget):
         self.pbar.setFormat("Finished saving")
         logger.info("Finished saving.")
 
-    def createPrefDict(self):
-        logger.info("Creating preferences dictionary.")
-        pref_dict = {}
-        for i in self._analysis_widgets.values():
-            pref_dict[i.objectName()] = i.getAnalysisSettings()
-        logger.info(f"{self.widget_name} preferences dictionary created.")
-        return pref_dict
+    # def createPrefDict(self):
+    #     logger.info("Creating preferences dictionary.")
+    #     pref_dict = {}
+    #     for i in self._analysis_widgets.values():
+    #         pref_dict[i.objectName()] = i.getAnalysisSettings()
+    #     logger.info(f"{self.widget_name} preferences dictionary created.")
+    #     return pref_dict
 
-    def setPreferences(self, pref_dict: dict[str, dict[str, int | float | str]]):
-        logger.info(f"Setting {self.widget_name} preferences.")
+    # def setPreferences(self, pref_dict: dict[str, dict[str, int | float | str]]):
+    #     logger.info(f"Setting {self.widget_name} preferences.")
 
-        for key, values in pref_dict.items():
-            self._analysis_widgets[key].setAnalysisSettings(values)
-            logger.info(f"Preferences set for {key} widget.")
-        self.pbar.setFormat("Preferences set")
+    #     for key, values in pref_dict.items():
+    #         self._analysis_widgets[key].setAnalysisSettings(values)
+    #         logger.info(f"Preferences set for {key} widget.")
+    #     self.pbar.setFormat("Preferences set")
 
-    def loadPreferences(self, file_name: str | PurePath):
-        self.need_to_save = True
-        load_dict = self.exp_manager.load_ui_prefs(file_name)
-        self.setPreferences(load_dict)
+    # def loadPreferences(self, file_name: str | PurePath):
+    #     self.need_to_save = True
+    #     load_dict = self.exp_manager.load_ui_prefs(file_name)
+    #     self.setPreferences(load_dict)
 
-    def savePreferences(self, fle_path: str | PurePath):
-        pref_dict = self.createPrefDict()
-        if pref_dict:
-            self.exp_manager.save_ui_prefs(fle_path, pref_dict)
-        else:
-            pass
+    # def savePreferences(self, fle_path: str | PurePath):
+    #     pref_dict = self.createPrefDict()
+    #     if pref_dict:
+    #         self.exp_manager.save_ui_prefs(fle_path, pref_dict)
+    #     else:
+    #         pass
 
     def updateProgress(self, value):
         if isinstance(value, (int, float)):

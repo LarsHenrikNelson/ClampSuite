@@ -1,3 +1,3 @@
-from .analysis import MiniAnalysisWidget  # noqa: F401
-from .final import FinalMiniAnalysis  # noqa: F401
-from .setup import MiniWidget  # noqa: F401
+from .analysis import MiniAnalysisWidget
+from .final import FinalMiniAnalysis
+from .setup import MiniWidget
