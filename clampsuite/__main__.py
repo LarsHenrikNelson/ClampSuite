@@ -8,13 +8,13 @@ from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from . import resources
 from .functions.startup import check_dir
-from .gui_main.main_window import MainWindow
-from .gui_widgets.palettes import DarkPalette
+from .gui.gui_widgets.palettes import DarkPalette
+from .gui.main_window import MainWindow
 
 try:
     from ctypes import windll  # Only exists on Windows.
 
-    myappid = "mycompany.myproduct.subproduct.version"
+    myappid = "clampsuite.clampsuite.2"
     windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 except ImportError:
     pass

@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ..gui_widgets import (
+from .gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
     LoadAcqWidget,

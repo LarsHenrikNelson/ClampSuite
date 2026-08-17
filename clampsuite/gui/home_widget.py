@@ -4,7 +4,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QButtonGroup, QPushButton, QWidget
 
-from ..gui_widgets import FlowLayout
+from .gui_widgets import FlowLayout
 
 logger = logging.getLogger(__name__)
 

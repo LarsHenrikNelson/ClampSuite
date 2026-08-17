@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from ...functions.utilities import round_sig
+from ....functions.utilities import round_sig
 from ..qtwidgets import AnalysisWidget
 
 logger = logging.getLogger(__name__)

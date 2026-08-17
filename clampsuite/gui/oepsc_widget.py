@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ..gui_widgets import (
+from .gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
     LoadAcqWidget,
@@ -25,7 +25,7 @@ from ..gui_widgets import (
     evoked_psc,
     filter,
 )
-from ..gui_widgets.qtwidgets import FrameWidget
+from .gui_widgets.qtwidgets import FrameWidget
 
 XAxisCoord = namedtuple("XAxisCoord", ["x_min", "x_max"])
 

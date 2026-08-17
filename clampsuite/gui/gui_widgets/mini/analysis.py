@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...functions.utilities import round_sig
+from ....functions.utilities import round_sig
 from ..acq_inspection import DeconInspectionWidget
 from ..qtwidgets import AnalysisWidget
 
@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 class MiniAnalysisWidget(AnalysisWidget):
-
     def __init__(self, parent=None, exp_manager=None):
         super().__init__(parent)
 

@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from ...functions.utilities import round_sig
+from ....functions.utilities import round_sig
 from ..qtwidgets import AnalysisWidget
 
 logger = logging.getLogger(__name__)
@@ -210,8 +210,7 @@ class EvokedPSCAnalysisWidget(AnalysisWidget):
         points[0].setSize(size=8)
         self.last_oepsc_point_clicked = points[0]
         logger.info(
-            f"Point {self.last_oepsc_point_clicked.pos()[0]}"
-            "set as PSC point clicked."
+            f"Point {self.last_oepsc_point_clicked.pos()[0]}set as PSC point clicked."
         )
 
     def setPSCPeak(self):

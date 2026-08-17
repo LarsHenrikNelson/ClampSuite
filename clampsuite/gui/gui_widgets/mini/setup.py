@@ -11,14 +11,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ...functions.template_psc import create_template
+from ....functions.template_psc import create_template
 from ..qtwidgets import FrameWidget, LineEdit
 
 logger = logging.getLogger(__name__)
 
 
 class MiniSettingsWidget(FrameWidget):
-
     def __init__(self, parent=None):
         super().__init__(title="Mini Settings", parent=parent)
 
@@ -133,7 +132,6 @@ class MiniSettingsWidget(FrameWidget):
 
 
 class TemplateWidget(FrameWidget):
-
     def __init__(self, parent=None):
         super().__init__(title="Mini template", parent=parent)
 
@@ -201,7 +199,6 @@ class TemplateWidget(FrameWidget):
 
 
 class MiniWidget(QVBoxLayout):
-
     def __init__(self, parent=None):
         super(MiniWidget, self).__init__(parent)
 

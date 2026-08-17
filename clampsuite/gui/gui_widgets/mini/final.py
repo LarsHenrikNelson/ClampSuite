@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
 )
 
-from ...functions.kde import create_kde
+from ....functions.kde import create_kde
 
 logger = logging.getLogger(__name__)
 

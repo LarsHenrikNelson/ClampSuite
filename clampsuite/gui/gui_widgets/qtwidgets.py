@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..manager import ExpManager
+from ...manager import ExpManager
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,6 @@ class AnalysisWidget(QWidget):
 
 
 class QExpManager(ExpManager):
-
     def __init__(self):
         self.need_to_save = False
 
@@ -108,7 +107,6 @@ class QExpManager(ExpManager):
 
 
 class FrameWidget(QGroupBox):
-
     def __init__(self, title="", parent=None):
         super().__init__(parent=parent)
 

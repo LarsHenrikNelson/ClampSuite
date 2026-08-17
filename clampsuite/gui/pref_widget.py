@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..gui_widgets.palettes import DarkPalette, LightPalette
+from .gui_widgets.palettes import DarkPalette, LightPalette
 
 logger = logging.getLogger(__name__)
 
@@ -453,9 +453,7 @@ class MiniAnalysisSettings(QWidget):
         for i in buttons:
             color = self.color_dict.get(i.objectName())
             i.setStyleSheet(
-                f"background-color : {color};"
-                "border :1px solid;"
-                "border-color: black"
+                f"background-color : {color};border :1px solid;border-color: black"
             )
 
     def set_width(self):

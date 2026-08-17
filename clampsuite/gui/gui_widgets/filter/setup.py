@@ -15,8 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...functions.template_psc import create_template
-from ...preprocess.filter import Filters
+from ....functions.template_psc import create_template
+from ....preprocess.filter import Filters
 from ..qtwidgets import FrameWidget, LineEdit
 
 logger = logging.getLogger(__name__)

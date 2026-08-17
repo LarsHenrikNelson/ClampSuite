@@ -13,7 +13,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ..gui_widgets import (
+from ..manager import ExpManager
+from .gui_widgets import (
     AnalysisButtonsWidget,
     BaselineWidget,
     LoadAcqWidget,
@@ -21,7 +22,6 @@ from ..gui_widgets import (
     ThreadWorker,
     current_clamp,
 )
-from ..manager import ExpManager
 
 logger = logging.getLogger(__name__)
 
