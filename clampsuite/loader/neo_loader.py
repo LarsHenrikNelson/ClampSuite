@@ -91,7 +91,15 @@ class ABFLoader(BaseLoader):
 
     def process_acquisitions(self, file: AxonRawIO) -> dict:
         op_mode = file._axon_info["protocol"]["nOperationMode"]
-        if op_mode == 5:
+        dac_info = file._axon_info.get("listDACInfo", [])
+
+        enabled_dacs = []
+        for i, dac in enumerate(dac_info):
+            enabled = dac.get("nWaveformEnable", 0)
+            if enabled:
+                enabled_dacs.append(i)
+
+        if op_mode == 5 and dac_info[enabled_dacs[0]]["nWaveformSource"] == 1:
             n_adc = file._axon_info["sections"]["ADCSection"]["llNumEntries"]
             n_samples = file._axon_info["protocol"]["lNumSamplesPerEpisode"] / n_adc
             offset = int(n_samples * 15625 / 10**6)
