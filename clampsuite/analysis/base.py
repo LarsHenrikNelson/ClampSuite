@@ -80,12 +80,19 @@ class BaseEpochAnalysis(ABC, Generic[ConfigT]):
     @abstractmethod
     def analysis_key() -> str: ...
 
-    @abstractmethod
-    def analyze(self) -> None:
-        """Analyze acquisitions."""
+    def analyze(self):
+        """Analyzes the acquistions in an epoch."""
+        for value in self._acquisitions.values():
+            value.analyze(self.config.acquisition_config)
 
     @abstractmethod
     def load_acquisitions(
         self, epoch_id: int, acquisitions: dict[int, AcquisitionData]
     ):
         """Load acquisitions"""
+
+    @abstractmethod
+    def features(self):
+        """Create data features from the raw acquisition data. Features are specific
+        to the analysis.
+        """

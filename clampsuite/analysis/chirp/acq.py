@@ -98,6 +98,7 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
             raise ValueError("Config not loaded. Analyze data first.")
         # Load data
         chirp: Unknown = self._load_chirp(self.config.chirp)
+        chirp = chirp[:, self.acq_data.acq_number - 1]
         acquisition = self.acq_data.acquisition
         acquisition = acquisition[: chirp.size]
 
@@ -105,17 +106,18 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
         fastest = fft.next_fast_len(chirp.size)
         c_fft = fft.rfft(chirp, n=fastest)
         a_fft = fft.rfft(acquisition, n=fastest)
-        z = ((np.abs(a_fft) * np.abs(c_fft)) / np.abs(c_fft) ** 2) * 1000
+        z = ((np.abs(a_fft) / np.abs(c_fft)) / np.abs(c_fft) ** 2) * 1000
         freqs = fft.rfftfreq(fastest, 1 / self.acq_data.fs)
         mask = (freqs > self.config.f0) & (freqs < self.config.f1)
-        z_masked = z[mask]
-        return freqs, z_masked
+        return freqs[mask], z[mask]
 
     def data(
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
-    ) -> dict:
+    ) -> tuple[dict, dict]:
         acq_data = self._analysis_variables.copy()
+        freqs, z = self.z()
+        freq_data = {"frequency_hz": freqs, "impedance_MOhm": z}
         if format_keys:
             key_mapper = map_keys(acq_data.keys())
             acq_data = {key_mapper[k]: v for k, v in acq_data.items()}
-        return acq_data
+        return acq_data, freq_data
