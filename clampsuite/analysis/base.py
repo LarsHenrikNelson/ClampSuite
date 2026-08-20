@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, Literal
 
 import pandas as pd
 
@@ -23,7 +23,9 @@ class BaseAcquisitionAnalysis(ABC):
         """Run analysis on a single acquisition."""
 
     @abstractmethod
-    def data(self) -> tuple[dict, dict]:
+    def data(
+        self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
+    ) -> tuple[dict, dict] | dict:
         """Return the data for this acquisition."""
 
     def __getitem__(self, index):

@@ -118,10 +118,10 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         """Analyzes the ``AcquisitionData``.
 
         Args:
-            config (CurrentClampAcquisitionConfig | None): Analysis configuration.
-                Defualt parameters for the config if passed as ``None`` are
-                min_spike_voltage=0, threshold_method="third_derivative", min_spikes=1,
-                velocity_threshold=0.0, fit_sag_decay=0, fraction_wwindow=(0.5,1.0)
+            config: Analysis configuration. Defualt parameters for the config if passed
+            as ``None`` are min_spike_voltage=0, threshold_method="third_derivative",
+            min_spikes=1, velocity_threshold=0.0, fit_sag_decay=0,
+            fraction_wwindow=(0.5,1.0).
         """
         if config is None:
             config = CurrentClampAcquisitionConfig()
