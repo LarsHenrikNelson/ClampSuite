@@ -70,7 +70,7 @@ class CurrentClampAcquisitionConfig(BaseAcquisitionConfig):
 @register_acquisition
 @dataclass
 class CurrentClampAcquisition(BaseAcquisitionAnalysis):
-    """Current clamp acquistion analysis class
+    """Current clamp acquisition analysis class
 
     Attributes:
         acq_data: Raw acquisition data and metadata (inherited from
@@ -118,10 +118,10 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         """Analyzes the ``AcquisitionData``.
 
         Args:
-            config: Analysis configuration. Defualt parameters for the config if passed
-            as ``None`` are min_spike_voltage=0, threshold_method="third_derivative",
-            min_spikes=1, velocity_threshold=0.0, fit_sag_decay=0,
-            fraction_wwindow=(0.5,1.0).
+            config: Analysis configuration. Default parameters for the config if passed
+                as ``None`` are min_spike_voltage=0,
+                threshold_method="third_derivative", min_spikes=1,
+                velocity_threshold=0.0, fit_sag_decay=0, fraction_window=(0.5,1.0).
         """
         if config is None:
             config = CurrentClampAcquisitionConfig()

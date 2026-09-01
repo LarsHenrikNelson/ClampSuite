@@ -66,9 +66,12 @@ class AnalysisRegistry:
             raise ValueError(f"{param_type} not in registered analyses.")
 
     @classmethod
-    def list_available(cls) -> tuple:
+    def list_available(cls) -> dict[str, list]:
         """List all registered analyses."""
-        return cls._acquisition, cls._epoch
+        return {
+            "acquisitions": list(cls._acquisition.keys()),
+            "epochs": list(cls._epoch.keys()),
+        }
 
 
 def register_acquisition(param_type: type[BaseAcquisitionAnalysis]):

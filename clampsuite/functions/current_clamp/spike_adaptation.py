@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def local_sfa(peaks):
+def local_sfa(event_times):
     """
     The idea for the function was initially inspired by a program called
     Easy Electropysiology (https://github.com/easy-electrophysiology).
@@ -17,10 +17,10 @@ def local_sfa(peaks):
 
     """
 
-    if len(peaks) < 3:
+    if len(event_times) < 3:
         local_var = np.nan
     else:
-        iei = np.diff(peaks)
+        iei = np.diff(event_times)
         isi_shift = iei[1:]
         isi_cut = iei[:-1]
         n_minus_1 = len(isi_cut)
@@ -33,20 +33,20 @@ def local_sfa(peaks):
     return local_var
 
 
-def divisor_sfa(peaks):
+def divisor_sfa(event_times):
     """
     The idea for the function was initially inspired by a program called
     Easy Electropysiology (https://github.com/easy-electrophysiology).
     """
-    if len(peaks) > 2:
-        iei = np.diff(peaks)
+    if len(event_times) > 2:
+        iei = np.diff(event_times)
         sfa_divisor = iei[0] / iei[-1]
     else:
         sfa_divisor = np.nan
     return sfa_divisor
 
 
-def ai_sfa(peaks):
+def ai_sfa(event_times):
     """
     This function calculates the spike frequency adaptation. A positive
     number means that the spikes are speeding up and a negative number
@@ -56,10 +56,10 @@ def ai_sfa(peaks):
     db47e379f7f9bfac455cf2301def0319291ad361
     """
 
-    if len(peaks) < 3:
+    if len(event_times) < 3:
         spike_adapt = np.nan
     else:
-        iei = np.diff(peaks)
+        iei = np.diff(event_times)
         if np.allclose((iei[1:] + iei[:-1]), 0.0):
             spike_adapt = np.nan
         else:
@@ -69,17 +69,17 @@ def ai_sfa(peaks):
     return spike_adapt
 
 
-def adaptation_index(peaks):
-    if len(peaks) > 2:
-        adapt = peaks[0] / peaks[1]
+def adaptation_index(event_times):
+    if len(event_times) > 2:
+        adapt = event_times[0] / event_times[1]
     else:
         adapt = np.nan
     return adapt
 
 
-def coefficient_of_variation(peaks):
-    if len(peaks) > 2:
-        iei = np.diff(peaks)
+def coefficient_of_variation(event_times):
+    if len(event_times) > 2:
+        iei = np.diff(event_times)
         adapt = np.std(iei) / np.mean(iei)
     else:
         adapt = np.nan

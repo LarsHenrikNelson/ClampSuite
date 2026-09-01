@@ -1165,7 +1165,7 @@ class MiniAnalysisWidget(AnalysisWidget):
         self.recent_reject_acq = {}
 
         # Add acquisition to be deleted to the deleted acquisitions
-        # and the recent deleted acquistion dictionary.
+        # and the recent deleted acquisition dictionary.
         self.exp_manager.delete_acq("mini", self.acquisition_number.value())
 
         # Clear plots
@@ -1191,8 +1191,8 @@ class MiniAnalysisWidget(AnalysisWidget):
 
     def resetRecentRejectedAcq(self):
         if not self.exp_manager.acqs_exist("mini"):
-            logger.info("Did not reset recent acquistion, no acquisitions exist.")
-            self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
+            logger.info("Did not reset recent acquisition, no acquisitions exist.")
+            self.errorDialog("Did not reset recent acquisition, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting most recent deleted acquisition.")

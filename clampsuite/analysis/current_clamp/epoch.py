@@ -130,7 +130,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         self.df_dict["Acq Parameters"] = acq_params
 
     def get_acq_features(self):
-        """Adds spike data to the ``Acquistion Parameters`` dataframe. Only the first
+        """Adds spike data to the ``acquisition Parameters`` dataframe. Only the first
         spike is used from ``Spike parameters``.
         """
         spk_params = self.df_dict["Spike Parameters"]

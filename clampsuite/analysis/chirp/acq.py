@@ -44,7 +44,7 @@ class ChirpAcquisitionConfig(BaseAcquisitionConfig):
 @register_acquisition
 @dataclass
 class ChirpAcquisition(BaseAcquisitionAnalysis):
-    """Chirp acquistion analysis class
+    """Chirp acquisition analysis class
 
     Attributes:
         acq_data: Raw acquisition data and metadata (inherited from

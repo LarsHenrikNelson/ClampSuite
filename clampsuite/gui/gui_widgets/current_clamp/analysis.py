@@ -422,8 +422,8 @@ class CurrentClampAnalysisWidget(AnalysisWidget):
 
     def resetRecentRejectAcq(self):
         if not self.exp_manager.acqs_exist("current_clamp"):
-            logger.info("Did not reset recent acquistion, no acquisitions exist.")
-            self.errorDialog("Did not reset recent acquistion, no acquisitions exist.")
+            logger.info("Did not reset recent acquisition, no acquisitions exist.")
+            self.errorDialog("Did not reset recent acquisition, no acquisitions exist.")
         else:
             self.need_to_save = True
             logger.info("Resetting most recent deleted acquisition.")
