@@ -6,7 +6,7 @@ def find_spikes(
     acquisition: np.ndarray,
     fs: float,
     threshold: float = 7.0,
-    height: float = 5,
+    prominence: float = 2.0,
     start: float = 2.0,
     end: float = 3.0,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -27,7 +27,8 @@ def find_spikes(
     new_peaks = []
     med: float = np.median(-acquisition)
     mad: float = stats.median_abs_deviation(-acquisition)
-    peaks, _ = signal.find_peaks(-acquisition, height=mad * threshold + med, width=10)
+    height = mad * threshold + med
+    peaks, _ = signal.find_peaks(-acquisition, height=height, width=10)
     start = int(start * (fs / 1000))
     end = int(end * (fs / 1000))
     for i in peaks:
@@ -37,9 +38,10 @@ def find_spikes(
             if (
                 mn < mx
                 and (mx - mn) < (end + start)
-                and (spk[mx] - spk[mn]) > height
+                and (spk[mx] - spk[mn]) > (height * prominence)
                 and mn > 0
                 and mx < (start + end - 1)
+                and mx > 0
             ):
                 spikes.append(spk)
                 new_peaks.append(i)

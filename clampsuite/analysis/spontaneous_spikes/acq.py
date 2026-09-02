@@ -54,7 +54,7 @@ class SpontaneousSpkAcquisitionConfig(BaseAcquisitionConfig):
         return "spontaneous_spikes"
 
     threshold: float = 7.0
-    height: float = 5.0
+    prominence: float = 2.0
     start: float = 2.0
     end: float = 3.0
 
@@ -90,7 +90,7 @@ class SpontaneousSpkAcquisition(BaseAcquisitionAnalysis):
 
         Args:
             config: Analysis configuration. Default parameters for the config if passed
-                as ``None`` are threshold=7.0, height=5.0, start=2.0, end=3.0.
+                as ``None`` are threshold=7.0, prominence=2.0, start=2.0, end=3.0.
         """
         if config is None:
             config = SpontaneousSpkAcquisitionConfig()
