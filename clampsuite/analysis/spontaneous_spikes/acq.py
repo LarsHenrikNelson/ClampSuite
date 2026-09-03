@@ -130,8 +130,11 @@ class SpontaneousSpkAcquisition(BaseAcquisitionAnalysis):
         )
         for i in ANALYSIS_VARIABLES:
             if i in self._analysis_variables:
-                key = i.replace("index", output_type)
-                acq_data[key] = self._analysis_variables[i].mean() / ms
+                if "index" in i:
+                    key = i.replace("index", output_type)
+                    acq_data[key] = self._analysis_variables[i].mean() / ms
+                else:
+                    acq_data[i] = self._analysis_variables[i].mean()
         spk_data = self._analysis_variables.copy()
 
         if output_type == "ms":

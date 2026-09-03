@@ -4,7 +4,7 @@ from scipy import stats, signal
 import numpy as np
 
 
-ANALYSIS_VARIABLES = ["width_index", "maximum_index"]
+ANALYSIS_VARIABLES = ["width_index", "maximum_index", "maximum_pa", "minimum_pa"]
 
 
 @dataclass
