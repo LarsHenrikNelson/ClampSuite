@@ -40,14 +40,15 @@ class CurrentClampAcquisitionConfig(BaseAcquisitionConfig):
         min_spike_voltage: Minimum voltage a spike needs to reach
             to be considered a spike.
         threshold_method: Method used to find the spike threshold.
-        min_spikes: The minimum number of spikes an acquisition must have to be
+            min_spikes: The minimum number of spikes an acquisition must have to be
         considered a "spiking acquisition".
-        velocity_threshold: The velocity in mV/ms a spike needs to achieve to be
+            velocity_threshold: The velocity in mV/ms a spike needs to achieve to be
         considered a spike.
-        fit_sag_decay: An integer indicating what type of exponential decay to fit to
+            fit_sag_decay: An integer indicating what type of exponential decay to fit to
         the voltage sag decay. Use 0 if you do not want to fit a decay.
-        fraction_window: A tuple containing the start and end of the pulse injection
-        that you want to get the delta V from.
+            fraction_window: A tuple containing the start and end *fraction** of the '
+            pulse injection that you want to get the delta V from. `start=0.5` and
+            `end=1.0` with a pulse of 1 ms will go from 0.5 ms to 1 ms.
     """
 
     @staticmethod
