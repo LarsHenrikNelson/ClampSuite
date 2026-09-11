@@ -35,13 +35,13 @@ class SpontaneousSpkAcquisitionConfig(BaseAcquisitionConfig):
             to be considered a spike.
         threshold_method: Method used to find the spike threshold.
         min_spikes: The minimum number of spikes an acquisition must have to be
-        considered a "spiking acquisition".
+            considered a "spiking acquisition".
         velocity_threshold: The velocity in mV/ms a spike needs to achieve to be
-        considered a spike.
+            considered a spike.
         fit_sag_decay: An integer indicating what type of exponential decay to fit to
-        the voltage sag decay. Use 0 if you do not want to fit a decay.
+            the voltage sag decay. Use 0 if you do not want to fit a decay.
         fraction_window: A tuple containing the start and end of the pulse injection
-        that you want to get the delta V from.
+            that you want to get the delta V from.
     """
 
     @staticmethod

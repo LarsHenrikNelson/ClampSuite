@@ -137,7 +137,9 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         spk_params = spk_params[spk_params["Spike Number"] == 0]
         acq = self.df_dict["Acq Parameters"]
         self.df_dict["Acq Parameters"] = acq.merge(
-            spk_params.drop(["Pulse Amp (pA)", "Cycle"]), on="Acq Number", how="left"
+            spk_params.drop(columns=["Pulse Amp (pA)", "Cycle", "Epoch"]),
+            on="Acq Number",
+            how="left",
         )
 
     def get_epoch_features(self):
@@ -162,7 +164,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         sag_features = (
             avg_data.loc[
                 avg_data["Pulse Amp (pA)"].idxmin(),
-                ["Sag (mV)", "Sag (ms)"],
+                ["Sag (mV)", "Sag (ms)", "Sag Ratio"],
             ]
             .to_frame()
             .T

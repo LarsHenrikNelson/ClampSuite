@@ -45,8 +45,8 @@ class CurrentClampAcquisitionConfig(BaseAcquisitionConfig):
             velocity_threshold: The velocity in mV/ms a spike needs to achieve to be
         considered a spike.
             fit_sag_decay: An integer indicating what type of exponential decay to fit to
-        the voltage sag decay. Use 0 if you do not want to fit a decay.
-            fraction_window: A tuple containing the start and end *fraction** of the '
+             the voltage sag decay. Use 0 if you do not want to fit a decay.
+        fraction_window: A tuple containing the start and end *fraction** of the '
             pulse injection that you want to get the delta V from. `start=0.5` and
             `end=1.0` with a pulse of 1 ms will go from 0.5 ms to 1 ms.
     """
@@ -417,6 +417,18 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
     ) -> tuple[dict, dict]:
         acq_data = self._analysis_variables.copy()
+        acq_data["epoch"] = self.acq_data.epoch
+        acq_data["steady_state_mv"] = acq_data["delta_v_mv"] + acq_data["baseline_mv"]
+        if self.acq_data.pulse_amp < 0:
+            acq_data["peak_deflection_mv"] = (
+                acq_data["steady_state_mv"] + acq_data["sag_mv"]
+            )
+            acq_data["sag_ratio"] = (
+                acq_data["steady_state_mv"] - acq_data["steady_state_mv"]
+            ) / acq_data["steady_state_mv"]
+        else:
+            acq_data["peak_deflection_mv"] = np.nan
+            acq_data["sag_ratio"] = np.nan
         spk_data = defaultdict(list)
         for spike in self._spikes:
             sdata = spike.data()
