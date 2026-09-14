@@ -27,7 +27,7 @@ from ..registry import register_acq_config, register_acquisition
 
 @register_acq_config
 @dataclass(frozen=True)
-class SpontaneousSpkAcquisitionConfig(BaseAcquisitionConfig):
+class SpontaneousSpikeAcquisitionConfig(BaseAcquisitionConfig):
     """Configuration class for current clamp acquisition analysis.
 
     Attributes:
@@ -61,7 +61,7 @@ class SpontaneousSpkAcquisitionConfig(BaseAcquisitionConfig):
 
 @register_acquisition
 @dataclass
-class SpontaneousSpkAcquisition(BaseAcquisitionAnalysis):
+class SpontaneousSpikeAcquisition(BaseAcquisitionAnalysis):
     """Spontaneous spiking acquisition analysis class
 
     Attributes:
@@ -85,7 +85,7 @@ class SpontaneousSpkAcquisition(BaseAcquisitionAnalysis):
             "waveforms": np.ndarray(0),
         }
 
-    def analyze(self, config: SpontaneousSpkAcquisitionConfig | None) -> None:
+    def analyze(self, config: SpontaneousSpikeAcquisitionConfig | None) -> None:
         """_summary_
 
         Args:
@@ -93,7 +93,7 @@ class SpontaneousSpkAcquisition(BaseAcquisitionAnalysis):
                 as ``None`` are threshold=7.0, prominence=2.0, start=2.0, end=3.0.
         """
         if config is None:
-            config = SpontaneousSpkAcquisitionConfig()
+            config = SpontaneousSpikeAcquisitionConfig()
         acquisition = self.acq_data.acquisition
         spikes, waveforms = find_spikes(acquisition, self.acq_data.fs, **asdict(config))
         self._analysis_variables["spike_index"] = spikes
