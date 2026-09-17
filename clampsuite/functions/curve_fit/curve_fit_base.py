@@ -80,6 +80,12 @@ class CurveFitBase(ABC, Generic[T]):
         except RuntimeError as _:
             self._params = self._create_nan_result()
             self._fit_success = False
+        except IndexError as _:
+            self._params = self._create_nan_result()
+            self._fit_success = False
+        except ValueError as _:
+            self._params = self._create_nan_result()
+            self._fit_success = False
 
         return self._params
 
