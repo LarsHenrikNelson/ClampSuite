@@ -188,6 +188,15 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             .to_frame()
             .T
         )
+        max_freq_pulse = (
+            self.df_dict["Acq Parameters"]
+            .groupby("Cycle")
+            .apply(
+                lambda g: g.loc[g["Freq (Hz)"].idxmax(), "Pulse Amp (pA)"],
+                include_groups=False,
+            )
+            .mean()
+        )
         avg_data = (
             avg_data.drop(
                 columns=["Sag (mV)", "Sag (ms)", "Pulse Amp (pA)", "Delta V (mV)"]
@@ -206,6 +215,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
             ],
             axis=1,
         )
+        avg_data["Max Amp (pA)"] = max_freq_pulse
         self.df_dict["Epoch Parameters"] = avg_data
 
     def fi_fit(self, acq_data: pd.DataFrame) -> pd.DataFrame:
