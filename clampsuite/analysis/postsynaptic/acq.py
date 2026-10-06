@@ -150,6 +150,14 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             x.append(x_)
         return np.array(x), np.array(y)
 
+    def peaks(self) -> tuple[np.ndarray, np.ndarray]:
+        e_loc = [i.peak() for i in self._events]
+        return np.array([i[0] for i in e_loc]), np.array([i[1] for i in e_loc])
+
+    def baselines(self) -> tuple[np.ndarray, np.ndarray]:
+        e_loc = [i.baseline() for i in self._events]
+        return np.array([i[0] for i in e_loc]), np.array([i[1] for i in e_loc])
+
     def data(
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
     ):

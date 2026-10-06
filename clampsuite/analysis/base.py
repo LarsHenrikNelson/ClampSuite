@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar, Literal
+from typing import Any, Generic, Literal, TypeVar
 
+import numpy as np
 import pandas as pd
 
 from ..loader import AcquisitionData
+
+PlotOutput = tuple[np.ndarray, np.ndarray]
 
 
 @dataclass
@@ -40,6 +43,11 @@ class BaseAcquisitionAnalysis(ABC):
     def update(self, dictionary: dict):
         for key, value in dictionary:
             self[key] = value
+
+    def acquisition(self) -> PlotOutput:
+        return np.arange(
+            self.acq_data.acquisition.size
+        ) / self.acq_data.s_r_c, self.acq_data.acquisition
 
 
 @dataclass(frozen=True)

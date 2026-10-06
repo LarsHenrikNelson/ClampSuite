@@ -403,11 +403,6 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
     def max_velocity(self):
         return self._get_spike_data("max_velocity_mv/ms", "max_velocity_index")
 
-    def acquisition(self) -> PlotOutput:
-        return np.arange(
-            self.acq_data.acquisition.size
-        ) / self.acq_data.s_r_c, self.acq_data.acquisition
-
     def derivative(self) -> PlotOutput:
         return np.arange(
             self.acq_data.acquisition.size
