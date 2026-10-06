@@ -57,6 +57,11 @@ class CurveFitBase(ABC, Generic[T]):
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs):
         y = np.asarray(y)
         x = np.asarray(x)
+        temp_result = self._create_nan_result()
+        if len(y) <= len(temp_result):
+            self._params = self._create_nan_result()
+            self._fit_success = False
+            return self._params
         try:
             p0 = self._get_initial_params(x, y)
             bounds = self._get_bounds(x, y)
