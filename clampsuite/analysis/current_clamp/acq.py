@@ -408,6 +408,20 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             self.acq_data.acquisition.size
         ) / self.acq_data.s_r_c, -1 * np.gradient(self.acq_data.acquisition)
 
+    def iei_fit(self) -> dict[str, float]:
+        if len(self._spikes) > 3:
+            fit = SExpDecay()
+            spike_peaks = [i["peak_index"] for i in self._spikes] / self.acq_data.fs
+            ieis = np.diff(spike_peaks)
+
+            params = fit.fit(
+                np.arange(len(ieis)) + 1,
+                1 / ieis,
+            )
+            return params._asdict()
+        else:
+            return SExpDecay()._create_nan_result()._asdict()
+
     def data(
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
     ) -> tuple[dict, dict]:
@@ -436,6 +450,9 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         spk_data["acq_number"] = np.array([self.acq_data.acq_number] * n_spikes)
         spk_data["cycle"] = np.array([self.acq_data.cycle] * n_spikes)
         spk_data["pulse_amp_pa"] = np.array([self.acq_data.pulse_amp] * n_spikes)
+
+        iei_fit_data = {f"iei_fit_{k}": v for k, v in self.iei_fit().items()}
+        acq_data.update(iei_fit_data)
 
         if output_type == "ms":
             for key, value in spk_data.items():
