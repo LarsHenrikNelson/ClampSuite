@@ -164,7 +164,14 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         sag_features = (
             avg_data.loc[
                 avg_data["Pulse Amp (pA)"].idxmin(),
-                ["Sag (mV)", "Sag (ms)", "Sag Ratio"],
+                [
+                    "Sag (mV)",
+                    "Sag (ms)",
+                    "Steady State Sag Ratio",
+                    "Peak Deflection Sag Ratio",
+                    "Peak Deflection (mV)",
+                    "Delta V (mV)",
+                ],
             ]
             .to_frame()
             .T
@@ -202,9 +209,12 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
                 columns=[
                     "Sag (mV)",
                     "Sag (ms)",
-                    "Sag Ratio",
+                    "Steady State Sag Ratio",
+                    "Peak Deflection Sag Ratio",
                     "Pulse Amp (pA)",
                     "Delta V (mV)",
+                    "Delta V (ms)",
+                    "Peak Deflection (mV)",
                 ]
             )
             .groupby("Epoch")

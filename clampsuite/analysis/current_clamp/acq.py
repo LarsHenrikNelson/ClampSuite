@@ -430,11 +430,22 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
             + self._analysis_variables["baseline_mv"]
         )
 
-    def sag_ratio(self):
+    def sag_ratio(
+        self, sag_type: Literal["steady_state", "peak_deflection"] = "peak_deflection"
+    ):
         if self.acq_data.pulse_amp < 0:
-            return self._analysis_variables["sag_mv"] / (
-                self._analysis_variables["delta_v_mv"]
-                + self._analysis_variables["sag_mv"]
+            if sag_type == "steady_state":
+                return self._sag() / self._analysis_variables["delta_v_mv"]
+            elif sag_type == "peak_deflection":
+                return self._sag() / self._analysis_variables["peak_deflection_mv"]
+        else:
+            return np.nan
+
+    def _sag(self):
+        if self.acq_data.pulse_amp < 0:
+            return (
+                self._analysis_variables["peak_deflection_mv"]
+                - self._analysis_variables["delta_v_mv"]
             )
         else:
             return np.nan
@@ -446,11 +457,12 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         acq_data["epoch"] = self.acq_data.epoch
         acq_data["steady_state_mv"] = self._steady_state()
         if self.acq_data.pulse_amp < 0:
-            acq_data["peak_deflection_mv"] = self._steady_state() + acq_data["sag_mv"]
-            acq_data["sag_ratio"] = self.sag_ratio()
+            acq_data["peak_deflection_sag_ratio"] = self.sag_ratio("peak_deflection")
+            acq_data["sag_mv"] = self._sag()
         else:
-            acq_data["peak_deflection_mv"] = np.nan
-            acq_data["sag_ratio"] = np.nan
+            acq_data["steady_state_sag_ratio"] = np.nan
+            acq_data["peak_deflection_sag_ratio"] = np.nan
+            acq_data["sag_mv"] = np.nan
         spk_data = defaultdict(list)
         for spike in self._spikes:
             sdata = spike.data()
