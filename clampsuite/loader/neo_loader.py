@@ -125,8 +125,8 @@ class ABFLoader(BaseLoader):
             acq_dict["acq_type"] = "other"
             acq_dict["pulse_pattern"] = str(i)
 
-            gain = file.header["signal_channels"][self.main_channel][5]
-            acq_dict["gain"] = gain
+            acq_dict["gain"] = file.header["signal_channels"][self.main_channel][5]
+            acq_dict["offset"] = file.header["signal_channels"][self.main_channel][6]
             acq_dict["array"] = self.load_segment(
                 file, i, channel_index=self.main_channel, offset=offset
             )

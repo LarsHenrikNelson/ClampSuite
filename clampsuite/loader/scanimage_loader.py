@@ -174,6 +174,7 @@ class ScanImageLoader(BaseLoader):
         acq_dict["rc_check_pulse_end_index"] = int(rc_end * s_r_c)
         acq_dict["rc_amp"] = float(rc_amp)
         acq_dict["gain"] = 1.0
+        acq_dict["offset"] = 0.0
         return AcquisitionData(**acq_dict)
 
     def set_cycle(self, acquisitions: dict[int, AcquisitionData]):

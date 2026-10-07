@@ -27,6 +27,7 @@ class AcquisitionData:
     acq_type: Literal["step", "ramp", "other"] = "other"
     cycle: int = 0
     gain: float = 1.0
+    offset: float = 0.0
     units: str = "mV"
 
     _fs_multiplier: float = field(default=1.0, repr=False)
@@ -52,9 +53,11 @@ class AcquisitionData:
     @property
     def acquisition(self) -> np.ndarray:
         if self.rc_check_pulse_start_index != self.rc_check_pulse_end_index:
-            data = self.array[: self.rc_check_pulse_start_index] * self.gain
+            data = (
+                self.array[: self.rc_check_pulse_start_index] * self.gain + self.offset
+            )
         else:
-            data = self.array * self.gain
+            data = self.array * self.gain + self.offset
 
         for preprocessor in self._preprocessors:
             data = preprocessor(data, self.fs)
