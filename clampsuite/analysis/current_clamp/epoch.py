@@ -199,7 +199,13 @@ class CurrentClampEpoch(BaseEpochAnalysis[CurrentClampConfig]):
         )
         avg_data = (
             avg_data.drop(
-                columns=["Sag (mV)", "Sag (ms)", "Pulse Amp (pA)", "Delta V (mV)"]
+                columns=[
+                    "Sag (mV)",
+                    "Sag (ms)",
+                    "Sag Ratio",
+                    "Pulse Amp (pA)",
+                    "Delta V (mV)",
+                ]
             )
             .groupby("Epoch")
             .mean(numeric_only=True)
