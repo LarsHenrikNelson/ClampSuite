@@ -455,9 +455,9 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
     ) -> tuple[dict, dict]:
         acq_data = self._analysis_variables.copy()
         acq_data["epoch"] = self.acq_data.epoch
-        acq_data["steady_state_mv"] = self._steady_state()
         if self.acq_data.pulse_amp < 0:
             acq_data["peak_deflection_sag_ratio"] = self.sag_ratio("peak_deflection")
+            acq_data["steady_state_sag_ratio"] = self.sag_ratio("steady_state")
             acq_data["sag_mv"] = self._sag()
         else:
             acq_data["steady_state_sag_ratio"] = np.nan
