@@ -422,19 +422,32 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
         else:
             return SExpDecay()._create_nan_result()._asdict()
 
+    def _steady_state(self):
+        if np.isnan(self._analysis_variables["baseline_mv"]):
+            return np.nan
+        return (
+            self._analysis_variables["delta_v_mv"]
+            + self._analysis_variables["baseline_mv"]
+        )
+
+    def sag_ratio(self):
+        if self.acq_data.pulse_amp < 0:
+            return self._analysis_variables["sag_mv"] / (
+                self._analysis_variables["delta_v_mv"]
+                + self._analysis_variables["sag_mv"]
+            )
+        else:
+            return np.nan
+
     def data(
         self, output_type: Literal["ms", "samples"] = "ms", format_keys: bool = False
     ) -> tuple[dict, dict]:
         acq_data = self._analysis_variables.copy()
         acq_data["epoch"] = self.acq_data.epoch
-        acq_data["steady_state_mv"] = acq_data["delta_v_mv"] + acq_data["baseline_mv"]
+        acq_data["steady_state_mv"] = self._steady_state()
         if self.acq_data.pulse_amp < 0:
-            acq_data["peak_deflection_mv"] = (
-                acq_data["steady_state_mv"] + acq_data["sag_mv"]
-            )
-            acq_data["sag_ratio"] = (
-                acq_data["steady_state_mv"] - acq_data["steady_state_mv"]
-            ) / acq_data["steady_state_mv"]
+            acq_data["peak_deflection_mv"] = self._steady_state() + acq_data["sag_mv"]
+            acq_data["sag_ratio"] = self.sag_ratio()
         else:
             acq_data["peak_deflection_mv"] = np.nan
             acq_data["sag_ratio"] = np.nan
