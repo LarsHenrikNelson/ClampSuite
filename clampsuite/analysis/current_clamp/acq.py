@@ -16,6 +16,7 @@ from ...functions.current_clamp import (
     ai_sfa,
     coefficient_of_variation,
     divisor_sfa,
+    dynamic_baseline_start,
     local_sfa,
     membrane_time_constant_deltav,
     membrane_time_constant_min,
@@ -214,10 +215,14 @@ class CurrentClampAcquisition(BaseAcquisitionAnalysis):
                 start_index = int((i - self._pulse_start) * 0.1) + self._pulse_start
                 end_index = spike_index[index + 1]
             elif index == end:
+                start_index = dynamic_baseline_start(
+                    self.acq_data.acquisition, spike_index[index - 1], i
+                )
                 end_index = self._pulse_end
-                start_index = spike_index[index - 1]
             else:
-                start_index = spike_index[index - 1]
+                start_index = dynamic_baseline_start(
+                    self.acq_data.acquisition, spike_index[index - 1], i
+                )
                 end_index = spike_index[index + 1]
             spike = Spike(
                 self.acq_data.acquisition, start_index, end_index, i, self.acq_data.fs

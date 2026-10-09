@@ -107,10 +107,10 @@ def piecewise_threshold(
     idx_90 = idx_90_matches[0] if len(idx_90_matches) > 0 else peak_idx
 
     # 1. Fit Line 1: Subthreshold Baseline (<10% peak dV/dt)
-    x1 = np.arange(0, idx_5 + 1)
-    y1 = dv_seg[: idx_5 + 1]
+    x1 = np.arange(0, idx_10 + 1)
+    y1 = dv_seg[: idx_10 + 1]
     if len(x1) < 2:
-        return float(start + idx_5)
+        return float(start + idx_10)
     m1, c1 = np.polyfit(x1, y1, 1)
 
     # 2. Fit Line 2: Linear Upstroke (10% to 90% peak dV/dt)

@@ -12,6 +12,7 @@ from .spike_adaptation import (
 )
 from .spike_ahp import AHP_KEYS, find_all_ahps
 from .spike_auc import AUC_KEYS, find_all_spk_auc
+from .spike_setting import dynamic_baseline_start
 from .spike_threshold import THRESHOLD_KEYS, ThresholdType, find_all_spk_thresholds
 from .spike_velocity import VELOCITY_KEYS, find_all_spk_velocities
 from .spike_width import WIDTH_KEYS, find_all_spk_widths
