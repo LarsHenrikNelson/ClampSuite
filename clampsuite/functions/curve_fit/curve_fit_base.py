@@ -46,7 +46,7 @@ class CurveFitBase(ABC, Generic[T]):
     def _get_initial_params(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
         return None
 
-    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> None | tuple | list:
+    def _get_bounds(self, x: np.ndarray, y: np.ndarray) -> None | tuple:
         return None
 
     def predict(self, x: np.ndarray) -> np.ndarray:
@@ -54,7 +54,13 @@ class CurveFitBase(ABC, Generic[T]):
             raise ValueError("Must call fit() before predict()")
         return self._fit_function(x, *self._params)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        bounds: tuple[list, list] | tuple[np.ndarray, np.ndarray] | None = None,
+        **kwargs,
+    ):
         y = np.asarray(y)
         x = np.asarray(x)
         temp_result = self._create_nan_result()
@@ -64,7 +70,8 @@ class CurveFitBase(ABC, Generic[T]):
             return self._params
         try:
             p0 = self._get_initial_params(x, y)
-            bounds = self._get_bounds(x, y)
+            if bounds is None:
+                bounds = self._get_bounds(x, y)
 
             popt, pcov = curve_fit(
                 self._fit_function, x, y, p0=p0, bounds=bounds, **kwargs
