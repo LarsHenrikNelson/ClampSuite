@@ -1,3 +1,4 @@
+from multiprocessing import Value
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -26,6 +27,9 @@ class Spike:
             "peak_mv": array[peak_index],
             "start_index": start_index,
             "end_index": end_index,
+            "prespike_velocity_mV/ms": np.nan,
+            "acceleration_mV/ms2": np.nan,
+            "acceleration_index": np.nan,
         }
         self.fs = fs
         for i in SPIKE_PARAMS:
@@ -57,7 +61,7 @@ class Spike:
         except IndexError:
             threshold_index = self["start_index"]
         threshold_index += self["start_index"]
-        threshold_index = int(np.ceil(threshold_index))
+        threshold_index = round(threshold_index, ndigits=None)
         self["threshold_index"] = threshold_index
         self["threshold_mv"] = self._array[threshold_index]
 
@@ -100,6 +104,27 @@ class Spike:
         self["acceleration_mV/ms2"] = ddv[acceleration_index]
         self["acceleration_index"] = ddv.argmax() + self["start_index"]
 
+    def prespike_velocity(self):
+        if np.isnan(self["threshold_index"]):
+            raise AttributeError(
+                "Spike threshold must be found before prespike velocity be caculated."
+            )
+        else:
+            try:
+                self["prespike_velocity_mV/ms"] = np.mean(
+                    np.gradient(
+                        self._array[self["start_index"] : self["threshold_index"]],
+                        1 / (self.fs / 1000),
+                    )
+                )
+            except ValueError:
+                self["prespike_velocity_mV/ms"] = np.mean(
+                    np.diff(
+                        self._array[self["start_index"] : self["threshold_index"]],
+                    )
+                    / (1 / (self.fs / 1000))
+                )
+
     def set_end_index(self, end_index: int):
         self["end_index"] = end_index
 
@@ -110,6 +135,7 @@ class Spike:
         self.find_ahp()
         self.find_velocity()
         self.find_acceleration()
+        self.prespike_velocity()
 
     def __getitem__(self, index):
         return self._analysis_variables[index]
@@ -129,5 +155,5 @@ class Spike:
             start_index = max(self["start_index"], alt)
         else:
             start_index = self["start_index"]
-        x = np.arange(start_index, self["end_index"]) / self.fs
+        x = np.arange(start_index, self["end_index"]) / (self.fs / 1000)
         return x, self._array[start_index : self["end_index"]]
