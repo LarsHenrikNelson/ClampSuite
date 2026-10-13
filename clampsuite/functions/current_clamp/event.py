@@ -92,7 +92,7 @@ class Spike:
         s_r_c = self.fs / 1000
         ddv = np.gradient(
             np.gradient(
-                self.array[self["start_index"] : self["peak_index"]], 1 / s_r_c
+                self._array[self["start_index"] : self["peak_index"]], 1 / s_r_c
             ),
             1 / s_r_c,
         )
