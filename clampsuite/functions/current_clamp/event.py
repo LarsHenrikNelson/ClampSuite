@@ -88,6 +88,18 @@ class Spike:
             {key: a for key, a in zip(VELOCITY_KEYS, output)}
         )
 
+    def find_acceleration(self):
+        s_r_c = self.fs / 1000
+        ddv = np.gradient(
+            np.gradient(
+                self.array[self["start_index"] : self["peak_index"]], 1 / s_r_c
+            ),
+            1 / s_r_c,
+        )
+        acceleration_index = ddv.argmax()
+        self["acceleration_mV/ms2"] = ddv[acceleration_index]
+        self["acceleration_index"] = ddv.argmax() + self["start_index"]
+
     def set_end_index(self, end_index: int):
         self["end_index"] = end_index
 
@@ -97,6 +109,7 @@ class Spike:
         self.find_auc()
         self.find_ahp()
         self.find_velocity()
+        self.find_acceleration()
 
     def __getitem__(self, index):
         return self._analysis_variables[index]

@@ -35,6 +35,7 @@ def map_keys(keys: Iterable) -> dict:
         "pa/ms": "(pA/ms)",
         "mv/ms": "(mV/ms)",
         "index": "(ms)",
+        "mV/ms2": "(mV/ms2)",
     }
     key_mapping = {}
     for key in keys:
