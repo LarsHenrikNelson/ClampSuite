@@ -14,6 +14,7 @@ class ModelMetrics(NamedTuple):
     residuals: np.ndarray = np.array([])
     parameter_uncertainties: np.ndarray = np.array([])
     correlation_matrix: np.ndarray = np.array([])
+    fim: float = np.nan
 
 
 class CurveFitBase(ABC, Generic[T]):
@@ -25,6 +26,7 @@ class CurveFitBase(ABC, Generic[T]):
         self._params = self._create_nan_result()
         self._model_metrics = ModelMetrics()
         self._fit_success = False
+        self._pcov = None
 
     @property
     def params(self) -> T:
@@ -78,14 +80,7 @@ class CurveFitBase(ABC, Generic[T]):
             )
 
             self._params = self._create_result(popt)
-            chisq = self._reduced_chisq(popt, x, y)
-            uncertain = self._parameter_uncertainties(popt, pcov)
-            residuals = self._residuals(x, y)
-            r2 = self._r_squared(x, y)
-            correlate = self._correlation(pcov)
-            self._model_metrics = ModelMetrics(
-                chisq, r2, residuals, uncertain, correlate
-            )
+            self._pcov = pcov
 
             self._fit_success = True
 
@@ -100,6 +95,20 @@ class CurveFitBase(ABC, Generic[T]):
             self._fit_success = False
 
         return self._params
+
+    def compute_model_metrics(self, x, y):
+        if self._pcov is None:
+            raise ValueError("Must call fit() before compute_model_metrics()")
+        else:
+            chisq = self._reduced_chisq(self._pcov, x, y)
+            uncertain = self._parameter_uncertainties(self._params, self._pcov)
+            residuals = self._residuals(x, y)
+            r2 = self._r_squared(x, y)
+            correlate = self._correlation(self._pcov)
+            fim = self._fim(self._pcov)
+            self._model_metrics = ModelMetrics(
+                chisq, r2, residuals, uncertain, correlate, fim
+            )
 
     def _reduced_chisq(self, popt: tuple, x: np.ndarray, y: np.ndarray) -> float:
         y_fit = self.predict(x)
@@ -128,3 +137,6 @@ class CurveFitBase(ABC, Generic[T]):
     def _residuals(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         y_fit = self.predict(x)
         return y - y_fit
+
+    def _fim(self, pcov) -> float:
+        return np.linalg.cond(pcov)
