@@ -1,11 +1,10 @@
-from ty_extensions._internal import Unknown
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Literal
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
-from scipy import signal, fft
+from scipy import fft, signal
 
 from ...functions.general import baseline_stability, delta
 from ...functions.utilities import map_keys
@@ -97,7 +96,7 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
         if self.config is None:
             raise ValueError("Config not loaded. Analyze data first.")
         # Load data
-        chirp: Unknown = self._load_chirp(self.config.chirp)
+        chirp = self._load_chirp(self.config.chirp)
         chirp = chirp[:, self.acq_data.acq_number - 1]
         acquisition = self.acq_data.acquisition
         acquisition = acquisition[: chirp.size]
