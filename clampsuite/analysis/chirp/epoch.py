@@ -87,7 +87,7 @@ class CurrentClampEpoch(BaseEpochAnalysis[ChirpConfig]):
         for value in self._acquisitions.values():
             acq_data, frequency_data = value.data()
             acq_params.append(acq_data)
-            frequency_params.append(frequency_data)
+            frequency_params.append(pd.DataFrame(frequency_data))
         self.df_dict["Acq Parameters"] = pd.DataFrame(acq_params)
-        self.df_dict["Frequency"] = pd.DataFrame(frequency_params)
+        self.df_dict["Frequency"] = pd.concat(frequency_params)
         self.df_dict["Epoch Parameteres"] = self.df_dict["Acq Parameters"].mean()

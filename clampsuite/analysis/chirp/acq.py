@@ -63,7 +63,7 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
     def __post_init__(self):
         self._analysis_variables["q"] = np.nan
         self._analysis_variables["frequency_hz"] = np.nan
-        self._analysis_variables["impedance_mOhm"] = np.nan
+        self._analysis_variables["impedance_MOhm"] = np.nan
         self.config: ChirpAcquisitionConfig | None = None
 
     def _load_chirp(self, chirp):
@@ -102,7 +102,7 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
         acquisition = acquisition[: chirp.size]
 
         # Create Z
-        fastest = fft.next_fast_len(chirp.size)
+        fastest = fft.next_fast_len(max(chirp.size, acquisition.size))
         c_fft = fft.rfft(chirp, n=fastest)
         a_fft = fft.rfft(acquisition, n=fastest)
         z = ((np.abs(a_fft) / np.abs(c_fft)) / np.abs(c_fft) ** 2) * 1000
