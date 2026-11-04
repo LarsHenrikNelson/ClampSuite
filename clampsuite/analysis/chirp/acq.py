@@ -97,13 +97,15 @@ class ChirpAcquisition(BaseAcquisitionAnalysis):
             raise ValueError("Config not loaded. Analyze data first.")
         # Load data
         chirp = self._load_chirp(self.config.chirp)
-        chirp = chirp[:, self.acq_data.acq_number - 1]
+        chirp_temp = chirp[:, self.acq_data.acq_number - 1]
         acquisition = self.acq_data.acquisition
-        acquisition = acquisition[: chirp.size]
+        size = min(acquisition.size, chirp_temp.size)
+        acquisition = acquisition[:size]
+        chirp_temp = chirp_temp[:size]
 
         # Create Z
-        fastest = fft.next_fast_len(max(chirp.size, acquisition.size))
-        c_fft = fft.rfft(chirp, n=fastest)
+        fastest = fft.next_fast_len(size)
+        c_fft = fft.rfft(chirp_temp, n=fastest)
         a_fft = fft.rfft(acquisition, n=fastest)
         z = ((np.abs(a_fft) / np.abs(c_fft)) / np.abs(c_fft) ** 2) * 1000
         freqs = fft.rfftfreq(fastest, 1 / self.acq_data.fs)
