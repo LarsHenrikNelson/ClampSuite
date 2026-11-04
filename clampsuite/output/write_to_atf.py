@@ -28,21 +28,39 @@ def write_atf(
         filename: Filename to use for atf file. Defaults to None.
         path: Path to save .atf file. If path contains .atf, filename is ignored. Defaults to None.
     """
-    offset = int(data.shape[0] * 15625 / 10**6)
-    app = np.array([np.zeros(offset), np.zeros(offset)]).T
-    output = np.concatenate((app, data, app))
-    time = np.arange(output.shape[0]) / fs
-    time = time.reshape((time.size, 1))
-    output = np.concatenate((time, output), axis=1)
+    if data.ndim == 1:
+        data = data.reshape(-1, 1)
+
+    n_samples, n_channels = data.shape
+
+    # 2. Pad trailing edge to the nearest multiple of 64 (Digidata DMA buffer block)
+    remainder = n_samples % 64
+    if remainder != 0:
+        pad_size = 64 - remainder
+        padding = np.zeros((pad_size, n_channels))
+        output_data = np.vstack((data, padding))
+    else:
+        output_data = data
+
+    # 3. Construct time vector column matching exact sampling rate
+    time = np.arange(output_data.shape[0]) / fs
+    output = np.hstack((time.reshape(-1, 1), output_data))
+
+    # 4. Handle file path resolution correctly
     if filename is None:
         filename = "output"
+
     if path is not None:
-        path = Path(path)
-        if ".aft" not in path.stem:
-            path = path / filename
+        target_path = Path(path)
+        if target_path.suffix.lower() != ".atf":
+            target_path = target_path / f"{filename}.atf"
     else:
-        path = Path.cwd() / f"{filename}.atf"
+        target_path = Path.cwd() / f"{filename}.atf"
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 5. Write ATF file
     header = _atf_header(output)
-    with open(path, "w") as wr:
+    with open(target_path, "w") as wr:
         wr.write(header)
         np.savetxt(wr, output, delimiter="\t", fmt="%.5e")
