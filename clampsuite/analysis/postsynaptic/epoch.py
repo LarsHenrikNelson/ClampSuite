@@ -83,7 +83,6 @@ class PostSynapticEpoch(BaseEpochAnalysis):
             acquisitions (dict[int, AcquisitionData]): Acquisitions used for the
             current clamp analysis.
         """
-        self._acquisitions: dict[int, PostSynapticAcquisition] = {}
         self.epoch_id = epoch_id
         for key, value in acquisitions.items():
             temp = PostSynapticAcquisition(acq_data=value)
@@ -159,4 +158,5 @@ class PostSynapticEpoch(BaseEpochAnalysis):
         ep_data["IEI (ms)"] = np.mean(iei)
         ep_data["exp(log(IEI (ms)))"] = np.exp(np.mean(np.log(iei)))
         ep_data["Freq (Hz)"] = np.mean(acq_params["Freq (Hz)"])
+        ep_data["Total time (ms)"] = acq_params["Acq Length (ms)"].sum()
         self.df_dict["Epoch Parameters"] = ep_data

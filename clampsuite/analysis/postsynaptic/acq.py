@@ -173,9 +173,9 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
         event_data["acq_number"] = np.array(
             [self.acq_data.acq_number] * len(self._events)
         )
-        acq_data["freq_hz"] = len(self._events) / (
-            len(self.acq_data.acquisition) / self.acq_data.fs
-        )
+        acq_time = len(self.acq_data.acquisition) / self.acq_data.fs
+        acq_data["freq_hz"] = len(self._events) / (acq_time)
+        acq_data["acq_length_ms"] = acq_time
         iei = np.diff(event_data["peak_ms"])
         acq_data["iei_ms"] = np.mean(iei)
         acq_data["exp(log(iei_ms))"] = np.exp(np.mean(np.log(iei)))
