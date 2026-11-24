@@ -31,11 +31,13 @@ class PostsynapticEvent:
         fs: float,
         start_index: int,
         event_length: float,
+        invert: bool = False,
     ):
         self.array = array
         self.event_length = event_length
         self.s_r_c = fs / 1000
         self.fs = fs
+        self._invert = invert
 
         self._analysis_variables: dict[str, float] = {}
         self._analysis_variables["peak_index"] = -1
@@ -48,6 +50,12 @@ class PostsynapticEvent:
         self._analysis_variables["est_tau_index"] = -1
         self._analysis_variables["est_tau_y"] = np.nan
         self._decay_fit = None
+
+    def _invert_sign(self):
+        if self._invert:
+            return -1
+        else:
+            return 1
 
     def get_variable(self, variable: str) -> None | float:
         return self._analysis_variables[variable]
@@ -62,7 +70,7 @@ class PostsynapticEvent:
 
     def find_peak(self):
         peak = find_peak(
-            self._event_array(),
+            self._event_array() * self._invert_sign(),
             self.fs,
             adjust_pos=10,
         )
@@ -71,7 +79,9 @@ class PostsynapticEvent:
 
     def find_baseline(self):
         peak = self["peak_index"] - self["start_index"]
-        baseline = find_baseline(self._event_array(), int(peak), self.fs)
+        baseline = find_baseline(
+            self._event_array() * self._invert_sign(), int(peak), self.fs
+        )
         self["baseline_index"] = int(baseline + self["start_index"])
 
     def estimate_decay(self):

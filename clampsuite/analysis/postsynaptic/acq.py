@@ -41,7 +41,6 @@ class PostSynapticAcquisitionConfig(BaseAcquisitionConfig):
     decay_rise: bool = True
     invert: bool = False
     method: EventMethods = "weiner"
-    est_decay: bool = False
     curve_fit_decay: Literal[0, 1, 2] = 0
 
 
@@ -96,6 +95,7 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
                     fs=self.acq_data.fs,
                     start_index=peak,
                     event_length=config.event_length,
+                    invert=config.invert,
                 )
                 event.find_peak()
                 event_peak: int | float = event["peak_index"]
@@ -164,7 +164,19 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
         if self._config is None:
             raise ValueError("No config detected. Run analysis first.")
         acq_data = {}
+        acq_time = len(self.acq_data.acquisition) / self.acq_data.fs
+        acq_data["acq_length_ms"] = acq_time
+        acq_data["acq_number"] = self.acq_data.acq_number
         event_data = defaultdict(list)
+
+        if len(self._events) < 1:
+            if format_keys:
+                key_mapper = map_keys(acq_data.keys())
+                acq_data = {key_mapper[k]: v for k, v in acq_data.items()}
+                key_mapper = map_keys(event_data.keys())
+                event_data = {key_mapper[k]: v for k, v in event_data.items()}
+            return acq_data, event_data
+
         for event in self._events:
             sdata = event.data(output_type=output_type)
             for key, value in sdata.items():
@@ -173,9 +185,8 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
         event_data["acq_number"] = np.array(
             [self.acq_data.acq_number] * len(self._events)
         )
-        acq_time = len(self.acq_data.acquisition) / self.acq_data.fs
         acq_data["freq_hz"] = len(self._events) / (acq_time)
-        acq_data["acq_length_ms"] = acq_time
+
         iei = np.diff(event_data["peak_ms"])
         acq_data["iei_ms"] = np.mean(iei)
         acq_data["exp(log(iei_ms))"] = np.exp(np.mean(np.log(iei)))
@@ -183,7 +194,6 @@ class PostSynapticAcquisition(BaseAcquisitionAnalysis):
             temp = event_data[i][(event_data[i] > 0) & ~np.isnan(event_data[i])]
             acq_data[i] = np.mean(temp)
             acq_data[f"{i}_log"] = np.exp(np.mean(np.log(temp)))
-        acq_data["acq_number"] = self.acq_data.acq_number
 
         if format_keys:
             key_mapper = map_keys(acq_data.keys())
